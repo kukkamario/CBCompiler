@@ -1,0 +1,23 @@
+
+FrameLimit 40 
+
+
+guy= LoadObject("Media\guy.bmp", 72)
+
+Color cbblack
+AddText "Move via arrows..."
+ClsColor cbwhite
+
+Repeat
+
+    If LeftKey() Then TurnObject guy, 5
+    If RightKey() Then TurnObject guy, -5 
+    
+    If UpKey() Then MoveObject guy, 2
+    If DownKey() Then MoveObject guy, -2
+    
+    
+    DrawScreen
+
+Forever
+ 

@@ -1,0 +1,7 @@
+
+a = 1
+
+If a = 0 Then Dim array (231,23) : Print "0" : If a = 1 Then Print "00"
+Print array(23, 3)
+EndIf
+WaitKey
