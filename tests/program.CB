@@ -1,0 +1,67 @@
+Type BULLETS
+    Field obj
+End Type
+
+'- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+'MAIN PROGRAM 
+'- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+
+FrameLimit 40
+
+'load the soldier, turning detail 72 
+guy=LoadObject("Media\soldier.bmp",72)
+
+'load the bullet (master-object) and hide it 
+bullet=LoadObject("Media\bullet.bmp")
+ShowObject bullet,OFF
+
+ClsColor cbdark
+
+AddText "Arrows to turn, SPACE to shoot"
+
+'MAIN LOOP 
+Repeat
+
+    'Update turning
+    If LeftKey() Then TurnObject guy,5
+    If RightKey() Then TurnObject guy, -5
+    
+    'Shoot?
+    If KeyDown(cbkeyspace) And reload=0
+    
+        newBullet.BULLETS= New(BULLETS)
+        newBullet\obj=CloneObject(bullet)
+        CloneObjectPosition newBullet\obj,guy
+        CloneObjectOrientation newBullet\obj,guy
+        'put the bullet at the end of the barrel
+        MoveObject newBullet\obj,24 
+    
+        reload=4
+    EndIf
+    
+    'Update all BULLETS (move them forward)
+    i=0
+    For iBullet.BULLETS= Each BULLETS
+        
+        MoveObject iBullet\obj,6 'speed=6
+        
+        'delete bullet from collection if it
+        'gets too far away
+        If Distance2(iBullet\obj,guy)>200 Then 
+            DeleteObject iBullet\obj
+            Delete iBullet
+        EndIf
+        
+        i=i+1
+        
+    Next iBullet
+    
+    'Update reloading
+    If reload>0 Then reload=reload-1
+    
+    Text 30,30,"Bulets to update: "+i
+    
+    'Don't forget this :)
+    DrawScreen
+
+Until EscapeKey()
