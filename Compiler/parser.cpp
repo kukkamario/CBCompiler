@@ -7,15 +7,19 @@ Parser::Parser():
 
 typedef ast::Node *(Parser::*BlockParserFunction)(Parser::TokIterator &);
 static BlockParserFunction blockParsers[] =  {
+	&Parser::tryGotoGosubAndLabel,
 	&Parser::tryDim,
+	&Parser::tryRedim,
 	&Parser::tryIfStatement,
 	&Parser::tryWhileStatement,
 	&Parser::tryRepeatStatement,
 	&Parser::tryForStatement,
+	&Parser::tryReturn,
+	&Parser::trySelectStatement,
 	&Parser::tryAssignmentExpression,
 	&Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment,
 };
-static const int blockParserCount = 7;
+static const int blockParserCount = 11;
 ast::Block Parser::expectBlock(Parser::TokIterator &i) {
 	ast::Block block;
 	while (true) {
@@ -142,6 +146,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens) {
 			program->mMainBlock.append(n);
 		}
 		else {
+			Token tok = *i;
 			emit error(ErrorCodes::ecUnexpectedToken, tr("Unexpected token \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 			return program;
 		}
@@ -287,6 +292,21 @@ ast::Variable::VarType Parser::tryVarTypeSymbol(Parser::TokIterator &i)
 	}
 }
 
+ast::Node *Parser::tryReturn(Parser::TokIterator &i) {
+	if (i->mType == Token::kReturn) {
+		i++;
+		ast::Node *r = 0;
+		if (!i->isEndOfStatement()) {
+			r = expectExpression(i);
+		}
+		if (mStatus == Error) return 0;
+		ast::Return *ret = new ast::Return;
+		ret->mValue = r;
+		return ret;
+	}
+	return 0;
+}
+
 ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
 	if (i->mType == Token::kType) {
 		QFile *file = i->mFile;
@@ -407,6 +427,143 @@ ast::Variable *Parser::tryVariableOrTypePtrDefinition(Parser::TokIterator &i) {
 		ret->mVarType = type;
 		return ret;
 	}
+}
+
+ast::Node *Parser::trySelectStatement(Parser::TokIterator &i) {
+	if (i->mType != Token::kSelect) return 0;
+	//Select
+	int startLine = i->mLine;
+	QFile *file = i->mFile;
+	i++;
+	ast::Variable *var = expectVariableOrTypePtrDefinition(i);
+	if (mStatus == Error) return 0;
+	expectEndOfStatement(i);
+	if (mStatus == Error) return 0;
+	QList<ast::Case> cases;
+	ast::Block defaultCase;
+	while (i->mType != Token::kEndSelect) {
+		if (i->isEndOfStatement()) {
+			i++;
+			continue;
+		}
+		if (i->mType == Token::kCase) {
+			ast::Case c;
+			c.mLine = i->mLine;
+			c.mFile = i->mFile;
+			i++;
+			c.mCase = expectExpression(i);
+			if (mStatus == Error) return 0;
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			c.mBlock = expectBlock(i);
+			if (mStatus == Error) return 0;
+			cases.append(c);
+			continue;
+		}
+		else if (i->mType == Token::kDefault) {
+			if (!defaultCase.isEmpty()) {
+				emit error(ErrorCodes::ecMultipleSelectDefaultCases, tr("Multiple default cases"), i->mLine, i->mFile);
+				mStatus = ErrorButContinue;
+			}
+			i++;
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			defaultCase = expectBlock(i);
+			if (mStatus == Error) return 0;
+		}
+		else {
+			emit error(ErrorCodes::ecExpectingEndSelect, tr("Expecting \"EndSelect\", \"Case\" or \"Default\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+	}
+	ast::SelectStatement *ret = new ast::SelectStatement;
+	ret->mCases = cases;
+	ret->mDefault = defaultCase;
+	ret->mVarible = var;
+	ret->mFile = file;
+	ret->mStartLine = startLine;
+	ret->mEndLine = i->mLine;
+	i++;
+	return ret;
+}
+
+
+ast::Node *Parser::tryGotoGosubAndLabel(Parser::TokIterator &i) {
+	switch (i->mType) {
+		case Token::kGoto: {
+			ast::Goto *ret = new ast::Goto;
+			ret->mFile = i->mFile;
+			ret->mLine = i->mLine;
+			i++;
+			ret->mLabel = expectIdentifier(i);
+			if (mStatus == Error) return 0;
+			return ret;
+		}
+		case Token::kGosub: {
+			ast::Gosub *ret = new ast::Gosub;
+			ret->mFile = i->mFile;
+			ret->mLine = i->mLine;
+			i++;
+			ret->mLabel = expectIdentifier(i);
+			if (mStatus == Error) return 0;
+			return ret;
+		}
+		case Token::Label: {
+			ast::Label *label = new ast::Label;
+			label->mFile = i->mFile;
+			label->mLine = i->mLine;
+			label->mName = i->toString();
+			i++;
+			return label;
+		}
+		default:
+			return 0;
+	}
+}
+
+ast::Node *Parser::tryRedim(Parser::TokIterator &i) {
+	if (i->mType != Token::kRedim) return 0;
+	int line = i->mLine;
+	QFile *file = i->mFile;
+	i++;
+	QString name = expectIdentifier(i);
+	ast::Variable::VarType varType = tryVarTypeSymbol(i);
+	if (mStatus == Error) return 0;
+	if (i->mType != Token::LeftParenthese) {
+		emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+		mStatus = Error;
+		return 0;
+	}
+	i++;
+
+	QList<ast::Node*> dimensions;
+	dimensions.append(expectExpression(i));
+	if (mStatus == Error) return 0;
+	while (i->mType == Token::Comma) {
+		i++;
+		dimensions.append(expectExpression(i));
+		if (mStatus == Error) return 0;
+	}
+
+	if (i->mType != Token::RightParenthese) {
+		emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+		mStatus = Error;
+		return 0;
+	}
+	i++;
+
+	if (varType == ast::Variable::Default) {
+		varType = tryVarAsType(i);
+		if (mStatus == Error) return 0;
+	}
+	ast::Redim *arr = new ast::Redim;
+	arr->mLine = line;
+	arr->mFile = file;
+	arr->mName = name;
+	arr->mType = varType;
+	arr->mDimensions = dimensions;
+	return arr;
 }
 
 ast::Node *Parser::tryDim(Parser::TokIterator &i) {
@@ -573,7 +730,6 @@ ast::Node *Parser::tryIfStatement(Parser::TokIterator &i) { //FINISH
 
 ast::Node *Parser::expectElseIfStatement(Parser::TokIterator &i) {
 	Q_ASSERT(i->mType == Token::kElseIf);
-	i++;
 	int line = i->mLine;
 	QFile *file = i->mFile;
 	i++;
@@ -737,7 +893,7 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 		expectEndOfStatement(i);
 		ast::Block block = expectBlock(i);
 		if (i->mType != Token::kEndFunction) {
-			emit error(ErrorCodes::ecExpectingEndFunction, tr("Expecting \"EndFunction\", got %i").arg(i->toString()), i->mLine, i->mFile);
+			emit error(ErrorCodes::ecExpectingEndFunction, tr("Expecting \"EndFunction\", got %1").arg(i->toString()), i->mLine, i->mFile);
 			mStatus = Error;
 			return 0;
 		}
@@ -1079,11 +1235,15 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			return str;
 		}
 		case Token::Identifier: { //variable, type pointer's field, function call or array subscript
+			int line = i->mLine;
+			QFile *file = i->mFile;
 			QString name = i->toString();
 			i++;
 			if (i->mType == Token::LeftParenthese) { //Function call or array subscript
 				i++;
 				ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
+				ret->mFile = file;
+				ret->mLine = line;
 				ret->mName = name;
 				if (i->mType == Token::RightParenthese) {  //No params
 					i++;
@@ -1182,6 +1342,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			return n;
 		}
 	}
+	Token tok = *i;
 	emit error(ErrorCodes::ecExpectingPrimaryExpression, tr("Expecting primary expression, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	mStatus = Error;
 	return 0;
@@ -1466,87 +1627,114 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 }
 
 ast::Node *Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment(Parser::TokIterator &i) {
-	if (i->mType == Token::kExit) {
-		ast::Exit *ret = new ast::Exit;
-		ret->mLine = i->mLine;
-		ret->mFile = i->mFile;
-		i++;
-		return ret;
-	}
-	if (i->mType == Token::Identifier) {
-		QFile *file = i->mFile;
-		int line = i->mLine;
-		QString name = i->toString();
-		i++;
-		bool function = false;
-		if (i->mType == Token::LeftParenthese) {
-			function = true;
+	switch(i->mType) {
+		case Token::kExit: {
+			ast::Exit *ret = new ast::Exit;
+			ret->mLine = i->mLine;
+			ret->mFile = i->mFile;
 			i++;
-
-			if (i->mType == Token::RightParenthese) { //Function call without parametres
+			return ret;
+		}
+		case Token::kEnd: {
+			ast::CommandCall *ret = new ast::CommandCall;
+			ret->mLine = i->mLine;
+			ret->mFile = i->mFile;
+			ret->mName = i->toString();
+			i++;
+			return ret;
+		}
+		case Token::Identifier: {
+				QFile *file = i->mFile;
+				int line = i->mLine;
+				QString name = i->toString();
 				i++;
+				bool function = false;
+				TokIterator begin = i;
+				if (i->mType == Token::LeftParenthese) {
+					function = true;
+					i++;
+
+					if (i->mType == Token::RightParenthese) { //Function call without parametres
+						i++;
+						ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
+						ret->mFile = file;
+						ret->mLine = line;
+						ret->mName = name;
+						return ret;
+					}
+				}
+
+				if (!function && i->isEndOfStatement()) { //Command call without parametres
+					//Do not increase iterator.
+					ast::CommandCall *ret = new ast::CommandCall;
+					ret->mFile = file;
+					ret->mLine = line;
+					ret->mName = name;
+					return ret;
+				}
+
+				tryagain:
+
+				QList<ast::Node*> params;
+				ast::Node *firstParam = expectExpression(i);
+				if (mStatus == Error) return 0;
+
+				//For this kind of situation:
+				// COMMAND (13 + 42) * 23, 4324
+				if (function && i->mType == Token::RightParenthese) {
+					i++;
+					if (!i->isEndOfStatement()) {
+						i = begin;
+						function = false;
+						goto tryagain;
+					}
+					i--;
+				}
+
+				params.append(firstParam);
+
+				while (i->mType == Token::Comma) {
+					i++;
+					ast::Node *param = expectExpression(i);
+					if (mStatus == Error) return 0;
+					params.append(param);
+				}
+				if (!function) {
+					ast::CommandCall *ret = new ast::CommandCall;
+					ret->mFile = file;
+					ret->mLine = line;
+					ret->mName = name;
+					ret->mParams = params;
+					return ret;
+				}
+
+				//Function or assignment expression
+				if (i->mType != Token::RightParenthese) {
+					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting ')', got \"%1\"'").arg(i->toString()), i->mLine, i->mFile);
+					mStatus = Error;
+					return 0;
+				}
+				i++;
+				if (i->mType == Token::opEqual) { //assignment to array substript
+					i++;
+					ast::Node *value = expectExpression(i);
+					if (mStatus == Error) return 0;
+					ast::ArraySubscriptAssignmentExpression *ret = new ast::ArraySubscriptAssignmentExpression;
+					ret->mFile = file;
+					ret->mLine = line;
+					ret->mSubscripts = params;
+					ret->mValue = value;
+					ret->mArrayName = name;
+					return ret;
+				}
+
 				ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
 				ret->mFile = file;
 				ret->mLine = line;
+				ret->mParams = params;
 				ret->mName = name;
 				return ret;
 			}
-		}
-
-		if (!function && i->isEndOfStatement()) { //Command call without parametres
-			//Do not increase iterator.
-			ast::CommandCall *ret = new ast::CommandCall;
-			ret->mFile = file;
-			ret->mLine = line;
-			ret->mName = name;
-			return ret;
-		}
-		QList<ast::Node*> params;
-		ast::Node *firstParam = expectExpression(i);
-		if (mStatus == Error) return 0;
-		params.append(firstParam);
-
-		while (i->mType == Token::Comma) {
-			i++;
-			ast::Node *param = expectExpression(i);
-			if (mStatus == Error) return 0;
-			params.append(param);
-		}
-		if (!function) {
-			ast::CommandCall *ret = new ast::CommandCall;
-			ret->mFile = file;
-			ret->mLine = line;
-			ret->mName = name;
-			ret->mParams = params;
-			return ret;
-		}
-
-		//Function or assignment expression
-		if (i->mType != Token::RightParenthese) {
-			emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting ')', got \"%1\"'").arg(i->toString()), i->mLine, i->mFile);
-			mStatus = Error;
-			return 0;
-		}
-		i++;
-		if (i->mType == Token::opEqual) { //assignment to array substript
-			i++;
-			ast::Node *value = expectExpression(i);
-			if (mStatus == Error) return 0;
-			ast::ArraySubscriptAssignmentExpression *ret = new ast::ArraySubscriptAssignmentExpression;
-			ret->mFile = file;
-			ret->mLine = line;
-			ret->mSubscripts = params;
-			ret->mValue = value;
-			ret->mArrayName = name;
-			return ret;
-		}
-
-		ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
-		ret->mFile = file;
-		ret->mLine = line;
-		ret->mParams = params;
-		ret->mName = name;
-		return ret;
 	}
 	return 0;
 }

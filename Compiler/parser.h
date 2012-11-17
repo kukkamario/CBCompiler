@@ -16,9 +16,13 @@ class Parser : public QObject
 		ast::Variable::VarType tryVarAsType(TokIterator &i);
 		ast::Variable::VarType tryVarType(TokIterator &i);
 		ast::Variable::VarType tryVarTypeSymbol(TokIterator &i);
+		ast::Node *tryReturn(TokIterator &i);
 		ast::TypeDefinition *tryTypeDefinition(TokIterator &i);
 		ast::Variable *expectVariableOrTypePtrDefinition(TokIterator &i);
 		ast::Variable *tryVariableOrTypePtrDefinition(TokIterator &i);
+		ast::Node *trySelectStatement(TokIterator &i);
+		ast::Node *tryGotoGosubAndLabel(TokIterator &i);
+		ast::Node *tryRedim(TokIterator &i);
 		void expectVariableOrTypePtrDefinition(ast::Variable *var, TokIterator &i);
 		ast::Node *tryDim(TokIterator &i);
 		ast::Node *tryIfStatement(TokIterator &i);

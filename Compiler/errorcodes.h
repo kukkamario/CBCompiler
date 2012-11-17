@@ -29,11 +29,13 @@ enum ErrorCode {
 	ecExpectingTypePtr,
 	ecExpectingVariable,
 	ecExpectingAssignment,
+	ecExpectingEndSelect,
 	ecCannotParseInteger,
 	ecCannotParseFloat,
 	ecForAndNextDontMatch,
 	ecTypesDontMatch,
 	ecUnexpectedToken,
+	ecMultipleSelectDefaultCases,
 
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,

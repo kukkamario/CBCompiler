@@ -35,6 +35,7 @@ struct Node {
 		ntBlock,
 		ntFunctionDefinition,
 		ntTypeDefinition,
+		ntLabel,
 
 		//Statements
 		ntIfStatement,
@@ -43,6 +44,10 @@ struct Node {
 		ntForEachStatement,
 		ntRepeatForeverStatement,
 		ntRepeatUntilStatement,
+		ntGoto,
+		ntGosub,
+		ntRedim,
+
 
 		ntExpression,
 
@@ -56,6 +61,7 @@ struct Node {
 		ntUnary,
 		ntReturn,
 		ntExit,
+		ntSelectStatement,
 
 		//Operands
 		ntTypePtrField,	// typePtr\field
@@ -132,6 +138,19 @@ struct String : Node {
 		QString mValue;
 };
 
+struct Goto : Node {
+		Type type() const {return ntGoto;}
+		QString mLabel;
+		int mLine;
+		QFile *mFile;
+};
+struct Gosub : Node {
+		Type type() const {return ntGosub;}
+		QString mLabel;
+		int mLine;
+		QFile *mFile;
+};
+
 struct Unary : Node {
 		Type type() const { return ntUnary;}
 		Operator mOperator;
@@ -187,6 +206,13 @@ struct ConstDefinition: Node {
 		QString mName;
 		Variable::VarType mVarType;
 		ast::Node *mValue;
+		int mLine;
+		QFile *mFile;
+};
+
+struct Label: Node {
+		Type type() const{return ntLabel;}
+		QString mName;
 		int mLine;
 		QFile *mFile;
 };
@@ -250,6 +276,23 @@ struct IfStatement : Node {
 		int mLine;
 };
 
+struct Case {
+		Node *mCase;
+		Block mBlock;
+		int mLine;
+		QFile *mFile;
+};
+
+struct SelectStatement : Node {
+		Type type() const {return ntSelectStatement;}
+		Variable *mVarible;
+		QList<Case> mCases;
+		Block mDefault;
+		QFile *mFile;
+		int mStartLine;
+		int mEndLine;
+};
+
 struct ForToStatement : Node {
 		ForToStatement() : mFrom(0), mTo(0), mStep(0), mFile(0){}
 		Type type() const{return ntForToStatement;}
@@ -304,6 +347,15 @@ struct RepeatUntilStatement : Node {
 		int mEndLine;
 };
 
+struct Redim : Node {
+		Type type() const{return ntRedim;}
+		QString mName;
+		Variable::VarType mType;
+		QList<Node*> mDimensions;
+		int mLine;
+		QFile *mFile;
+};
+
 
 
 struct Program {
@@ -330,6 +382,11 @@ class Printer : public QObject{
 		void printForEachStatement(const ForEachStatement *s, int tab = 0);
 		void printRepeatForeverStatement(const RepeatForeverStatement *s, int tab = 0);
 		void printRepeatUntilStatement(const RepeatUntilStatement *s, int tab = 0);
+		void printSelectStatement(const SelectStatement *s, int tab = 0);
+
+		void printGoto(const Goto *s, int tab = 0);
+		void printGosub(const Gosub *s, int tab = 0);
+		void printLabel(const Label *s, int tab = 0);
 
 		void printExpression(const Expression *s, int tab = 0);
 

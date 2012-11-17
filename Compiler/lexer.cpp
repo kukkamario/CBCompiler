@@ -52,7 +52,7 @@ Lexer::Lexer()
 	mKeywords["restore"] = Token::kRestore;
 	mKeywords["end"] = Token::kEnd;
 	mKeywords["integer"] = Token::kInteger;
-	mKeywords["float"] = Token::kInteger;
+	mKeywords["float"] = Token::kFloat;
 	mKeywords["string"] = Token::kString;
 	mKeywords["short"] = Token::kShort;
 	mKeywords["byte"] = Token::kByte;

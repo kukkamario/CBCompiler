@@ -23,7 +23,7 @@ win32 {
 	}
 	DEPENDPATH += "./"
 	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
-
+	LIBS += -lAdvapi32 -lShell32
 }
 
 SOURCES += main.cpp \
@@ -39,7 +39,8 @@ SOURCES += main.cpp \
     abstractsyntaxtree.cpp \
     function.cpp \
     runtime.cpp \
-    runtimefunction.cpp
+    runtimefunction.cpp \
+    intvaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -56,4 +57,5 @@ HEADERS += \
     errorcodes.h \
     runtime.h \
     runtimefunction.h \
-    llvm.h
+    llvm.h \
+    intvaluetype.h

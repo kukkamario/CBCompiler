@@ -5,6 +5,7 @@
 #include <QTime>
 #include "errorhandler.h"
 #include "parser.h"
+#include <iostream>
 int main(int argc, char *argv[])
 {
 	QCoreApplication a(argc, argv);
@@ -33,15 +34,13 @@ int main(int argc, char *argv[])
 
 	startTime = QTime::currentTime();
 	ast::Program *program = parser.parse(lexer.tokens());
-	if (parser.success()) {
-		qDebug() << "Parsing took " << startTime.msecsTo(QTime::currentTime()) << "ms";
-		ast::Printer printer;
-		printer.printToFile("ast.txt");
-		if (program) {
-			printer.printProgram(program);
-		}
+	qDebug() << "Parsing took " << startTime.msecsTo(QTime::currentTime()) << "ms";
+	ast::Printer printer;
+	printer.printToFile("ast.txt");
+	if (program) {
+		printer.printProgram(program);
 	}
-	else {
+	if (!parser.success()) {
 		errHandler.error(ErrorHandler::ecParsingFailed, errHandler.tr("Parsing failed"), 0, lexer.files().first().first);
 		return 1;
 	}

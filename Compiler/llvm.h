@@ -27,7 +27,7 @@
 #include <llvm/ADT/Triple.h>
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/Support/DynamicLibrary.h>
-#include "llvm/LinkAllPasses.h"
+#include <llvm/LinkAllPasses.h>
 #include <llvm/Linker.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/MemoryBuffer.h>

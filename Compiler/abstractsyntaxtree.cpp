@@ -54,6 +54,14 @@ void Printer::printNode(const Node *s, int tab) {
 			printRepeatForeverStatement((RepeatForeverStatement*)s, tab); return;
 		case Node::ntRepeatUntilStatement:
 			printRepeatUntilStatement((RepeatUntilStatement*)s, tab); return;
+		case Node::ntSelectStatement:
+			printSelectStatement((SelectStatement*)s, tab); return;
+		case Node::ntGoto:
+			printGoto((Goto*)s, tab); return;
+		case Node::ntGosub:
+			printGosub((Gosub*)s, tab); return;
+		case Node::ntLabel:
+			printLabel((Label*)s, tab); return;
 		case Node::ntExpression:
 			printExpression((Expression*)s, tab); return;
 		case Node::ntCommandCall:
@@ -161,6 +169,32 @@ void Printer::printRepeatUntilStatement(const RepeatUntilStatement *s, int tab) 
 	printLine("Until", tab);
 	printNode(s->mCondition, tab + 1);
 
+}
+
+void Printer::printSelectStatement(const SelectStatement *s, int tab) {
+	printLine("Select", tab);
+	printVariable(s->mVarible, tab + 1);
+	for (QList<Case>::ConstIterator i = s->mCases.begin(); i != s->mCases.end(); i++) {
+		printLine("Case", tab);
+		printNode(i->mCase, tab + 1);
+		printBlock(&i->mBlock, tab + 1);
+	}
+	if (!s->mDefault.isEmpty()) {
+		printLine("Default", tab);
+		printBlock(&s->mDefault, tab + 1);
+	}
+}
+
+void Printer::printGoto(const Goto *s, int tab) {
+	printLine("Goto " + s->mLabel, tab);
+}
+
+void Printer::printGosub(const Gosub *s, int tab) {
+	printLine("Goto " + s->mLabel, tab);
+}
+
+void Printer::printLabel(const Label *s, int tab) {
+	printLine(s->mName + ":", tab);
 }
 
 void Printer::printExpression(const Expression *s, int tab) {
@@ -272,8 +306,10 @@ void Printer::printUnary(const Unary *s, int tab) {
 
 void Printer::printReturn(const Return *s, int tab) {
 	printLine("Return", tab);
-	tab++;
-	printNode(s->mValue, tab);
+	if (s->mValue) {
+		tab++;
+		printNode(s->mValue, tab);
+	}
 }
 
 void Printer::printExit(const Exit *s, int tab) {

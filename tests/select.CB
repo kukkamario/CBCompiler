@@ -1,0 +1,98 @@
+'A TEXT ADVENTURE 
+'======================================== 
+
+beginning:
+ClearText
+ClearKeys
+CloseInput
+
+AddText "What would you like to do?"
+AddText ""
+AddText "1. Go out"
+AddText "2. Go to fishing"
+AddText "3. Eat an apple"
+AddText ""
+
+Repeat
+
+    c=Input("?")
+    
+    DrawScreen
+    
+Until KeyHit(cbkeyreturn)
+
+Select c
+    Case 1
+        GoTo outside
+    Case 2
+        GoTo fishing
+    Case 3
+        GoTo eat
+    Default
+        AddText "Invalid choise"
+        DrawScreen
+        Wait 2000
+        GoTo beginning
+End Select
+        
+'---------------------------------------
+
+outside:
+ClearText
+ClearKeys
+CloseInput
+
+AddText "OK, you're on your yard. What to do now?"
+AddText ""
+AddText "1. Go back inside"
+AddText "2. Go to fishing"
+AddText ""
+
+Repeat
+
+    c=Input("?")
+    
+    DrawScreen
+    
+Until KeyHit(cbkeyreturn)
+
+Select c
+    Case 1
+        GoTo beginning
+    Case 2
+        GoTo fishing
+    Default
+        AddText "Invalid choice"
+        DrawScreen
+        Wait 2000
+        GoTo outside
+End Select
+
+'---------------------------------------
+
+fishing:
+ClearText
+ClearKeys
+CloseInput
+
+AddText "You noticed you are quite a good angler."
+AddText "You finished this game, congrats!"
+
+DrawScreen
+Wait 10000
+End
+
+'---------------------------------------
+
+eat:
+ClearText
+ClearKeys
+CloseInput
+
+AddText "Yamm.. no need of Doctor for a while."
+
+DrawScreen
+Wait 3000
+
+GoTo beginning
+ 
