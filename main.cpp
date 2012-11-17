@@ -30,11 +30,19 @@ int main(int argc, char *argv[])
 	Parser parser;
 	errHandler.connect(&parser, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
 	errHandler.connect(&parser, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
-	bool error;
-	ast::Node *expr = parser.expectExpression(lexer.tokens().constBegin(), error);
-	ast::Printer printer;
-	printer.printToFile("ast.txt");
-	if (expr) {
-		printer.printNode(expr);
+
+	startTime = QTime::currentTime();
+	ast::Program *program = parser.parse(lexer.tokens());
+	if (parser.success()) {
+		qDebug() << "Parsing took " << startTime.msecsTo(QTime::currentTime()) << "ms";
+		ast::Printer printer;
+		printer.printToFile("ast.txt");
+		if (program) {
+			printer.printProgram(program);
+		}
+	}
+	else {
+		errHandler.error(ErrorHandler::ecParsingFailed, errHandler.tr("Parsing failed"), 0, lexer.files().first().first);
+		return 1;
 	}
 }

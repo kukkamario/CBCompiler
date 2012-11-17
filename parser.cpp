@@ -1,25 +1,191 @@
 #include "parser.h"
-#include "errorhandler.h"
+#include "errorcodes.h"
 Parser::Parser():
-	Status(Ok)
+	mStatus(Ok)
 {
 }
 
-ast::Program *Parser::parse(const QList<Token> &tokens)
-{
-	ast::Program *program = new ast::Program;
-	for (TokIterator i = tokens.begin(); i != tokens.end(); i++) {
-
+typedef ast::Node *(Parser::*BlockParserFunction)(Parser::TokIterator &);
+static BlockParserFunction blockParsers[] =  {
+	&Parser::tryDim,
+	&Parser::tryIfStatement,
+	&Parser::tryWhileStatement,
+	&Parser::tryRepeatStatement,
+	&Parser::tryForStatement,
+	&Parser::tryAssignmentExpression,
+	&Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment,
+};
+static const int blockParserCount = 7;
+ast::Block Parser::expectBlock(Parser::TokIterator &i) {
+	ast::Block block;
+	while (true) {
+		if (i->isEndOfStatement()) {
+			i++;
+			if (i->mType == Token::EndOfTokens) {
+				i--;
+				return block;
+			}
+			continue;
+		}
+		ast::Node * n;
+		for (int p = 0; p < blockParserCount; p++) {
+			n =	(this->*(blockParsers[p]))(i);
+			if (mStatus == Error) return ast::Block();
+			if (n) {
+				expectEndOfStatement(i);
+				if (mStatus == Error) return ast::Block();
+				break;
+			}
+		}
+		if (n) {
+			block.append(n);
+		}
+		else {
+			break;
+		}
 	}
+	return block;
+}
+
+ast::Block Parser::expectInlineBlock(Parser::TokIterator &i) {
+	ast::Block block;
+	int line = i->mLine;
+	while (i->mLine == line) {
+		if (i->isEndOfStatement()) {
+			i++;
+			if (i->mType == Token::EndOfTokens) {
+				i--;
+				return block;
+			}
+			continue;
+		}
+		ast::Node * n;
+		for (int p = 0; p < blockParserCount; p++) {
+			n = (this->*(blockParsers[p]))(i);
+			if (mStatus == Error) return ast::Block();
+			if (n) {
+				if (i->mType == Token::EOL || i->mType == Token::kElse || i->mType == Token::kElseIf) { // WTF CB?
+					block.append(n);
+					return block;
+				}
+				else {
+					expectEndOfStatement(i);
+					if (mStatus == Error) return ast::Block();
+				}
+				break;
+			}
+		}
+		if (n) {
+			block.append(n);
+		}
+		else {
+			break;
+		}
+	}
+	return block;
+}
+
+ast::Program *Parser::parse(const QList<Token> &tokens) {
+	ast::Program *program = new ast::Program;
+	TokIterator i = tokens.begin();
+	while (i->mType != Token::EndOfTokens) {
+		if (i->isEndOfStatement()) {
+			i++;
+			continue;
+		}
+		ast::TypeDefinition *type = tryTypeDefinition(i);
+		if (mStatus == Error) return 0;
+		if (type) {
+			program->mTypes.append(type);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			continue;
+		}
+
+		ast::FunctionDefinition *func = tryFunctionDefinition(i);
+		if (mStatus == Error) return 0;
+		if (func) {
+			program->mFunctions.append(func);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			continue;
+		}
+
+		ast::GlobalDefinition *global = tryGlobalDefinition(i);
+		if (mStatus == Error) return 0;
+		if (global) {
+			program->mGlobals.append(global);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			continue;
+		}
+
+		ast::ConstDefinition *constant = tryConstDefinition(i);
+		if (mStatus == Error) return 0;
+		if (constant) {
+			program->mConstants.append(constant);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			continue;
+		}
+		ast::Node * n;
+		for (int p = 0; p < blockParserCount; p++) {
+			n =	(this->*(blockParsers[p]))(i);
+			if (mStatus == Error) return program;
+			if (n) {
+				expectEndOfStatement(i);
+				if (mStatus == Error) return program;
+				break;
+			}
+		}
+		if (n) {
+			program->mMainBlock.append(n);
+		}
+		else {
+			emit error(ErrorCodes::ecUnexpectedToken, tr("Unexpected token \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			return program;
+		}
+	}
+
 	return program;
+}
+
+ast::ConstDefinition *Parser::tryConstDefinition(Parser::TokIterator &i) {
+	if (i->mType == Token::kConst) {
+		int line = i->mLine;
+		QFile *file = i->mFile;
+		i++;
+		QString name = expectIdentifier(i);
+		ast::Variable::VarType varType = tryVarType(i);
+		if (i->mType != Token::opEqual) {
+			emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting '=' after constant name, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+		ast::Node *value = expectExpression(i);
+		if (mStatus == Error) return 0;
+		ast::ConstDefinition *ret = new ast::ConstDefinition;
+		ret->mName = name;
+		ret->mValue = value;
+		ret->mVarType = varType;
+		ret->mFile = file;
+		ret->mLine = line;
+		return ret;
+	}
+	return 0;
 }
 
 ast::GlobalDefinition *Parser::tryGlobalDefinition(Parser::TokIterator &i) {
 	if (i->mType == Token::kGlobal) {
+		int line = i->mLine;
+		QFile *file = i->mFile;
 		i++;
 		ast::Variable *var = expectVariableOrTypePtrDefinition(i);
 		if (mStatus == Error) return 0;
 		ast::GlobalDefinition *ret = new ast::GlobalDefinition;
+		ret->mFile = file;
+		ret->mLine = line;
 		ret->mDefinitions.append(var);
 		while (i->mType == Token::Comma) {
 			i++;
@@ -55,33 +221,11 @@ ast::Variable::VarType Parser::tryVarAsType(Parser::TokIterator &i) {
 				return ast::Variable::Byte;
 			default:
 				mStatus = Error;
-				emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting variable type after \"as\", got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable type after \"as\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				return ast::Variable::Invalid;
 		}
 	}
 	return ast::Variable::Default;
-}
-
-ast::VariableDefinition *Parser::tryVariableDefinition(Parser::TokIterator &i) {
-	Parser::TokIterator begin = i;
-	if (i->mType == Token::kDim) {
-		i++;
-		ast::Variable *var = expectVariableOrTypePtrDefinition(i);
-		if (mStatus == Error) return 0;
-		if (i->mType == Token::LeftParenthese) { //Array definition
-			i = begin;
-		}
-		ast::VariableDefinition *ret = new ast::VariableDefinition;
-		ret->mDefinitions.append(var);
-		while (i->mType == Token::Comma) {
-			i++;
-			ast::Variable *var = expectVariableOrTypePtrDefinition(i);
-			if (mStatus == Error) return 0;
-			ret->mDefinitions.append(var);
-		}
-		return ret;
-	}
-	return 0;
 }
 
 
@@ -108,7 +252,7 @@ ast::Variable::VarType Parser::tryVarType(Parser::TokIterator &i)
 					return ast::Variable::Byte;
 				default:
 					mStatus = Error;
-					emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting variable type after \"as\", got %1").arg(i->toString()), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable type after \"as\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 					return ast::Variable::Invalid;
 			}
 
@@ -143,6 +287,45 @@ ast::Variable::VarType Parser::tryVarTypeSymbol(Parser::TokIterator &i)
 	}
 }
 
+ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
+	if (i->mType == Token::kType) {
+		QFile *file = i->mFile;
+		int line = i->mLine;
+		i++;
+		QString name = expectIdentifier(i);
+		if (mStatus == Error) return 0;
+		expectEndOfStatement(i);
+		if (mStatus == Error) return 0;
+		QList<QPair<int, ast::Variable*> > fields;
+		while (i->isEndOfStatement()) i++;
+		while (i->mType == Token::kField) {
+			int line = i->mLine;
+			i++;
+			ast::Variable *field = expectVariableOrTypePtrDefinition(i);
+			if (mStatus == Error) return 0;
+			fields.append(QPair<int, ast::Variable*> (line, field));
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+
+			while (i->isEndOfStatement()) i++;
+		}
+		if (i->mType != Token::kEndType) {
+			emit error(ErrorCodes::ecExpectingEndType, tr("Expecting \"EndType\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+
+		ast::TypeDefinition *ret = new ast::TypeDefinition;
+		ret->mFields = fields;
+		ret->mFile = file;
+		ret->mLine = line;
+		ret->mName = name;
+		return ret;
+	}
+	return 0;
+}
+
 QString Parser::expectIdentifier(Parser::TokIterator &i) {
 	if (i->mType == Token::Identifier) {
 		QString ret = i->toString();
@@ -150,7 +333,7 @@ QString Parser::expectIdentifier(Parser::TokIterator &i) {
 		return ret;
 	}
 
-	emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting identifier, got %1").arg(i->toString()), i->mLine, i->mFile);
+	emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting identifier, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	mStatus = Error;
 	return QString();
 }
@@ -161,7 +344,7 @@ void Parser::expectEndOfStatement(Parser::TokIterator &i) {
 		return;
 	}
 	mStatus = Error;
-	emit error(ErrorHandler::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got %1").arg(i->toString()), i->mLine, i->mFile);
+	emit error(ErrorCodes::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	i++;
 }
 
@@ -169,9 +352,31 @@ void Parser::expectEndOfStatement(Parser::TokIterator &i) {
 ast::Variable *Parser::expectVariableOrTypePtrDefinition(Parser::TokIterator &i) {
 	ast::Variable * var = tryVariableOrTypePtrDefinition(i);
 	if (!var) {
-		emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting variable, got %1").arg(i->toString()), i->mLine, i->mFile);
+		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	}
 	return var;
+}
+
+void Parser::expectVariableOrTypePtrDefinition(ast::Variable *var, TokIterator &i) {
+	var->mName = expectIdentifier(i);
+	if (mStatus == Error) return;
+
+	if (i->mType == Token::opTypePtrType) {
+		i++;
+		if (i->mType != Token::Identifier) {
+			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting type name after '.', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return;
+		}
+		var->mVarType = ast::Variable::TypePtr;
+		var->mTypeName = i->toString();
+		i++;
+		return;
+	}
+	else {
+		var->mVarType = tryVarType(i);
+		return;
+	}
 }
 
 ast::Variable *Parser::tryVariableOrTypePtrDefinition(Parser::TokIterator &i) {
@@ -183,7 +388,7 @@ ast::Variable *Parser::tryVariableOrTypePtrDefinition(Parser::TokIterator &i) {
 	if (i->mType == Token::opTypePtrType) {
 		i++;
 		if (i->mType != Token::Identifier) {
-			emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting type name after '.', got %1").arg(i->toString()), i->mLine, i->mFile);
+			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting type name after '.', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 			mStatus = Error;
 			return 0;
 		}
@@ -200,7 +405,6 @@ ast::Variable *Parser::tryVariableOrTypePtrDefinition(Parser::TokIterator &i) {
 		ast::Variable *ret = new ast::Variable;
 		ret->mName = name;
 		ret->mVarType = type;
-		i++;
 		return ret;
 	}
 }
@@ -208,9 +412,11 @@ ast::Variable *Parser::tryVariableOrTypePtrDefinition(Parser::TokIterator &i) {
 ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 	Parser::TokIterator begin = i;
 	if (i->mType == Token::kDim) {
+		QFile *file = i->mFile;
+		int line = i->mLine;
 		i++;
 		if (i->mType != Token::Identifier) {
-			emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting variable name after \"Dim\", got %1").arg(i->toString()), i->mLine, i->mFile);
+			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable name after \"Dim\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 			mStatus = Error;
 			return 0;
 		}
@@ -231,7 +437,7 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 			}
 
 			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorHandler::ecExpectingRightParenthese, tr("Expecting right parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -242,6 +448,8 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 				if (mStatus == Error) return 0;
 			}
 			ast::ArrayDefinition *arr = new ast::ArrayDefinition;
+			arr->mLine = line;
+			arr->mFile = file;
 			arr->mName = name;
 			arr->mType = varType;
 			arr->mDimensions = dimensions;
@@ -257,7 +465,7 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 						i++;
 						varType = ast::Variable::TypePtr;
 						if (i->mType != Token::Identifier) {
-							emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting type name after '.', got %1").arg(i->toString()), i->mLine, i->mFile);
+							emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting type name after '.', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 							mStatus = Error;
 							return 0;
 						}
@@ -271,6 +479,8 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 			var->mVarType = varType;
 			var->mTypeName = typeName;
 			ast::VariableDefinition *ret = new ast::VariableDefinition;
+			ret->mLine = line;
+			ret->mFile = file;
 			ret->mDefinitions.append(var);
 			while (i->mType == Token::Comma) {
 				i++;
@@ -284,74 +494,264 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 	return 0;
 }
 
-ast::IfStatement *Parser::tryIfStatement(Parser::TokIterator &i) {
+ast::Node *Parser::tryIfStatement(Parser::TokIterator &i) { //FINISH
 	if (i->mType == Token::kIf) {
+		int line = i->mLine;
+		QFile *file = i->mFile;
 		i++;
 		ast::Node *condition = expectExpression(i);
 		if (mStatus == Error) return 0;
 		if (i->mType == Token::kThen) {
 			i++;
 			if (!i->isEndOfStatement()) { //Inline if
-				i++;
-
+				ast::Block block = expectInlineBlock(i);
+				if (mStatus == Error) return 0;
+				ast::IfStatement *ret = new ast::IfStatement;
+				ret->mLine = line;
+				ret->mFile = file;
+				ret->mCondition = condition;
+				ret->mIfTrue = block;
+				if (i->mType == Token::kElseIf) {
+					ast::Node *elseIf = expectElseIfStatement(i);
+					if (mStatus == Error) return 0;
+					ast::Block elseBlock;
+					elseBlock.append(elseIf);
+					ret->mElse = elseBlock;
+					return ret;
+				}
+				if (i->mType == Token::kElse) {
+					i++;
+					ast::Block elseBlock = expectInlineBlock(i);
+					if (mStatus == Error) return 0;
+					ret->mElse = elseBlock;
+				}
+				return ret;
 			}
+			i++;
 		}
 		else {
 			if (!i->isEndOfStatement()) {
-				emit error(ErrorHandler::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingEndOfStatement, tr("Expecting end of line, ':', or \"then\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
+			i++;
 		}
+
+		ast::Block block = expectBlock(i);
+		if (mStatus == Error) return 0;
+		ast::IfStatement *ret = new ast::IfStatement;
+		ret->mLine = line;
+		ret->mFile = file;
+		ret->mCondition = condition;
+		ret->mIfTrue = block;
+		if (i->mType == Token::kElseIf) {
+			ast::Node *elseIf = expectElseIfStatement(i);
+			if (mStatus == Error) return 0;
+			ast::Block elseBlock;
+			elseBlock.append(elseIf);
+			ret->mElse = elseBlock;
+			return ret;
+		}
+		if (i->mType == Token::kElse) {
+			i++;
+			ast::Block elseBlock = expectBlock(i);
+			if (mStatus == Error) return 0;
+			ret->mElse = elseBlock;
+		}
+		if (i->mType != Token::kEndIf) {
+			emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begin at line %1,").arg(QString::number(line)), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+		return ret;
 	}
 
 	return 0;
 }
 
-ast::Block Parser::expectBlock(Parser::TokIterator &i) {
-	ast::Block block;
-	while (true) {
-		ast::Node * n = tryDim(i);
-		if (mStatus == Error) return block;
-		if (n) {
-			block.append(n);
-			if (!i->isEndOfStatement()) {
-				if (i->mType == Token::EndOfTokens) return block;
-				emit error(ErrorHandler::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got %1").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return block;
+ast::Node *Parser::expectElseIfStatement(Parser::TokIterator &i) {
+	Q_ASSERT(i->mType == Token::kElseIf);
+	i++;
+	int line = i->mLine;
+	QFile *file = i->mFile;
+	i++;
+	ast::Node *condition = expectExpression(i);
+	if (mStatus == Error) return 0;
+	if (i->mType == Token::kThen) {
+		i++;
+		if (!i->isEndOfStatement()) { //Inline if
+			ast::Block block = expectInlineBlock(i);
+			if (mStatus == Error) return 0;
+			ast::IfStatement *ret = new ast::IfStatement;
+			ret->mLine = line;
+			ret->mFile = file;
+			ret->mCondition = condition;
+			ret->mIfTrue = block;
+			if (i->mType == Token::kElseIf) {
+				ast::Node *elseIf = expectElseIfStatement(i);
+				if (mStatus == Error) return 0;
+				ast::Block elseBlock;
+				elseBlock.append(elseIf);
+				ret->mElse = elseBlock;
+				return ret;
 			}
-			i++;
-			continue;
+			if (i->mType == Token::kElse) {
+				i++;
+				ast::Block elseBlock = expectInlineBlock(i);
+				if (mStatus == Error) return 0;
+				ret->mElse = elseBlock;
+			}
+			return ret;
 		}
-		n = tryGlobalDefinition(i);
-		if (mStatus == Error) return block;
-		if (n) {
-			block.append(n);
-			if (!i->isEndOfStatement()) {
-				if (i->mType == Token::EndOfTokens) return block;
-				emit error(ErrorHandler::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got %1").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return block;
+		i++;
+	}
+	else {
+		if (!i->isEndOfStatement()) {
+			emit error(ErrorCodes::ecExpectingEndOfStatement, tr("Expecting end of line, ':', or \"then\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+	}
+
+	ast::Block block = expectBlock(i);
+	if (mStatus == Error) return 0;
+	ast::IfStatement *ret = new ast::IfStatement;
+	ret->mLine = line;
+	ret->mFile = file;
+	ret->mCondition = condition;
+	ret->mIfTrue = block;
+	if (i->mType == Token::kElseIf) {
+		ast::Node *elseIf = expectElseIfStatement(i);
+		if (mStatus == Error) return 0;
+		ast::Block elseBlock;
+		elseBlock.append(elseIf);
+		ret->mElse = elseBlock;
+		return ret;
+	}
+	if (i->mType == Token::kElse) {
+		i++;
+		ast::Block elseBlock = expectBlock(i);
+		if (mStatus == Error) return 0;
+		ret->mElse = elseBlock;
+	}
+	if (i->mType != Token::kEndIf) {
+		emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begin at line %1").arg(QString::number(line)), i->mLine, i->mFile);
+		mStatus = Error;
+		return 0;
+	}
+	i++;
+	return ret;
+}
+
+ast::Node *Parser::tryWhileStatement(Parser::TokIterator &i) {
+	if (i->mType == Token::kWhile) {
+		int startLine = i->mLine;
+		QFile *file = i->mFile;
+		i++;
+
+		ast::Node *cond = expectExpression(i);
+		if (mStatus == Error) return 0;
+
+		expectEndOfStatement(i);
+		if (mStatus == Error) return 0;
+
+		ast::Block block = expectBlock(i);
+		if (mStatus == Error) return 0;
+
+		if (i->mType != Token::kWend) {
+			emit error(ErrorCodes::ecExpectingWend, tr("Expecting \"Wend\" to end \"While\" on line %1, got %2").arg(QString::number(startLine), i->toString()),i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		int endLine = i->mLine;
+		i++;
+
+		ast::WhileStatement *ret = new ast::WhileStatement;
+		ret->mStartLine = startLine;
+		ret->mEndLine = endLine;
+		ret->mFile = file;
+		ret->mBlock = block;
+		ret->mCondition = cond;
+		return ret;
+	}
+	return 0;
+}
+
+
+ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
+	if (i->mType == Token::kFunction) {
+		int line = i->mLine;
+		QFile *file = i->mFile;
+		i++;
+		QString functionName = expectIdentifier(i);
+		if (mStatus == Error) return 0;
+
+		ast::Variable::VarType retType = tryVarTypeSymbol(i);
+		if (mStatus == Error) return 0;
+
+		if (i->mType != Token::LeftParenthese) {
+			emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting '(' after a function name, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+
+		QList<ast::FunctionParametreDefinition> params;
+		if (i->mType != Token::RightParenthese) {
+			ast::FunctionParametreDefinition param = expectFunctionParametreDefinition(i);
+			if (mStatus == Error) return 0;
+			params.append(param);
+			while (i->mType == Token::Comma) {
+				i++;
+				param = expectFunctionParametreDefinition(i);
+				if (mStatus == Error) return 0;
+				params.append(param);
 			}
-			i++;
-			continue;
+		}
+		if (i->mType != Token::RightParenthese) {
+			emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting ')', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+		ast::Variable::VarType retType2 = tryVarAsType(i);
+		if (mStatus == Error) return 0;
+		if (retType != ast::Variable::Default && retType2 != ast::Variable::Default) {
+			if (retType == retType2) {
+				emit warning(ErrorCodes::ecFunctionReturnTypeDefinedTwice, tr("Function return type defined twice"), i->mLine, i->mFile);
+			}
+			else {
+				emit error(ErrorCodes::ecFunctionReturnTypeDefinedTwice, tr("Function return type defined twice"), i->mLine, i->mFile);
+				mStatus = ErrorButContinue;
+			}
+		}
+		if (retType2 != ast::Variable::Default) retType = retType2;
+		if (retType == ast::Variable::Default) {
+			emit error(ErrorCodes::ecFunctionReturnTypeRequired, tr("Function return type required"),i->mLine, i->mFile);
+			mStatus = ErrorButContinue;
 		}
 
-		n = tryIfStatement(i);
-		if (mStatus == Error) return block;
-		if (n) {
-			block.append(n);
-			if (!i->isEndOfStatement()) {
-				if (i->mType == Token::EndOfTokens) return block;
-				emit error(ErrorHandler::ecExpectingEndOfStatement, tr("Expecting end of line or ':', got %1").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return block;
-			}
-			i++;
-			continue;
+		expectEndOfStatement(i);
+		ast::Block block = expectBlock(i);
+		if (i->mType != Token::kEndFunction) {
+			emit error(ErrorCodes::ecExpectingEndFunction, tr("Expecting \"EndFunction\", got %i").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
 		}
+		i++;
+		ast::FunctionDefinition *func = new ast::FunctionDefinition;
+		func->mBlock = block;
+		func->mName = functionName;
+		func->mParams = params;
+		func->mRetType = retType;
+		func->mLine = line;
+		func->mFile = file;
+		return func;
 	}
+	return 0;
 }
 
 static ast::Operator tokenTypeToOperator(Token::Type t) {
@@ -626,7 +1026,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			i++;
 			ast::Node *expr = expectExpression(i);
 			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorHandler::ecExpectingRightParenthese, tr("Expecting right parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -637,7 +1037,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			bool success;
 			int val = i->toString().toInt(&success);
 			if (!success) {
-				emit error(ErrorHandler::ecCannotParseInteger, tr("Cannot parse integer \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecCannotParseInteger, tr("Cannot parse integer \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -650,7 +1050,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			bool success;
 			int val = i->toString().toInt(&success,16);
 			if (!success) {
-				emit error(ErrorHandler::ecCannotParseInteger, tr("Cannot parse integer \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecCannotParseInteger, tr("Cannot parse integer \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -663,7 +1063,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			bool success;
 			float val = i->toString().toFloat(&success);
 			if (!success) {
-				emit error(ErrorHandler::ecCannotParseFloat, tr("Cannot parse float \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecCannotParseFloat, tr("Cannot parse float \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -686,6 +1086,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 				ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
 				ret->mName = name;
 				if (i->mType == Token::RightParenthese) {  //No params
+					i++;
 					return ret;
 				}
 				ast::Node *first = expectExpression(i);
@@ -698,7 +1099,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 					ret->mParams.append(rest);
 				}
 				if (i->mType != Token::RightParenthese) {
-					emit error(ErrorHandler::ecExpectingRightParenthese, tr("Expecting right parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 					mStatus = Error;
 					return 0;
 				}
@@ -709,7 +1110,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			if (i->mType == Token::opTypePtrField) {// typeptr\field
 				i++;
 				if (i->mType != Token::Identifier) {
-					emit error(ErrorHandler::ecExpectingIdentifier, tr("Expecting name of field after '\\', got %1").arg(i->toString()), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting name of field after '\\', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 					return 0;
 				}
 				QString fieldName = i->toString();
@@ -739,7 +1140,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 				ast::Node *first = expectExpression(i);
 				if (mStatus == Error) return 0;
 				if (i->mType != Token::RightParenthese) {
-					emit error(ErrorHandler::ecExpectingRightParenthese, tr("Expecting right parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 					mStatus = Error;
 					return 0;
 				}
@@ -750,7 +1151,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 				return ret;
 			}
 			else {
-				emit error(ErrorHandler::ecExpectingLeftParenthese, tr("Expecting left parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -758,20 +1159,20 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		case Token::kNew: {
 			i++;
 			if (i->mType != Token::LeftParenthese) {
-				emit error(ErrorHandler::ecExpectingLeftParenthese, tr("Expecting left parenthese after ´\"New\", got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after ´\"New\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
 			i++;
 			if (i->mType != Token::Identifier) {
-				emit error(ErrorHandler::ecExpectingLeftParenthese, tr("Expecting name of a type, got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting name of a type, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
 			QString typeName = i->toString();
-
+			i++;
 			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorHandler::ecExpectingRightParenthese, tr("Expecting right parenthese, got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -781,15 +1182,59 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			return n;
 		}
 	}
-	emit error(ErrorHandler::ecExpectingPrimaryExpression, tr("Expecting primary expression, got %1").arg(i->toString()), i->mLine, i->mFile);
+	emit error(ErrorCodes::ecExpectingPrimaryExpression, tr("Expecting primary expression, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	mStatus = Error;
 	return 0;
 }
 
 
-ast::AssignmentExpression *Parser::tryAssignmentExpression(TokIterar &i) {
-	ast::Variable *var = tryVariableOrTypePtrDefinition(i);
-	if (!var) return 0;
+ast::Node *Parser::tryAssignmentExpression(TokIterator &i) {
+	if (i->mType != Token::Identifier) {
+		return 0;
+	}
+	QString name = i->toString();
+	TokIterator begin = i;
+	ast::Node *var = 0;
+	i++;
+	if (i->mType == Token::opTypePtrType) {
+		i++;
+		if (i->mType != Token::Identifier) {
+			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting the name of a type after '.', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		ast::Variable *ret = new ast::Variable;
+		ret->mName = name;
+		ret->mVarType = ast::Variable::TypePtr;
+		ret->mTypeName = i->toString();
+		i++;
+		var = ret;
+	}
+	else if (i->mType == Token::opTypePtrField) {
+		i++;
+		if (i->mType != Token::Identifier) {
+			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting the name of a field after '\\', got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		ast::TypePtrField *ret = new ast::TypePtrField;
+		ret->mTypePtrVar = name;
+		ret->mFieldName = i->toString();
+		i++;
+		ret->mFieldType = tryVarType(i);
+		if (mStatus == Error) return 0;
+		var = ret;
+	}
+	else {
+		ast::Variable::VarType type = tryVarType(i);
+		if (mStatus == Error) return 0;
+		ast::Variable *ret = new ast::Variable;
+		ret->mName = name;
+		ret->mVarType = type;
+		var = ret;
+	}
+
+
 	if (i->mType == Token::opEqual) {
 		i++;
 		ast::Node *expr = expectExpression(i);
@@ -799,33 +1244,58 @@ ast::AssignmentExpression *Parser::tryAssignmentExpression(TokIterar &i) {
 		ret->mExpression = expr;
 		return ret;
 	}
+
+	i = begin; //Reset iterator
 	return 0;
+}
+
+ast::FunctionParametreDefinition Parser::expectFunctionParametreDefinition(Parser::TokIterator &i) {
+	ast::FunctionParametreDefinition ret;
+	expectVariableOrTypePtrDefinition(&ret.mVariable, i);
+	if (mStatus == Error) return ret;
+
+	if (i->mType == Token::opEqual) {
+		i++;
+		ret.mDefaultValue = expectExpression(i);
+		if (mStatus == Error) return ret;
+	}
+	ret.mDefaultValue = 0;
+	return ret;
 }
 
 
 ast::Node *Parser::tryRepeatStatement(Parser::TokIterator &i) {
 	if (i->mType == Token::kRepeat) {
+		QFile *file = i->mFile;
+		int startLine = i->mLine;
 		i++;
 		expectEndOfStatement(i);
 		if (mStatus == Error) return 0;
 		ast::Block block = expectBlock(i);
 		if (mStatus == Error) return 0;
 		if (i->mType == Token::kUntil) {
+			int endLine = i->mLine;
 			i++;
 			ast::Node *condition = expectExpression(i);
 			if (mStatus == Error) return 0;
 			ast::RepeatUntilStatement *ret = new ast::RepeatUntilStatement;
+			ret->mFile = file;
+			ret->mStartLine = startLine;
+			ret->mEndLine = endLine;
 			ret->mBlock = block;
 			ret->mCondition = condition;
 			return ret;
 		}
 		if (i->mType == Token::kForever) {
-			i++;
 			ast::RepeatForeverStatement *ret = new ast::RepeatForeverStatement;
 			ret->mBlock = block;
+			ret->mFile = file;
+			ret->mStartLine = startLine;
+			ret->mEndLine = i->mLine;
+			i++;
 			return ret;
 		}
-		emit error(ErrorHandler::ecExpectingEndOfRepeat, tr("Expecting \"Until\" or \"Forever\", got %1"), i->mLine, i->mFile);
+		emit error(ErrorCodes::ecExpectingEndOfRepeat, tr("Expecting \"Until\" or \"Forever\", got \"%1\""), i->mLine, i->mFile);
 		mStatus = Error;
 		return 0;
 	}
@@ -836,14 +1306,75 @@ ast::Node *Parser::tryRepeatStatement(Parser::TokIterator &i) {
 ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 	//TODO: Better error reporting
 	if (i->mType == Token::kFor) {
-		int forLine = i->mLine;
+		QFile *file = i->mFile;
+		int startLine = i->mLine;
 		i++;
 		QString varName = expectIdentifier(i);
 		if (mStatus == Error) return 0;
 
 		//For-Each
 		if (i->mType == Token::opTypePtrType) {
+			i++;
+			QString typeName1 = expectIdentifier(i);
+			if (mStatus == Error) return 0;
 
+			if (i->mType != Token::opEqual) {
+				if (i->mType == Token::kEach) {
+					emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting assignment before \"To\""), i->mLine, i->mFile);
+					mStatus = ErrorButContinue;
+				}
+				else {
+					emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting assignment after \"For\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+					mStatus = Error;
+					return 0;
+				}
+			}
+			else {
+				i++;
+			}
+			if (i->mType != Token::kEach) {
+				if (i->mType == Token::kTo) {
+					emit error(ErrorCodes::ecExpectingVariable, tr("Use type pointer in For-Each loop"), i->mLine, i->mFile);
+					mStatus = Error;
+					return 0;
+				}
+				emit error(ErrorCodes::ecExpectingEach, tr("Expecting \"Each\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				mStatus = Error;
+				return 0;
+			}
+			i++;
+
+			QString typeName2 = expectIdentifier(i);
+
+			if (typeName1 != typeName2) {
+				emit error(ErrorCodes::ecTypesDontMatch, tr("The type \"%1\" of the type pointer doesn't match the type name \"%2\" after Each").arg(typeName1, typeName2), i->mLine, i->mFile);
+				mStatus = ErrorButContinue;
+			}
+			expectEndOfStatement(i);
+			ast::Block block = expectBlock(i);
+
+			if (i->mType != Token::kNext) {
+				emit error(ErrorCodes::ecExpectingNext, tr("Expecting \"Next\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				mStatus = Error;
+				return 0;
+			}
+			int endLine = i->mLine;
+			i++;
+
+			QString varName2 = expectIdentifier(i);
+			if (varName != varName2) {
+				emit error(ErrorCodes::ecForAndNextDontMatch, tr("Variable name \"%1\" doesn't match variable name \"%2\" at line %3").arg(varName2, varName2, QString::number(startLine)), i->mLine, i->mFile);
+				mStatus = ErrorButContinue;
+			}
+
+			ast::ForEachStatement *ret = new ast::ForEachStatement;
+			ret->mFile = file;
+			ret->mStartLine = startLine;
+			ret->mEndLine = endLine;
+			ret->mBlock = block;
+			ret->mVarName = varName;
+			ret->mTypeName = typeName1;
+			return ret;
 		}
 
 
@@ -852,11 +1383,11 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 			if (mStatus == Error) return 0;
 			if (i->mType != Token::opEqual) {
 				if (i->mType == Token::kTo) {
-					emit error(ErrorHandler::ecExpectingAssignment, tr("Expecting assignment before \"To\""), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting assignment before \"To\""), i->mLine, i->mFile);
 					mStatus = ErrorButContinue;
 				}
 				else {
-					emit error(ErrorHandler::ecExpectingAssignment, tr("Expecting assignment after \"For\", got %1").arg(i->toString()), i->mLine, i->mFile);
+					emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting assignment after \"For\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 					mStatus = Error;
 					return 0;
 				}
@@ -870,7 +1401,12 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 			if (mStatus == Error) return 0;
 
 			if (i->mType != Token::kTo) {
-				emit error(ErrorHandler::ecExpectingTo, tr("Expecting \"To\", got %1").arg(i->toString()), i->mLine, i->mFile);
+				if (i->mType == Token::kEach) {
+					emit error(ErrorCodes::ecExpectingTypePtr, tr("Expecting type pointer before \"Each\""), i->mLine, i->mFile);
+					mStatus = Error;
+					return 0;
+				}
+				emit error(ErrorCodes::ecExpectingTo, tr("Expecting \"To\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
@@ -888,23 +1424,129 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 
 			expectEndOfStatement(i);
 			if (mStatus == Error) return 0;
-			expectBlock(i);
+			ast::Block block = expectBlock(i);
 			if (mStatus == Error) return 0;
 
 			if (i->mType != Token::kNext) {
-				emit error(ErrorHandler::ecExpectingNext, tr("Expecting \"Next\", got %1").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingNext, tr("Expecting \"Next\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}
+			int endLine = i->mLine;
 			i++;
 			QString varName2 = expectIdentifier(i);
+			ast::Variable::VarType varType2 = tryVarType(i);
 			if (mStatus == Error) return 0;
 			if (varName != varName2) {
-				emit error(ErrorHandler::ecForAndNextDontMatch, tr("Variable name \"%1\" doesn't match variable name \"%2\" at line %3").arg(varName2, varName2, QString::number(forLine)), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecForAndNextDontMatch, tr("Variable name \"%1\" doesn't match variable name \"%2\" at line %3").arg(varName2, varName2, QString::number(startLine)), i->mLine, i->mFile);
 				mStatus = ErrorButContinue;
 			}
+			else if (varType != varType2) {
+				emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Variable already defined with another type"), endLine, file);
+				mStatus = ErrorButContinue;
+			}
+
+
+
+			ast::ForToStatement *forTo = new ast::ForToStatement;
+			forTo->mBlock = block;
+			forTo->mVarName = varName;
+			forTo->mVarType = varType;
+			forTo->mFile = file;
+			forTo->mStartLine = startLine;
+			forTo->mEndLine = endLine;
+			forTo->mFrom = from;
+			forTo->mTo = to;
+			forTo->mStep = step;
+			return forTo;
 		}
 	}
 
+	return 0;
+}
+
+ast::Node *Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment(Parser::TokIterator &i) {
+	if (i->mType == Token::kExit) {
+		ast::Exit *ret = new ast::Exit;
+		ret->mLine = i->mLine;
+		ret->mFile = i->mFile;
+		i++;
+		return ret;
+	}
+	if (i->mType == Token::Identifier) {
+		QFile *file = i->mFile;
+		int line = i->mLine;
+		QString name = i->toString();
+		i++;
+		bool function = false;
+		if (i->mType == Token::LeftParenthese) {
+			function = true;
+			i++;
+
+			if (i->mType == Token::RightParenthese) { //Function call without parametres
+				i++;
+				ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
+				ret->mFile = file;
+				ret->mLine = line;
+				ret->mName = name;
+				return ret;
+			}
+		}
+
+		if (!function && i->isEndOfStatement()) { //Command call without parametres
+			//Do not increase iterator.
+			ast::CommandCall *ret = new ast::CommandCall;
+			ret->mFile = file;
+			ret->mLine = line;
+			ret->mName = name;
+			return ret;
+		}
+		QList<ast::Node*> params;
+		ast::Node *firstParam = expectExpression(i);
+		if (mStatus == Error) return 0;
+		params.append(firstParam);
+
+		while (i->mType == Token::Comma) {
+			i++;
+			ast::Node *param = expectExpression(i);
+			if (mStatus == Error) return 0;
+			params.append(param);
+		}
+		if (!function) {
+			ast::CommandCall *ret = new ast::CommandCall;
+			ret->mFile = file;
+			ret->mLine = line;
+			ret->mName = name;
+			ret->mParams = params;
+			return ret;
+		}
+
+		//Function or assignment expression
+		if (i->mType != Token::RightParenthese) {
+			emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting ')', got \"%1\"'").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+		if (i->mType == Token::opEqual) { //assignment to array substript
+			i++;
+			ast::Node *value = expectExpression(i);
+			if (mStatus == Error) return 0;
+			ast::ArraySubscriptAssignmentExpression *ret = new ast::ArraySubscriptAssignmentExpression;
+			ret->mFile = file;
+			ret->mLine = line;
+			ret->mSubscripts = params;
+			ret->mValue = value;
+			ret->mArrayName = name;
+			return ret;
+		}
+
+		ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
+		ret->mFile = file;
+		ret->mLine = line;
+		ret->mParams = params;
+		ret->mName = name;
+		return ret;
+	}
 	return 0;
 }

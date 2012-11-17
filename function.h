@@ -2,8 +2,7 @@
 #define FUNCTION_H
 #include <QList>
 class ValueType;
-class Function
-{
+class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
 		Function();

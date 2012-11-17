@@ -6,7 +6,7 @@ FunctionSymbol::FunctionSymbol(const QString &name):
 {
 }
 
-Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes, FunctionSymbol::OverloadSearchError *err)
+Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes, bool command, FunctionSymbol::OverloadSearchError *err)
 {
 	if (err) *err = oseNoError;
 	if (mFunctions.empty()) {
@@ -16,7 +16,7 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 	//No overloads
 	if (mFunctions.size() == 1) {
 		Function *f = mFunctions.first();
-		if (f->paramTypes().size() < paramTypes.size() || f->requiredParams() > paramTypes.size()) {
+		if (f->paramTypes().size() < paramTypes.size() || f->requiredParams() > paramTypes.size() || (f->returnValue() != 0) == command) {
 			if (err) *err = oseCannotFindAny;
 			return 0;
 		}
@@ -38,7 +38,7 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 
 	for (QList<Function*>::ConstIterator fi = mFunctions.begin(); fi != mFunctions.end(); fi++) {
 		Function *f = *fi;
-		if (f->paramTypes().size() >= paramTypes.size() && f->requiredParams() <= paramTypes.size()) {
+		if (f->paramTypes().size() >= paramTypes.size() && f->requiredParams() <= paramTypes.size() && (f->returnValue() == 0) == command) {
 			Function::ParamList::ConstIterator p1i = f->paramTypes().begin();
 			ValueType::CastCostType totalCost = f->paramTypes().size() - paramTypes.size();
 			for (Function::ParamList::ConstIterator p2i = paramTypes.begin(); p2i != paramTypes.end(); p2i++) {

@@ -32,7 +32,10 @@ class ErrorHandler : public QObject
 			ecExpectingAssignment,
 			ecCannotParseInteger,
 			ecCannotParseFloat,
-			ecForAndNextDontMatch
+			ecForAndNextDontMatch,
+			ecParsingFailed,
+
+			ecVarAlreadyDefinedWithAnotherType
 		};
 		ErrorHandler();
 	public slots:

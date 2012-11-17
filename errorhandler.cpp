@@ -7,8 +7,7 @@ ErrorHandler::ErrorHandler()
 {
 }
 
-void ErrorHandler::warning(int code, QString msg, int line, QFile *file)
-{
+void ErrorHandler::warning(int code, QString msg, int line, QFile *file) {
 	if (file) {
 		if (line) {
 			qCritical("Warning [%i] %s at line %i in file %s", code, qPrintable(msg), line, qPrintable(file->fileName()));
@@ -22,8 +21,7 @@ void ErrorHandler::warning(int code, QString msg, int line, QFile *file)
 	}
 }
 
-void ErrorHandler::error(int code, QString msg, int line, QFile *file)
-{
+void ErrorHandler::error(int code, QString msg, int line, QFile *file) {
 	if (file) {
 		if (line) {
 			qCritical("Error [%i] %s at line %i in file %s", code, qPrintable(msg), line, qPrintable(file->fileName()));

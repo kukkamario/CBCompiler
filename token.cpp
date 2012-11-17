@@ -4,7 +4,7 @@
 #include <QFile>
 #include <QDebug>
 static char *tokenNames[] = {
-	"EndOfTokens"
+	"EndOfTokens",
 	"EOL",
 	"Integer",
 	"IntegerHex",
@@ -24,8 +24,9 @@ static char *tokenNames[] = {
 	"RightParenthese",
 
 	//Operators
-	"OperatorsBegin"
+	"OperatorsBegin",
 	"opEqual",
+	"opNotEqual",
 	"opGreater",
 	"opLess",
 	"opGreaterEqual",
@@ -45,7 +46,7 @@ static char *tokenNames[] = {
 	"opNot",
 	"opTypePtrField",
 	"opTypePtrType",  //   Dot
-	"OperatorsEnd"
+	"OperatorsEnd",
 
 
 	//Keywords
@@ -95,7 +96,7 @@ static char *tokenNames[] = {
 	"kAs",
 	"kInclude",
 	"kExit",
-	"KeywordsEnd"
+	"KeywordsEnd",
 	"TypeCount"
 };
 const char *getTokenName(Token::Type t) {

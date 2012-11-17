@@ -16,7 +16,7 @@ class FunctionSymbol:public Symbol
 		FunctionSymbol(const QString &name);
 		Type type() const{ return stFunction; }
 		QList<Function*> functions() const { return mFunctions;}
-		Function *findBestOverload(const QList<ValueType*> &paramTypes, OverloadSearchError *err = 0);
+		Function *findBestOverload(const QList<ValueType*> &paramTypes, bool command = false, OverloadSearchError *err = 0);
 	private:
 		QList<Function*> mFunctions;
 

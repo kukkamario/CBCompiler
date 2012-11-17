@@ -9,9 +9,10 @@ QT       += core
 QT       -= gui
 
 TARGET = CBCompiler
-CONFIG   += console
+CONFIG   += console precompiled_header
 CONFIG   -= app_bundle
 
+PRECOMPILED_HEADER = llvm.h
 TEMPLATE = app
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
@@ -36,7 +37,9 @@ SOURCES += main.cpp \
     valuetype.cpp \
     value.cpp \
     abstractsyntaxtree.cpp \
-    function.cpp
+    function.cpp \
+    runtime.cpp \
+    runtimefunction.cpp
 
 HEADERS += \
     lexer.h \
@@ -50,4 +53,7 @@ HEADERS += \
     value.h \
     abstractsyntaxtree.h \
     function.h \
-    errorcodes.h
+    errorcodes.h \
+    runtime.h \
+    runtimefunction.h \
+    llvm.h

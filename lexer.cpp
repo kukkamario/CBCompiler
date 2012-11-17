@@ -1,5 +1,5 @@
 #include "lexer.h"
-#include "errorhandler.h"
+#include "errorcodes.h"
 #include <QTextStream>
 #include <QDir>
 #include <QDebug>
@@ -12,6 +12,7 @@ Lexer::Lexer()
 	mKeywords["shr"] = Token::opShr;
 	mKeywords["shl"] = Token::opShl;
 	mKeywords["sar"] = Token::opSar;
+	mKeywords["and"] = Token::opAnd;
 
 	mKeywords["if"] = Token::kIf;
 	mKeywords["then"] = Token::kThen;
@@ -63,6 +64,11 @@ Lexer::Lexer()
 
 Lexer::ReturnState Lexer::tokenizeFile(const QString &file) {
 	Lexer::ReturnState ret = tokenize(file);
+	combineTokens();
+
+	//Dirty trick, btu works
+	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
+	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
 	mTokens.append(Token(Token::EndOfTokens, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
 	return ret;
 }
@@ -72,7 +78,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 	QFile *curFile = new QFile(file);
 	if (!curFile->open(QFile::ReadOnly | QFile::Text)) {
 		delete curFile;
-		emit error(ErrorHandler::ecCantOpenFile, tr("Cannot open file %1").arg(file), 0, 0);
+		emit error(ErrorCodes::ecCantOpenFile, tr("Cannot open file %1").arg(file), 0, 0);
 		return Error;
 	}
 	qDebug("File \"%s\" opened", qPrintable(file));
@@ -243,7 +249,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 			continue;
 		}
 
-		emit error(ErrorHandler::ecUnexpectedCharacter, tr("Unexpected character %1").arg(QString(*i)), line, curFile);
+		emit error(ErrorCodes::ecUnexpectedCharacter, tr("Unexpected character %1").arg(QString(*i)), line, curFile);
 		state = ErrorButContinue;
 		++i;
 	}
@@ -269,9 +275,9 @@ Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::c
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readToEndRem(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file)
+Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file)
 {
-	const char * const endRem = "endrem";
+	const char * const endRem = "remend";
 	int foundIndex = 0;
 	while (i != end) {
 		if (*i == foundIndex) {
@@ -289,7 +295,7 @@ Lexer::ReturnState Lexer::readToEndRem(QString::const_iterator &i, const QString
 		}
 		i++;
 	}
-	emit warning(ErrorHandler::ecExpectingRemEndBeforeEOF, tr("Expecting RemEnd before end of file"), line, file);
+	emit warning(ErrorCodes::ecExpectingRemEndBeforeEOF, tr("Expecting RemEnd before end of file"), line, file);
 }
 
 Lexer::ReturnState Lexer::readFloatDot(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file)
@@ -383,7 +389,7 @@ Lexer::ReturnState Lexer::readString(QString::const_iterator &i, const QString::
 		}
 		i++;
 	}
-	error(ErrorHandler::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), line, file);
+	error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), line, file);
 	return ErrorButContinue;
 }
 
@@ -401,7 +407,7 @@ Lexer::ReturnState Lexer::readIdentifier(QString::const_iterator &i, const QStri
 		i++;
 	}
 	if (name == "remstart") {
-		return readToEndRem(i, end, line, file);
+		return readToRemEnd(i, end, line, file);
 	}
 	QMap<QString, Token::Type>::ConstIterator keyIt = mKeywords.find(name);
 	if (keyIt != mKeywords.end()) {
@@ -422,11 +428,11 @@ Lexer::ReturnState Lexer::readIdentifier(QString::const_iterator &i, const QStri
 						includeFile += *i;
 						i++;
 					}
-					emit error(ErrorHandler::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), line, file);
+					emit error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), line, file);
 					return ErrorButContinue;
 				}
 				if (i->category() != QChar::Separator_Space) {
-					emit error(ErrorHandler::ecExpectingString, tr("Expecting \" after Include"), line, file);
+					emit error(ErrorCodes::ecExpectingString, tr("Expecting \" after Include"), line, file);
 					return Error;
 				}
 				i++;
@@ -462,8 +468,7 @@ Lexer::ReturnState Lexer::readIdentifier(QString::const_iterator &i, const QStri
 }
 
 
-void Lexer::combineTokens()
-{
+void Lexer::combineTokens() {
 	QList<Token>::Iterator i = mTokens.begin();
 	QList<Token>::Iterator last;
 	while (i != mTokens.end()) {
@@ -540,6 +545,7 @@ void Lexer::combineTokens()
 					continue;
 				}
 			}
+			continue;
 		}
 		i++;
 
@@ -558,7 +564,7 @@ void Lexer::writeTokensToFile(const QString &fileName)
 {
 	QFile file(fileName);
 	if (!file.open(QFile::WriteOnly | QFile::Text)) {
-		emit error(ErrorHandler::ecCantOpenFile, tr("Cannot open file %1").arg(fileName), 0, 0);
+		emit error(ErrorCodes::ecCantOpenFile, tr("Cannot open file %1").arg(fileName), 0, 0);
 		return;
 	}
 	QTextStream out(&file);

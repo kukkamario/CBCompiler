@@ -5,7 +5,7 @@ class QFile;
 struct Token
 {
 		enum Type {
-			EndOfTokens,
+			EndOfTokens = 0,
 			EOL,
 			Integer,
 			IntegerHex,

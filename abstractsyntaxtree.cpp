@@ -62,6 +62,8 @@ void Printer::printNode(const Node *s, int tab) {
 			printArrayDefinition((ArrayDefinition*)s, tab); return;
 		case Node::ntVariableDefinition:
 			printVariableDefinition((VariableDefinition*)s, tab); return;
+		case Node::ntConstDefinition:
+			printConstDefinition((ConstDefinition*)s, tab); return;
 		case Node::ntGlobalDefinition:
 			printGlobalDefinition((GlobalDefinition*)s, tab); return;
 		case Node::ntAssignmentExpression:
@@ -70,6 +72,8 @@ void Printer::printNode(const Node *s, int tab) {
 			printUnary((Unary*)s, tab); return;
 		case Node::ntReturn:
 			printReturn((Return*)s, tab); return;
+		case Node::ntExit:
+			printExit((Exit*)s, tab); return;
 		case Node::ntTypePtrField:
 			printTypePtrField((TypePtrField*)s, tab); return;
 		case Node::ntVariable:
@@ -84,40 +88,78 @@ void Printer::printNode(const Node *s, int tab) {
 			printFunctionCallOrArraySubscript((FunctionCallOrArraySubscript*)s, tab); return;
 		case Node::ntNew:
 			printNew((New*)s, tab); return;
+		case Node::ntArraySubscriptAssignmentExpression:
+			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
+		case Node::ntFunctionDefinition:
+			printFunctionDefinition((FunctionDefinition*)s, tab); return;
+		default:
+			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
 }
 
 void Printer::printBlock(const Block *s, int tab){
 	for (Block::ConstIterator i = s->begin(); i != s->end(); i++) {
-		printNode(*i);
+		printNode(*i, tab);
 	}
 }
 
 void Printer::printTypeDefinition(const TypeDefinition *s, int tab) {
-
+	printLine("Type " + s->mName, tab);
+	for (QList<QPair<int, Variable*> >::ConstIterator i = s->mFields.begin(); i != s->mFields.end(); i++) {
+		printVariable(i->second, tab + 1);
+	}
+	printLine("EndType");
 }
 
-void Printer::printIfStatement(const IfStatement *s, int tab)
-{
+void Printer::printIfStatement(const IfStatement *s, int tab) {
+	printLine("If", tab);
+	printNode(s->mCondition, tab + 1);
+	printLine("Then", tab);
+	printBlock(&s->mIfTrue, tab + 1);
+	if (!s->mElse.empty()) {
+		printLine("Else", tab);
+		printBlock(&s->mElse, tab + 1);
+	}
+	printLine("EndIf", tab);
 }
 
-void Printer::printWhileStatement(const WhileStatement *s, int tab)
-{
+void Printer::printWhileStatement(const WhileStatement *s, int tab) {
+	printLine("While", tab);
+	printNode(s->mCondition, tab + 1);
+	printBlock(&s->mBlock, tab + 1);
+	printLine("Wend", tab);
 }
 
-void Printer::printForToStatement(const ForToStatement *s, int tab)
-{
+void Printer::printForToStatement(const ForToStatement *s, int tab) {
+	printLine("For " + s->mVarName + " as " + varTypeToString(s->mVarType) + " = ", tab);
+	printNode(s->mFrom, tab + 1);
+	printLine("To", tab);
+	printNode(s->mTo, tab + 1);
+	if (s->mStep) {
+		printLine("Step", tab);
+		printNode(s->mStep, tab + 1);
+	}
+	printBlock(&s->mBlock, tab + 1);
+	printLine("Next " + s->mVarName, tab);
 }
 
-void Printer::printForEachStatement(const ForEachStatement *s, int tab)
-{
+void Printer::printForEachStatement(const ForEachStatement *s, int tab) {
+	printLine("For " + s->mVarName + "\\" + s->mTypeName + " = Each " + s->mTypeName, tab);
+	printBlock(&s->mBlock, tab + 1);
+	printLine("Next " + s->mVarName);
 }
 
-void Printer::printRepeatForeverStatement(const RepeatForeverStatement *s, int tab)
-{
+void Printer::printRepeatForeverStatement(const RepeatForeverStatement *s, int tab) {
+	printLine("Repeat", tab);
+	printBlock(&s->mBlock, tab + 1);
+	printLine("Until", tab);
 }
 
 void Printer::printRepeatUntilStatement(const RepeatUntilStatement *s, int tab) {
+	printLine("Repeat", tab);
+	printBlock(&s->mBlock, tab + 1);
+	printLine("Until", tab);
+	printNode(s->mCondition, tab + 1);
 
 }
 
@@ -129,6 +171,31 @@ void Printer::printExpression(const Expression *s, int tab) {
 	}
 }
 
+void Printer::printFunctionDefinition(const FunctionDefinition *s, int tab) {
+	printLine("Function " + s->mName + "( ", tab);
+	if (!s->mParams.isEmpty()) {
+		QList<FunctionParametreDefinition>::ConstIterator i = s->mParams.begin();
+		printVariable(&i->mVariable, tab + 1);
+		if (i->mDefaultValue) {
+			printLine("=", tab + 1);
+			printNode(i->mDefaultValue, tab + 1);
+		}
+		i++;
+		while (i != s->mParams.end()) {
+			printLine(",", tab);
+			printVariable(&i->mVariable, tab + 1);
+			if (i->mDefaultValue) {
+				printLine("=", tab + 1);
+				printNode(i->mDefaultValue, tab + 1);
+			}
+			i++;
+		}
+	}
+	printLine(") as " + varTypeToString(s->mRetType), tab);
+	printBlock(&s->mBlock, tab + 1);
+	printLine("EndFunction", tab);
+}
+
 void Printer::printCommandCall(const CommandCall *s, int tab) {
 	printLine(s->mName, tab);
 	tab++;
@@ -138,6 +205,17 @@ void Printer::printCommandCall(const CommandCall *s, int tab) {
 }
 
 void Printer::printArrayDefinition(const ArrayDefinition *s, int tab) {
+	printLine("Dim " + s->mName + " as " + varTypeToString(s->mType) + "(", tab);
+	tab++;
+	QList<Node*>::ConstIterator i = s->mDimensions.begin();
+	printNode(*i, tab);
+	i++;
+	while (i != s->mDimensions.end()) {
+		printLine(",", tab - 1);
+		printNode(*i, tab);
+		i++;
+	}
+	printLine(")", tab - 1);
 }
 
 void Printer::printVariableDefinition(const VariableDefinition *s, int tab) {
@@ -146,6 +224,12 @@ void Printer::printVariableDefinition(const VariableDefinition *s, int tab) {
 	for (QList<Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
 		printVariable(*i, tab);
 	}
+}
+
+void Printer::printConstDefinition(const ConstDefinition *s, int tab) {
+	printLine("Const " + s->mName + " " + varTypeToString(s->mVarType) + "=", tab);
+	tab++;
+	printNode(s->mValue, tab);
 }
 
 void Printer::printGlobalDefinition(const GlobalDefinition *s, int tab) {
@@ -159,21 +243,45 @@ void Printer::printGlobalDefinition(const GlobalDefinition *s, int tab) {
 void Printer::printAssignmentExpression(const AssignmentExpression *s, int tab) {
 	printLine("Assign", tab);
 	tab++;
-	printVariable(s->mVariable, tab);
+	printNode(s->mVariable, tab);
 	printNode(s->mExpression, tab);
+}
+
+void Printer::printArraySubscriptAssignmentExpression(const ArraySubscriptAssignmentExpression *s, int tab) {
+	printLine("Assign (array)", tab);
+	tab++;
+	printLine(s->mArrayName + " (", tab);
+	tab++;
+	QList<Node*>::ConstIterator p = s->mSubscripts.begin();
+	printNode(*p, tab);
+	p++;
+	while (p != s->mSubscripts.end()) {
+		printLine(",", tab - 1);
+		printNode(*p, tab);
+		p++;
+	}
+	printLine(") =", tab - 1);
+	printNode(s->mValue, tab);
 }
 
 void Printer::printUnary(const Unary *s, int tab) {
 	printLine(operatorToString(s->mOperator), tab);
 	tab++;
-	printNode(s->mOperand);
+	printNode(s->mOperand, tab);
 }
 
-void Printer::printReturn(const Return *s, int tab)
-{
+void Printer::printReturn(const Return *s, int tab) {
+	printLine("Return", tab);
+	tab++;
+	printNode(s->mValue, tab);
+}
+
+void Printer::printExit(const Exit *s, int tab) {
+	printLine("Exit", tab);
 }
 
 void Printer::printTypePtrField(const TypePtrField *s, int tab) {
+	printLine(s->mTypePtrVar + "\\" + s->mFieldName + " as " + varTypeToString(s->mFieldType), tab);
 }
 
 void Printer::printVariable(const Variable *s, int tab) {
@@ -232,6 +340,31 @@ void Printer::printNew(const New *s, int tab) {
 	printLine(txt, tab);
 }
 
+void Printer::printProgram(const Program *s) {
+	printLine("Constants:");
+	for (QList<ConstDefinition*>::ConstIterator i = s->mConstants.begin(); i != s->mConstants.end(); i++) {
+		printConstDefinition(*i, 1);
+	}
+
+	printLine("\n\nTypes:");
+	for (QList<TypeDefinition*>::ConstIterator i = s->mTypes.begin(); i != s->mTypes.end(); i++) {
+		printTypeDefinition(*i);
+	}
+
+	printLine("\n\nGlobals:");
+	for (QList<GlobalDefinition*>::ConstIterator i = s->mGlobals.begin(); i != s->mGlobals.end(); i++) {
+		printGlobalDefinition(*i, 1);
+	}
+
+	printLine("\n\nFunctions:");
+	for (QList<FunctionDefinition*>::ConstIterator i = s->mFunctions.begin(); i != s->mFunctions.end(); i++) {
+		printFunctionDefinition(*i, 1);
+	}
+
+	printLine("\n\nMain block:");
+	printBlock(&s->mMainBlock, 1);
+}
+
 bool Printer::printToFile(const QString &file) {
 	if (mDestFile) {
 		delete mDestFile;
@@ -244,6 +377,27 @@ bool Printer::printToFile(const QString &file) {
 		return false;
 	}
 	return true;
+}
+
+QString Printer::varTypeToString(const Variable::VarType t) {
+	switch (t) {
+		case Variable::Default:
+			return "Default";
+		case Variable::Integer:
+			return "Integer";
+		case Variable::Float:
+			return "Float";
+		case Variable::String:
+			return "String";
+		case Variable::Short:
+			return "Short";
+		case Variable::Byte:
+			return "Byte";
+		case Variable::TypePtr:
+			return "Type pointer";
+		default:
+			return "Unknown var type";
+	}
 }
 
 void Printer::printLine(const QString &txt, int tab) {

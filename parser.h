@@ -6,23 +6,32 @@
 class Parser : public QObject
 {
 		Q_OBJECT
-		typedef QList<Token>::ConstIterator TokIterator;
 	public:
+		typedef QList<Token>::ConstIterator TokIterator;
 		Parser();
 		ast::Program *parse(const QList<Token> &tokens);
+		bool success() {return mStatus == Ok;}
+		ast::ConstDefinition *tryConstDefinition(TokIterator &i);
 		ast::GlobalDefinition *tryGlobalDefinition(TokIterator &i);
 		ast::Variable::VarType tryVarAsType(TokIterator &i);
 		ast::Variable::VarType tryVarType(TokIterator &i);
 		ast::Variable::VarType tryVarTypeSymbol(TokIterator &i);
+		ast::TypeDefinition *tryTypeDefinition(TokIterator &i);
 		ast::Variable *expectVariableOrTypePtrDefinition(TokIterator &i);
 		ast::Variable *tryVariableOrTypePtrDefinition(TokIterator &i);
+		void expectVariableOrTypePtrDefinition(ast::Variable *var, TokIterator &i);
 		ast::Node *tryDim(TokIterator &i);
-		//ast::VariableDefinition *tryVariableDefinition(TokIterator &i);
-		ast::IfStatement *tryIfStatement(TokIterator &i);
-		ast::WhileStatement *tryWhileStatement(TokIterator &i);
+		ast::Node *tryIfStatement(TokIterator &i);
+		ast::Node *expectElseIfStatement(TokIterator &i);
+		ast::Node *tryWhileStatement(TokIterator &i);
 		ast::Node *tryRepeatStatement(TokIterator &i);
 		ast::Node *tryForStatement(TokIterator &i);
+		ast::Node *tryFunctionOrCommandCallOrArraySubscriptAssignment(TokIterator &i);
 		ast::Block expectBlock(TokIterator &i);
+		ast::Block expectInlineBlock(TokIterator &i);
+
+		ast::FunctionDefinition *tryFunctionDefinition(TokIterator &i);
+		ast::FunctionParametreDefinition expectFunctionParametreDefinition(TokIterator &i);
 
 		ast::Node *expectExpression(TokIterator &i);
 		ast::Node *expectLogicalOrExpression(TokIterator &i);
@@ -35,7 +44,7 @@ class Parser : public QObject
 		ast::Node *expectPowExpression(TokIterator &i);
 		ast::Node *expectUnaryExpession(TokIterator &i);
 		ast::Node *expectPrimaryExpression(TokIterator &i);
-		ast::AssignmentExpression *tryAssignmentExpression(TokIterar &i);
+		ast::Node *tryAssignmentExpression(TokIterator &i);
 		QString expectIdentifier(TokIterator &i);
 		void expectEndOfStatement(TokIterator &i);
 	private:
