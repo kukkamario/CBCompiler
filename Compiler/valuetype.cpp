@@ -1,5 +1,6 @@
 #include "valuetype.h"
 
-ValueType::ValueType()
+ValueType::ValueType():
+	mType(0)
 {
 }

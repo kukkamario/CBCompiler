@@ -10,7 +10,7 @@ extern "C" void CBF_printF(float f) {
 }
 
 extern "C" void CBF_printS(String s) {
-	printf("%i\n", s.getRef().c_str());
+	printf("%s\n", s.getRef().c_str());
 }
 
 extern "C" void CBF_print() {

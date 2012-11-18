@@ -40,7 +40,13 @@ SOURCES += main.cpp \
     function.cpp \
     runtime.cpp \
     runtimefunction.cpp \
-    intvaluetype.cpp
+    intvaluetype.cpp \
+    codegenerator.cpp \
+    stringpool.cpp \
+    stringvaluetype.cpp \
+    floatvaluetype.cpp \
+    shortvaluetype.cpp \
+    bytevaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -58,4 +64,10 @@ HEADERS += \
     runtime.h \
     runtimefunction.h \
     llvm.h \
-    intvaluetype.h
+    intvaluetype.h \
+    codegenerator.h \
+    stringpool.h \
+    stringvaluetype.h \
+    floatvaluetype.h \
+    shortvaluetype.h \
+    bytevaluetype.h

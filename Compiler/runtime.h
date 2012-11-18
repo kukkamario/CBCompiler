@@ -4,7 +4,12 @@
 #include "runtimefunction.h"
 #include "llvm.h"
 #include "valuetype.h"
-class Runtime : QObject {
+class IntValueType;
+class StringValueType;
+class FloatValueType;
+class ShortValueType;
+class ByteValueType;
+class Runtime : public QObject {
 		Q_OBJECT
 	public:
 		Runtime();
@@ -13,12 +18,24 @@ class Runtime : QObject {
 		QList<RuntimeFunction*> functions();
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
 		llvm::Function *cbMain() {return mCBMain;}
+		StringValueType *stringValueType() {return mStringValueType;}
+		IntValueType *intValueType() {return mIntValueType;}
+		FloatValueType *floatValueType() {return mFloatValueType;}
+		ShortValueType *shortValueType() {return mShortValueType;}
+		ByteValueType *byteValueType() {return mByteValueType;}
 	private:
+		void addRuntimeFunction(llvm::Function *func, const QString &name);
+
 		bool loadValueTypes();
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;
 		QList<ValueType*> mValueTypes;
 		llvm::Function *mCBMain;
+		IntValueType *mIntValueType;
+		FloatValueType *mFloatValueType;
+		StringValueType *mStringValueType;
+		ShortValueType *mShortValueType;
+		ByteValueType *mByteValueType;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

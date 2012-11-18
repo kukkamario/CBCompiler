@@ -1,18 +1,18 @@
-#ifndef INTVALUETYPE_H
-#define INTVALUETYPE_H
+#ifndef BYTEVALUETYPE_H
+#define BYTEVALUETYPE_H
 #include "valuetype.h"
-class IntValueType : public ValueType {
+class ByteValueType : public ValueType {
 	public:
-		IntValueType(llvm::Module *mod);
-		QString name() const {return "Integer";}
+		ByteValueType(llvm::Module *mod);
+		QString name() const {return "Byte";}
 		llvm::Type *llvmType() {return mType;}
-		Type type() const{return Integer;}
+		Type type() const{return Byte;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(const Value &v) const;
 	private:
-
+		llvm::Type *mType;
 };
 
-#endif // INTVALUETYPE_H
+#endif // BYTEVALUETYPE_H

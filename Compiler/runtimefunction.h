@@ -1,10 +1,14 @@
 #ifndef RUNTIMEFUNCTION_H
 #define RUNTIMEFUNCTION_H
 #include "function.h"
-class RuntimeFunction : public Function
-{
+#include "llvm.h"
+class Runtime;
+class RuntimeFunction : public Function {
 	public:
-		RuntimeFunction();
+		RuntimeFunction(Runtime * r);
+		bool construct(llvm::Function *func, const QString &name);
+	private:
+		Runtime *mRuntime;
 };
 
 #endif // RUNTIMEFUNCTION_H

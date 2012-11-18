@@ -40,7 +40,11 @@ enum ErrorCode {
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,
 
-	ecVarAlreadyDefinedWithAnotherType
+	ecVarAlreadyDefinedWithAnotherType,
+
+
+	//Runtime
+	ecInvalidRuntime
 };
 }
 #endif // ERRORCODES_H
