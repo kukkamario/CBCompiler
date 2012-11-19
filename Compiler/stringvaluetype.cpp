@@ -1,7 +1,10 @@
 #include "stringvaluetype.h"
 #include "value.h"
+#include "stringpool.h"
 
-StringValueType::StringValueType(llvm::Module *mod) {
+StringValueType::StringValueType(StringPool *strPool, Runtime *r, llvm::Module *mod) :
+	ValueType(r),
+	mStringPool(strPool){
 }
 
 bool StringValueType::setConstructFunction(llvm::Function *func) {
@@ -102,6 +105,7 @@ bool StringValueType::setStringToFloatFunction(llvm::Function *func) {
 	return true;
 }
 
+
 ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 	switch (to->type()) {
 		case String:
@@ -114,6 +118,8 @@ ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 			return 100;
 		case Byte:
 			return 100;
+		case Boolean:
+			return 2;
 		default:
 			return maxCastCost;
 	}
@@ -122,6 +128,54 @@ ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 }
 
 
-Value StringValueType::cast(const Value &v) const {
+
+Value StringValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
 	return Value();
 }
+
+llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr) {
+	return builder->CreateCall(mConstructFunction, globalStrPtr);
+}
+
+llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, QString *str) {
+	llvm::Value *globalStr = mStringPool->globalString(builder, str);
+	return constructString(builder, globalStr);
+}
+
+void StringValueType::destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar) {
+	builder->CreateCall(mDestructFunction, stringVar);
+}
+
+llvm::Value *StringValueType::stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str) {
+	return builder->CreateCall(mStringToIntFunction, str);
+}
+
+llvm::Value *StringValueType::stringToFloatCast(llvm::IRBuilder<> *builder, llvm::Value *str) {
+	return builder->CreateCall(mStringToFloatFunction, str);
+}
+
+llvm::Value *StringValueType::intToStringCast(llvm::IRBuilder<> *builder, llvm::Value *i) {
+	return builder->CreateCall(mIntToStringFunction, i);
+}
+
+llvm::Value *StringValueType::floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f) {
+	return builder->CreateCall(mFloatToStringFunction, f);
+}
+
+llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2) {
+	return builder->CreateCall2(mAdditionFunction, str1, str2);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

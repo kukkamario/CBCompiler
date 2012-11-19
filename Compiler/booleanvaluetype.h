@@ -1,19 +1,20 @@
-#ifndef BYTEVALUETYPE_H
-#define BYTEVALUETYPE_H
+#ifndef BOOLEANVALUETYPE_H
+#define BOOLEANVALUETYPE_H
 #include "valuetype.h"
-class ByteValueType : public ValueType {
+
+class BooleanValueType : public ValueType {
 	public:
-		ByteValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return QObject::tr("Byte");}
+		BooleanValueType(Runtime *r, llvm::Module *mod);
+		QString name() const {return QObject::tr("Boolean");}
 		llvm::Type *llvmType() {return mType;}
-		Type type() const{return Byte;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
-		llvm::Value *constant(quint8 i);
+		Type type() const{return Byte;}
+		llvm::Value *constant(bool t);
 	private:
 		llvm::Type *mType;
 };
 
-#endif // BYTEVALUETYPE_H
+#endif // BOOLEANVALUETYPE_H

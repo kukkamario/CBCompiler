@@ -42,9 +42,13 @@ enum ErrorCode {
 
 	ecVarAlreadyDefinedWithAnotherType,
 
+	ecParsingFailed,
 
 	//Runtime
 	ecInvalidRuntime
+
+
+
 };
 }
 #endif // ERRORCODES_H

@@ -85,7 +85,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 	QString oldPath = QDir::currentPath();
 	QFileInfo fi(*curFile);
 	bool success = QDir::setCurrent(fi.absolutePath());
-	Q_ASSERT(success);
+	assert(success);
 
 	QTextStream stream(curFile);
 	QString code2 = stream.readAll().toLower();

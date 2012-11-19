@@ -4,9 +4,10 @@
 #include <QDebug>
 #include <QTime>
 #include "errorhandler.h"
+#include "errorcodes.h"
 #include "parser.h"
 #include <iostream>
-#include "runtime.h"
+#include "codegenerator.h"
 int main(int argc, char *argv[])
 {
 	QCoreApplication a(argc, argv);
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
 		lexer.writeTokensToFile("tokens.txt");
 	}
 	else {
-		errHandler.error(ErrorHandler::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), 0, lexer.files().first().first);
+		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), 0, lexer.files().first().first);
 		return 1;
 	}
 
@@ -42,11 +43,10 @@ int main(int argc, char *argv[])
 		printer.printProgram(program);
 	}
 	if (!parser.success()) {
-		errHandler.error(ErrorHandler::ecParsingFailed, errHandler.tr("Parsing failed"), 0, lexer.files().first().first);
+		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed"), 0, lexer.files().first().first);
 		return 1;
 	}
 
-	Runtime runtime;
-	runtime.load("D:\\lassi\\projektit\\cbcompiler\\runtime\\release\\libRuntime.bc");
+
 	return 0;
 }

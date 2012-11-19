@@ -729,7 +729,7 @@ ast::Node *Parser::tryIfStatement(Parser::TokIterator &i) { //FINISH
 }
 
 ast::Node *Parser::expectElseIfStatement(Parser::TokIterator &i) {
-	Q_ASSERT(i->mType == Token::kElseIf);
+	assert(i->mType == Token::kElseIf);
 	int line = i->mLine;
 	QFile *file = i->mFile;
 	i++;

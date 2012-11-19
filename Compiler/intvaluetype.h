@@ -3,14 +3,16 @@
 #include "valuetype.h"
 class IntValueType : public ValueType {
 	public:
-		IntValueType(llvm::Module *mod);
-		QString name() const {return "Integer";}
+		IntValueType(Runtime *r, llvm::Module *mod);
+		QString name() const {return QObject::tr("Integer");}
 		llvm::Type *llvmType() {return mType;}
-		Type type() const{return Integer;}
-		/** Calculates cost for casting given ValueType to this ValueType.
-		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
-		Value cast(const Value &v) const;
+
+		/** Casts given value to this ValueType */
+		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
+
+		Type type() const{return Integer;}
+		llvm::Value *constant(int v);
 	private:
 
 };

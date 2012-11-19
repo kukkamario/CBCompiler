@@ -46,7 +46,10 @@ SOURCES += main.cpp \
     stringvaluetype.cpp \
     floatvaluetype.cpp \
     shortvaluetype.cpp \
-    bytevaluetype.cpp
+    bytevaluetype.cpp \
+    expressiongenerator.cpp \
+    booleanvaluetype.cpp \
+    constantexpressionevaluator.cpp
 
 HEADERS += \
     lexer.h \
@@ -70,4 +73,7 @@ HEADERS += \
     stringvaluetype.h \
     floatvaluetype.h \
     shortvaluetype.h \
-    bytevaluetype.h
+    bytevaluetype.h \
+    expressiongenerator.h \
+    booleanvaluetype.h \
+    constantexpressionevaluator.h

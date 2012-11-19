@@ -9,11 +9,15 @@ class StringValueType;
 class FloatValueType;
 class ShortValueType;
 class ByteValueType;
+class BooleanValueType;
+class StringPool;
 class Runtime : public QObject {
 		Q_OBJECT
 	public:
+		static Runtime *instance();
 		Runtime();
-		bool load(const QString &file);
+		~Runtime();
+		bool load(StringPool *strPool, const QString &file);
 		llvm::Module *module() {return mModule;}
 		QList<RuntimeFunction*> functions();
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
@@ -23,10 +27,11 @@ class Runtime : public QObject {
 		FloatValueType *floatValueType() {return mFloatValueType;}
 		ShortValueType *shortValueType() {return mShortValueType;}
 		ByteValueType *byteValueType() {return mByteValueType;}
+		BooleanValueType *booleanValueType() {return mBooleanValueType;}
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);
 
-		bool loadValueTypes();
+		bool loadValueTypes(StringPool *strPool);
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;
 		QList<ValueType*> mValueTypes;
@@ -36,6 +41,7 @@ class Runtime : public QObject {
 		StringValueType *mStringValueType;
 		ShortValueType *mShortValueType;
 		ByteValueType *mByteValueType;
+		BooleanValueType *mBooleanValueType;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

@@ -3,7 +3,8 @@
 #include "value.h"
 
 
-ByteValueType::ByteValueType(llvm::Module *mod) {
+ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :
+	ValueType(r){
 	mType = llvm::Type::getInt8Ty(mod->getContext());
 }
 
@@ -11,6 +12,8 @@ ValueType::CastCostType ByteValueType::castCost(ValueType *to) const {
 	switch (to->type()) {
 		case ValueType::Byte:
 			return 0;
+		case ValueType::Boolean:
+			return 1;
 		case ValueType::Short:
 			return 1;
 		case ValueType::Integer:
@@ -24,6 +27,10 @@ ValueType::CastCostType ByteValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value ByteValueType::cast(const Value &v) const {
+Value ByteValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
 	return Value();
+}
+
+llvm::Value *ByteValueType::constant(quint8 i) {
+	return llvm::ConstantInt::get(mType, llvm::APInt(8, i, false));
 }

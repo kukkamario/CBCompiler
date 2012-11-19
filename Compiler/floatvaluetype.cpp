@@ -3,7 +3,8 @@
 #include "value.h"
 
 
-FloatValueType::FloatValueType(llvm::Module *mod) {
+FloatValueType::FloatValueType(Runtime *runtime, llvm::Module *mod) :
+	ValueType(runtime){
 	mType = llvm::Type::getFloatTy(mod->getContext());
 }
 
@@ -11,6 +12,8 @@ ValueType::CastCostType FloatValueType::castCost(ValueType *to) const {
 	switch (to->type()) {
 		case Float:
 			return 0;
+		case Boolean:
+			return 1;
 		case Integer:
 			return 2;
 		case String:
@@ -24,6 +27,10 @@ ValueType::CastCostType FloatValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value FloatValueType::cast(const Value &v) const {
+Value FloatValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
 	return Value();
+}
+
+llvm::Value *FloatValueType::constant(float f) {
+	return llvm::ConstantFP::get(mType->getContext(), llvm::APFloat(f));
 }

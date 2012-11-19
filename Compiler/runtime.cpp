@@ -5,21 +5,28 @@
 #include "shortvaluetype.h"
 #include "floatvaluetype.h"
 #include "bytevaluetype.h"
+#include "booleanvaluetype.h"
 #include "errorcodes.h"
+static Runtime *runtimeInstance = 0;
 
 Runtime::Runtime():
 	mModule(0),
-	mCBMain(0)
-{
+	mCBMain(0) {
+	assert(runtimeInstance == 0);
+	runtimeInstance = this;
 }
 
-bool Runtime::load(const QString &file) {
+Runtime::~Runtime() {
+	runtimeInstance = 0;
+}
+
+bool Runtime::load(StringPool *strPool, const QString &file) {
 
 	llvm::SMDiagnostic diagnostic;
 	mModule = llvm::ParseIRFile(file.toStdString(), diagnostic, llvm::getGlobalContext());
 	if (!mModule) return 0;
 
-	if (!loadValueTypes()) return false;
+	if (!loadValueTypes(strPool)) return false;
 
 	for (llvm::Module::FunctionListType::iterator i = mModule->getFunctionList().begin(); i != mModule->getFunctionList().end(); i++) {
 		llvm::Function *func = &(*i);
@@ -52,13 +59,13 @@ bool Runtime::load(const QString &file) {
 }
 
 
-bool Runtime::loadValueTypes() {
+bool Runtime::loadValueTypes(StringPool *strPool) {
 	//Int
-	mIntValueType = new IntValueType(mModule);
+	mIntValueType = new IntValueType(this, mModule);
 	mValueTypes.append(mIntValueType);
 
 	//String
-	mStringValueType = new StringValueType(mModule);
+	mStringValueType = new StringValueType(strPool, this, mModule);
 	llvm::StructType *str = mModule->getTypeByName("struct.CB_StringData");
 	if (!str) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_StringData\" in runtime library bitcode"), 0, 0);
@@ -67,13 +74,17 @@ bool Runtime::loadValueTypes() {
 	mStringValueType->setStringType(str->getPointerTo());
 	mValueTypes.append(mStringValueType);
 
-	mFloatValueType = new FloatValueType(mModule);
+	mFloatValueType = new FloatValueType(this, mModule);
 	mValueTypes.append(mFloatValueType);
 
-	mShortValueType = new ShortValueType(mModule);
+	mShortValueType = new ShortValueType(this, mModule);
 	mValueTypes.append( mShortValueType);
 
-	mByteValueType = new ByteValueType(mModule);
+	mByteValueType = new ByteValueType(this, mModule);
+	mValueTypes.append(mByteValueType);
+
+	mBooleanValueType = new BooleanValueType(this, mModule);
+	mValueTypes.append(mBooleanValueType);
 	return true;
 }
 
@@ -131,4 +142,9 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 	}
 
 
+}
+
+
+Runtime *Runtime::instance() {
+	return runtimeInstance;
 }

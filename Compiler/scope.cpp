@@ -6,7 +6,7 @@ Scope::Scope(Scope *parent):
 }
 
 void Scope::addSymbol(Symbol *symbol) {
-	Q_ASSERT(mSymbols.find(symbol->name()) == mSymbols.end());
+	assert(mSymbols.find(symbol->name()) == mSymbols.end());
 	mSymbols[symbol->name()] = symbol;
 }
 

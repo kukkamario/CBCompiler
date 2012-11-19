@@ -12,7 +12,10 @@ class CodeGenerator : public QObject{
 		bool generate(ast::Program *program);
 	private:
 		Runtime mRuntime;
-
+		StringPool mStringPool;
+	signals:
+		void error(int code, QString msg, int line, QFile *file);
+		void warning(int code, QString msg, int line, QFile *file);
 };
 
 #endif // CODEGENERATOR_H
