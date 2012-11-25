@@ -30,7 +30,7 @@ class Runtime : public QObject {
 		BooleanValueType *booleanValueType() {return mBooleanValueType;}
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);
-
+		bool mValid;
 		bool loadValueTypes(StringPool *strPool);
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;

@@ -45,9 +45,22 @@ enum ErrorCode {
 	ecParsingFailed,
 
 	//Runtime
-	ecInvalidRuntime
+	ecCantLoadRuntime,
+	ecInvalidRuntime,
 
+	//Code generation
+	ecNotConstant,
+	ecConstantAlreadyDefined,
+	ecSymbolAlreadyDefinedInRuntime,
+	ecSymbolAlreadyDefined,
+	ecCantFindType,
+	ecForcingType,
+	ecMathematicalOperationOperandTypeMismatch,
+	ecCantCreateTypePointerLLVMStructType,
 
+	ecTypeHasMultipleFieldsWithSameName,
+
+	ecWTF
 
 };
 }

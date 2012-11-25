@@ -17,7 +17,7 @@ class StringValueType : public ValueType {
 		bool setIntToStringFunction(llvm::Function *func);
 		bool setStringToIntFunction(llvm::Function *func);
 		bool setStringToFloatFunction(llvm::Function *func);
-		llvm::Value *constructString(llvm::IRBuilder<> *builder, QString *str);
+		llvm::Value *constructString(llvm::IRBuilder<> *builder, const QString &str);
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr);
 		void destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar);
 		llvm::Value *stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str);
@@ -25,7 +25,7 @@ class StringValueType : public ValueType {
 		llvm::Value *intToStringCast(llvm::IRBuilder<> *builder, llvm::Value *i);
 		llvm::Value *floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f);
 		llvm::Value *stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2);
-
+		bool isValid() const;
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;

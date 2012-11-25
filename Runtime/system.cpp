@@ -9,8 +9,8 @@ extern "C" void CBF_printF(float f) {
 	printf("%f\n", f);
 }
 
-extern "C" void CBF_printS(String s) {
-	printf("%s\n", s.getRef().c_str());
+extern "C" void CBF_printS(CBString s) {
+	printf("%s\n", String(s).getRef().c_str());
 }
 
 extern "C" void CBF_print() {

@@ -49,7 +49,12 @@ SOURCES += main.cpp \
     bytevaluetype.cpp \
     expressiongenerator.cpp \
     booleanvaluetype.cpp \
-    constantexpressionevaluator.cpp
+    constantexpressionevaluator.cpp \
+    constantvalue.cpp \
+    constantsymbol.cpp \
+    variablesymbol.cpp \
+    typesymbol.cpp \
+    typepointervaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -76,4 +81,10 @@ HEADERS += \
     bytevaluetype.h \
     expressiongenerator.h \
     booleanvaluetype.h \
-    constantexpressionevaluator.h
+    constantexpressionevaluator.h \
+    constantvalue.h \
+    unionwrapper.h \
+    constantsymbol.h \
+    variablesymbol.h \
+    typesymbol.h \
+    typepointervaluetype.h

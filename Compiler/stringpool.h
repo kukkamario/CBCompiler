@@ -13,17 +13,9 @@ namespace llvm {
 class StringPool {
 	public:
 		StringPool();
-		QString *add(const QString &s);
-		llvm::Value *globalString(llvm::IRBuilder<> *builder, QString *s);
+		llvm::Value *globalString(llvm::IRBuilder<> *builder, const QString &s);
 	private:
-		struct StringItem {
-				StringItem(const QString &s) : mString(new QString(s)), mGlobalString(0) {}
-				QString *mString;
-				llvm::Value *mGlobalString;
-		};
-
-		QMap<QString, StringItem> mStrings;
-		QMap<QString*, QMap<QString, StringItem>::Iterator > mReverse;
+		QMap<QString, llvm::Value*> mStrings;
 };
 
 #endif // STRINGPOOL_H

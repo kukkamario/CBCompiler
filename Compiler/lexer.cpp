@@ -89,7 +89,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 
 	QTextStream stream(curFile);
 	QString code2 = stream.readAll().toLower();
-
+	curFile->close();
 	mFiles.append(QPair<QFile*, QString>(curFile, code2));
 	const QString &code = mFiles.last().second;
 
@@ -253,6 +253,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 		state = ErrorButContinue;
 		++i;
 	}
+
 	QDir::setCurrent(oldPath);
 	return state;
 }

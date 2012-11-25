@@ -41,7 +41,7 @@ bool StringValueType::setDestructFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType->getPointerTo()) return false;
+	if (arg1 != mType) return false;
 	mDestructFunction = func;
 	return true;
 }
@@ -137,7 +137,7 @@ llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::
 	return builder->CreateCall(mConstructFunction, globalStrPtr);
 }
 
-llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, QString *str) {
+llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, const QString &str) {
 	llvm::Value *globalStr = mStringPool->globalString(builder, str);
 	return constructString(builder, globalStr);
 }
@@ -164,6 +164,10 @@ llvm::Value *StringValueType::floatToStringCast(llvm::IRBuilder<> *builder, llvm
 
 llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2) {
 	return builder->CreateCall2(mAdditionFunction, str1, str2);
+}
+
+bool StringValueType::isValid() const {
+	return mAdditionFunction && mAssignmentFunction && mType && mIntToStringFunction && mFloatToStringFunction && mStringToFloatFunction && mStringToIntFunction;
 }
 
 

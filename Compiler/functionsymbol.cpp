@@ -1,8 +1,8 @@
 #include "functionsymbol.h"
 #include "valuetype.h"
 
-FunctionSymbol::FunctionSymbol(const QString &name):
-	Symbol(name)
+FunctionSymbol::FunctionSymbol(const QString &name, QFile *f, int line):
+	Symbol(name, f, line)
 {
 }
 
@@ -66,5 +66,11 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 		return 0;
 	}
 	return bestFunc;
+}
+
+QString FunctionSymbol::info() const {
+	QString str("Function %1, %2 overloads");
+	str.arg(mName, QString::number(mFunctions.count()));
+	return str;
 }
 

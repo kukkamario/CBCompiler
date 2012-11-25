@@ -17,6 +17,7 @@ class Runtime;
 class ValueType {
 	public:
 		enum Type {
+			Invalid,
 			Integer,
 			Float,
 			String,

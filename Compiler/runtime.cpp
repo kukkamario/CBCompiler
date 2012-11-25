@@ -11,7 +11,8 @@ static Runtime *runtimeInstance = 0;
 
 Runtime::Runtime():
 	mModule(0),
-	mCBMain(0) {
+	mCBMain(0),
+	mValid(true) {
 	assert(runtimeInstance == 0);
 	runtimeInstance = this;
 }
@@ -21,10 +22,13 @@ Runtime::~Runtime() {
 }
 
 bool Runtime::load(StringPool *strPool, const QString &file) {
-
+	llvm::InitializeNativeTarget();
 	llvm::SMDiagnostic diagnostic;
 	mModule = llvm::ParseIRFile(file.toStdString(), diagnostic, llvm::getGlobalContext());
-	if (!mModule) return 0;
+	if (!mModule) {
+		emit error(ErrorCodes::ecCantLoadRuntime, QString::fromStdString(diagnostic.getMessage()), 0, 0);
+		return false;
+	}
 
 	if (!loadValueTypes(strPool)) return false;
 
@@ -44,7 +48,7 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 			c++;
 			if (c == 4) {
 				runtimeFunc = true;
-				for (i = func->getName().begin(); i != func->getName().end(); i++) {
+				for (i++; i != func->getName().end(); i++) {
 					funcName += *i;
 				}
 				break;
@@ -55,7 +59,9 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 
 		addRuntimeFunction(func, funcName);
 	}
-	return true;
+	if (!(mStringValueType && mByteValueType && mShortValueType && mIntValueType && mFloatValueType)) return false;
+	if (!mStringValueType->isValid()) return false;
+	return mValid;
 }
 
 
@@ -96,6 +102,7 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 	}
 	if (name == "CB_StringConstruct") {
 		if (!mStringValueType->setConstructFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringConstruct"), 0, 0);
 		}
 		return;
@@ -103,6 +110,7 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 
 	if (name == "CB_StringDestruct") {
 		if (!mStringValueType->setDestructFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringDestruct"), 0, 0);
 		}
 		return;
@@ -110,6 +118,7 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 
 	if (name == "CB_StringAssign") {
 		if (!mStringValueType->setAssignmentFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringAssign"), 0, 0);
 		}
 		return;
@@ -117,6 +126,7 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 
 	if (name == "CB_StringToInt") {
 		if (!mStringValueType->setStringToIntFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringToInt"), 0, 0);
 		}
 		return;
@@ -124,24 +134,43 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 
 	if (name == "CB_StringToFloat") {
 		if (!mStringValueType->setStringToFloatFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringToFloat"), 0, 0);
 		}
 		return;
 	}
 	if (name == "CB_IntToString") {
 		if (!mStringValueType->setIntToStringFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_IntToString"), 0, 0);
 		}
 		return;
 	}
 	if (name == "CB_FloatToString") {
 		if (!mStringValueType->setFloatToStringFunction(func)) {
+			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_FloatToString"), 0, 0);
 		}
 		return;
 	}
+	if (name == "CB_StringAddition") {
+		if (!mStringValueType->setAdditionFunction(func)) {
+			mValid = false;
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringAddition"), 0, 0);
+		}
+		return;
+	}
 
-
+	RuntimeFunction *rtfunc = new RuntimeFunction(this);
+	if (rtfunc->construct(func, name)) {
+		mFunctions.append(rtfunc);
+		return;
+	}
+	else {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid runtime function \"%1\"").arg(QString::fromStdString(func->getName())), 0, 0);
+		mValid = false;
+		delete rtfunc;
+	}
 }
 
 

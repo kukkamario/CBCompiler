@@ -1,0 +1,8 @@
+Const c1 = 213
+Const constantString$ = "asfd"
+Const constantExpr  = 232 + (42 * c1) Mod 2
+
+Type type1
+    Field field1 As String
+    Field field2 As Short
+EndType

@@ -3,23 +3,12 @@
 StringPool::StringPool() {
 }
 
-QString *StringPool::add(const QString &s) {
-	QMap<QString, StringItem>::Iterator i = mStrings.find(s);
+llvm::Value *StringPool::globalString(llvm::IRBuilder<> *builder, const QString &s) {
+	QMap<QString, llvm::Value*>::Iterator i = mStrings.find(s);
 	if (i != mStrings.end()) {
-		return i.value().mString;
+		return i.value();
 	}
-	StringItem sp(s);
-	mReverse.insert(sp.mString, mStrings.insert(s, sp));
-	return sp.mString;
-}
-
-llvm::Value *StringPool::globalString(llvm::IRBuilder<> *builder, QString *s) {
-	QMap<QString*, QMap<QString, StringItem>::Iterator >::Iterator i = mReverse.find(s);
-	assert(i != mReverse.end());
-	StringItem &item = i.value().value();
-	if (!item.mGlobalString) {
-		item.mGlobalString = builder->CreateGlobalStringPtr(item.mString->toStdString());
-	}
-
-	return item.mGlobalString;
+	llvm::Value *gs = builder->CreateGlobalStringPtr(s.toStdString());
+	mStrings.insert(s, gs);
+	return gs;
 }

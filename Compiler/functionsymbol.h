@@ -13,10 +13,11 @@ class FunctionSymbol:public Symbol
 			oseFoundMultipleOverloads
 		};
 
-		FunctionSymbol(const QString &name);
+		FunctionSymbol(const QString &name, QFile *f, int line);
 		Type type() const{ return stFunction; }
 		QList<Function*> functions() const { return mFunctions;}
 		Function *findBestOverload(const QList<ValueType*> &paramTypes, bool command = false, OverloadSearchError *err = 0);
+		QString info() const;
 	private:
 		QList<Function*> mFunctions;
 
