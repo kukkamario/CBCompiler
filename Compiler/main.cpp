@@ -8,8 +8,7 @@
 #include "parser.h"
 #include <iostream>
 #include "codegenerator.h"
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	QCoreApplication a(argc, argv);
 	QStringList params = a.arguments();
 	if (params.size() != 3) {

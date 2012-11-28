@@ -7,3 +7,11 @@ Makefile
 Makefile.*
 *.bc
 *.ll
+*.lib
+*.manifest
+*.obj
+*.ilk
+*.pdb
+*.pch
+*.exp
+moc_*.cpp

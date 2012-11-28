@@ -4,6 +4,7 @@
 #include "runtimefunction.h"
 #include "llvm.h"
 #include "valuetype.h"
+#include <QMap>
 class IntValueType;
 class StringValueType;
 class FloatValueType;
@@ -11,6 +12,7 @@ class ShortValueType;
 class ByteValueType;
 class BooleanValueType;
 class StringPool;
+class NullTypePointerValueType;
 class Runtime : public QObject {
 		Q_OBJECT
 	public:
@@ -19,7 +21,7 @@ class Runtime : public QObject {
 		~Runtime();
 		bool load(StringPool *strPool, const QString &file);
 		llvm::Module *module() {return mModule;}
-		QList<RuntimeFunction*> functions();
+		QList<RuntimeFunction*> functions() {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
 		llvm::Function *cbMain() {return mCBMain;}
 		StringValueType *stringValueType() {return mStringValueType;}
@@ -28,10 +30,13 @@ class Runtime : public QObject {
 		ShortValueType *shortValueType() {return mShortValueType;}
 		ByteValueType *byteValueType() {return mByteValueType;}
 		BooleanValueType *booleanValueType() {return mBooleanValueType;}
+		NullTypePointerValueType *nullTypePointerValueType() {return mNullTypePointerValueType;}
+		ValueType *findValueType(ValueType::Type valType);
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);
-		bool mValid;
 		bool loadValueTypes(StringPool *strPool);
+
+		bool mValid;
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;
 		QList<ValueType*> mValueTypes;
@@ -42,6 +47,8 @@ class Runtime : public QObject {
 		ShortValueType *mShortValueType;
 		ByteValueType *mByteValueType;
 		BooleanValueType *mBooleanValueType;
+		NullTypePointerValueType *mNullTypePointerValueType;
+		QMap<ValueType::Type, ValueType *> mValueTypeEnum;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

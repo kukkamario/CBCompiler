@@ -4,11 +4,16 @@
 class QFile;
 class Symbol {
 	public:
+		enum OverloadSearchError {
+			oseNoError,
+			oseCannotFindAny,
+			oseFoundMultipleOverloads
+		};
 		enum Type {
 			stVariable,
-			stFunction,
-			stCommand,
+			stFunctionOrCommand,
 			stConstant,
+			stArray,
 			stType
 		};
 

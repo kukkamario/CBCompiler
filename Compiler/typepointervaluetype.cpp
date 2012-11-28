@@ -5,7 +5,7 @@
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
 	mTypeSymbol(s){
-	mType = s->llvmType();
+	mType = s->llvmMemberType();
 }
 
 QString TypePointerValueType::name() const {
@@ -18,8 +18,13 @@ ValueType::CastCostType TypePointerValueType::castCost(ValueType *to) const {
 }
 
 Value TypePointerValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	if (v.valueType() != this) { //TODO: NULL
+	if (v.valueType() != this) {
 		return Value();
 	}
 	return v;
+}
+
+
+Value NullTypePointerValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
+	return Value();
 }

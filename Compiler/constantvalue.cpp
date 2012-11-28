@@ -255,7 +255,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 					return ConstantValue();
 			}
 		case ValueType::TypePointer:
-			if (b.mType == ValueType::TypePointer) { // NULL = NULL
+			if (b.mType == ValueType::NULLTypePointer) { // NULL = NULL
 				return true;
 			}
 		default:
@@ -1171,17 +1171,17 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 }
 
 ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::TypePointer || b.mType == ValueType::TypePointer) return ConstantValue();
+	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
 	return a.toBool() && b.toBool();
 }
 
 ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::TypePointer || b.mType == ValueType::TypePointer) return ConstantValue();
+	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
 	return a.toBool() || b.toBool();
 }
 
 ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b){
-	if (a.mType == ValueType::TypePointer || b.mType == ValueType::TypePointer) return ConstantValue();
+	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
 	return a.toBool() ^ b.toBool();
 }
 

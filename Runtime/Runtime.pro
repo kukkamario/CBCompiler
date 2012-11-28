@@ -17,11 +17,19 @@ SOURCES += \
 
 HEADERS += \
     cbstring.h \
-    referencecounter.h \
-    cbfunc.h
+    referencecounter.h
+
+#LLVM_SOURCE += ../atomic_operations.ll
+#build_llvm_source.target = llvm-as
+#build_llvm_source.commands = $$build_llvm_source.target -o llvm.bc $$LLVM_SOURCE
+#QMAKE_PRE_LINK += $$build_llvm_source
+
+OBJECTS += llvm.bc
 
 INCLUDEPATH += "$$(BOOST_INCLUDE)"
-LIBS += "$$(BOOST_LIB)"
-DEFINES += RUNTIME
+
 
 QMAKE_CXXFLAGS += -std=c++0x
+
+OTHER_FILES += \
+    atomic_operations.ll

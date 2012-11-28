@@ -1,5 +1,6 @@
 #ifndef ERRORCODES_H
 #define ERRORCODES_H
+
 namespace ErrorCodes {
 enum ErrorCode {
 	ecLexicalAnalysingFailed,
@@ -50,13 +51,22 @@ enum ErrorCode {
 
 	//Code generation
 	ecNotConstant,
+	ecNotVariable,
+	ecNotTypePointer,
+	ecArraySubscriptNotInteger,
 	ecConstantAlreadyDefined,
 	ecSymbolAlreadyDefinedInRuntime,
 	ecSymbolAlreadyDefined,
 	ecCantFindType,
+	ecCantFindTypeField,
 	ecForcingType,
+	ecNotArrayOrFunction,
+	ecInvalidArraySubscript,
 	ecMathematicalOperationOperandTypeMismatch,
 	ecCantCreateTypePointerLLVMStructType,
+	ecVariableNotDefined,
+	ecCantFindFunction,
+	ecMultiplePossibleOverloads,
 
 	ecTypeHasMultipleFieldsWithSameName,
 

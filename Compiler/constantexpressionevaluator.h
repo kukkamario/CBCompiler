@@ -5,6 +5,9 @@
 #include "constantvalue.h"
 #include "valuetype.h"
 #include "abstractsyntaxtree.h"
+#include "scope.h"
+#include "constantsymbol.h"
+
 class ConstantExpressionEvaluator : public QObject {
 		Q_OBJECT
 	public:
@@ -16,11 +19,11 @@ class ConstantExpressionEvaluator : public QObject {
 		ConstantValue evaluate(const ast::Integer *s);
 		ConstantValue evaluate(const ast::Float *s);
 		ConstantValue evaluate(const ast::Variable *s);
-		void setConstants(const QMap<QString, ConstantValue> &constants);
+		void setGlobalScope(Scope *globalScope);
 		void setCodeFile(QFile *f);
 		void setCodeLine(int l);
 	private:
-		QMap<QString, ConstantValue> mConstants;
+		Scope* mGlobalScope;
 		QFile *mFile;
 		int mLine;
 		void errorConstantAlreadyDefinedWithAnotherType(const QString &name);

@@ -1,5 +1,5 @@
 #include "function.h"
 
-Function::Function():
-	mReturnValue(0), mFunction(0) {
+Function::Function(QFile *f, int line):
+	mReturnValue(0), mFunction(0),mFile(f), mLine(line) {
 }

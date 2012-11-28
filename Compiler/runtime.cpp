@@ -6,7 +6,9 @@
 #include "floatvaluetype.h"
 #include "bytevaluetype.h"
 #include "booleanvaluetype.h"
+#include "typepointervaluetype.h"
 #include "errorcodes.h"
+
 static Runtime *runtimeInstance = 0;
 
 Runtime::Runtime():
@@ -91,6 +93,15 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 
 	mBooleanValueType = new BooleanValueType(this, mModule);
 	mValueTypes.append(mBooleanValueType);
+
+	mNullTypePointerValueType = new NullTypePointerValueType(this);
+	mValueTypes.append(mNullTypePointerValueType);
+
+	mValueTypeEnum[ValueType::Integer] = intValueType();
+	mValueTypeEnum[ValueType::Float] = floatValueType();
+	mValueTypeEnum[ValueType::String]  = stringValueType();
+	mValueTypeEnum[ValueType::Short] = shortValueType();
+	mValueTypeEnum[ValueType::Byte] = byteValueType();
 	return true;
 }
 
@@ -154,12 +165,13 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		return;
 	}
 	if (name == "CB_StringAddition") {
-		if (!mStringValueType->setAdditionFunction(func)) {
+		if (!mStringValueType->setAdditionFunction(func)) { 
 			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringAddition"), 0, 0);
 		}
 		return;
 	}
+
 
 	RuntimeFunction *rtfunc = new RuntimeFunction(this);
 	if (rtfunc->construct(func, name)) {
@@ -176,4 +188,11 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 
 Runtime *Runtime::instance() {
 	return runtimeInstance;
+}
+
+
+ValueType *Runtime::findValueType(ValueType::Type valType) {
+	ValueType *vt = mValueTypeEnum[valType];
+	assert(vt);
+	return vt;
 }

@@ -1,6 +1,7 @@
 #include "constantexpressionevaluator.h"
 #include "errorcodes.h"
-ConstantExpressionEvaluator::ConstantExpressionEvaluator() {
+ConstantExpressionEvaluator::ConstantExpressionEvaluator() :
+	mGlobalScope(0) {
 }
 
 ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Node *s) {
@@ -119,12 +120,13 @@ ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Float *s) {
 }
 
 ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Variable *s) {
-	QMap<QString, ConstantValue>::ConstIterator i = mConstants.find(s->mName);
-	if (i == mConstants.end()) {
+
+	Symbol *sym = mGlobalScope->find(s->mName);
+	if (sym->type() != Symbol::stConstant) {
 		emit error(ErrorCodes::ecNotConstant, tr("\"%1\" is not constant").arg(s->mName), mLine, mFile);
 		return ConstantValue();
 	}
-	const ConstantValue &v = i.value();
+	const ConstantValue &v = static_cast<ConstantSymbol*>(sym)->value();
 	if (s->mVarType != ast::Variable::Default) {
 		switch (s->mVarType) {
 			case ast::Variable::Integer:
@@ -162,13 +164,13 @@ ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Variable *s) {
 				return ConstantValue();
 		}
 	}
-	return i.value();
+	return v;
 }
 
-
-void ConstantExpressionEvaluator::setConstants(const QMap<QString, ConstantValue> &constants) {
-	mConstants = constants;
+void ConstantExpressionEvaluator::setGlobalScope(Scope *globalScope) {
+	mGlobalScope = globalScope;
 }
+
 
 void ConstantExpressionEvaluator::setCodeFile(QFile *f) {
 	mFile = f;

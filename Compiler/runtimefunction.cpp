@@ -8,6 +8,7 @@
 #include "bytevaluetype.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
+	Function(0,0),
 	mRuntime(r) {
 
 }
@@ -37,7 +38,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 	else {
 		return false;
 	}
-	mName = name;
+	mName = name.toLower();
 	int paramNum = funcTy->getFunctionNumParams();
 	if (mName.length() - paramNum < 1) return false;
 	QString paramStr = mName.right(paramNum).toLower();

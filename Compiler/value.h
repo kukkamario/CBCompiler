@@ -3,31 +3,22 @@
 class ValueType;
 #include "llvm.h"
 #include <QString>
+#include "constantvalue.h"
 class Value {
 	public:
 		Value();
 		Value(const Value &value);
-		Value(bool v);
-		Value(int v);
-		Value(float f);
-		Value(quint16 v);
-		Value(quint8 v);
+		Value(const ConstantValue &c);
 		Value(ValueType *t, llvm::Value *v);
 
 		ValueType *valueType() const {return mValueType;}
-		bool isConstant()const{return mConstant;}
+		bool isConstant()const{return mConstant.isValid();}
+		bool isValid() {return mValueType != 0;}
+		llvm::Value *value();
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;
-		bool mConstant;
-		union {
-				bool mBool;
-				int mInt;
-				float mFloat;
-				quint16 mShort;
-				quint8 mByte;
-				QString *mString;
-		} mConstantData;
+		ConstantValue mConstant;
 };
 
 #endif // VALUE_H

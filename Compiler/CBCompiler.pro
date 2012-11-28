@@ -54,7 +54,9 @@ SOURCES += main.cpp \
     constantsymbol.cpp \
     variablesymbol.cpp \
     typesymbol.cpp \
-    typepointervaluetype.cpp
+    typepointervaluetype.cpp \
+    symbolcollectortypechecker.cpp \
+    arraysymbol.cpp
 
 HEADERS += \
     lexer.h \
@@ -87,4 +89,9 @@ HEADERS += \
     constantsymbol.h \
     variablesymbol.h \
     typesymbol.h \
-    typepointervaluetype.h
+    typepointervaluetype.h \
+    symbolcollectortypechecker.h \
+    conversionhelper.h \
+    arraysymbol.h \
+    commandsymbol.h \
+    command.h

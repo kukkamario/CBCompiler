@@ -7,25 +7,25 @@ ReferenceCounter::operator int() {
 
 
 bool ReferenceCounter::increase() {
-	unsigned char ret;
+	/*unsigned char ret;
 	asm volatile("lock\n"
 				 "incl %0\n"
 				 "setne %1"
 				 : "=m" (mCounter), "=qm" (ret)
 				 : "m" (mCounter)
-				 : "memory");
+				 : "memory");*/
 
-	return ret != 0;
+	return atomic_increase(&mCounter);
 }
 
 bool ReferenceCounter::decrease() {
-	unsigned char ret;
+	/*unsigned char ret;
 	asm volatile("lock\n"
 				 "decl %0\n"
 				 "setne %1"
 				 : "=m" (mCounter), "=qm" (ret)
 				 : "m" (mCounter)
-				 : "memory");
+				 : "memory");*/
 
-	return ret != 0;
+	return atomic_decrease(&mCounter);
 }

@@ -1,6 +1,7 @@
 #ifndef REFERENCECOUNTER_H
 #define REFERENCECOUNTER_H
-
+extern "C" bool atomic_increase(volatile int *val);
+extern "C" bool atomic_decrease(volatile int *val);
 class ReferenceCounter {
 	public:
 		ReferenceCounter(): mCounter(0) {}

@@ -24,7 +24,8 @@ class ValueType {
 			Short,
 			Byte,
 			Boolean,
-			TypePointer
+			TypePointer,
+			NULLTypePointer
 		};
 
 		typedef unsigned int CastCostType;

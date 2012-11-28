@@ -13,13 +13,15 @@ class ValueType;
 class Runtime;
 class TypeField {
 	public:
-		TypeField(const QString &name, ValueType *valueType);
+		TypeField(const QString &name, ValueType *valueType, QFile *file, int line);
 		QString name()const{return mName;}
 		ValueType *valueType()const{return mValueType;}
 		QString info() const;
 	private:
 		QString mName;
 		ValueType *mValueType;
+		int mLine;
+		QFile *mFile;
 };
 
 class TypeSymbol : public Symbol {
@@ -28,7 +30,9 @@ class TypeSymbol : public Symbol {
 		Type type()const{return stType;}
 		QString info() const;
 		bool addField(const TypeField &field);
+		bool hasField(const QString &name);
 		const TypeField &field(const QString &name) const;
+		llvm::Type *llvmMemberType() const {return mMemberType;}
 		llvm::Type *llvmType()const{return mType;}
 		bool createTypePointerValueType(Runtime *r);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
@@ -37,6 +41,7 @@ class TypeSymbol : public Symbol {
 		QLinkedList<TypeField> mFields;
 		QMap<QString, QLinkedList<TypeField>::Iterator> mFieldSearch;
 		llvm::Type *mType;
+		llvm::Type *mMemberType;
 		TypePointerValueType *mTypePointerValueType;
 };
 

@@ -19,6 +19,10 @@ bool TypeSymbol::addField(const TypeField &field) {
 	return true;
 }
 
+bool TypeSymbol::hasField(const QString &name) {
+	return mFieldSearch.contains(name);
+}
+
 const TypeField &TypeSymbol::field(const QString &name) const{
 	QMap<QString, QLinkedList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
 	assert(i != mFieldSearch.end());
@@ -28,19 +32,27 @@ const TypeField &TypeSymbol::field(const QString &name) const{
 bool TypeSymbol::createLLVMType(llvm::Module *mod) {
 
 	std::vector<llvm::Type*> members;
+	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //Pointer to type
+	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //last
+	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //next
 	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
 		const TypeField &field = *i;
 		members.push_back(field.valueType()->llvmType());
 	}
-	mType = llvm::StructType::create(mod->getContext(), members,("CBType_" + mName).toStdString());
-	if (!mType) return false;
+	mMemberType = llvm::StructType::create(mod->getContext(), members,("CBType_" + mName).toStdString());
+	if (!mMemberType) return false;
+
+	//TODO TYPE
+
 	return true;
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType) :
+TypeField::TypeField(const QString &name, ValueType *valueType, QFile *file, int line) :
 	mName(name),
-	mValueType(valueType){
+	mValueType(valueType),
+	mLine(line),
+	mFile(file){
 }
 
 QString TypeField::info() const {
@@ -51,6 +63,7 @@ QString TypeField::info() const {
 bool TypeSymbol::createTypePointerValueType(Runtime *r) {
 	if (!createLLVMType(r->module())) return false;
 	mTypePointerValueType = new TypePointerValueType(r, this);
+	return true;
 }
 
 
