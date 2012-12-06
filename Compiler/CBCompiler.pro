@@ -56,7 +56,8 @@ SOURCES += main.cpp \
     typesymbol.cpp \
     typepointervaluetype.cpp \
     symbolcollectortypechecker.cpp \
-    arraysymbol.cpp
+    arraysymbol.cpp \
+    cbfunction.cpp
 
 HEADERS += \
     lexer.h \
@@ -94,4 +95,5 @@ HEADERS += \
     conversionhelper.h \
     arraysymbol.h \
     commandsymbol.h \
-    command.h
+    command.h \
+    cbfunction.h

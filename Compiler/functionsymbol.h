@@ -10,6 +10,7 @@ class FunctionSymbol:public Symbol {
 		FunctionSymbol(const QString &name);
 		Type type() const{ return stFunctionOrCommand; }
 		void addFunction(Function *func);
+		Function *exactMatch(const Function::ParamList &params) const;
 		QList<Function*> functions() const { return mFunctions;}
 		Function *findBestOverload(const QList<ValueType*> &paramTypes, bool command = false, OverloadSearchError *err = 0);
 		QString info() const;

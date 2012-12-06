@@ -10,6 +10,8 @@ class TypePointerValueType : public ValueType {
 		virtual CastCostType castCost(ValueType *to) const;
 		virtual Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
+		bool isTypePointer() const{return true;}
+		bool isNumber() const{return false;}
 	private:
 		TypeSymbol *mTypeSymbol;
 };
@@ -19,7 +21,9 @@ class NullTypePointerValueType : public ValueType {
 		NullTypePointerValueType(Runtime *r) :ValueType(r){}
 		Type type() const {return NULLTypePointer;}
 		QString name() const {return "NULL";}
-		CastCostType castCost(ValueType *to) const {return 0;}
+		CastCostType castCost(ValueType *) const {return 0;}
 		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
+		bool isTypePointer() const{return true;}
+		bool isNumber() const{return false;}
 };
 #endif // TYPEPOINTERVALUETYPE_H

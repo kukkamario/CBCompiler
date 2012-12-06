@@ -13,6 +13,8 @@ class IntValueType : public ValueType {
 
 		Type type() const{return Integer;}
 		llvm::Value *constant(int v);
+		bool isTypePointer() const{return false;}
+		bool isNumber() const{return true;}
 	private:
 
 };

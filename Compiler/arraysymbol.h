@@ -5,6 +5,8 @@ class ValueType;
 class ArraySymbol : public Symbol {
 	public:
 		ArraySymbol(const QString &name, ValueType *valType, int dim, QFile *file, int line);
+		Type type() const{return stArray;}
+		QString info()const;
 		int dimensions() const {return mDimensions;}
 		ValueType *valueType()const {return mValueType;}
 	private:

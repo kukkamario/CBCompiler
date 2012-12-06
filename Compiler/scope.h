@@ -12,6 +12,7 @@ class Scope
 		bool contains(const QString &symbol) const;
 		Symbol *find(const QString &name) const;
 		void writeToStream(QTextStream &s) const;
+		void setParent(Scope *parent);
 		Scope *parent() const {return mParent;}
 	private:
 		void addChildScope(Scope *s);

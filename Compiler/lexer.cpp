@@ -281,7 +281,7 @@ Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString
 	const char * const endRem = "remend";
 	int foundIndex = 0;
 	while (i != end) {
-		if (*i == foundIndex) {
+		if (*i == endRem[foundIndex]) {
 			foundIndex++;
 			if (foundIndex == 6) {
 				i++;
@@ -297,10 +297,10 @@ Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString
 		i++;
 	}
 	emit warning(ErrorCodes::ecExpectingRemEndBeforeEOF, tr("Expecting RemEnd before end of file"), line, file);
+	return Lexer::Error;
 }
 
-Lexer::ReturnState Lexer::readFloatDot(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file)
-{
+Lexer::ReturnState Lexer::readFloatDot(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file) {
 	QString::const_iterator begin = i;
 	while (i != end) {
 		if (!(i->isDigit())) { //Not a number

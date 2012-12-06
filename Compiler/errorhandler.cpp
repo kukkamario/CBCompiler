@@ -10,27 +10,27 @@ ErrorHandler::ErrorHandler()
 void ErrorHandler::warning(int code, QString msg, int line, QFile *file) {
 	if (file) {
 		if (line) {
-			qCritical("Warning [%i] %s at line %i in file %s", code, qPrintable(msg), line, qPrintable(file->fileName()));
+			qCritical("\"%s\" [%i] Warning %i: %s",qPrintable(file->fileName()), line,  code, qPrintable(msg));
 		}
 		else {
-			qCritical("Warning [%i] %s in file %s", code, qPrintable(msg), qPrintable(file->fileName()));
+			qCritical("\"%s\" Warning %i: %s",qPrintable(file->fileName()),  code, qPrintable(msg));
 		}
 	}
 	else {
-		qCritical("Warning [%i] %s", code, qPrintable(msg));
+		qCritical("Warning %i: %s",  code, qPrintable(msg));
 	}
 }
 
 void ErrorHandler::error(int code, QString msg, int line, QFile *file) {
 	if (file) {
 		if (line) {
-			qCritical("Error [%i] %s at line %i in file %s", code, qPrintable(msg), line, qPrintable(file->fileName()));
+			qCritical("\"%s\" [%i] Error %i: %s",qPrintable(file->fileName()), line,  code, qPrintable(msg));
 		}
 		else {
-			qCritical("Error [%i] %s in file %s", code, qPrintable(msg), qPrintable(file->fileName()));
+			qCritical("\"%s\" Error %i: %s",qPrintable(file->fileName()),  code, qPrintable(msg));
 		}
 	}
 	else {
-		qCritical("Error [%i] %s", code, qPrintable(msg));
+		qCritical("Error %i: %s",  code, qPrintable(msg));
 	}
 }

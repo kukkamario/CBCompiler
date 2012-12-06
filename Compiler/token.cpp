@@ -107,11 +107,14 @@ const char *getTokenName(Token::Type t) {
 }
 
 QString Token::toString() const {
-	QString s;
-	for (QString::const_iterator i = mBegin; i != mEnd; i++) {
-		s += *i;
-	}
-	return s;
+	/*QString s;
+	s.resize(reinterpret_cast<int>(mEnd - mBegin) / sizeof(QChar));
+	memcpy(s.data(), mBegin, reinterpret_cast<int>(mEnd - mBegin));
+	return s;*/
+
+	//Tokens must not be deleted. Otherwise bad things happen.
+	if (mBegin >= mEnd) return QString();
+	return QString::fromRawData(mBegin, mEnd - mBegin);
 }
 
 QString Token::typeToString() const {

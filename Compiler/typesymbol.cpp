@@ -32,9 +32,9 @@ const TypeField &TypeSymbol::field(const QString &name) const{
 bool TypeSymbol::createLLVMType(llvm::Module *mod) {
 
 	std::vector<llvm::Type*> members;
-	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //Pointer to type
-	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //last
-	members.push_back(llvm::Type::getVoidTy(mod->getContext())->getPointerTo()); //next
+	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //Pointer to type
+	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //last
+	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //next
 	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
 		const TypeField &field = *i;
 		members.push_back(field.valueType()->llvmType());

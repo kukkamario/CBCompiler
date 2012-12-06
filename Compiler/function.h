@@ -10,12 +10,15 @@ namespace llvm {
 class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
-		Function(QFile *f, int line);
+		Function(const QString &name, QFile *f, int line);
 		QString name() const{return mName;}
 		ValueType *returnValue() {return mReturnValue;}
 		int requiredParams() const { return mRequiredParams;} //Params without default value
 		ParamList paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
+		QFile *file()const {return mFile;}
+		int line()const{return mLine;}
+		virtual bool isRuntimeFunction() const = 0;
 	protected:
 		QString mName;
 		ValueType *mReturnValue;

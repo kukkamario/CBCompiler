@@ -12,6 +12,8 @@ class ShortValueType : public ValueType
 		CastCostType castCost(ValueType *to) const;
 		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
 		llvm::Value *constant(quint16 i);
+		bool isTypePointer() const{return false;}
+		bool isNumber() const{return true;}
 	private:
 };
 

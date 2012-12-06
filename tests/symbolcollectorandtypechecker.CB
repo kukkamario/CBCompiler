@@ -1,0 +1,28 @@
+Global globalStr As String
+Type tType
+    Field f1
+    Field f2 As Float
+    Field f4.type2
+EndType
+
+Type type2
+    Field f1
+EndType
+
+
+c = 23
+Print c+" Celcius equals to "+Fahrenheit(c)+" Fahrenheit"
+
+t2.type2 = New (type2)
+
+t.tType = New (tType)
+t\f4 = t2
+
+
+
+Function Fahrenheit(degrees) As Integer
+    fah=(degrees-32)/1.8
+    
+    Return fah
+
+End Function

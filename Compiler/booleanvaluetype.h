@@ -13,6 +13,8 @@ class BooleanValueType : public ValueType {
 		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
 		Type type() const{return Byte;}
 		llvm::Value *constant(bool t);
+		bool isTypePointer() const{return false;}
+		bool isNumber() const{return true;}
 	private:
 		llvm::Type *mType;
 };

@@ -294,6 +294,8 @@ ast::Variable::VarType Parser::tryVarTypeSymbol(Parser::TokIterator &i)
 
 ast::Node *Parser::tryReturn(Parser::TokIterator &i) {
 	if (i->mType == Token::kReturn) {
+		int line = i->mLine;
+		QFile *file = i->mFile;
 		i++;
 		ast::Node *r = 0;
 		if (!i->isEndOfStatement()) {
@@ -302,6 +304,8 @@ ast::Node *Parser::tryReturn(Parser::TokIterator &i) {
 		if (mStatus == Error) return 0;
 		ast::Return *ret = new ast::Return;
 		ret->mValue = r;
+		ret->mFile = file;
+		ret->mLine = line;
 		return ret;
 	}
 	return 0;
@@ -1356,6 +1360,8 @@ ast::Node *Parser::tryAssignmentExpression(TokIterator &i) {
 	QString name = i->toString();
 	TokIterator begin = i;
 	ast::Node *var = 0;
+	int line = i->mLine;
+	QFile *file = i->mFile;
 	i++;
 	if (i->mType == Token::opTypePtrType) {
 		i++;
@@ -1403,6 +1409,8 @@ ast::Node *Parser::tryAssignmentExpression(TokIterator &i) {
 		ast::AssignmentExpression *ret = new ast::AssignmentExpression;
 		ret->mVariable = var;
 		ret->mExpression = expr;
+		ret->mFile = file;
+		ret->mLine = line;
 		return ret;
 	}
 

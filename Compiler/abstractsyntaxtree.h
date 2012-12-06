@@ -106,6 +106,8 @@ struct Integer : Node {
 struct Return : Node {
 		Type type() const {return ntReturn; }
 		Node *mValue;
+		QFile *mFile;
+		int mLine;
 };
 
 struct New : Node {

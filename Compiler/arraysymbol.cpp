@@ -6,3 +6,7 @@ ArraySymbol::ArraySymbol(const QString &name, ValueType *valType, int dim, QFile
 	mDimensions(dim)
 {
 }
+
+QString ArraySymbol::info() const {
+	return QString("Array \"%1\", %1").arg(mName);
+}

@@ -10,6 +10,14 @@ void FunctionSymbol::addFunction(Function *func) {
 	mFunctions.append(func);
 }
 
+Function *FunctionSymbol::exactMatch(const Function::ParamList &params) const{
+	for (QList<Function*>::ConstIterator i = mFunctions.begin(); i != mFunctions.end(); i++) {
+		Function *func = *i;
+		if (func->paramTypes() == params) return func;
+	}
+	return 0;
+}
+
 Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes, bool command, FunctionSymbol::OverloadSearchError *err)
 {
 	if (err) *err = oseNoError;
@@ -73,8 +81,8 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 }
 
 QString FunctionSymbol::info() const {
-	QString str("Function %1, %2 overloads");
-	str.arg(mName, QString::number(mFunctions.count()));
+	QString str("Function " + mName);
+	if (mFunctions.count() > 1) str += ", " + QString::number(mFunctions.count()) + " overloads";
 	return str;
 }
 

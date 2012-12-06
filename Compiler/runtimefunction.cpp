@@ -8,7 +8,7 @@
 #include "bytevaluetype.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
-	Function(0,0),
+	Function(QString(), 0,0),
 	mRuntime(r) {
 
 }

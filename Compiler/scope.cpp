@@ -50,6 +50,14 @@ void Scope::writeToStream(QTextStream &s) const {
 	}
 }
 
+void Scope::setParent(Scope *parent) {
+	if (mParent) {
+		mParent->removeChildScope(this);
+	}
+	mParent = parent;
+	mParent->addChildScope(this);
+}
+
 void Scope::addChildScope(Scope *s) {
 	mChildScopes.append(s);
 }

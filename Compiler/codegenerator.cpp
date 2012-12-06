@@ -13,15 +13,20 @@
 #include "typepointervaluetype.h"
 #include "functionsymbol.h"
 #include "conversionhelper.h"
+#include "cbfunction.h"
 
 CodeGenerator::CodeGenerator() :
 	mGlobalScope("Global"),
 	mMainScope("Main", &mGlobalScope) {
 	mConstEval.setGlobalScope(&mGlobalScope);
+	mTypeChecker.setRuntime(&mRuntime);
+	mTypeChecker.setGlobalScope(&mGlobalScope);
 	connect(&mConstEval, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mConstEval, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 	connect(&mRuntime, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mRuntime, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
+	connect(&mTypeChecker, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
+	connect(&mTypeChecker, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 }
 
 bool CodeGenerator::initialize(const QString &runtimeFile) {
@@ -35,9 +40,15 @@ bool CodeGenerator::initialize(const QString &runtimeFile) {
 }
 
 bool CodeGenerator::generate(ast::Program *program) {
-	bool constS = evaluateConstants(program);
-	bool typeS = addTypesToScope(program);
-	bool globalS = addGlobalsToScope(program);
+	bool constantsValid = evaluateConstants(program);
+	bool typesValid = addTypesToScope(program);
+	bool globalsValid = addGlobalsToScope(program);
+	bool functionDefinitionsValid = addFunctions(program);
+	if (!(constantsValid && globalsValid && typesValid && functionDefinitionsValid)) return false;
+
+	bool mainScopeValid = checkMainScope(program);
+	bool functionLocalScopesValid = checkFunctions();
+
 #ifdef _DEBUG
 	QFile file("scopes.txt");
 	if (file.open(QFile::WriteOnly)) {
@@ -49,7 +60,8 @@ bool CodeGenerator::generate(ast::Program *program) {
 		qCritical() << "Can't open scopes.txt";
 	}
 #endif
-	if (!(constS && globalS && typeS)) return false;
+	if (!(mainScopeValid && functionLocalScopesValid)) return false;
+
 	return true;
 }
 
@@ -66,10 +78,111 @@ bool CodeGenerator::addRuntimeFunctions() {
 		}
 		else {
 			funcSym = new FunctionSymbol(func->name());
+			mGlobalScope.addSymbol(funcSym);
 		}
 		funcSym->addFunction(func);
 	}
 	return true;
+}
+
+bool CodeGenerator::addFunctions(ast::Program *program) {
+	bool valid = true;
+	for (QList<ast::FunctionDefinition*>::ConstIterator i = program->mFunctions.begin(); i != program->mFunctions.end(); i++) {
+		ast::FunctionDefinition *funcDef = *i;
+		QList<CBFunction::Parametre> params;
+		bool funcValid = true;
+		for (QList<ast::FunctionParametreDefinition>::ConstIterator i = funcDef->mParams.begin(), end = funcDef->mParams.end(); i != end; ++i) {
+			const ast::FunctionParametreDefinition &paramDef = *i;
+			if (mGlobalScope.find(paramDef.mVariable.mName)) {
+				emit error(ErrorCodes::ecParametreSymbolAlreadyDefined,
+						   tr("Parametre symbol \"%1\" already defined").arg(paramDef.mVariable.mName),
+						   funcDef->mLine, funcDef->mFile);
+				funcValid = false;
+				continue;
+			}
+			CBFunction::Parametre param;
+			param.mName = paramDef.mVariable.mName;
+			if (paramDef.mDefaultValue) {
+				mConstEval.setCodeFile(funcDef->mFile);
+				mConstEval.setCodeLine(funcDef->mLine);
+				param.mDefaultValue = mConstEval.evaluate(paramDef.mDefaultValue);
+				if (!param.mDefaultValue.isValid())  {
+					funcValid = false;
+				}
+			}
+
+			if (paramDef.mVariable.mVarType != ast::Variable::TypePtr) {
+				param.mType = mRuntime.findValueType(valueTypeFromVarType(paramDef.mVariable.mVarType));
+			}
+			else {
+				TypeSymbol *ts = findTypeSymbol(paramDef.mVariable.mTypeName, funcDef->mFile, funcDef->mLine);
+				if (!ts) {
+					funcValid = false;
+					continue;
+				}
+				param.mType = ts->typePointerValueType();
+			}
+			params.append(param);
+		}
+		if (!funcValid) {
+			valid = false;
+			continue;
+		}
+
+		ValueType *retT = mRuntime.findValueType(valueTypeFromVarType(funcDef->mRetType));
+
+		Symbol *sym;
+		FunctionSymbol *funcSym;
+		if (sym = mGlobalScope.find(funcDef->mName)) {
+			if (sym->type() == Symbol::stFunctionOrCommand) {
+				emit error(ErrorCodes::ecSymbolAlreadyDefined,
+						   tr("Symbol \"%1\" already defined at line %2 in file %3").arg(funcDef->mName, QString::number(sym->line()), sym->file()->fileName()),
+						   funcDef->mLine, funcDef->mFile);
+				valid = false;
+				continue;
+			}
+			funcSym = static_cast<FunctionSymbol*>(sym);
+		}
+		else {
+			funcSym = new FunctionSymbol(funcDef->mName);
+			mGlobalScope.addSymbol(funcSym);
+		}
+
+		CBFunction *cbFunc = new CBFunction(funcDef->mName, retT, params, funcDef->mLine, funcDef->mFile);
+		Function *otherFunc;
+		if ((otherFunc = funcSym->exactMatch(cbFunc->paramTypes()))) {
+			if (otherFunc->isRuntimeFunction()) {
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("The function \"%1\" already defined in the runtime library").arg(funcDef->mName), funcDef->mLine, funcDef->mFile);
+				valid = false;
+				continue;
+			}
+			else {
+				emit error(ErrorCodes::ecFunctionAlreadyDefined,
+						   tr("The function \"%1\" already defined at line %2 in file \"%3\"").arg(funcDef->mName, QString::number(otherFunc->line()),otherFunc->file()->fileName()),
+						   funcDef->mLine, funcDef->mFile);
+				valid = false;
+				continue;
+			}
+		}
+		cbFunc->scope()->setParent(&mGlobalScope);
+		cbFunc->setBlock(&funcDef->mBlock);
+		mCBFunctions.append(cbFunc);
+		funcSym->addFunction(cbFunc);
+	}
+	return valid;
+}
+
+bool CodeGenerator::checkMainScope(ast::Program *program) {
+	return mTypeChecker.run(&program->mMainBlock, &mMainScope);
+}
+
+bool CodeGenerator::checkFunctions() {
+	bool valid = true;
+	for (QList<CBFunction*>::ConstIterator i = mCBFunctions.begin(), end = mCBFunctions.end(); i != end; ++i) {
+		mTypeChecker.setReturnValueType((*i)->returnValue());
+		if (!mTypeChecker.run((*i)->block(), (*i)->scope())) valid = false;
+	}
+	return valid;
 }
 
 bool CodeGenerator::evaluateConstants(ast::Program *program) {
@@ -176,9 +289,9 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 		for (QList<QPair<int, ast::Variable*> >::ConstIterator f = def->mFields.begin(); f != def->mFields.end(); f++ ) {
 			const QPair<int, ast::Variable*> &fieldDef = *f;
 			if (fieldDef.second->mVarType == ast::Variable::TypePtr) {
-				TypeSymbol *type = findTypeSymbol(fieldDef.second->mTypeName, def->mFile, fieldDef.first);
-				if (type) {
-					if (!type->addField(TypeField(fieldDef.second->mName, type->typePointerValueType(), def->mFile, fieldDef.first))) {
+				TypeSymbol *t = findTypeSymbol(fieldDef.second->mTypeName, def->mFile, fieldDef.first);
+				if (t) {
+					if (!type->addField(TypeField(fieldDef.second->mName, t->typePointerValueType(), def->mFile, fieldDef.first))) {
 						emit error(ErrorCodes::ecTypeHasMultipleFieldsWithSameName, tr("Type \"%1\" has already field with name \"%2\"").arg(def->mName, fieldDef.second->mName), fieldDef.first, def->mFile);
 						valid = false;
 					}

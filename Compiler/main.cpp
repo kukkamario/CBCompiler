@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 #endif
 	}
 	if (!parser.success()) {
-		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed"), 0, lexer.files().first().first);
+		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), 0, 0);
 		return 1;
 	}
 
