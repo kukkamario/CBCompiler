@@ -25,7 +25,3 @@ Value::Value(const ConstantValue &c) :
 Value::Value(ValueType *t, llvm::Value *v):
 	mValueType(t), mValue(v) {
 }
-
-llvm::Value *Value::value() {
-	return 0;
-}

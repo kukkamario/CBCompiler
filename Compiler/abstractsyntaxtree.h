@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QPair>
 class QFile;
+class Function;
 namespace ast {
 enum Operator {
 	opEqual,

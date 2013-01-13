@@ -12,7 +12,7 @@ class VariableSymbol : public Symbol{
 		Type type()const {return stVariable;}
 		QString info() const;
 		void setAlloca(llvm::Value *alloc) {mAlloca = alloc;}
-		llvm::Value *alloca()const {return mAlloca;}
+		llvm::Value *alloca_()const {return mAlloca;}
 		ValueType *valueType()const{return mValueType;}
 	private:
 		ValueType *mValueType;

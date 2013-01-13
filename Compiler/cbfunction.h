@@ -26,6 +26,7 @@ class CBFunction : public Function {
 		ast::Block *block() const {return mBlock;}
 		Scope *scope() const {return mScope;}
 		bool isRuntimeFunction() const {return false;}
+		Value call(Builder *builder, const QList<Value> &params);
 	private:
 		QList<Parametre> mParams;
 		Scope *mScope;

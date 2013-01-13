@@ -4,9 +4,12 @@
 #include <QString>
 class ValueType;
 class QFile;
+class Builder;
+class Value;
 namespace llvm {
 	class Function;
 }
+
 class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
@@ -19,6 +22,8 @@ class Function {
 		QFile *file()const {return mFile;}
 		int line()const{return mLine;}
 		virtual bool isRuntimeFunction() const = 0;
+		bool isCommand() const {return mReturnValue == 0;}
+		virtual Value call(Builder *builder, const QList<Value> &params) = 0;
 	protected:
 		QString mName;
 		ValueType *mReturnValue;

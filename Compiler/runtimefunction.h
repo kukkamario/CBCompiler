@@ -8,6 +8,7 @@ class RuntimeFunction : public Function {
 		RuntimeFunction(Runtime * r);
 		bool construct(llvm::Function *func, const QString &name);
 		bool isRuntimeFunction() const {return true;}
+		Value call(Builder *builder, const QList<Value> &params);
 	private:
 		Runtime *mRuntime;
 };

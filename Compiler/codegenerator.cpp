@@ -62,6 +62,8 @@ bool CodeGenerator::generate(ast::Program *program) {
 #endif
 	if (!(mainScopeValid && functionLocalScopesValid)) return false;
 
+
+
 	return true;
 }
 

@@ -14,7 +14,8 @@ class Value {
 		ValueType *valueType() const {return mValueType;}
 		bool isConstant()const{return mConstant.isValid();}
 		bool isValid() {return mValueType != 0;}
-		llvm::Value *value();
+		llvm::Value *value() {return mValue;}
+		const ConstantValue &constant() const {return mConstant;}
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;

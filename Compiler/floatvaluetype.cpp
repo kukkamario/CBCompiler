@@ -1,7 +1,7 @@
 #include "floatvaluetype.h"
 #include "llvm.h"
 #include "value.h"
-
+#include "builder.h"
 
 FloatValueType::FloatValueType(Runtime *runtime, llvm::Module *mod) :
 	ValueType(runtime){
@@ -27,9 +27,10 @@ ValueType::CastCostType FloatValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value FloatValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	return Value();
+Value FloatValueType::cast(Builder *builder, const Value &v) const {
+	return builder->toFloat(v);
 }
+
 
 llvm::Value *FloatValueType::constant(float f) {
 	return llvm::ConstantFP::get(mType->getContext(), llvm::APFloat(f));

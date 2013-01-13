@@ -14,7 +14,8 @@ class Symbol {
 			stFunctionOrCommand,
 			stConstant,
 			stArray,
-			stType
+			stType,
+			stLabel
 		};
 
 		Symbol(const QString &name, QFile *f, int line);

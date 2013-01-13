@@ -1,6 +1,7 @@
 #include "stringvaluetype.h"
 #include "value.h"
 #include "stringpool.h"
+#include "builder.h"
 
 StringValueType::StringValueType(StringPool *strPool, Runtime *r, llvm::Module *mod) :
 	ValueType(r),
@@ -129,8 +130,8 @@ ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 
 
 
-Value StringValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	return Value();
+Value StringValueType::cast(Builder *builder, const Value &v) const {
+	return builder->toString(v);
 }
 
 llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr) {

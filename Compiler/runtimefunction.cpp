@@ -6,6 +6,8 @@
 #include "intvaluetype.h"
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
+#include "value.h"
+#include "builder.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
 	Function(QString(), 0,0),
@@ -71,4 +73,13 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		param++;
 	}
 	return true;
+}
+
+Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
+	std::vector<llvm::Value*> p;
+	QList<Value>::ConstIterator pi = params.begin();
+	for (ParamList::ConstIterator i = mParamTypes.begin(); i != mParamTypes.end(); ++i) {
+		p.push_back(builder->llvmValue((*i)->cast(*pi)));
+	}
+	return Value(mReturnValue, builder->irBuilder().CreateCall(mFunction, p));
 }

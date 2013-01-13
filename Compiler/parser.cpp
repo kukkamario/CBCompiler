@@ -1,4 +1,4 @@
-#include "parser.h"
+﻿#include "parser.h"
 #include "errorcodes.h"
 Parser::Parser():
 	mStatus(Ok)
@@ -1323,7 +1323,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		case Token::kNew: {
 			i++;
 			if (i->mType != Token::LeftParenthese) {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after �\"New\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after ´\"New\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
 				return 0;
 			}

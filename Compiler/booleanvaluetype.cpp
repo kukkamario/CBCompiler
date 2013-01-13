@@ -1,6 +1,7 @@
 #include "booleanvaluetype.h"
 #include "value.h"
 #include "llvm.h"
+#include "builder.h"
 BooleanValueType::BooleanValueType(Runtime *r, llvm::Module *mod) :
 	ValueType(r){
 	mType = llvm::Type::getInt1Ty(mod->getContext());
@@ -25,8 +26,8 @@ ValueType::CastCostType BooleanValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value BooleanValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	return Value();
+Value BooleanValueType::cast(Builder *builder, const Value &v) const {
+	return builder->toBoolean(v);
 }
 
 llvm::Value *BooleanValueType::constant(bool t) {

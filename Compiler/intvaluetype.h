@@ -9,7 +9,7 @@ class IntValueType : public ValueType {
 		CastCostType castCost(ValueType *to) const;
 
 		/** Casts given value to this ValueType */
-		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
+		Value cast(Builder *builder, const Value &v) const;
 
 		Type type() const{return Integer;}
 		llvm::Value *constant(int v);

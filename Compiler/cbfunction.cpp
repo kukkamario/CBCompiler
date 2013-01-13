@@ -21,3 +21,8 @@ CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBF
 bool CBFunction::generateFunction(const ast::FunctionDefinition *funcDef) {
 	return true;
 }
+
+
+Value CBFunction::call(Builder *builder, const QList<Value> &params) {
+	assert(0);
+}

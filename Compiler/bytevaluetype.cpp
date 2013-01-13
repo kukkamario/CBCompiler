@@ -27,8 +27,8 @@ ValueType::CastCostType ByteValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value ByteValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	return Value();
+Value ByteValueType::cast(Builder *builder, const Value &v) const {
+	return builder->toByte(v);
 }
 
 llvm::Value *ByteValueType::constant(quint8 i) {

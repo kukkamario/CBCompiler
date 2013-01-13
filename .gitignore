@@ -15,3 +15,5 @@ Makefile.*
 *.pch
 *.exp
 moc_*.cpp
+*.rc
+*.res

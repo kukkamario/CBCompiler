@@ -47,7 +47,6 @@ SOURCES += main.cpp \
     floatvaluetype.cpp \
     shortvaluetype.cpp \
     bytevaluetype.cpp \
-    expressiongenerator.cpp \
     booleanvaluetype.cpp \
     constantexpressionevaluator.cpp \
     constantvalue.cpp \
@@ -57,7 +56,11 @@ SOURCES += main.cpp \
     typepointervaluetype.cpp \
     symbolcollectortypechecker.cpp \
     arraysymbol.cpp \
-    cbfunction.cpp
+    cbfunction.cpp \
+    functioncodegenerator.cpp \
+    expressioncodegenerator.cpp \
+    labelsymbol.cpp \
+    builder.cpp
 
 HEADERS += \
     lexer.h \
@@ -82,7 +85,6 @@ HEADERS += \
     floatvaluetype.h \
     shortvaluetype.h \
     bytevaluetype.h \
-    expressiongenerator.h \
     booleanvaluetype.h \
     constantexpressionevaluator.h \
     constantvalue.h \
@@ -96,4 +98,8 @@ HEADERS += \
     arraysymbol.h \
     commandsymbol.h \
     command.h \
-    cbfunction.h
+    cbfunction.h \
+    functioncodegenerator.h \
+    expressioncodegenerator.h \
+    labelsymbol.h \
+    builder.h

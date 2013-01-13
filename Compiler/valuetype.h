@@ -13,6 +13,7 @@ namespace llvm {
 	class IRBuilder;
 
 }
+class Builder;
 class Runtime;
 class ValueType {
 	public:
@@ -40,7 +41,7 @@ class ValueType {
 		/** Calculates cost for casting this ValueType to given ValueType.
 		 *If returned cost is over maxCastCost, cast cannot be done. */
 		virtual CastCostType castCost(ValueType *to) const = 0;
-		virtual Value cast(llvm::IRBuilder<> *builder, const Value &v) const = 0;
+		virtual Value cast(Builder *builder, const Value &v) const = 0;
 		llvm::LLVMContext &context();
 	protected:
 		llvm::Type *mType;

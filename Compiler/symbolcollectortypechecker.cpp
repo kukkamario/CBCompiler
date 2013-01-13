@@ -15,6 +15,7 @@
 #include "bytevaluetype.h"
 #include "booleanvaluetype.h"
 #include "arraysymbol.h"
+#include "labelsymbol.h"
 SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
 	mGlobalScope(0),
@@ -648,6 +649,25 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Return *s) {
 		}
 		return true;
 	}
+}
+
+bool SymbolCollectorTypeChecker::checkStatement(ast::Label *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	Symbol *sym = mScope->find(s->mName);
+	if (!sym) {
+		LabelSymbol *label = new LabelSymbol(s->mName, mFile, mLine);
+		mScope->addSymbol(label);
+		return true;
+	}
+	if (sym->type() == Symbol::stLabel) {
+		emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
+	}
+	else {
+		emit error(ErrorCodes::ecSymbolAlreadyDefined, tr("Symbol already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
+	}
+
+	return false;
 }
 
 ValueType *SymbolCollectorTypeChecker::checkTypePointerType(const QString &typeName) {

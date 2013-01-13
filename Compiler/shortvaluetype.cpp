@@ -1,6 +1,7 @@
 #include "shortvaluetype.h"
 #include "llvm.h"
 #include "value.h"
+#include "builder.h"
 ShortValueType::ShortValueType(Runtime *r, llvm::Module *mod) :
 	ValueType(r){
 	mType = llvm::Type::getInt16Ty(mod->getContext());
@@ -25,8 +26,8 @@ ValueType::CastCostType ShortValueType::castCost(ValueType *to) const {
 	}
 }
 
-Value ShortValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
-	return Value();
+Value ShortValueType::cast(Builder *builder, const Value &v) const {
+	return builder->toShort(v);
 }
 
 llvm::Value *ShortValueType::constant(quint16 i) {

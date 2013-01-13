@@ -79,6 +79,7 @@ enum ErrorCode {
 	ecExpectingValueAfterReturn,
 	ecInvalidReturn,
 	ecGosubCannotReturnValue,
+	ecLabelAlreadyDefined,
 
 	ecTypeHasMultipleFieldsWithSameName,
 

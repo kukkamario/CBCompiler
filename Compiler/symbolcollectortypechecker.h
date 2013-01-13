@@ -39,6 +39,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::CommandCall *s);
 		bool checkStatement(ast::FunctionCallOrArraySubscript *s);
 		bool checkStatement(ast::Return *s);
+		bool checkStatement(ast::Label *s);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 
