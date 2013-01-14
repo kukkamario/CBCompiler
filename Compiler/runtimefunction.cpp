@@ -72,6 +72,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		}
 		param++;
 	}
+	mRequiredParams = mParamTypes.size();
 	return true;
 }
 
@@ -79,7 +80,7 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	std::vector<llvm::Value*> p;
 	QList<Value>::ConstIterator pi = params.begin();
 	for (ParamList::ConstIterator i = mParamTypes.begin(); i != mParamTypes.end(); ++i) {
-		p.push_back(builder->llvmValue((*i)->cast(*pi)));
+		p.push_back(builder->llvmValue((*i)->cast(builder, *pi)));
 	}
 	return Value(mReturnValue, builder->irBuilder().CreateCall(mFunction, p));
 }

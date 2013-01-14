@@ -3,6 +3,7 @@
 #include "arraysymbol.h"
 #include "variablesymbol.h"
 #include "functionsymbol.h"
+#include "builder.h"
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
 	mCurrentBasicBlock(0),
@@ -10,10 +11,15 @@ FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	mFunction(0),
 	mCurrentBasicBlockIt(mBasicBlocks.end()),
 	mCurrentExit(mBasicBlocks.end()),
-	mExprGen(this)
-{
-	connect(&mExprGen, &ExpressionCodeGenerator::error, this, &FunctionCodeGenerator::error);
-	connect(&mExprGen, &ExpressionCodeGenerator::warning, this, &FunctionCodeGenerator::warning);
+	mExprGen(this),
+	mBuilder(0),
+	mSetupBasicBlock(0){
+	connect(&mExprGen, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
+	connect(&mExprGen,SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
+}
+
+void FunctionCodeGenerator::setRuntime(Runtime *r) {
+	mRuntime = r;
 }
 
 void FunctionCodeGenerator::setFunction(llvm::Function *func) {
@@ -26,6 +32,7 @@ void FunctionCodeGenerator::setIsMainScope(bool t) {
 
 void FunctionCodeGenerator::setScope(Scope *scope) {
 	mScope = scope;
+	mExprGen.setScope(scope);
 }
 
 void FunctionCodeGenerator::setSetupBasicBlock(llvm::BasicBlock *bb) {
@@ -35,6 +42,13 @@ void FunctionCodeGenerator::setSetupBasicBlock(llvm::BasicBlock *bb) {
 
 bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	assert(mFunction);
+
+	if (!mBuilder) {
+		mBuilder = new Builder(mFunction->getContext());
+		mExprGen.setBuilder(mBuilder);
+		mBuilder->setRuntime(mRuntime);
+	}
+
 	if (!mSetupBasicBlock) {
 		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "First basic block", mFunction);
 	}
@@ -44,39 +58,126 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 
 	if (!basicBlockGenerationPass(n)) return false;
 
-	return generate(n);
+	mCurrentBasicBlock = mBasicBlocks.first();
+	mCurrentBasicBlockIt = mBasicBlocks.begin();
+
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+
+	if (!generateLocalVariables()) return false;
+
+	if (!generate(n)) return false;
+	if (!generateDestructors()) return false;
+
+	if (mIsMainScope) mBuilder->irBuilder().CreateRetVoid();
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::Node *n) {
+	switch(n->type()) {
+		case ast::Node::ntArrayDefinition:
+			return generate((ast::ArrayDefinition*)n);
+		case ast::Node::ntArraySubscriptAssignmentExpression:
+			return generate((ast::ArraySubscriptAssignmentExpression*)n);
+		case ast::Node::ntAssignmentExpression:
+			return generate((ast::AssignmentExpression*)n);
+		case ast::Node::ntBlock:
+			return generate((ast::Block*)n);
+		case ast::Node::ntCommandCall:
+			return generate((ast::CommandCall*)n);
+		case ast::Node::ntExit:
+			return generate((ast::Exit*)n);
+		case ast::Node::ntForEachStatement:
+			return generate((ast::ForEachStatement*)n);
+		case ast::Node::ntForToStatement:
+			return generate((ast::ForToStatement*)n);
+		case ast::Node::ntFunctionCallOrArraySubscript:
+			return generate((ast::FunctionCallOrArraySubscript*)n);
+		case ast::Node::ntGosub:
+			return generate((ast::Gosub*)n);
+		case ast::Node::ntGoto:
+			return generate((ast::Goto*)n);
+		case ast::Node::ntIfStatement:
+			return generate((ast::IfStatement*)n);
+		case ast::Node::ntLabel:
+			return true;
+		case ast::Node::ntRedim:
+			return generate((ast::Redim*)n);
+		case ast::Node::ntRepeatForeverStatement:
+			return generate((ast::RepeatForeverStatement*)n);
+		case ast::Node::ntRepeatUntilStatement:
+			return generate((ast::RepeatUntilStatement*)n);
+		case ast::Node::ntReturn:
+			return generate((ast::Return*)n);
+		case ast::Node::ntSelectStatement:
+			return generate((ast::SelectStatement*)n);
+		case ast::Node::ntVariableDefinition:
+			return generate((ast::VariableDefinition*)n);
+		case ast::Node::ntWhileStatement:
+			return generate((ast::VariableDefinition*)n);
+	}
+	assert(0);
+	return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
+	assert(0);
+	return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::AssignmentExpression *n) {
+	Value val = mExprGen.generate(n->mExpression);
+	if (!val.isValid()) return false;
+
+	if (n->mVariable->type() == ast::Node::ntVariable) {
+		Symbol *sym = mScope->find(static_cast<ast::Variable*>(n->mVariable)->mName);
+		assert(sym->type() == Symbol::stVariable);
+		VariableSymbol *var = static_cast<VariableSymbol*>(sym);
+		mBuilder->store(var, val);
+		return true;
+	}
+	else if (n->mVariable->type() == ast::Node::ntTypePtrField) {
+		assert(0);
+	}
+	else {
+		assert(0); //Should never happen
+	}
+	return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::CommandCall *n) {
 	Symbol *sym = scope()->find(n->mName);
 	assert(sym->type() == Symbol::stFunctionOrCommand);
 
-
-
+	QList<ValueType*> valueTypes;
+	QList<Value> params;
+	for (QList<ast::Node*>::ConstIterator i = n->mParams.begin();i != n->mParams.end(); i++) {
+		Value p = mExprGen.generate(*i);
+		valueTypes.append(p.valueType());
+		params.append(p);
+	}
 
 	FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
-	funcSym->findBestOverload()
+	Function *command = funcSym->findBestOverload(valueTypes, true);
+	assert(command);
+
+	command->call(mBuilder, params);
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
+	assert(0); return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
+	assert(0); return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::Exit *n) {
+	assert(0); return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::Return *n) {
+	assert(0); return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::Block *n) {
@@ -84,6 +185,52 @@ bool FunctionCodeGenerator::generate(ast::Block *n) {
 		ast::Node *s = *i;
 		if (!generate(s)) return false;
 	}
+	return true;
+}
+
+bool FunctionCodeGenerator::generate(ast::ArrayDefinition *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::ArraySubscriptAssignmentExpression *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::SelectStatement *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::ForEachStatement *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::ForToStatement *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::Goto *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::Gosub *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::RepeatUntilStatement *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::WhileStatement *n) {
+	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::VariableDefinition *n) {
+	//Empty?
+	return true;
+}
+
+bool FunctionCodeGenerator::generate(ast::Redim *n) {
+	assert(0); return false;
 }
 
 bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {
@@ -110,8 +257,8 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {
 			case ast::Node::ntGosub:
 			case ast::Node::ntGoto:
 				addBasicBlock(); break;
-			case ast::SelectStatement:
-				b = basicBlockGenerationPass((ast::SelectStatement*)s); break;
+			case ast::Node::ntSelectStatement:
+				v = basicBlockGenerationPass((ast::SelectStatement*)s); break;
 
 		}
 		if (!v) valid = false;
@@ -169,7 +316,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Label *n) {
 	addBasicBlock();
 	Symbol *sym = scope()->find(n->mName);
 	assert(sym && sym->type() == Symbol::stLabel);
-	LabelSymbol *label = static_cast<LabelSymbol>(sym);
+	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
 	label->setBasicBlock(mCurrentBasicBlock);
 	return true;
 }
@@ -190,6 +337,27 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::SelectStatement *n) {
 void FunctionCodeGenerator::addBasicBlock() {
 	mCurrentBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "First basic block", mFunction);
 	assert(mCurrentBasicBlock);
-	mBasicBlocks.append(mBasicBlocks);
-	mCurrentBasicBlockIt = --mBasicBlocks.end();
+	mBasicBlocks.append(mCurrentBasicBlock);
+	mCurrentBasicBlockIt = mBasicBlocks.end();
+	--mCurrentBasicBlockIt;
+}
+
+bool FunctionCodeGenerator::generateLocalVariables() {
+	for (Scope::ConstIterator i = mScope->begin(); i != mScope->end(); ++i) {
+		Symbol *sym = i.value();
+		if (sym->type() == Symbol::stVariable) {
+			mBuilder->construct(static_cast<VariableSymbol*>(sym));
+		}
+	}
+	return true;
+}
+
+bool FunctionCodeGenerator::generateDestructors() {
+	for (Scope::ConstIterator i = mScope->begin(); i != mScope->end(); ++i) {
+		Symbol *sym = i.value();
+		if (sym->type() == Symbol::stVariable) {
+			mBuilder->destruct(static_cast<VariableSymbol*>(sym));
+		}
+	}
+	return true;
 }

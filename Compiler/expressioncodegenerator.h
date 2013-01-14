@@ -20,6 +20,9 @@ class ExpressionCodeGenerator : public QObject {
 		Value generate(ast::String *n);
 		Value generate(ast::Expression *n);
 		Value generate(ast::Unary *n);
+		Value generate(ast::Variable *n);
+		Value generate(ast::TypePtrField *n);
+		Value generate(ast::New *n);
 	private:
 		Builder *mBuilder;
 		Scope *mScope;

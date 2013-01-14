@@ -15,9 +15,12 @@
 #include "conversionhelper.h"
 #include "cbfunction.h"
 
-CodeGenerator::CodeGenerator() :
+CodeGenerator::CodeGenerator(QObject *parent) :
+	QObject(parent),
 	mGlobalScope("Global"),
-	mMainScope("Main", &mGlobalScope) {
+	mMainScope("Main", &mGlobalScope),
+	mFuncCodeGen(this)
+{
 	mConstEval.setGlobalScope(&mGlobalScope);
 	mTypeChecker.setRuntime(&mRuntime);
 	mTypeChecker.setGlobalScope(&mGlobalScope);
@@ -27,6 +30,8 @@ CodeGenerator::CodeGenerator() :
 	connect(&mRuntime, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 	connect(&mTypeChecker, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mTypeChecker, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
+	connect(&mFuncCodeGen, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
+	connect(&mFuncCodeGen, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 }
 
 bool CodeGenerator::initialize(const QString &runtimeFile) {
@@ -62,8 +67,35 @@ bool CodeGenerator::generate(ast::Program *program) {
 #endif
 	if (!(mainScopeValid && functionLocalScopesValid)) return false;
 
+	//TODO: User functions
 
+	mFuncCodeGen.setFunction(mRuntime.cbMain());
+	mFuncCodeGen.setScope(&mMainScope);
+	mFuncCodeGen.setRuntime(&mRuntime);
 
+	mFuncCodeGen.setIsMainScope(true);
+
+	return mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
+}
+
+bool CodeGenerator::writeBitcode(const QString &path) {
+	std::string errorInfo;
+	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", errorInfo, llvm::raw_fd_ostream::F_Binary);
+	if (errorInfo.empty()) {
+		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
+		bitcodeFile.close();
+	}
+	else {
+		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""),0,0);
+		return false;
+	}
+	qDebug() << "Optimizing bitcode...\n";
+	system("opt -O3 -o optimized_bitcode.bc raw_bitcode.bc");
+	qDebug() << "Creating native assembly...\n";
+	system("llc optimized_bitcode.bc -o native_asm.s"); //-filetype obj -o temp.o
+	qDebug() << "Building binary...\n";
+	system("mingw32-g++ -o cbrun native_asm.s");
+	qDebug() << "Success\n";
 	return true;
 }
 

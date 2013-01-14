@@ -1,6 +1,6 @@
 #include "cbstring.h"
 
-void CBF_CB_main();
+extern "C" void CBF_CB_main();
 
 int main() {
 

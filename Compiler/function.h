@@ -17,7 +17,7 @@ class Function {
 		QString name() const{return mName;}
 		ValueType *returnValue() {return mReturnValue;}
 		int requiredParams() const { return mRequiredParams;} //Params without default value
-		ParamList paramTypes() const {return mParamTypes;}
+		const ParamList &paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
 		QFile *file()const {return mFile;}
 		int line()const{return mLine;}

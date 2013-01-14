@@ -17,3 +17,4 @@ Makefile.*
 moc_*.cpp
 *.rc
 *.res
+*.s

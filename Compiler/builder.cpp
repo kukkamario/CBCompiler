@@ -1,10 +1,16 @@
 #include "builder.h"
 #include "stringvaluetype.h"
 #include "stringpool.h"
+#include "intvaluetype.h"
+#include "shortvaluetype.h"
+#include "floatvaluetype.h"
+#include "bytevaluetype.h"
+#include "typepointervaluetype.h"
 
-Builder::Builder() :
+Builder::Builder(llvm::LLVMContext &context) :
 	mRuntime(0),
-	mStringPool(0) {
+	mStringPool(0),
+	mIRBuilder(context){
 }
 
 void Builder::setRuntime(Runtime *r) {
@@ -21,12 +27,12 @@ void Builder::setInsertPoint(llvm::BasicBlock *basicBlock) {
 
 Value Builder::toInt(const Value &v) {
 	if (v.isConstant()) {
-		return ConstantValue(v.constant().toInt());
+		return Value(ConstantValue(v.constant().toInt()), mRuntime);
 	}
 	assert(v.value());
 	switch (v.valueType()->type()) {
 		case ValueType::Integer:
-			return v.value();
+			return v;
 		case ValueType::Float: {
 			llvm::Value *r = mIRBuilder.CreateAdd(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
 			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt32Ty()));
@@ -40,29 +46,34 @@ Value Builder::toInt(const Value &v) {
 			llvm::Value *i = mRuntime->stringValueType()->stringToIntCast(&mIRBuilder, v.value());
 			return Value(mRuntime->intValueType(), i);
 		}
-		default:
-			assert(0);
 	}
+	assert(0);
+	return Value();
 }
 
 Value Builder::toFloat(const Value &v) {
 	assert(0);
+	return Value();
 }
 
 Value Builder::toString(const Value &v) {
 	assert(0);
+	return Value();
 }
 
 Value Builder::toShort(const Value &v) {
 	assert(0);
+	return Value();
 }
 
 Value Builder::toByte(const Value &v) {
 	assert(0);
+	return Value();
 }
 
 Value Builder::toBoolean(const Value &v) {
 	assert(0);
+	return Value();
 }
 
 Value Builder::toValueType(ValueType *to, const Value &v) {
@@ -81,7 +92,7 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 			case ValueType::Byte:
 				return llvmValue(v.constant().toByte());
 			case ValueType::String: {
-				return llvmValue(s);
+				return llvmValue(v.constant().toString());
 			}
 		}
 	}
@@ -98,7 +109,7 @@ llvm::Value *Builder::llvmValue(uint16_t i) {
 	return mIRBuilder.getInt16(i);
 }
 
-llvm::Value *Builder::llvmValue(uint16_t i) {
+llvm::Value *Builder::llvmValue(uint8_t i) {
 	return mIRBuilder.getInt8(i);
 }
 
@@ -111,7 +122,7 @@ llvm::Value *Builder::llvmValue(const QString &s) {
 		return llvm::ConstantPointerNull::get((llvm::PointerType*)mRuntime->stringValueType()->llvmType());
 	}
 
-	llvm::Value *v = mStringPool->globalString(s);
+	llvm::Value *v = mStringPool->globalString(&mIRBuilder, s);
 	return mRuntime->stringValueType()->constructString(&mIRBuilder, s);
 }
 
@@ -123,7 +134,7 @@ Value Builder::call(Function *func, const QList<Value> &params) {
 void Builder::construct(VariableSymbol *var) {
 	llvm::Value *allocaInst = mIRBuilder.CreateAlloca(var->valueType()->llvmType());
 	var->setAlloca(allocaInst);
-	switch(var->valueType()) {
+	switch(var->valueType()->type()) {
 		case ValueType::Integer:
 			mIRBuilder.CreateStore(llvmValue(0), allocaInst); break;
 		case ValueType::Float:
@@ -139,7 +150,7 @@ void Builder::construct(VariableSymbol *var) {
 }
 
 void Builder::store(VariableSymbol *var, const Value &v) {
-	llvm::Value *val = llvmValue(var->valueType()->cast(v));
+	llvm::Value *val = llvmValue(var->valueType()->cast(this, v));
 	mIRBuilder.CreateStore(val, var->alloca_());
 }
 
@@ -148,88 +159,119 @@ Value Builder::load(const VariableSymbol *var) {
 }
 
 void Builder::destruct(VariableSymbol *var) {
+	if (var->valueType()->type() == ValueType::String) {
+		llvm::Value *str = mIRBuilder.CreateLoad(var->alloca_(), false);
+		mRuntime->stringValueType()->destructString(&mIRBuilder, str);
+	}
 }
 
-Value Builder::not_(const Value &a)
-{ return Value();
+Value Builder::not_(const Value &a) {
+	assert(0); return Value();
 }
 
-Value Builder::minus(const Value &a)
-{ return Value();
+Value Builder::minus(const Value &a) {
+	assert(0); return Value();
 }
 
-Value Builder::plus(const Value &a)
-{ return Value();
+Value Builder::plus(const Value &a) {
+	assert(0); return Value();
 }
 
-Value Builder::add(const Value &a, const Value &b)
-{ return Value();
+Value Builder::add(const Value &a, const Value &b) {
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::add(a.constant(), b.constant()), mRuntime);
+	}
+
+	//TODO: finish this
+	llvm::Value *result;
+	switch(a.valueType()->type()) {
+		case ValueType::Integer:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+		case ValueType::Float:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toFloat(b)));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+	}
+	assert(0);
+	return Value();
 }
 
-Value Builder::subtract(const Value &a, const Value &b)
-{ return Value();
+Value Builder::subtract(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::multiply(const Value &a, const Value &b)
-{ return Value();
+Value Builder::multiply(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::divide(const Value &a, const Value &b)
-{ return Value();
+Value Builder::divide(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::modulo(const Value &a, const Value &b)
-{ return Value();
+Value Builder::mod(const Value &a, const Value &b){
+	assert(0); return Value();
 }
 
-Value Builder::shl(const Value &a, const Value &b)
-{ return Value();
+Value Builder::shl(const Value &a, const Value &b){
+	assert(0); return Value();
 }
 
-Value Builder::shr(const Value &a, const Value &b)
-{ return Value();
+Value Builder::shr(const Value &a, const Value &b){
+	assert(0); return Value();
 }
 
-Value Builder::sar(const Value &a, const Value &b)
-{ return Value();
+Value Builder::sar(const Value &a, const Value &b){
+	assert(0); return Value();
 }
 
-Value Builder::and_(const Value &a, const Value &b)
-{ return Value();
+Value Builder::and_(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::or_(const Value &a, const Value &b)
-{ return Value();
+Value Builder::or_(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::xor_(const Value &a, const Value &b)
-{ return Value();
+Value Builder::xor_(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::power(const Value &a, const Value &b)
-{ return Value();
+Value Builder::power(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::less(const Value &a, const Value &b)
-{ return Value();
+Value Builder::less(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::lessEqual(const Value &a, const Value &b)
-{ return Value();
+Value Builder::lessEqual(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::greater(const Value &a, const Value &b)
-{ return Value();
+Value Builder::greater(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::greaterEqual(const Value &a, const Value &b)
-{ return Value();
+Value Builder::greaterEqual(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::equal(const Value &a, const Value &b)
-{ return Value();
+Value Builder::equal(const Value &a, const Value &b) {
+	assert(0); return Value();
 }
 
-Value Builder::notEqual(const Value &a, const Value &b)
-{ return Value();
+Value Builder::notEqual(const Value &a, const Value &b) {
+	assert(0); return Value();
 }

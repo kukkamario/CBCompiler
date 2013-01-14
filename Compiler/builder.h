@@ -8,7 +8,7 @@
 #include "runtime.h"
 class Builder {
 	public:
-		Builder();
+		Builder(llvm::LLVMContext &context);
 		void setRuntime(Runtime *r);
 		void setStringPool(StringPool *s);
 		void setInsertPoint(llvm::BasicBlock *basicBlock);
@@ -42,7 +42,7 @@ class Builder {
 		Value subtract(const Value &a, const Value &b);
 		Value multiply(const Value &a, const Value &b);
 		Value divide(const Value &a, const Value &b);
-		Value modulo(const Value &a, const Value &b);
+		Value mod(const Value &a, const Value &b);
 		Value shl(const Value &a, const Value &b);
 		Value shr(const Value &a, const Value &b);
 		Value sar(const Value &a, const Value &b);

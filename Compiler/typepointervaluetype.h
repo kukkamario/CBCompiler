@@ -8,7 +8,7 @@ class TypePointerValueType : public ValueType {
 		Type type()const{return TypePointer;}
 		virtual QString name()const;
 		virtual CastCostType castCost(ValueType *to) const;
-		virtual Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
+		virtual Value cast(Builder *builder, const Value &v) const;
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}
@@ -22,7 +22,7 @@ class NullTypePointerValueType : public ValueType {
 		Type type() const {return NULLTypePointer;}
 		QString name() const {return "NULL";}
 		CastCostType castCost(ValueType *) const {return 0;}
-		Value cast(llvm::IRBuilder<> *builder, const Value &v) const;
+		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}
 };

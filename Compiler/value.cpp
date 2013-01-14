@@ -15,10 +15,11 @@ Value::Value(const Value &value) :
 	mValueType(value.mValueType), mValue(value.mValue), mConstant(value.mConstant){
 }
 
-Value::Value(const ConstantValue &c) :
+Value::Value(const ConstantValue &c, Runtime *r) :
 	mValueType(0),
 	mValue(0),
 	mConstant(c) {
+	mValueType = r->findValueType(c.type());
 
 }
 

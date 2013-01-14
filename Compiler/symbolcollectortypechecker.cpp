@@ -16,6 +16,7 @@
 #include "booleanvaluetype.h"
 #include "arraysymbol.h"
 #include "labelsymbol.h"
+#include <QString>
 SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
 	mGlobalScope(0),
@@ -593,6 +594,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCall *s) {
 			err = true;
 		}
 	}
+	if (err) return false;
+
 	Symbol *sym = mScope->find(s->mName);
 	if (!sym) {
 		emit error(ErrorCodes::ecNotCommand, tr("Can't find symbol \"%1\"").arg(s->mName), mLine, mFile);
@@ -602,7 +605,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCall *s) {
 		emit error(ErrorCodes::ecNotCommand, tr("Symbol \"%1\" is not a command").arg(s->mName), mLine, mFile);
 		return false;
 	}
-	if (err) return false;
+
 	FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
 	Symbol::OverloadSearchError searchErr;
 	Function *command = funcSym->findBestOverload(params, true, &searchErr);
@@ -661,10 +664,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Label *s) {
 		return true;
 	}
 	if (sym->type() == Symbol::stLabel) {
-		emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
+		emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()->fileName()), mLine, mFile);
 	}
 	else {
-		emit error(ErrorCodes::ecSymbolAlreadyDefined, tr("Symbol already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
+		emit error(ErrorCodes::ecSymbolAlreadyDefined, tr("Symbol already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()->fileName()), mLine, mFile);
 	}
 
 	return false;

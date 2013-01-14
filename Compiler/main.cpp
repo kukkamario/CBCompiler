@@ -55,7 +55,13 @@ int main(int argc, char *argv[]) {
 	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
 
 	if (codeGenerator.initialize(params[2])) {
-		codeGenerator.generate(program);
+		if (codeGenerator.generate(program)) {
+			qDebug() << "LLVM assembly generated";
+			codeGenerator.writeBitcode("");
+		}
+		else {
+			errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), 0, 0);
+		}
 		return 0;
 	}
 

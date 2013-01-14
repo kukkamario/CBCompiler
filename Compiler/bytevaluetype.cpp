@@ -1,6 +1,7 @@
 #include "bytevaluetype.h"
 #include "llvm.h"
 #include "value.h"
+#include "builder.h"
 
 
 ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :

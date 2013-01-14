@@ -81,6 +81,10 @@ enum ErrorCode {
 	ecGosubCannotReturnValue,
 	ecLabelAlreadyDefined,
 
+	ecCantWriteBitcodeFile,
+
+	ecCodeGenerationFailed,
+
 	ecTypeHasMultipleFieldsWithSameName,
 
 	ecWTF

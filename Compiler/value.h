@@ -4,17 +4,18 @@ class ValueType;
 #include "llvm.h"
 #include <QString>
 #include "constantvalue.h"
+class Runtime;
 class Value {
 	public:
 		Value();
 		Value(const Value &value);
-		Value(const ConstantValue &c);
+		Value(const ConstantValue &c, Runtime *r);
 		Value(ValueType *t, llvm::Value *v);
 
 		ValueType *valueType() const {return mValueType;}
 		bool isConstant()const{return mConstant.isValid();}
-		bool isValid() {return mValueType != 0;}
-		llvm::Value *value() {return mValue;}
+		bool isValid() const{return mValueType != 0;}
+		llvm::Value *value() const {return mValue;}
 		const ConstantValue &constant() const {return mConstant;}
 	private:
 		ValueType *mValueType;

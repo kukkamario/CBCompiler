@@ -1,6 +1,7 @@
 #include "cbfunction.h"
 #include "scope.h"
 #include "variablesymbol.h"
+#include "value.h"
 
 CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parametre> &params, int line, QFile *file):
 	Function(name, file, line),
@@ -25,4 +26,5 @@ bool CBFunction::generateFunction(const ast::FunctionDefinition *funcDef) {
 
 Value CBFunction::call(Builder *builder, const QList<Value> &params) {
 	assert(0);
+	return Value();
 }

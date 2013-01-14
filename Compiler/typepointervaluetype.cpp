@@ -17,7 +17,7 @@ ValueType::CastCostType TypePointerValueType::castCost(ValueType *to) const {
 	return maxCastCost;
 }
 
-Value TypePointerValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
+Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
 	if (v.valueType() != this) {
 		return Value();
 	}
@@ -25,6 +25,6 @@ Value TypePointerValueType::cast(llvm::IRBuilder<> *builder, const Value &v) con
 }
 
 
-Value NullTypePointerValueType::cast(llvm::IRBuilder<> *builder, const Value &v) const {
+Value NullTypePointerValueType::cast(Builder *builder, const Value &v) const {
 	return Value();
 }
