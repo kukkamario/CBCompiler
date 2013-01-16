@@ -1,0 +1,12 @@
+i = 1000
+
+label:
+
+If i Then
+    Print i
+Else
+    Goto break
+EndIf
+i = i + (-1)
+Goto label
+break:

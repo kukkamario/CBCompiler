@@ -6,6 +6,7 @@
 #include "floatvaluetype.h"
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
+#include "booleanvaluetype.h"
 
 Builder::Builder(llvm::LLVMContext &context) :
 	mRuntime(0),
@@ -26,17 +27,17 @@ void Builder::setInsertPoint(llvm::BasicBlock *basicBlock) {
 }
 
 Value Builder::toInt(const Value &v) {
+	if (v.valueType()->type() == ValueType::Integer) return v;
 	if (v.isConstant()) {
 		return Value(ConstantValue(v.constant().toInt()), mRuntime);
 	}
 	assert(v.value());
 	switch (v.valueType()->type()) {
-		case ValueType::Integer:
-			return v;
 		case ValueType::Float: {
 			llvm::Value *r = mIRBuilder.CreateAdd(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
 			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt32Ty()));
 		}
+		case ValueType::Boolean:
 		case ValueType::Byte:
 		case ValueType::Short: {
 			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::ZExt, v.value(), mIRBuilder.getInt32Ty());
@@ -52,6 +53,23 @@ Value Builder::toInt(const Value &v) {
 }
 
 Value Builder::toFloat(const Value &v) {
+	if (v.valueType()->type() == ValueType::Float) return v;
+	if (v.isConstant()) {
+		return Value(ConstantValue(v.constant().toFloat()), mRuntime);
+	}
+	switch(v.valueType()->type()) {
+		case ValueType::Integer:
+			return Value(mRuntime->floatValueType(),mIRBuilder.CreateSIToFP(v.value(), mIRBuilder.getFloatTy()));
+		case ValueType::Boolean:
+		case ValueType::Short:
+		case ValueType::Byte:
+			return Value(mRuntime->floatValueType(),mIRBuilder.CreateUIToFP(v.value(), mIRBuilder.getFloatTy()));
+		case ValueType::String: {
+			llvm::Value *val = mRuntime->stringValueType()->stringToFloatCast(&mIRBuilder, v.value());
+			return Value(mRuntime->floatValueType(), val);
+		}
+
+	}
 	assert(0);
 	return Value();
 }
@@ -72,7 +90,25 @@ Value Builder::toByte(const Value &v) {
 }
 
 Value Builder::toBoolean(const Value &v) {
-	assert(0);
+	if (v.valueType()->type() == ValueType::Boolean) {
+		return v;
+	}
+	if (v.isConstant()) {
+		return Value(ConstantValue(v.constant().toBool()), mRuntime);
+	}
+	switch(v.valueType()->type()) {
+		case ValueType::Integer:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(v.value(), mIRBuilder.getInt32(0)));
+		case ValueType::Short:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(v.value(), mIRBuilder.getInt16(0)));
+		case ValueType::Byte:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(v.value(), mIRBuilder.getInt8(0)));
+		case ValueType::Float:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpONE(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.0)));
+		case ValueType::String:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(v.value()));
+	}
+
 	return Value();
 }
 
@@ -91,6 +127,8 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 				return llvmValue(v.constant().toShort());
 			case ValueType::Byte:
 				return llvmValue(v.constant().toByte());
+			case ValueType::Boolean:
+				return llvmValue(v.constant().toBool());
 			case ValueType::String: {
 				return llvmValue(v.constant().toString());
 			}
@@ -126,9 +164,21 @@ llvm::Value *Builder::llvmValue(const QString &s) {
 	return mRuntime->stringValueType()->constructString(&mIRBuilder, s);
 }
 
+llvm::Value *Builder::llvmValue(bool t) {
+	return mIRBuilder.getInt1(t);
+}
+
 
 Value Builder::call(Function *func, const QList<Value> &params) {
 	return func->call(this, params);
+}
+
+void Builder::branch(llvm::BasicBlock *dest) {
+	mIRBuilder.CreateBr(dest);
+}
+
+void Builder::branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse) {
+	mIRBuilder.CreateCondBr(llvmValue(toBoolean(cond)), ifTrue, ifFalse);
 }
 
 void Builder::construct(VariableSymbol *var) {
@@ -166,11 +216,19 @@ void Builder::destruct(VariableSymbol *var) {
 }
 
 Value Builder::not_(const Value &a) {
-	assert(0); return Value();
+	if (a.isConstant()) {
+		return Value(ConstantValue::not_(a.constant()), mRuntime);
+	}
+
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(llvmValue(toBoolean(a))));
 }
 
 Value Builder::minus(const Value &a) {
-	assert(0); return Value();
+	if (a.isConstant()) {
+		return Value(ConstantValue::minus(a.constant()), mRuntime);
+	}
+
+	return Value(a.valueType(), mIRBuilder.CreateNeg(llvmValue(a)));
 }
 
 Value Builder::plus(const Value &a) {
@@ -193,6 +251,7 @@ Value Builder::add(const Value &a, const Value &b) {
 				case ValueType::Float:
 					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
 					return Value(mRuntime->floatValueType(), result);
+
 			}
 		case ValueType::Float:
 			switch(b.valueType()->type()) {
@@ -237,15 +296,24 @@ Value Builder::sar(const Value &a, const Value &b){
 }
 
 Value Builder::and_(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::and_(a.constant(),b.constant()), mRuntime);
+	}
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateAnd(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::or_(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::or_(a.constant(),b.constant()), mRuntime);
+	}
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateOr(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::xor_(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::xor_(a.constant(),b.constant()), mRuntime);
+	}
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateXor(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::power(const Value &a, const Value &b) {
@@ -253,6 +321,15 @@ Value Builder::power(const Value &a, const Value &b) {
 }
 
 Value Builder::less(const Value &a, const Value &b) {
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::less(a.constant(), b.constant()), mRuntime);
+	}
+
+	switch(a.valueType()->type()) {
+		case ValueType::Integer:
+			;
+	}
+
 	assert(0); return Value();
 }
 

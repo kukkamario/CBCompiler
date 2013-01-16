@@ -1,6 +1,7 @@
 #include "expressioncodegenerator.h"
 #include "builder.h"
 #include "scope.h"
+#include "constantsymbol.h"
 #include "errorcodes.h"
 ExpressionCodeGenerator::ExpressionCodeGenerator(QObject *parent):
 	QObject(parent),
@@ -66,9 +67,15 @@ Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 
 Value ExpressionCodeGenerator::generate(ast::Variable *n) {
 	Symbol *sym = mScope->find(n->mName);
-	assert(sym->type() == Symbol::stVariable);
-	VariableSymbol *var = static_cast<VariableSymbol*>(sym);
-	return mBuilder->load(var);
+	assert(sym->type() == Symbol::stVariable || sym->type() == Symbol::stConstant);
+	if (sym->type() == Symbol::stConstant) {
+		ConstantSymbol *c = static_cast<ConstantSymbol*>(sym);
+		return Value(c->value(), mBuilder->runtime());
+	}
+	else {
+		VariableSymbol *var = static_cast<VariableSymbol*>(sym);
+		return mBuilder->load(var);
+	}
 }
 
 Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {

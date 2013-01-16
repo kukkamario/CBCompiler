@@ -26,7 +26,10 @@ class Builder {
 		llvm::Value *llvmValue(uint16_t i);
 		llvm::Value *llvmValue(uint8_t i);
 		llvm::Value *llvmValue(const QString &s);
+		llvm::Value *llvmValue(bool t);
 		Value call(Function *func, const QList<Value> &params);
+		void branch(llvm::BasicBlock *dest);
+		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
 
 		void construct(VariableSymbol *var);
 		void store(VariableSymbol *var, const Value &v);

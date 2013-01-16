@@ -1,5 +1,6 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
+#include "global.h"
 #include <QString>
 class QFile;
 class Symbol {

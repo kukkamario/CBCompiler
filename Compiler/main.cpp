@@ -51,6 +51,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	CodeGenerator codeGenerator;
+	//QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
+	//QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
 	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
 	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
 

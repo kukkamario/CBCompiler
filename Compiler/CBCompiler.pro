@@ -102,4 +102,5 @@ HEADERS += \
     functioncodegenerator.h \
     expressioncodegenerator.h \
     labelsymbol.h \
-    builder.h
+    builder.h \
+    global.h

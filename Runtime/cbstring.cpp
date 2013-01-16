@@ -1,4 +1,5 @@
 #include "cbstring.h"
+//#include <boost/lexical_cast.hpp>
 std::string String::staticEmptyString;
 
 String::String(CB_StringData *d) :
@@ -117,28 +118,32 @@ extern "C" CBString CBF_CB_StringAddition(CBString a, CBString b) {
 
 extern "C" int CBF_CB_StringToInt(CBString s) {
 	if (!s) return 0;
-	try {
-		return boost::lexical_cast<int>(s->mString);
-	}catch(boost::bad_lexical_cast &) {
-		return 0;
-	}
+//	try {
+//		return boost::lexical_cast<int>(s->mString);
+//	}catch(boost::bad_lexical_cast &) {
+//		return 0;
+//	}
+	return 0;
 }
 
 extern "C" float CBF_CB_StringToFloat(CBString s) {
 	if (!s) return 0;
-	try {
-		return boost::lexical_cast<float>(s->mString);
-	}catch(boost::bad_lexical_cast &) {
-		return 0;
-	}
+//	try {
+//		return boost::lexical_cast<float>(s->mString);
+//	}catch(boost::bad_lexical_cast &) {
+//		return 0;
+//	}
+	return 0;
 }
 
 extern "C" CBString CBF_CB_FloatToString(float f) {
-	return new CB_StringData(boost::lexical_cast<std::string>(f));
+//	return new CB_StringData(boost::lexical_cast<std::string>(f));
+	return 0;
 }
 
 extern "C" CBString CBF_CB_IntToString(int i) {
-	return new CB_StringData(boost::lexical_cast<std::string>(i));
+//	return new CB_StringData(boost::lexical_cast<std::string>(i));
+	return 0;
 }
 
 

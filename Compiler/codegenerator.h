@@ -22,7 +22,7 @@ class CodeGenerator : public QObject{
 		bool addFunctions(ast::Program *program);
 		bool checkMainScope(ast::Program *program);
 		bool checkFunctions();
-		bool evaluateConstants(ast::Program *program);
+		bool calculateConstants(ast::Program *program);
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
 		Runtime mRuntime;

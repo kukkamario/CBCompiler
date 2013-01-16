@@ -45,14 +45,22 @@ bool CodeGenerator::initialize(const QString &runtimeFile) {
 }
 
 bool CodeGenerator::generate(ast::Program *program) {
-	bool constantsValid = evaluateConstants(program);
+	qDebug() << "Preparing code generation";
+	qDebug() << "Calculating constants";
+	bool constantsValid = calculateConstants(program);
+	qDebug() << "Adding types to scopes";
 	bool typesValid = addTypesToScope(program);
+	qDebug() << "Adding globals to scopes";
 	bool globalsValid = addGlobalsToScope(program);
+	qDebug() << "Adding functions to scopes";
 	bool functionDefinitionsValid = addFunctions(program);
 	if (!(constantsValid && globalsValid && typesValid && functionDefinitionsValid)) return false;
 
+	qDebug() << "Checking main scope";
 	bool mainScopeValid = checkMainScope(program);
+	qDebug() << "Checking local scopes of the functions";
 	bool functionLocalScopesValid = checkFunctions();
+
 
 #ifdef _DEBUG
 	QFile file("scopes.txt");
@@ -74,7 +82,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	mFuncCodeGen.setRuntime(&mRuntime);
 
 	mFuncCodeGen.setIsMainScope(true);
-
+	qDebug() << "Starting code generation";
 	return mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
 }
 
@@ -219,7 +227,7 @@ bool CodeGenerator::checkFunctions() {
 	return valid;
 }
 
-bool CodeGenerator::evaluateConstants(ast::Program *program) {
+bool CodeGenerator::calculateConstants(ast::Program *program) {
 	bool valid = true;
 	for (QList<ast::ConstDefinition*>::ConstIterator i = program->mConstants.begin(); i != program->mConstants.end(); i++) {
 		ast::ConstDefinition* def = *i;

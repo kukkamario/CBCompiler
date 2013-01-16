@@ -4,6 +4,7 @@
 #include "variablesymbol.h"
 #include "functionsymbol.h"
 #include "builder.h"
+#include <QDebug>
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
 	mCurrentBasicBlock(0),
@@ -55,6 +56,7 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	mBasicBlocks.append(mSetupBasicBlock);
 	mCurrentBasicBlock = mSetupBasicBlock;
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
+	qDebug() << "Generating basic blocks";
 
 	if (!basicBlockGenerationPass(n)) return false;
 
@@ -62,11 +64,14 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
 
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
-
+	qDebug() << "Generating local variables";
 	if (!generateLocalVariables()) return false;
 
+	qDebug() << "Generating code";
 	if (!generate(n)) return false;
+	qDebug() << "Generating destructors";
 	if (!generateDestructors()) return false;
+	qDebug() << "Generating finished";
 
 	if (mIsMainScope) mBuilder->irBuilder().CreateRetVoid();
 	return true;
@@ -98,8 +103,6 @@ bool FunctionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::Goto*)n);
 		case ast::Node::ntIfStatement:
 			return generate((ast::IfStatement*)n);
-		case ast::Node::ntLabel:
-			return true;
 		case ast::Node::ntRedim:
 			return generate((ast::Redim*)n);
 		case ast::Node::ntRepeatForeverStatement:
@@ -114,14 +117,56 @@ bool FunctionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::VariableDefinition*)n);
 		case ast::Node::ntWhileStatement:
 			return generate((ast::VariableDefinition*)n);
+		case ast::Node::ntLabel:
+			return generate((ast::Label*)n);
 	}
 	assert(0);
 	return false;
 }
 
 bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
-	assert(0);
-	return false;
+	llvm::BasicBlock *ifBB = mCurrentBasicBlock;
+	Value cond = mExprGen.generate(n->mCondition);
+
+	//If true
+	mCurrentBasicBlockIt++;
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	llvm::BasicBlock *ifTrueBB = mCurrentBasicBlock;
+
+	mBuilder->setInsertPoint(ifTrueBB);
+	if (!generate(&n->mIfTrue)) return false;
+
+	if (n->mElse.isEmpty()) {
+		mCurrentBasicBlockIt++;
+		mCurrentBasicBlock = *mCurrentBasicBlockIt;
+
+		//exit a if-statement
+		mBuilder->branch(mCurrentBasicBlock);
+
+		//Condition
+		mBuilder->setInsertPoint(ifBB);
+		mBuilder->branch(cond, ifTrueBB, mCurrentBasicBlock);
+	}
+	else {
+		mCurrentBasicBlockIt++;
+		mCurrentBasicBlock = *mCurrentBasicBlockIt;
+		llvm::BasicBlock *elseBB = mCurrentBasicBlock;
+		mBuilder->setInsertPoint(elseBB);
+		if (!generate(&n->mElse)) return false;
+
+		mCurrentBasicBlockIt++; //EndIf
+		mCurrentBasicBlock = *mCurrentBasicBlockIt;
+
+		mBuilder->branch(mCurrentBasicBlock); //Jump over the EndIf
+
+		mBuilder->setInsertPoint(ifBB);
+		mBuilder->branch(cond, ifTrueBB, elseBB);
+
+		mBuilder->setInsertPoint(ifTrueBB);
+		mBuilder->branch(mCurrentBasicBlock);
+	}
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::AssignmentExpression *n) {
@@ -209,7 +254,15 @@ bool FunctionCodeGenerator::generate(ast::ForToStatement *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::Goto *n) {
-	assert(0); return false;
+	Symbol *sym = mScope->find(n->mLabel);
+	assert(sym);
+	assert(sym->type() == Symbol::stLabel);
+	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
+	mBuilder->branch(label->basicBlock());
+
+	mCurrentBasicBlockIt++;
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::Gosub *n) {
@@ -231,6 +284,14 @@ bool FunctionCodeGenerator::generate(ast::VariableDefinition *n) {
 
 bool FunctionCodeGenerator::generate(ast::Redim *n) {
 	assert(0); return false;
+}
+
+bool FunctionCodeGenerator::generate(ast::Label *n) {
+	mCurrentBasicBlockIt++;
+	mBuilder->branch(*mCurrentBasicBlockIt);
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	return true;
 }
 
 bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {

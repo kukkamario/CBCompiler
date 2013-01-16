@@ -1,7 +1,6 @@
 #ifndef STRING_H
 #define STRING_H
 #include <string>
-#include <boost/lexical_cast.hpp>
 #include "referencecounter.h"
 struct CB_StringData {
 		CB_StringData(const char *txt) : mString(txt), mRefCount(1) {}

@@ -352,13 +352,23 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Variable *s) {
 
 bool SymbolCollectorTypeChecker::run(const ast::Block *block, Scope *scope) {
 	mScope = scope;
-	return checkBlock(block);
+	bool valid = checkBlock(block);
+	for (QMultiMap<QString, CodeLineInfo>::ConstIterator i = mRequiredLabels.begin(); i != mRequiredLabels.end(); ++i) {
+		Symbol *sym = mScope->find(i.key());
+		if (sym->type() != Symbol::stLabel) {
+			emit error(ErrorCodes::ecExpectingLabel, tr("Expecting a label after Goto"), i.value().mLine, i.value().mFile);
+			valid = false;
+			continue;
+		}
+	}
+	return valid;
 }
 
 bool SymbolCollectorTypeChecker::checkBlock(const ast::Block *block) {
 	bool valid = true;
 	for (ast::Block::ConstIterator i = block->begin(); i != block->end(); i++) {
-		if (!checkStatement(*i)) valid = false;
+		if (!checkStatement(*i))
+			valid = false;
 	}
 	return valid;
 }
@@ -393,6 +403,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 			return checkStatement((ast::FunctionCallOrArraySubscript*)s);
 		case ast::Node::ntReturn:
 			return checkStatement((ast::Return*)s);
+		case ast::Node::ntLabel:
+			return checkStatement((ast::Label*)s);
+		case ast::Node::ntGoto:
+			return checkStatement((ast::Goto*)s);
 		default:
 			assert(0);
 	}
@@ -671,6 +685,20 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Label *s) {
 	}
 
 	return false;
+}
+
+bool SymbolCollectorTypeChecker::checkStatement(ast::Goto *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	mRequiredLabels.insert(s->mLabel, CodeLineInfo(mLine, mFile));
+	return true;
+}
+
+bool SymbolCollectorTypeChecker::checkStatement(ast::Gosub *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	mRequiredLabels.insert(s->mLabel, CodeLineInfo(mLine, mFile));
+	return true;
 }
 
 ValueType *SymbolCollectorTypeChecker::checkTypePointerType(const QString &typeName) {

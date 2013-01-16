@@ -37,6 +37,7 @@ enum ErrorCode {
 	ecTypesDontMatch,
 	ecUnexpectedToken,
 	ecMultipleSelectDefaultCases,
+	ecExpectingLabel,
 
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,

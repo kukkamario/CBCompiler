@@ -46,6 +46,7 @@ class FunctionCodeGenerator: public QObject{
 		bool generate(ast::WhileStatement *n);
 		bool generate(ast::VariableDefinition *n);
 		bool generate(ast::Redim *n);
+		bool generate(ast::Label *n);
 
 		bool basicBlockGenerationPass(ast::Block *n);
 		bool basicBlockGenerationPass(ast::IfStatement *n);
@@ -75,6 +76,10 @@ class FunctionCodeGenerator: public QObject{
 		QVector<llvm::BasicBlock*>::ConstIterator mCurrentExit;
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
+
+		bool isCurrentBBEmpty() const {
+			return mCurrentBasicBlock->getInstList().empty();
+		}
 	public slots:
 
 	signals:

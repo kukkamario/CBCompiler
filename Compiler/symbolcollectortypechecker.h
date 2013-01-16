@@ -2,6 +2,7 @@
 #define SYMBOLCOLLECTORTYPECHECKER_H
 #include <QObject>
 #include "abstractsyntaxtree.h"
+#include <QMultiMap>
 class Scope;
 class ValueType;
 class Runtime;
@@ -15,6 +16,14 @@ class SymbolCollectorTypeChecker : public QObject {
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
 	private:
+		struct CodeLineInfo {
+				CodeLineInfo() : mFile(0), mLine(0) {}
+				CodeLineInfo(int line, QFile *f) : mLine(line), mFile(f) {}
+
+				int mLine;
+				QFile *mFile;
+		};
+
 		ValueType *typeCheck(ast::Node *s);
 		ValueType *typeCheck(ast::Expression *s);
 		ValueType *typeCheck(ast::Unary *s);
@@ -40,6 +49,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::FunctionCallOrArraySubscript *s);
 		bool checkStatement(ast::Return *s);
 		bool checkStatement(ast::Label *s);
+		bool checkStatement(ast::Goto *s);
+		bool checkStatement(ast::Gosub *s);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 
@@ -54,6 +65,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		Scope *mScope;
 		Scope *mGlobalScope;
 		ValueType *mReturnValueType;
+
+		QMultiMap<QString, CodeLineInfo> mRequiredLabels;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

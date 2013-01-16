@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include "cbstring.h"
 
 extern "C" void CBF_printI(int i) {
