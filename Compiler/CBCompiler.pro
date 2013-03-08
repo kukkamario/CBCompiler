@@ -16,11 +16,7 @@ PRECOMPILED_HEADER = llvm.h
 TEMPLATE = app
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
-	CONFIG(release, debug|release) {
-		LIBS +=  -L"$$(LLVM_LIB)"/Release
-	} else {
-		LIBS +=  -L"$$(LLVM_LIB)"/Debug
-	}
+	LIBS +=  -L"$$(LLVM_LIB)"
 	DEPENDPATH += "./"
 	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
 	LIBS += -lAdvapi32 -lShell32
