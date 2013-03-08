@@ -35,6 +35,7 @@ class Builder {
 		void store(VariableSymbol *var, const Value &v);
 		Value load(const VariableSymbol *var);
 		void destruct(VariableSymbol *var);
+		void destruct(const Value &a);
 
 		Runtime *runtime()const{return mRuntime;}
 
@@ -60,7 +61,6 @@ class Builder {
 		Value greaterEqual(const Value &a, const Value &b);
 		Value equal(const Value &a, const Value &b);
 		Value notEqual(const Value &a, const Value &b);
-
 	private:
 		llvm::IRBuilder<> mIRBuilder;
 		QList<llvm::Value*> mStringData;

@@ -215,6 +215,12 @@ void Builder::destruct(VariableSymbol *var) {
 	}
 }
 
+void Builder::destruct(const Value &a) {
+	if (a.isConstant() || a.valueType()->type() != ValueType::String) return;
+	assert(a.value());
+	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
+}
+
 Value Builder::not_(const Value &a) {
 	if (a.isConstant()) {
 		return Value(ConstantValue::not_(a.constant()), mRuntime);
@@ -251,16 +257,51 @@ Value Builder::add(const Value &a, const Value &b) {
 				case ValueType::Float:
 					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
 					return Value(mRuntime->floatValueType(), result);
-
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::String: {
+					Value as = toString(a);
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->stringValueType(), result);
+				}
 			}
 		case ValueType::Float:
 			switch(b.valueType()->type()) {
 				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
 					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toFloat(b)));
 					return Value(mRuntime->floatValueType(), result);
 				case ValueType::Float:
 					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(b));
 					return Value(mRuntime->floatValueType(), result);
+				case ValueType::String:
+					Value as = toString(a);
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->stringValueType(), result);
+			}
+		case ValueType::Short:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::String: {
+					Value as = toString(a);
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->stringValueType(), result);
+				}
 			}
 	}
 	assert(0);
@@ -327,7 +368,9 @@ Value Builder::less(const Value &a, const Value &b) {
 
 	switch(a.valueType()->type()) {
 		case ValueType::Integer:
-			;
+			switch(a.valueType()->type()) {
+
+			}
 	}
 
 	assert(0); return Value();
@@ -352,3 +395,4 @@ Value Builder::equal(const Value &a, const Value &b) {
 Value Builder::notEqual(const Value &a, const Value &b) {
 	assert(0); return Value();
 }
+

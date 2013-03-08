@@ -25,7 +25,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/Mangler.h>
 #include <llvm/ADT/Triple.h>
-#include <llvm/Support/IRBuilder.h>
+#include <llvm/IRBuilder.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/LinkAllPasses.h>
 #include <llvm/Linker.h>
