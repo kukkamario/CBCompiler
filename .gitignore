@@ -6,7 +6,6 @@
 Makefile
 Makefile.*
 *.bc
-*.ll
 *.lib
 *.manifest
 *.obj
