@@ -4,6 +4,7 @@ StringPool::StringPool() {
 }
 
 llvm::Value *StringPool::globalString(llvm::IRBuilder<> *builder, const QString &s) {
+	assert(!s.isEmpty());
 	QMap<QString, llvm::Value*>::Iterator i = mStrings.find(s);
 	if (i != mStrings.end()) {
 		return i.value();
