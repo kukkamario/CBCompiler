@@ -11,8 +11,8 @@
 int main(int argc, char *argv[]) {
 	QCoreApplication a(argc, argv);
 	QStringList params = a.arguments();
-	if (params.size() != 3) {
-		qCritical() << "Expecting 2 arguments";
+	if (params.size() != 2) {
+		qCritical() << "Expecting file to compile";
 		return 0;
 	}
 	ErrorHandler errHandler;
@@ -56,7 +56,9 @@ int main(int argc, char *argv[]) {
 	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
 	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
 
-	if (codeGenerator.initialize(params[2])) {
+	const QString runtimePath("runtime/libRuntime.bc");
+
+	if (codeGenerator.initialize(runtimePath)) {
 		if (codeGenerator.generate(program)) {
 			qDebug() << "LLVM assembly generated";
 			codeGenerator.writeBitcode("");

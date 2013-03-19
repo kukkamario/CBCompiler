@@ -22,6 +22,8 @@ win32 {
 	LIBS += -lAdvapi32 -lShell32
 }
 
+DESTDIR = $$PWD/../bin
+
 SOURCES += main.cpp \
     lexer.cpp \
     token.cpp \
