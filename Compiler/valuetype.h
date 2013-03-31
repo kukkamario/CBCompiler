@@ -2,16 +2,13 @@
 #define VALUETYPE_H
 #include <QString>
 #include <QObject>
+#include <llvm/IRBuilder.h>
 class Value;
 namespace llvm {
 	class Value;
 	class Type;
 	class Module;
 	class LLVMContext;
-	namespace ____dumb__ { class DumbClass;}
-	template<bool preserveNames = true, typename T = ____dumb__::DumbClass,typename Inserter = ____dumb__::DumpClass>
-	class IRBuilder;
-
 }
 class Builder;
 class Runtime;

@@ -9,6 +9,7 @@ class ConstantValue {
 		ConstantValue(ValueType::Type t);
 		ConstantValue(bool t);
 		ConstantValue(int i);
+		ConstantValue(double d);
 		ConstantValue(float f);
 		ConstantValue(quint8 b);
 		ConstantValue(quint16 s);

@@ -3,12 +3,9 @@
 #include <QString>
 #include <QLinkedList>
 #include <QMap>
+#include <llvm/IRBuilder.h>
 namespace llvm {
 	class Value;
-
-	namespace ____dumb__ { class DumbClass;}
-	template<bool preserveNames = true, typename T = ____dumb__::DumbClass,typename Inserter = ____dumb__::DumpClass>
-	class IRBuilder;
 }
 class StringPool {
 	public:

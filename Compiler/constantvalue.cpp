@@ -48,6 +48,11 @@ ConstantValue::ConstantValue(int i):
 	mData.mInt = i;
 }
 
+ConstantValue::ConstantValue(double d) :
+	mType(ValueType::Float){
+	mData.mFloat = d;
+}
+
 ConstantValue::ConstantValue(float f) :
 	mType(ValueType::Float){
 	mData.mFloat = f;

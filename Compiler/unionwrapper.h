@@ -18,7 +18,7 @@ class UnionWrapper {
 		T *operator ->();
 		const T *operator ->() const;
 	private:
-		char mData[sizeof T];
+		char mData[sizeof(T)];
 };
 
 template<typename T>
