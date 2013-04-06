@@ -80,6 +80,31 @@ Value Builder::toString(const Value &v) {
 }
 
 Value Builder::toShort(const Value &v) {
+	if (v.valueType()->type() == ValueType::Short) return v;
+	if (v.isConstant()) {
+		return Value(ConstantValue(v.constant().toShort()), mRuntime);
+	}
+	assert(v.value());
+	switch (v.valueType()->type()) {
+		case ValueType::Float: {
+			llvm::Value *r = mIRBuilder.CreateAdd(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
+			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt16Ty()));
+		}
+		case ValueType::Boolean:
+		case ValueType::Byte: {
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::ZExt, v.value(), mIRBuilder.getInt16Ty());
+			return Value(mRuntime->intValueType(), r);
+		}
+		case ValueType::Integer: {
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::Trunc, v.value(), mIRBuilder.getInt16Ty());
+			return Value(mRuntime->intValueType(), r);
+		}
+
+		case ValueType::String: {
+			llvm::Value *i = mRuntime->stringValueType()->stringToIntCast(&mIRBuilder, v.value());
+			return toShort(Value(mRuntime->intValueType(), i));
+		}
+	}
 	assert(0);
 	return Value();
 }
