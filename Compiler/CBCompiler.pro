@@ -97,8 +97,6 @@ HEADERS += \
     symbolcollectortypechecker.h \
     conversionhelper.h \
     arraysymbol.h \
-    commandsymbol.h \
-    command.h \
     cbfunction.h \
     functioncodegenerator.h \
     expressioncodegenerator.h \

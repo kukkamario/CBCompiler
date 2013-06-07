@@ -75,6 +75,25 @@ Value Builder::toFloat(const Value &v) {
 }
 
 Value Builder::toString(const Value &v) {
+	if (v.valueType()->type() == ValueType::String) return v;
+	if (v.isConstant()) {
+		return Value(ConstantValue(v.constant().toString()), mRuntime);
+	}
+	switch (v.valueType()->type()) {
+		case ValueType::Integer:
+		case ValueType::Boolean:
+		case ValueType::Short:
+		case ValueType::Byte: {
+			Value i = toInt(v);
+			llvm::Value *val = mRuntime->stringValueType()->intToStringCast(&mIRBuilder, i.value());
+			return Value(mRuntime->stringValueType(), val);
+		}
+		case ValueType::Float:
+			llvm::Value *val = mRuntime->stringValueType()->floatToStringCast(&mIRBuilder, v.value());
+			return Value(mRuntime->stringValueType(), val);
+
+	}
+
 	assert(0);
 	return Value();
 }
@@ -110,6 +129,31 @@ Value Builder::toShort(const Value &v) {
 }
 
 Value Builder::toByte(const Value &v) {
+	if (v.valueType()->type() == ValueType::Byte) return v;
+	if (v.isConstant()) {
+		return Value(ConstantValue(v.constant().toShort()), mRuntime);
+	}
+	assert(v.value());
+	switch (v.valueType()->type()) {
+		case ValueType::Float: {
+			llvm::Value *r = mIRBuilder.CreateAdd(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
+			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt16Ty()));
+		}
+		case ValueType::Boolean: {
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::ZExt, v.value(), mIRBuilder.getInt16Ty());
+			return Value(mRuntime->intValueType(), r);
+		}
+		case ValueType::Integer:
+		case ValueType::Short: {
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::Trunc, v.value(), mIRBuilder.getInt16Ty());
+			return Value(mRuntime->intValueType(), r);
+		}
+
+		case ValueType::String: {
+			llvm::Value *i = mRuntime->stringValueType()->stringToIntCast(&mIRBuilder, v.value());
+			return toShort(Value(mRuntime->intValueType(), i));
+		}
+	}
 	assert(0);
 	return Value();
 }
@@ -259,6 +303,10 @@ Value Builder::minus(const Value &a) {
 		return Value(ConstantValue::minus(a.constant()), mRuntime);
 	}
 
+	if (a.valueType()->type() == ValueType::Boolean) {
+		return Value(mRuntime->intValueType(), mIRBuilder.CreateNeg(llvmValue(toInt(a))));
+	}
+
 	return Value(a.valueType(), mIRBuilder.CreateNeg(llvmValue(a)));
 }
 
@@ -270,21 +318,21 @@ Value Builder::add(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
 		return Value(ConstantValue::add(a.constant(), b.constant()), mRuntime);
 	}
-
-	//TODO: finish this
 	llvm::Value *result;
 	switch(a.valueType()->type()) {
+		case ValueType::Boolean:
 		case ValueType::Integer:
 			switch(b.valueType()->type()) {
 				case ValueType::Integer:
-					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(b));
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(toInt(b)));
 					return Value(mRuntime->intValueType(), result);
 				case ValueType::Float:
 					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
 					return Value(mRuntime->floatValueType(), result);
 				case ValueType::Short:
 				case ValueType::Byte:
-					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toInt(b)));
+					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(toInt(b)));
 					return Value(mRuntime->intValueType(), result);
 				case ValueType::String: {
 					Value as = toString(a);
@@ -298,6 +346,7 @@ Value Builder::add(const Value &a, const Value &b) {
 				case ValueType::Integer:
 				case ValueType::Short:
 				case ValueType::Byte:
+				case ValueType::Boolean:
 					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(toFloat(b)));
 					return Value(mRuntime->floatValueType(), result);
 				case ValueType::Float:
@@ -312,7 +361,8 @@ Value Builder::add(const Value &a, const Value &b) {
 		case ValueType::Short:
 			switch(b.valueType()->type()) {
 				case ValueType::Integer:
-					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(b));
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(toInt(b)));
 					return Value(mRuntime->intValueType(), result);
 				case ValueType::Float:
 					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
@@ -328,25 +378,316 @@ Value Builder::add(const Value &a, const Value &b) {
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateAdd(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateAdd(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+					result = mIRBuilder.CreateAdd(llvmValue(toShort(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Byte:
+					result = mIRBuilder.CreateAdd(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::String: {
+					Value as = toString(a);
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->stringValueType(), result);
+				}
+			}
+		case ValueType::String:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+				case ValueType::Float:
+				case ValueType::Short:
+				case ValueType::Byte: {
+					Value as = toString(b);
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(as));
+					destruct(as);
+					return Value(mRuntime->stringValueType(), result);
+				}
+				case ValueType::String: {
+					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(b));
+					return Value(mRuntime->stringValueType(), result);
+				}
+			}
 	}
 	assert(0);
 	return Value();
 }
 
 Value Builder::subtract(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::subtract(a.constant(), b.constant()), mRuntime);
+	}
+	llvm::Value *result;
+	switch(a.valueType()->type()) {
+		case ValueType::Boolean:
+		case ValueType::Integer:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSub(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateSub(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateSub(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Float:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSub(llvmValue(a), llvmValue(toFloat(b)));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateSub(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+		case ValueType::Short:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSub(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateSub(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateSub(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSub(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateSub(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+					result = mIRBuilder.CreateSub(llvmValue(toShort(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Byte:
+					result = mIRBuilder.CreateSub(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+			}
+	}
+	assert(0);
+	return Value();
 }
 
 Value Builder::multiply(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::multiply(a.constant(), b.constant()), mRuntime);
+	}
+	llvm::Value *result;
+	switch(a.valueType()->type()) {
+		case ValueType::Boolean:
+		case ValueType::Integer:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateMul(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateMul(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateMul(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Float:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateMul(llvmValue(a), llvmValue(toFloat(b)));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateMul(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+		case ValueType::Short:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateMul(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateMul(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateMul(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateMul(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateMul(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+					result = mIRBuilder.CreateMul(llvmValue(toShort(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Byte:
+					result = mIRBuilder.CreateMul(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+			}
+	}
+	assert(0);
+	return Value();
 }
 
 Value Builder::divide(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::divide(a.constant(), b.constant()), mRuntime);
+	}
+	llvm::Value *result;
+	switch(a.valueType()->type()) {
+		case ValueType::Boolean:
+		case ValueType::Integer:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSDiv(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFDiv(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateUDiv(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Float:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateFDiv(llvmValue(a), llvmValue(toFloat(b)));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFDiv(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+		case ValueType::Short:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSDiv(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFDiv(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateUDiv(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSDiv(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFDiv(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateUDiv(llvmValue(toShort(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+			}
+	}
+	assert(0);
+	return Value();
 }
 
 Value Builder::mod(const Value &a, const Value &b){
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::mod(a.constant(), b.constant()), mRuntime);
+	}
+	llvm::Value *result;
+	switch(a.valueType()->type()) {
+		case ValueType::Boolean:
+		case ValueType::Integer:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSRem(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFRem(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateURem(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Float:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateFRem(llvmValue(a), llvmValue(toFloat(b)));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFRem(llvmValue(a), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+			}
+		case ValueType::Short:
+			switch(b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSRem(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFRem(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateURem(llvmValue(a), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					result = mIRBuilder.CreateSRem(llvmValue(toInt(a)), llvmValue(toInt(b)));
+					return Value(mRuntime->intValueType(), result);
+				case ValueType::Float:
+					result = mIRBuilder.CreateFRem(llvmValue(toFloat(a)), llvmValue(b));
+					return Value(mRuntime->floatValueType(), result);
+				case ValueType::Short:
+				case ValueType::Byte:
+					result = mIRBuilder.CreateURem(llvmValue(toShort(a)), llvmValue(b));
+					return Value(mRuntime->intValueType(), result);
+			}
+	}
+	assert(0);
+	return Value();
 }
 
 Value Builder::shl(const Value &a, const Value &b){
