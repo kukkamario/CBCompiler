@@ -52,11 +52,11 @@ Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 	Value val = generate(n->mOperand);
 	switch (n->mOperator) {
 		case ast::opMinus:
-			return mBuilder->minus(Value(val.constant(), mBuilder->runtime()));
+			return mBuilder->minus(val);
 		case ast::opNot:
-			return mBuilder->not_(Value(val.constant(), mBuilder->runtime()));
+			return mBuilder->not_(val);
 		case ast::opPlus:
-			return mBuilder->plus(Value(val.constant(), mBuilder->runtime()));
+			return mBuilder->plus(val);
 		default:
 			assert(0);
 			return Value();
@@ -151,6 +151,8 @@ Value ExpressionCodeGenerator::generate(ast::Expression *n) {
 				return Value();
 		}
 		assert(result.isValid());
+
+		mBuilder->destruct(first);
 		first = result;
 	}
 	return first;
