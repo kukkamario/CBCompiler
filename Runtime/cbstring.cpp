@@ -44,6 +44,17 @@ String String::operator +(const String &a) {
 	return this->mData->mString + a.mData->mString;
 }
 
+bool String::operator ==(const String &a) {
+	if (this->mData == 0 || this->mData->mString.empty()) {
+		if (a.mData == 0 || a.mData->mString.empty()) {
+			return true;
+		}
+		return false;
+	}
+	if (a.mData == 0 || a.mData->mString.empty()) return false;
+	return a.mData->mString == this->mData->mString;
+}
+
 
 String::~String() {
 	if (mData) {
@@ -144,6 +155,18 @@ extern "C" CBString CBF_CB_FloatToString(float f) {
 extern "C" CBString CBF_CB_IntToString(int i) {
 //	return new CB_StringData(boost::lexical_cast<std::string>(i));
 	return 0;
+}
+
+extern "C" bool CBF_CB_StringEquality(CBString a, CBString b) {
+	if (a == b) return true;
+	if (a == 0 || a->mString.empty()) {
+		if (b == 0 || b->mString.empty()) {
+			return true;
+		}
+		return false;
+	}
+	if (b == 0 || b->mString.empty()) return false;
+	return a->mString == b->mString;
 }
 
 

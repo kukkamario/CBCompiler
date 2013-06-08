@@ -58,6 +58,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 
 	qDebug() << "Checking main scope";
 	bool mainScopeValid = checkMainScope(program);
+	qDebug() << "Main scope valid: " << mainScopeValid;
 	qDebug() << "Checking local scopes of the functions";
 	bool functionLocalScopesValid = checkFunctions();
 

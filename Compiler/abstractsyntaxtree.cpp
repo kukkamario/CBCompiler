@@ -160,7 +160,7 @@ void Printer::printForEachStatement(const ForEachStatement *s, int tab) {
 void Printer::printRepeatForeverStatement(const RepeatForeverStatement *s, int tab) {
 	printLine("Repeat", tab);
 	printBlock(&s->mBlock, tab + 1);
-	printLine("Until", tab);
+	printLine("Forever", tab);
 }
 
 void Printer::printRepeatUntilStatement(const RepeatUntilStatement *s, int tab) {

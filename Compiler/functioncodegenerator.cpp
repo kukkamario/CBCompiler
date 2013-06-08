@@ -11,7 +11,6 @@ FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	mIsMainScope(false),
 	mFunction(0),
 	mCurrentBasicBlockIt(mBasicBlocks.end()),
-	mCurrentExit(mBasicBlocks.end()),
 	mExprGen(this),
 	mBuilder(0),
 	mSetupBasicBlock(0){
@@ -51,7 +50,7 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	}
 
 	if (!mSetupBasicBlock) {
-		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "First basic block", mFunction);
+		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction);
 	}
 	mBasicBlocks.append(mSetupBasicBlock);
 	mCurrentBasicBlock = mSetupBasicBlock;
@@ -60,8 +59,8 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 
 	if (!basicBlockGenerationPass(n)) return false;
 
-	mCurrentBasicBlock = mBasicBlocks.first();
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
 
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	qDebug() << "Generating local variables";
@@ -132,6 +131,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 	mCurrentBasicBlockIt++;
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
 	llvm::BasicBlock *ifTrueBB = mCurrentBasicBlock;
+	ifTrueBB->setName("If true");
 
 	mBuilder->setInsertPoint(ifTrueBB);
 	if (!generate(&n->mIfTrue)) return false;
@@ -151,6 +151,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 		mCurrentBasicBlockIt++;
 		mCurrentBasicBlock = *mCurrentBasicBlockIt;
 		llvm::BasicBlock *elseBB = mCurrentBasicBlock;
+		elseBB->setName("Else");
 		mBuilder->setInsertPoint(elseBB);
 		if (!generate(&n->mElse)) return false;
 
@@ -166,6 +167,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 		mBuilder->branch(mCurrentBasicBlock);
 	}
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("EndIf");
 	return true;
 }
 
@@ -210,7 +212,20 @@ bool FunctionCodeGenerator::generate(ast::CommandCall *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
-	assert(0); return false;
+	pushExit(mExitLocations[n]);
+	nextBasicBlock();
+	mBuilder->branch(mCurrentBasicBlock);
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+
+	llvm::BasicBlock *repeatBlock = mCurrentBasicBlock;
+	repeatBlock->setName("Repeat");
+	generate(&n->mBlock);
+	mBuilder->branch(repeatBlock);
+	nextBasicBlock();
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("Forever");
+	popExit();
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
@@ -218,7 +233,11 @@ bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::Exit *n) {
-	assert(0); return false;
+	mBuilder->branch(currentExit());
+	nextBasicBlock();
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("Useless branch after exit");
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::Return *n) {
@@ -317,6 +336,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {
 				v = basicBlockGenerationPass((ast::Label*)s); break;
 			case ast::Node::ntGosub:
 			case ast::Node::ntGoto:
+			case ast::Node::ntExit:
 				addBasicBlock(); break;
 			case ast::Node::ntSelectStatement:
 				v = basicBlockGenerationPass((ast::SelectStatement*)s); break;
@@ -396,7 +416,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::SelectStatement *n) {
 }
 
 void FunctionCodeGenerator::addBasicBlock() {
-	mCurrentBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "First basic block", mFunction);
+	mCurrentBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "BasicBlock", mFunction);
 	assert(mCurrentBasicBlock);
 	mBasicBlocks.append(mCurrentBasicBlock);
 	mCurrentBasicBlockIt = mBasicBlocks.end();

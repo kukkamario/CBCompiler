@@ -3,6 +3,9 @@
 #include "scope.h"
 #include "constantsymbol.h"
 #include "errorcodes.h"
+#include "functionsymbol.h"
+#include "arraysymbol.h"
+
 ExpressionCodeGenerator::ExpressionCodeGenerator(QObject *parent):
 	QObject(parent),
 	mBuilder(0),
@@ -84,6 +87,30 @@ Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {
 }
 
 Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
+	Symbol *sym = mScope->find(n->mName);
+	assert(sym);
+	assert(sym->type() == Symbol::stFunctionOrCommand || sym->type() == Symbol::stArray);
+
+	QList<ValueType*> paramTypes;
+	QList<Value> params;
+	for (QList<ast::Node*>::ConstIterator i = n->mParams.begin(); i != n->mParams.end(); i++) {
+		Value param = generate(*i);
+		paramTypes.append(param.valueType());
+		params.append(param);
+	}
+
+	if (sym->type() == Symbol::stFunctionOrCommand) {
+		FunctionSymbol *funcSym = (FunctionSymbol*)sym;
+		Function *func = funcSym->findBestOverload(paramTypes);
+		assert(func);
+
+		Value ret = func->call(mBuilder, params);
+		return ret;
+	}
+	if (sym->type() == Symbol::stArray) {
+		assert("TODO: arrays" && 0);
+	}
+
 	assert(0);
 	return Value();
 }

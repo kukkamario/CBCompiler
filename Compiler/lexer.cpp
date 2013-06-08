@@ -73,8 +73,7 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file) {
 	return ret;
 }
 
-Lexer::ReturnState Lexer::tokenize(const QString &file)
-{
+Lexer::ReturnState Lexer::tokenize(const QString &file) {
 	emit error(0, "sadas", 0,0);
 	QFile *curFile = new QFile(file);
 	if (!curFile->open(QFile::ReadOnly | QFile::Text)) {
@@ -259,15 +258,13 @@ Lexer::ReturnState Lexer::tokenize(const QString &file)
 	return state;
 }
 
-void Lexer::addToken(const Token &tok)
-{
+void Lexer::addToken(const Token &tok) {
 	//tok.print();
 	mTokens.append(tok);
 }
 
 
-Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::const_iterator &end)
-{
+Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::const_iterator &end) {
 	while (i != end) {
 		if (*i == '\n') {
 			return Success;
@@ -277,8 +274,7 @@ Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::c
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file)
-{
+Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file) {
 	const char * const endRem = "remend";
 	int foundIndex = 0;
 	while (i != end) {
@@ -555,8 +551,7 @@ void Lexer::combineTokens() {
 }
 
 
-void Lexer::printTokens()
-{
+void Lexer::printTokens() {
 	for (QList<Token>::const_iterator i = mTokens.begin(); i != mTokens.end(); i++) {
 		i->print();
 	}

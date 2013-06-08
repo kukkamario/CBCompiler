@@ -172,6 +172,13 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		}
 		return;
 	}
+	if (name == "CB_StringEquality") {
+		if (!mStringValueType->setEqualityFunction(func)) {
+			mValid = false;
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringEquality"), 0, 0);
+		}
+		return;
+	}
 
 
 	RuntimeFunction *rtfunc = new RuntimeFunction(this);

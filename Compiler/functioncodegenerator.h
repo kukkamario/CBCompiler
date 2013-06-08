@@ -2,6 +2,8 @@
 #define FUNCTIONCODEGENERATOR_H
 #include <QObject>
 #include <QVector>
+#include <QStack>
+
 #include "llvm.h"
 #include "scope.h"
 #include "abstractsyntaxtree.h"
@@ -73,13 +75,17 @@ class FunctionCodeGenerator: public QObject{
 		QVector<llvm::BasicBlock*>::ConstIterator mCurrentBasicBlockIt;
 		llvm::BasicBlock *mCurrentBasicBlock;
 		QMap<ast::Node*, QVector<llvm::BasicBlock*>::ConstIterator> mExitLocations;
-		QVector<llvm::BasicBlock*>::ConstIterator mCurrentExit;
+		QStack<QVector<llvm::BasicBlock*>::ConstIterator> mExitStack;
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
 
 		bool isCurrentBBEmpty() const {
 			return mCurrentBasicBlock->getInstList().empty();
 		}
+		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
+		void pushExit(const QVector<llvm::BasicBlock*>::ConstIterator &i) { mExitStack.push(i);}
+		void popExit() { mExitStack.pop(); }
+		void nextBasicBlock() { mCurrentBasicBlockIt++; mCurrentBasicBlock = *mCurrentBasicBlockIt;}
 	public slots:
 
 	signals:

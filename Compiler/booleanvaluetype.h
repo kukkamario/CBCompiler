@@ -11,7 +11,7 @@ class BooleanValueType : public ValueType {
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		Type type() const{return Byte;}
+		Type type() const{return Boolean;}
 		llvm::Value *constant(bool t);
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}

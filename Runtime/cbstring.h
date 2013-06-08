@@ -18,8 +18,9 @@ class String {
 		String(CB_StringData *d);
 		String(const std::string &s);
 		String(const String &o);
-		String & operator=(const String &o);
-		String operator+(const String &a);
+		String & operator =(const String &o);
+		String operator +(const String &a);
+		bool operator == (const String &a);
 		~String();
 		const std::string &getRef() const;
 

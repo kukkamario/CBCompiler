@@ -7,6 +7,7 @@
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
 #include "booleanvaluetype.h"
+#include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
 	mRuntime(0),
@@ -230,7 +231,7 @@ llvm::Value *Builder::llvmValue(const QString &s) {
 	}
 
 	llvm::Value *v = mStringPool->globalString(&mIRBuilder, s);
-	return mRuntime->stringValueType()->constructString(&mIRBuilder, s);
+	return mRuntime->stringValueType()->constructString(&mIRBuilder, v);
 }
 
 llvm::Value *Builder::llvmValue(bool t) {
@@ -245,6 +246,7 @@ Value Builder::call(Function *func, const QList<Value> &params) {
 void Builder::branch(llvm::BasicBlock *dest) {
 	mIRBuilder.CreateBr(dest);
 }
+
 
 void Builder::branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse) {
 	mIRBuilder.CreateCondBr(llvmValue(toBoolean(cond)), ifTrue, ifFalse);
@@ -755,6 +757,107 @@ Value Builder::greaterEqual(const Value &a, const Value &b) {
 }
 
 Value Builder::equal(const Value &a, const Value &b) {
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::equal(a.constant(), b.constant()), mRuntime);
+	}
+	switch (a.valueType()->type()) {
+		case ValueType::Integer:
+			switch (b.valueType()->type()) {
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Integer:
+				case ValueType::Boolean:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toInt(b))));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(toFloat(a)), llvmValue(b)));
+				case ValueType::String: {
+					Value as = toString(a);
+					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->booleanValueType(), ret);
+				}
+			}
+		case ValueType::Float:
+			switch (b.valueType()->type()) {
+				case ValueType::Integer:
+				case ValueType::Float:
+				case ValueType::Short:
+				case ValueType::Byte:
+				case ValueType::Boolean:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(a), llvmValue(toInt(b))));
+				case ValueType::String: {
+					Value as = toString(a);
+					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->booleanValueType(), ret);
+				}
+
+			}
+		case ValueType::Boolean:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(b)));
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toByte(a)), llvmValue(b)));
+				case ValueType::Short:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toShort(a)), llvmValue(b)));
+				case ValueType::Integer:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toInt(a)), llvmValue(b)));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toFloat(a)), llvmValue(b)));
+				case ValueType::String: {
+					Value as = toString(a);
+					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->booleanValueType(), ret);
+				}
+			}
+		case ValueType::Short:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+				case ValueType::Short:
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toShort(b))));
+				case ValueType::Integer:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toInt(a)), llvmValue(b)));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(toFloat(a)), llvmValue(b)));
+				case ValueType::String: {
+					Value as = toString(a);
+					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->booleanValueType(), ret);
+				}
+			}
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toByte(b))));
+				case ValueType::Short:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toShort(a)), llvmValue(b)));
+				case ValueType::Integer:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toInt(a)), llvmValue(b)));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(toFloat(a)), llvmValue(b)));
+				case ValueType::String: {
+					Value as = toString(a);
+					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(as);
+					return Value(mRuntime->booleanValueType(), ret);
+				}
+			}
+		case ValueType::String:
+			if (b.valueType()->type() == ValueType::String) {
+				llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(b));
+				return Value(mRuntime->booleanValueType(), ret);
+			}
+			Value bs = toString(b);
+			llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(bs));
+			destruct(bs);
+			return Value(mRuntime->booleanValueType(), ret);
+	}
+
 	assert(0); return Value();
 }
 

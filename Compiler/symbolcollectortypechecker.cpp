@@ -17,37 +17,41 @@
 #include "arraysymbol.h"
 #include "labelsymbol.h"
 #include <QString>
+#include <QDebug>
+
 SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
 	mGlobalScope(0),
-	mReturnValueType(0)
+	mReturnValueType(0),
+	mExitLevel(0)
 {
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Node *s) {
+	ValueType *ret = 0;
 	switch(s->type()) {
 		case ast::Node::ntInteger:
-			return mRuntime->intValueType();
+			ret = mRuntime->intValueType(); break;
 		case ast::Node::ntString:
-			return mRuntime->stringValueType();
+			ret = mRuntime->stringValueType(); break;
 		case ast::Node::ntFloat:
-			return mRuntime->floatValueType();
+			ret = mRuntime->floatValueType(); break;
 		case ast::Node::ntExpression:
-			return typeCheck((ast::Expression*)s);
+			ret = typeCheck((ast::Expression*)s); break;
 		case ast::Node::ntFunctionCallOrArraySubscript:
-			return typeCheck((ast::FunctionCallOrArraySubscript*)s);
+			ret = typeCheck((ast::FunctionCallOrArraySubscript*)s); break;
 		case ast::Node::ntNew:
-			return typeCheck((ast::New*)s);
+			ret = typeCheck((ast::New*)s); break;
 		case ast::Node::ntVariable:
-			return typeCheck((ast::Variable*)s);
+			ret = typeCheck((ast::Variable*)s); break;
 		case ast::Node::ntUnary:
-			return typeCheck((ast::Unary*)s);
+			ret = typeCheck((ast::Unary*)s); break;
 		case ast::Node::ntTypePtrField:
-			return typeCheck((ast::TypePtrField*)s);
+			ret = typeCheck((ast::TypePtrField*)s); break;
 		default:
 			assert(0);
-			return 0;
 	}
+	return ret;
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
@@ -351,8 +355,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Variable *s) {
 }
 
 bool SymbolCollectorTypeChecker::run(const ast::Block *block, Scope *scope) {
+	mExitLevel = 0;
 	mScope = scope;
 	bool valid = checkBlock(block);
+	qDebug() << "Block valid: " << valid;
 	for (QMultiMap<QString, CodeLineInfo>::ConstIterator i = mRequiredLabels.begin(); i != mRequiredLabels.end(); ++i) {
 		Symbol *sym = mScope->find(i.key());
 		if (sym->type() != Symbol::stLabel) {
@@ -407,10 +413,12 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 			return checkStatement((ast::Label*)s);
 		case ast::Node::ntGoto:
 			return checkStatement((ast::Goto*)s);
+		case ast::Node::ntExit:
+			return checkStatement((ast::Exit*)s);
 		default:
 			assert(0);
 	}
-	return 0;
+	return false;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::IfStatement *s) {
@@ -428,9 +436,11 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::WhileStatement *s) {
 	mFile = s->mFile;
 	mLine = s->mStartLine;
 	ValueType *cond = typeCheck(s->mCondition);
+	mExitLevel++;
 	bool valid = true;
 	if (!cond || !tryCastToBoolean(cond)) valid = false;
 	if (!checkBlock(&s->mBlock)) valid = false;
+	mExitLevel--;
 	return valid;
 }
 
@@ -500,14 +510,19 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
 			valid = false;
 		}
 	}
+	mExitLevel++;
 
 	if (!checkBlock(&s->mBlock)) valid = false;
+	mExitLevel--;
 	return valid;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ForEachStatement *s) {
 	ValueType *var = checkVariable(s->mVarName, ast::Variable::TypePtr, s->mTypeName);
-	return var != 0 && checkBlock(&s->mBlock);
+	mExitLevel++;
+	bool success = var != 0 && checkBlock(&s->mBlock);
+	mExitLevel--;
+	return success;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ArrayDefinition *s) {
@@ -576,7 +591,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::SelectStatement *s) {
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::RepeatForeverStatement *s){
-	return run(&s->mBlock, mScope);
+	mExitLevel++;
+	bool success = checkBlock(&s->mBlock);
+	mExitLevel--;
+	return success;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::RepeatUntilStatement *s) {
@@ -590,14 +608,16 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::RepeatUntilStatement *s) {
 	else {
 		valid = false;
 	}
+	mExitLevel++;
 	if (!checkBlock(&s->mBlock)) valid = false;
+	mExitLevel--;
 	return valid;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCall *s) {
 	mLine = s->mLine;
 	mFile = s->mFile;
-	bool err;
+	bool err = false;
 	QList<ValueType*> params;
 	for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
 		ValueType *p = typeCheck(*i);
@@ -608,7 +628,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCall *s) {
 			err = true;
 		}
 	}
-	if (err) return false;
+	if (err)
+		return false;
 
 	Symbol *sym = mScope->find(s->mName);
 	if (!sym) {
@@ -698,6 +719,16 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Gosub *s) {
 	mLine = s->mLine;
 	mFile = s->mFile;
 	mRequiredLabels.insert(s->mLabel, CodeLineInfo(mLine, mFile));
+	return true;
+}
+
+bool SymbolCollectorTypeChecker::checkStatement(ast::Exit *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	if (mExitLevel == 0) {
+		emit error(ErrorCodes::ecInvalidExit, tr("Cannot use Exit outside loops"), mLine, mFile);
+		return false;
+	}
 	return true;
 }
 

@@ -51,6 +51,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::Label *s);
 		bool checkStatement(ast::Goto *s);
 		bool checkStatement(ast::Gosub *s);
+		bool checkStatement(ast::Exit *s);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 
@@ -65,7 +66,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		Scope *mScope;
 		Scope *mGlobalScope;
 		ValueType *mReturnValueType;
-
+		int mExitLevel;
 		QMultiMap<QString, CodeLineInfo> mRequiredLabels;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);

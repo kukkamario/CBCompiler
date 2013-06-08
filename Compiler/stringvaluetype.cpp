@@ -1,6 +1,7 @@
 #include "stringvaluetype.h"
 #include "value.h"
 #include "stringpool.h"
+#include "booleanvaluetype.h"
 #include "builder.h"
 
 StringValueType::StringValueType(StringPool *strPool, Runtime *r, llvm::Module *mod) :
@@ -106,6 +107,21 @@ bool StringValueType::setStringToFloatFunction(llvm::Function *func) {
 	return true;
 }
 
+bool StringValueType::setEqualityFunction(llvm::Function *func) {
+	llvm::FunctionType *funcTy = func->getFunctionType();
+	if (funcTy->getReturnType() != mRuntime->booleanValueType()->llvmType()) return false;
+	if (funcTy->getNumParams() != 2) return false;
+	llvm::FunctionType::param_iterator i = funcTy->param_begin();
+	const llvm::Type *const arg1 = *i;
+	if (arg1 != mType) return false;
+	i++;
+	const llvm::Type *const arg2 = *i;
+	if (arg2 != mType) return false;
+
+	mEqualityFunction = func;
+	return true;
+}
+
 
 ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 	switch (to->type()) {
@@ -165,6 +181,10 @@ llvm::Value *StringValueType::floatToStringCast(llvm::IRBuilder<> *builder, llvm
 
 llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2) {
 	return builder->CreateCall2(mAdditionFunction, str1, str2);
+}
+
+llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b) {
+	return builder->CreateCall2(mEqualityFunction, a, b);
 }
 
 bool StringValueType::isValid() const {
