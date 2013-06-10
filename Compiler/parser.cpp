@@ -1,5 +1,7 @@
 ﻿#include "parser.h"
 #include "errorcodes.h"
+#include <assert.h>
+
 Parser::Parser():
 	mStatus(Ok)
 {

@@ -1,6 +1,8 @@
 #include "scope.h"
 #include <QDebug>
 #include <QTextStream>
+#include <assert.h>
+
 Scope::Scope(const QString &name,Scope *parent):
 	mParent(parent),
 	mName(name) {

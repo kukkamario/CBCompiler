@@ -5,6 +5,8 @@
 #include "token.h"
 #include <QMap>
 #include <QPair>
+#include <assert.h>
+
 class Lexer: public QObject
 {
 		Q_OBJECT
