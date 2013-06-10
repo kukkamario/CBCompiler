@@ -23,7 +23,8 @@ SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
 	mGlobalScope(0),
 	mReturnValueType(0),
-	mExitLevel(0)
+	mExitLevel(0),
+	mExpressionLevel(0)
 {
 }
 
@@ -55,12 +56,18 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Node *s) {
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
+	mExpressionLevel++;
 	ValueType *first = typeCheck(s->mFirst);
-	if (!first) return 0;
-
+	if (!first) {
+		mExpressionLevel--;
+		return 0;
+	}
 	for (QList<ast::Operation>::ConstIterator i = s->mRest.begin(); i != s->mRest.end(); i++) {
 		ValueType *second = typeCheck(i->mOperand);
-		if (!second) return 0;
+		if (!second) {
+			mExpressionLevel--;
+			return 0;
+		}
 		ValueType *result = 0;
 		switch (i->mOperator) {
 			case ast::opEqual:
@@ -215,19 +222,23 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 			case ast::opOr:
 			case ast::opXor:
 				if (first->castCost(mRuntime->booleanValueType()) < ValueType::maxCastCost && second->castCost(mRuntime->booleanValueType()) < ValueType::maxCastCost ) {
+					mExpressionLevel--;
 					return mRuntime->booleanValueType();
 				}
 			default:
 				assert(0);
+				mExpressionLevel--;
 				return 0;
 		}
 		if (!result) {
 			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch,
 					   tr("Mathematical operation operand type mismatch: No operation \"%1\" between %2 and %3").arg(ast::operatorToString(i->mOperator), first->name(), second->name()), mLine, mFile);
+			mExpressionLevel--;
 			return 0;
 		}
 		first = result;
 	}
+	mExpressionLevel--;
 	return first;
 }
 
@@ -267,7 +278,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 		ArraySymbol *array = static_cast<ArraySymbol*>(sym);
 		bool err = false;
 		for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
-			ValueType *p = typeCheck(*i);
+			ValueType *p = typeCheckExpression(*i);
 			if (p) {
 				if (!(p->type() == ValueType::Integer || p->type() == ValueType::Short || p->type() == ValueType::Byte)) {
 					emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array subscript should be integer value"), mLine, mFile);
@@ -303,9 +314,33 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 		Function *func = funcSym->findBestOverload(params, false, &searchErr);
 		if (!func) {
 			switch (searchErr) {
-				case Symbol::oseCannotFindAny:
-					emit error(ErrorCodes::ecCantFindFunction, tr("Can't find function \"%1\" with given parametres").arg(s->mName), mLine, mFile);
-					return 0;
+				case Symbol::oseCannotFindAny: {
+						Function *command = funcSym->findBestOverload(params, true, &searchErr);
+						switch (searchErr) {
+							case Symbol::oseNoError:
+								if (insideExpression()) {
+									emit error(ErrorCodes::ecCantUseCommandInsideExpression, tr("Can't call command %1 inside an expression").arg(command->name()), s->mLine, s->mFile);
+									return 0;
+								}
+								return mRuntime->intValueType(); //Not used for anything
+							case Symbol::oseCannotFindAny: {
+								QString pStr;
+								for (QList<ValueType*>::ConstIterator i = params.begin(); i != params.end(); i++) {
+									if (i != params.begin()) pStr += ',';
+									pStr += (*i)->name();
+								}
+								emit error(ErrorCodes::ecCantFindFunction, tr("Can't find function or command \"%1\" with given parametres (%2)").arg(s->mName, pStr), mLine, mFile);
+								return 0;
+							}
+							case Symbol::oseFoundMultipleOverloads: {
+								emit error(ErrorCodes::ecMultiplePossibleOverloads, tr("Can't choose between command \"%1\" overloads").arg(s->mName), mLine, mFile);
+								return 0;
+							}
+							default:
+								assert(0);
+								return 0;
+						}
+				}
 				case Symbol::oseFoundMultipleOverloads:
 					emit error(ErrorCodes::ecMultiplePossibleOverloads, tr("Can't choose between function \"%1\" overloads").arg(s->mName), mLine, mFile);
 					return 0;
@@ -370,11 +405,19 @@ bool SymbolCollectorTypeChecker::run(const ast::Block *block, Scope *scope) {
 	return valid;
 }
 
+ValueType *SymbolCollectorTypeChecker::typeCheckExpression(ast::Node *s) {
+	mExpressionLevel++;
+	ValueType *ret = typeCheck(s);
+	mExpressionLevel--;
+	return ret;
+}
+
 bool SymbolCollectorTypeChecker::checkBlock(const ast::Block *block) {
 	bool valid = true;
 	for (ast::Block::ConstIterator i = block->begin(); i != block->end(); i++) {
-		if (!checkStatement(*i))
+		if (!checkStatement(*i)) {
 			valid = false;
+		}
 	}
 	return valid;
 }
@@ -424,7 +467,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 bool SymbolCollectorTypeChecker::checkStatement(ast::IfStatement *s) {
 	mFile = s->mFile;
 	mLine = s->mLine;
-	ValueType *cond = typeCheck(s->mCondition);
+	ValueType *cond = typeCheckExpression(s->mCondition);
 	bool valid = true;
 	if (!cond || !tryCastToBoolean(cond)) valid = false;
 	if (!checkBlock(&s->mIfTrue)) valid = false;
@@ -435,7 +478,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::IfStatement *s) {
 bool SymbolCollectorTypeChecker::checkStatement(ast::WhileStatement *s) {
 	mFile = s->mFile;
 	mLine = s->mStartLine;
-	ValueType *cond = typeCheck(s->mCondition);
+	ValueType *cond = typeCheckExpression(s->mCondition);
 	mExitLevel++;
 	bool valid = true;
 	if (!cond || !tryCastToBoolean(cond)) valid = false;
@@ -448,7 +491,9 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::AssignmentExpression *s) {
 	mFile = s->mFile;
 	mLine = s->mLine;
 	ValueType *var = typeCheck(s->mVariable);
-	ValueType *value = typeCheck(s->mExpression);
+	mExpressionLevel++;
+	ValueType *value = typeCheckExpression(s->mExpression);
+	mExpressionLevel--;
 	bool valid = var && value;
 	if (var && value) {
 		if (var->isTypePointer() && !value->isTypePointer()) {
@@ -477,8 +522,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
 	mFile = s->mFile;
 	mLine = s->mStartLine;
 	ValueType *var = checkVariable(s->mVarName, s->mVarType);
-	ValueType *from = typeCheck(s->mFrom);
-	ValueType *to = typeCheck(s->mTo);
+	ValueType *from = typeCheckExpression(s->mFrom);
+	ValueType *to = typeCheckExpression(s->mTo);
 	bool valid = from != 0;
 	if (var) {
 		if (!var->isNumber()) {
@@ -499,7 +544,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
 		valid = false;
 	}
 	if (s->mStep) {
-		ValueType *step = typeCheck(s->mStep);
+		ValueType *step = typeCheckExpression(s->mStep);
 		if (step) {
 			if (!step->isNumber()) {
 				emit error(ErrorCodes::ecNotNumber, tr("\"Step\" value should be a number"), mLine, mFile);
@@ -601,7 +646,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::RepeatUntilStatement *s) {
 	bool valid = true;
 	mLine = s->mEndLine;
 	mFile = s->mFile;
-	ValueType *condVt = typeCheck(s->mCondition);
+	ValueType *condVt = typeCheckExpression(s->mCondition);
 	if (condVt) {
 		valid = tryCastToBoolean(condVt);
 	}
@@ -620,7 +665,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCall *s) {
 	bool err = false;
 	QList<ValueType*> params;
 	for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
-		ValueType *p = typeCheck(*i);
+		ValueType *p = typeCheckExpression(*i);
 		if (p) {
 			params.append(p);
 		}
@@ -672,7 +717,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Return *s) {
 			emit error(ErrorCodes::ecExpectingValueAfterReturn, tr("Expecting value after Return"), mLine, mFile);
 			return false;
 		}
-		ValueType *retVal = typeCheck(s->mValue);
+		ValueType *retVal = typeCheckExpression(s->mValue);
 		if (!retVal) return false;
 		if (retVal->castCost(mReturnValueType) >= ValueType::maxCastCost) {
 			emit error(ErrorCodes::ecInvalidReturn, tr("The type of the returned value doesn't match the return type of the function"), mLine, mFile);

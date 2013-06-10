@@ -96,7 +96,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 	ReturnState state = Success;
 	int line = 1;
 	for (QString::const_iterator i = code.begin(); i != code.end();) {
-		if (i->category() == QChar::Separator_Space) { // Space
+		if (i->category() == QChar::Separator_Space || *i == char(9) /* horizontal tab */) { // Space
 			i++;
 			continue;
 		}
@@ -249,7 +249,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			continue;
 		}
 
-		emit error(ErrorCodes::ecUnexpectedCharacter, tr("Unexpected character %1").arg(QString(*i)), line, curFile);
+		emit error(ErrorCodes::ecUnexpectedCharacter, tr("Unexpected character \"%1\" %2,%3").arg(QString(*i), QString::number(i->row()), QString::number(i->cell())), line, curFile);
 		state = ErrorButContinue;
 		++i;
 	}

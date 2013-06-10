@@ -84,7 +84,8 @@ bool CodeGenerator::generate(ast::Program *program) {
 
 	mFuncCodeGen.setIsMainScope(true);
 	qDebug() << "Starting code generation";
-	return mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
+	bool valid =  mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
+	return valid;
 }
 
 bool CodeGenerator::writeBitcode(const QString &path) {

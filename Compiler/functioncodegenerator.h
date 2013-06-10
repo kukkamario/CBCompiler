@@ -84,6 +84,7 @@ class FunctionCodeGenerator: public QObject{
 		}
 		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
 		void pushExit(const QVector<llvm::BasicBlock*>::ConstIterator &i) { mExitStack.push(i);}
+		void pushExit(ast::Node *n) { const QVector<llvm::BasicBlock*>::ConstIterator i = mExitLocations[n]; assert(i != mBasicBlocks.end()); pushExit(i); }
 		void popExit() { mExitStack.pop(); }
 		void nextBasicBlock() { mCurrentBasicBlockIt++; mCurrentBasicBlock = *mCurrentBasicBlockIt;}
 	public slots:

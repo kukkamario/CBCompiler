@@ -5,7 +5,7 @@ extern "C" bool atomic_decrease(volatile int *val);
 class ReferenceCounter {
 	public:
 		ReferenceCounter(): mCounter(0) {}
-		ReferenceCounter(int v): mCounter(1) {}
+		ReferenceCounter(int v): mCounter(v) {}
 
 		/** Returns true if value is non-zero */
 		bool increase();

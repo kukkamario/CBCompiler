@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "cbstring.h"
 
 extern "C" void CBF_printI(int i) {
@@ -15,4 +16,8 @@ extern "C" void CBF_printS(CBString s) {
 
 extern "C" void CBF_print() {
 	printf("\n");
+}
+
+extern "C" int CBF_timer() {
+	return clock() * 1000 / CLOCKS_PER_SEC;
 }

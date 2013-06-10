@@ -20,7 +20,6 @@ Value::Value(const ConstantValue &c, Runtime *r) :
 	mValue(0),
 	mConstant(c) {
 	mValueType = r->findValueType(c.type());
-
 }
 
 Value::Value(ValueType *t, llvm::Value *v):

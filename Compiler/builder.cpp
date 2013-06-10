@@ -92,7 +92,6 @@ Value Builder::toString(const Value &v) {
 		case ValueType::Float:
 			llvm::Value *val = mRuntime->stringValueType()->floatToStringCast(&mIRBuilder, v.value());
 			return Value(mRuntime->stringValueType(), val);
-
 	}
 
 	assert(0);
@@ -287,6 +286,7 @@ void Builder::destruct(VariableSymbol *var) {
 }
 
 void Builder::destruct(const Value &a) {
+	if (!a.isValid()) return;
 	if (a.isConstant() || a.valueType()->type() != ValueType::String) return;
 	assert(a.value());
 	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
@@ -745,6 +745,61 @@ Value Builder::less(const Value &a, const Value &b) {
 }
 
 Value Builder::lessEqual(const Value &a, const Value &b) {
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::lessEqual(a.constant(), b.constant()), mRuntime);
+	}
+	if (a.valueType()->type() == ValueType::String) {
+		//TODO: finish this
+		assert(0);
+		return Value();
+	}
+	if (b.valueType()->type() == ValueType::String) {
+		//TODO: finish this
+		assert(0);
+		return Value();
+	}
+	switch (a.valueType()->type()) {
+		case ValueType::Boolean:
+		case ValueType::Integer:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+				case ValueType::Integer:
+				case ValueType::Short:
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpSLE(llvmValue(toInt(a)), llvmValue(toInt(b))));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOLE(llvmValue(toFloat(a)), llvmValue(toFloat(b))));
+			}
+			break;
+		case ValueType::Short:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+				case ValueType::Integer:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpSLE(llvmValue(toInt(a)), llvmValue(toInt(b))));
+				case ValueType::Short:
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpUGE(llvmValue(toShort(a)), llvmValue(toShort(b))));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOLE(llvmValue(toFloat(a)), llvmValue(toFloat(b))));
+			}
+			break;
+		case ValueType::Byte:
+			switch (b.valueType()->type()) {
+				case ValueType::Boolean:
+				case ValueType::Integer:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpSLE(llvmValue(toInt(a)), llvmValue(toInt(b))));
+				case ValueType::Short:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpUGE(llvmValue(toShort(a)), llvmValue(toShort(b))));
+				case ValueType::Byte:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpUGE(llvmValue(a), llvmValue(b)));
+				case ValueType::Float:
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOLE(llvmValue(toFloat(a)), llvmValue(toFloat(b))));
+			}
+			break;
+		case ValueType::Float:
+			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOLE(llvmValue(toFloat(a)), llvmValue(toFloat(b))));
+	}
+
 	assert(0); return Value();
 }
 

@@ -80,7 +80,12 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	std::vector<llvm::Value*> p;
 	QList<Value>::ConstIterator pi = params.begin();
 	for (ParamList::ConstIterator i = mParamTypes.begin(); i != mParamTypes.end(); ++i) {
-		p.push_back(builder->llvmValue((*i)->cast(builder, *pi)));
+		assert(*i);
+		assert(pi->isValid());
+		Value param = (*i)->cast(builder, *pi);
+		llvm::Value *val = builder->llvmValue(param);
+		p.push_back(val);
+		pi++;
 	}
 	return Value(mReturnValue, builder->irBuilder().CreateCall(mFunction, p));
 }

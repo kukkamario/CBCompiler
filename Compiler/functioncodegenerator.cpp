@@ -5,6 +5,9 @@
 #include "functionsymbol.h"
 #include "builder.h"
 #include <QDebug>
+#include "errorcodes.h"
+#include "warningcodes.h"
+
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
 	mCurrentBasicBlock(0),
@@ -126,7 +129,7 @@ bool FunctionCodeGenerator::generate(ast::Node *n) {
 bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 	llvm::BasicBlock *ifBB = mCurrentBasicBlock;
 	Value cond = mExprGen.generate(n->mCondition);
-
+	assert(cond.isValid());
 	//If true
 	mCurrentBasicBlockIt++;
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
@@ -228,8 +231,33 @@ bool FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
 	return true;
 }
 
-bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
-	assert(0); return false;
+bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) { // Function or command call
+	Symbol *sym = scope()->find(n->mName);
+	if (sym->type() == Symbol::stArray) {
+		emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored useless array %1 subscript"), n->mLine, n->mFile);
+		return true;
+	}
+	assert(sym->type() == Symbol::stFunctionOrCommand);
+
+	QList<ValueType*> valueTypes;
+	QList<Value> params;
+	for (QList<ast::Node*>::ConstIterator i = n->mParams.begin();i != n->mParams.end(); i++) {
+		Value p = mExprGen.generate(*i);
+		assert(p.isValid());
+		valueTypes.append(p.valueType());
+		params.append(p);
+	}
+
+	FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
+	Function *func = funcSym->findBestOverload(valueTypes, false); //Find function
+	if (!func) {
+		func = funcSym->findBestOverload(valueTypes, true); //Find command
+	}
+	assert(func);
+
+	Value val = func->call(mBuilder, params);
+	mBuilder->destruct(val);
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::Exit *n) {
@@ -269,7 +297,57 @@ bool FunctionCodeGenerator::generate(ast::ForEachStatement *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::ForToStatement *n) {
-	assert(0); return false;
+	pushExit(mExitLocations[n]);
+
+	Symbol *sym = mScope->find(n->mVarName);
+	assert(sym);
+	assert(sym->type() == Symbol::stVariable);
+	VariableSymbol *var = (VariableSymbol*)sym;
+	mBuilder->store(var, mExprGen.generate(n->mFrom));
+	nextBasicBlock();
+	llvm::BasicBlock *start = mCurrentBasicBlock;
+	mBuilder->branch(mCurrentBasicBlock);
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+
+	mCurrentBasicBlock->setName("For-To condition");
+	Value val = mBuilder->load(var);
+	Value add = mExprGen.generate(n->mTo);
+	assert(add.isValid());
+	Value cond = mBuilder->lessEqual(val, add);
+	assert(cond.isValid());
+	//Branch
+
+	nextBasicBlock();
+	llvm::BasicBlock *ifTrue = mCurrentBasicBlock;
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("For-To block");
+	generate(&n->mBlock);
+
+	val = mBuilder->load(var);
+	Value step;
+	if (n->mStep) {
+		step = mExprGen.generate(n->mStep);
+	}
+	else {
+		step = Value(ConstantValue(1), mRuntime);
+	}
+	
+	assert(step.isValid());
+	val = mBuilder->add(val, step);
+	mBuilder->store(var, val);
+	mBuilder->branch(start);
+
+	nextBasicBlock();
+
+	//Branch
+	mBuilder->setInsertPoint(start);
+	mBuilder->branch(cond, ifTrue, mCurrentBasicBlock);
+
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("after Next");
+	popExit();
+
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::Goto *n) {
@@ -281,6 +359,7 @@ bool FunctionCodeGenerator::generate(ast::Goto *n) {
 
 	mCurrentBasicBlockIt++;
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	return true;
 }
 
@@ -289,11 +368,49 @@ bool FunctionCodeGenerator::generate(ast::Gosub *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::RepeatUntilStatement *n) {
-	assert(0); return false;
+	pushExit(mExitLocations[n]);
+	nextBasicBlock();
+	mBuilder->branch(mCurrentBasicBlock);
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("While");
+	llvm::BasicBlock *start = mCurrentBasicBlock;
+	bool valid = generate(&n->mBlock);
+
+	Value cond = mExprGen.generate(n->mCondition);
+	valid &= cond.isValid();
+	nextBasicBlock();
+	mBuilder->branch(cond, mCurrentBasicBlock, start);
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("Wend");
+	popExit();
+
+	return valid;
 }
 
 bool FunctionCodeGenerator::generate(ast::WhileStatement *n) {
-	assert(0); return false;
+	pushExit(mExitLocations[n]);
+	nextBasicBlock();
+	mBuilder->branch(mCurrentBasicBlock);
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("While condition");
+	llvm::BasicBlock *start = mCurrentBasicBlock;
+	Value cond = mExprGen.generate(n->mCondition);
+	//
+	nextBasicBlock();
+	llvm::BasicBlock *ifTrue = mCurrentBasicBlock;
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("While block");
+	generate(&n->mBlock);
+	mBuilder->branch(start);
+	nextBasicBlock();
+
+	mBuilder->setInsertPoint(start);
+	mBuilder->branch(cond, ifTrue, mCurrentBasicBlock); //While check
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
+	mCurrentBasicBlock->setName("Wend");
+	popExit();
+
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::VariableDefinition *n) {
@@ -309,6 +426,7 @@ bool FunctionCodeGenerator::generate(ast::Label *n) {
 	mCurrentBasicBlockIt++;
 	mBuilder->branch(*mCurrentBasicBlockIt);
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	mCurrentBasicBlock->setName(("LABEL " + n->mName).toStdString());
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	return true;
 }
@@ -363,6 +481,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::IfStatement *n) {
 
 bool FunctionCodeGenerator::basicBlockGenerationPass(ast::ForToStatement *n) {
 	addBasicBlock();
+	addBasicBlock();
 	bool valid = basicBlockGenerationPass(&n->mBlock);
 	addBasicBlock();
 	mExitLocations.insert(n, mCurrentBasicBlockIt);
@@ -403,6 +522,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Label *n) {
 }
 
 bool FunctionCodeGenerator::basicBlockGenerationPass(ast::WhileStatement *n) {
+	addBasicBlock();
 	addBasicBlock();
 	bool valid = basicBlockGenerationPass(&n->mBlock);
 	addBasicBlock();

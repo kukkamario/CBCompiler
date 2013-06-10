@@ -82,6 +82,7 @@ enum ErrorCode {
 	ecGosubCannotReturnValue,
 	ecLabelAlreadyDefined,
 	ecInvalidExit,
+	ecCantUseCommandInsideExpression,
 
 	ecCantWriteBitcodeFile,
 

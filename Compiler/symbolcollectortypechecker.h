@@ -24,6 +24,7 @@ class SymbolCollectorTypeChecker : public QObject {
 				QFile *mFile;
 		};
 
+		ValueType *typeCheckExpression(ast::Node *s);
 		ValueType *typeCheck(ast::Node *s);
 		ValueType *typeCheck(ast::Expression *s);
 		ValueType *typeCheck(ast::Unary *s);
@@ -68,6 +69,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		ValueType *mReturnValueType;
 		int mExitLevel;
 		QMultiMap<QString, CodeLineInfo> mRequiredLabels;
+		bool insideExpression() { return mExpressionLevel > 0; }
+		int mExpressionLevel;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);
