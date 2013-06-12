@@ -21,6 +21,13 @@ Runtime::Runtime():
 
 Runtime::~Runtime() {
 	runtimeInstance = 0;
+	delete mBooleanValueType;
+	delete mIntValueType;
+	delete mShortValueType;
+	delete mByteValueType;
+	delete mStringValueType;
+	delete mNullTypePointerValueType;
+	delete mFloatValueType;
 }
 
 bool Runtime::load(StringPool *strPool, const QString &file) {

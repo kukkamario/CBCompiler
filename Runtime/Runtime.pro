@@ -13,16 +13,22 @@ SOURCES += \
     system.cpp \
     cbstring.cpp \
     main.cpp \
-    referencecounter.cpp
+    referencecounter.cpp \
+    math.cpp
 
 HEADERS += \
     cbstring.h \
-    referencecounter.h
+    referencecounter.h \
+    common.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll
-} else {
-    LLVM_FILES += atomic_operations_gcc-64.ll
+}
+linux-g++-32 {
+	LLVM_FILES += atomic_operations_gcc-32.ll
+}
+linux-g++-64 {
+	LLVM_FILES += atomic_operations_gcc-64.ll
 }
 
 QMAKE_CC = clang
@@ -30,7 +36,7 @@ QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
 QMAKE_CXXFLAGS = -emit-llvm
 QMAKE_LIB = llvm-link -o
-QMAKE_AR = llvm-link -d -o  #llvm-ar cqs
+QMAKE_AR = llvm-link -o  #llvm-ar cqs
 
 QMAKE_RUN_CC		= $(CC) $(CCFLAGS) $(INCPATH) -c $src -o $obj
 QMAKE_RUN_CC_IMP	= $(CC) $(CCFLAGS) $(INCPATH) -c $< -o $@

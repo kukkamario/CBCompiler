@@ -14,8 +14,8 @@ bool ReferenceCounter::increase() {
 				 : "=m" (mCounter), "=qm" (ret)
 				 : "m" (mCounter)
 				 : "memory");*/
-
-	return atomic_increase(&mCounter);
+	//return atomic_increase(&mCounter);
+	return ++mCounter;
 }
 
 bool ReferenceCounter::decrease() {
@@ -26,6 +26,6 @@ bool ReferenceCounter::decrease() {
 				 : "=m" (mCounter), "=qm" (ret)
 				 : "m" (mCounter)
 				 : "memory");*/
-
-	return atomic_decrease(&mCounter);
+	//return atomic_decrease(&mCounter);
+	return --mCounter;
 }
