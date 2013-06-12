@@ -122,6 +122,19 @@ bool StringValueType::setEqualityFunction(llvm::Function *func) {
 	return true;
 }
 
+bool StringValueType::setRefFunction(llvm::Function *func) {
+	llvm::FunctionType *funcTy = func->getFunctionType();
+	if (funcTy->getReturnType() != llvm::Type::getVoidTy(func->getContext())) return false;
+	if (funcTy->getNumParams() != 1) return false;
+	llvm::FunctionType::param_iterator i = funcTy->param_begin();
+	const llvm::Type *const arg1 = *i;
+	if (arg1 != mType) return false;
+	i++;
+
+	mRefFunction = func;
+	return true;
+}
+
 
 ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 	switch (to->type()) {
@@ -185,6 +198,10 @@ llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::V
 
 llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b) {
 	return builder->CreateCall2(mEqualityFunction, a, b);
+}
+
+void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) {
+	builder->CreateCall(mRefFunction, a);
 }
 
 bool StringValueType::isValid() const {

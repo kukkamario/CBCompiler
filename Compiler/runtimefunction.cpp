@@ -87,5 +87,11 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 		p.push_back(val);
 		pi++;
 	}
-	return Value(mReturnValue, builder->irBuilder().CreateCall(mFunction, p));
+	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
+	if (isCommand()) {
+		return Value();
+	}
+	else {
+		return Value(mReturnValue, ret);
+	}
 }

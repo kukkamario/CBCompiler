@@ -24,6 +24,8 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	mConstEval.setGlobalScope(&mGlobalScope);
 	mTypeChecker.setRuntime(&mRuntime);
 	mTypeChecker.setGlobalScope(&mGlobalScope);
+	mFuncCodeGen.setStringPool(&mStringPool);
+
 	connect(&mConstEval, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mConstEval, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 	connect(&mRuntime, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));

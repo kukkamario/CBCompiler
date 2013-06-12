@@ -174,8 +174,11 @@ Value Builder::toBoolean(const Value &v) {
 			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(v.value(), mIRBuilder.getInt8(0)));
 		case ValueType::Float:
 			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpONE(v.value(), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.0)));
-		case ValueType::String:
-			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(v.value()));
+		case ValueType::String: {
+			llvm::Value *val = mIRBuilder.CreateIsNotNull(v.value());
+
+			return Value(mRuntime->booleanValueType(), val);
+		}
 	}
 
 	return Value();
@@ -239,7 +242,11 @@ llvm::Value *Builder::llvmValue(bool t) {
 
 
 Value Builder::call(Function *func, const QList<Value> &params) {
-	return func->call(this, params);
+	Value ret = func->call(this, params);
+	for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
+		destruct(*i);
+	}
+	return ret;
 }
 
 void Builder::branch(llvm::BasicBlock *dest) {
@@ -275,7 +282,11 @@ void Builder::store(VariableSymbol *var, const Value &v) {
 }
 
 Value Builder::load(const VariableSymbol *var) {
-	return Value(var->valueType(), mIRBuilder.CreateLoad(var->alloca_(), false));
+	llvm::Value *val = mIRBuilder.CreateLoad(var->alloca_(), false);
+	if (var->valueType()->type() == ValueType::String) {
+		mRuntime->stringValueType()->refString(&mIRBuilder, val);
+	}
+	return Value(var->valueType(), val);
 }
 
 void Builder::destruct(VariableSymbol *var) {
@@ -340,6 +351,7 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -358,6 +370,7 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 			}
 		case ValueType::Short:
@@ -377,6 +390,7 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -399,6 +413,7 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -412,10 +427,13 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(b);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(as));
 					destruct(as);
+					destruct(a);
 					return Value(mRuntime->stringValueType(), result);
 				}
 				case ValueType::String: {
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(b));
+					destruct(a);
+					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -828,6 +846,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 				case ValueType::String: {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(b);
 					destruct(as);
 					return Value(mRuntime->booleanValueType(), ret);
 				}
@@ -843,6 +862,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 				case ValueType::String: {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
+					destruct(b);
 					destruct(as);
 					return Value(mRuntime->booleanValueType(), ret);
 				}
@@ -864,6 +884,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->booleanValueType(), ret);
 				}
 			}
@@ -881,6 +902,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->booleanValueType(), ret);
 				}
 			}
@@ -899,6 +921,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
+					destruct(b);
 					return Value(mRuntime->booleanValueType(), ret);
 				}
 			}
@@ -910,6 +933,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 			Value bs = toString(b);
 			llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(bs));
 			destruct(bs);
+			destruct(a);
 			return Value(mRuntime->booleanValueType(), ret);
 	}
 

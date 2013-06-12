@@ -104,7 +104,7 @@ Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
 		Function *func = funcSym->findBestOverload(paramTypes);
 		assert(func);
 
-		Value ret = func->call(mBuilder, params);
+		Value ret = mBuilder->call(func, params);
 		return ret;
 	}
 	if (sym->type() == Symbol::stArray) {

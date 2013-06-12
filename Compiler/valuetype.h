@@ -30,6 +30,7 @@ class ValueType {
 		static const CastCostType maxCastCost = 10000;
 
 		ValueType(Runtime *r);
+		~ValueType() {}
 		virtual QString name() const = 0;
 		llvm::Type *llvmType() {return mType;}
 		virtual Type type() const = 0;

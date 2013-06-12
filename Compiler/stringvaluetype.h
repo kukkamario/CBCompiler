@@ -18,6 +18,8 @@ class StringValueType : public ValueType {
 		bool setStringToIntFunction(llvm::Function *func);
 		bool setStringToFloatFunction(llvm::Function *func);
 		bool setEqualityFunction(llvm::Function *func);
+		bool setRefFunction(llvm::Function *func);
+
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, const QString &str);
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr);
 		void destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar);
@@ -27,6 +29,8 @@ class StringValueType : public ValueType {
 		llvm::Value *floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f);
 		llvm::Value *stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2);
 		llvm::Value *stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b);
+		void refString(llvm::IRBuilder<> *builder, llvm::Value *a);
+
 		bool isValid() const;
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
@@ -44,6 +48,7 @@ class StringValueType : public ValueType {
 		llvm::Function *mStringToIntFunction;
 		llvm::Function *mStringToFloatFunction;
 		llvm::Function *mEqualityFunction;
+		llvm::Function *mRefFunction;
 		StringPool *mStringPool;
 };
 

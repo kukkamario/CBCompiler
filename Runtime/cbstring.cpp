@@ -127,6 +127,10 @@ extern "C" CBString CBF_CB_StringAddition(CBString a, CBString b) {
 	return new CB_StringData(a->mString + b->mString);
 }
 
+extern "C" void CBF_CB_StringRef(CBString a) {
+	if (a) a->mRefCount.increase();
+}
+
 extern "C" int CBF_CB_StringToInt(CBString s) {
 	if (!s) return 0;
 //	try {

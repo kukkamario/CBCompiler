@@ -43,12 +43,18 @@ void FunctionCodeGenerator::setSetupBasicBlock(llvm::BasicBlock *bb) {
 	mSetupBasicBlock = bb;
 }
 
+void FunctionCodeGenerator::setStringPool(StringPool *stringPool) {
+	mStringPool = stringPool;
+	if (mBuilder) mBuilder->setStringPool(mStringPool);
+}
+
 bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	assert(mFunction);
 
 	if (!mBuilder) {
 		mBuilder = new Builder(mFunction->getContext());
 		mExprGen.setBuilder(mBuilder);
+		mBuilder->setStringPool(mStringPool);
 		mBuilder->setRuntime(mRuntime);
 	}
 
@@ -209,7 +215,7 @@ bool FunctionCodeGenerator::generate(ast::CommandCall *n) {
 	Function *command = funcSym->findBestOverload(valueTypes, true);
 	assert(command);
 
-	command->call(mBuilder, params);
+	mBuilder->call(command, params);
 	return true;
 }
 
@@ -254,7 +260,7 @@ bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) { // 
 	}
 	assert(func);
 
-	Value val = func->call(mBuilder, params);
+	Value val = mBuilder->call(func, params);
 	mBuilder->destruct(val);
 	return true;
 }

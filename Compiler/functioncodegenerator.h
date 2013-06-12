@@ -20,6 +20,7 @@ class FunctionCodeGenerator: public QObject{
 		void setIsMainScope(bool t);
 		void setScope(Scope *scope);
 		void setSetupBasicBlock(llvm::BasicBlock *bb);
+		void setStringPool(StringPool *stringPool);
 
 		bool generateFunctionCode(ast::Block *n);
 
@@ -78,6 +79,7 @@ class FunctionCodeGenerator: public QObject{
 		QStack<QVector<llvm::BasicBlock*>::ConstIterator> mExitStack;
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
+		StringPool *mStringPool;
 
 		bool isCurrentBBEmpty() const {
 			return mCurrentBasicBlock->getInstList().empty();

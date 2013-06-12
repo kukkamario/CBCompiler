@@ -187,6 +187,14 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		return;
 	}
 
+	if (name == "CB_StringRef") {
+		if (!mStringValueType->setRefFunction(func)) {
+			mValid = false;
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_RefString"), 0, 0);
+		}
+		return;
+	}
+
 
 	RuntimeFunction *rtfunc = new RuntimeFunction(this);
 	if (rtfunc->construct(func, name)) {
