@@ -20,4 +20,3 @@ valmis:
 loppu = Timer()
 Print (loppu - alku)
 Print i
-WaitKey

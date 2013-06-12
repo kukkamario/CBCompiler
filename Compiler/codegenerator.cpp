@@ -104,7 +104,11 @@ bool CodeGenerator::writeBitcode(const QString &path) {
 	qDebug() << "Creating native assembly...\n";
 	system("llc optimized_bitcode.bc -o native_asm.s"); //-filetype obj -o temp.o
 	qDebug() << "Building binary...\n";
+#ifdef _WIN32
 	system("mingw32-g++ -o cbrun native_asm.s");
+#else
+    system("g++ -o cbrun native_asm.s");
+#endif
 	qDebug() << "Success\n";
 	return true;
 }

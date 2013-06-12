@@ -298,7 +298,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 	}
 	else if (sym->type() == Symbol::stFunctionOrCommand) {
 		FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
-		bool err;
+        bool err = false;
 		QList<ValueType*> params;
 		for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
 			ValueType *p = typeCheck(*i);

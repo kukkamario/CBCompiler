@@ -5,12 +5,12 @@ target triple = "i686-pc-mingw32"
 
 define i1 @atomic_increase(i32* %val) nounwind {
 	%s = atomicrmw add i32* %val, i32 1 acquire
-	%r = icmp eq i32 %s, -1
+        %r = icmp eq i32 %s, -1
 	ret i1 %r
 }
 
 define i1 @atomic_decrease(i32* %val) nounwind {
 	%s = atomicrmw sub i32* %val, i32 1 acquire
-	%r = icmp eq i32 %s, 1
+        %r = icmp eq i32 %s, 1
 	ret i1 %r
 }

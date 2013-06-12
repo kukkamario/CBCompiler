@@ -19,14 +19,18 @@ HEADERS += \
     cbstring.h \
     referencecounter.h
 
-LLVM_FILES += atomic_operations.ll
-
+win32 {
+    LLVM_FILES += atomic_operations_mingw.ll
+} else {
+    LLVM_FILES += atomic_operations_gcc-64.ll
+}
 
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
 QMAKE_CXXFLAGS = -emit-llvm
 QMAKE_LIB = llvm-link -o
+QMAKE_AR = llvm-link -d -o  #llvm-ar cqs
 
 QMAKE_RUN_CC		= $(CC) $(CCFLAGS) $(INCPATH) -c $src -o $obj
 QMAKE_RUN_CC_IMP	= $(CC) $(CCFLAGS) $(INCPATH) -c $< -o $@

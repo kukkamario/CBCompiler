@@ -28,7 +28,7 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 	llvm::SMDiagnostic diagnostic;
 	mModule = llvm::ParseIRFile(file.toStdString(), diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
-		emit error(ErrorCodes::ecCantLoadRuntime, QString::fromStdString(diagnostic.getMessage()), 0, 0);
+        emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), 0, 0);
 		return false;
 	}
 

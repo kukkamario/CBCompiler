@@ -16,6 +16,12 @@ PRECOMPILED_HEADER = llvm.h
 TEMPLATE = app
 
 DEFINES += __STDC_LIMIT_MACROS __STDC_CONSTANT_MACROS
+
+
+
+CONFIG(debug, debug|release) {
+    DEFINES += _DEBUG
+}
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
 	LIBS +=  -L"$$(LLVM_LIB)"
@@ -26,7 +32,14 @@ win32 {
 }
 
 unix {
+    #!isEmpty($$(LLVM_LIB)) {
+        LIBS += -L"$$(LLVM_LIB)"
+    #}
+    !isEmpty($$(LLVM_INCLUDE)) {
+        INCLUDEPATH += "$$(LLVM_INCLUDE)"
+    }
     LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
+    LIBS += -ldl
     DEPENDPATH += "./"
 }
 

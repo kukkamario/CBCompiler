@@ -61,6 +61,7 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	qDebug() << "Generating basic blocks";
 
 	if (!basicBlockGenerationPass(n)) return false;
+	qDebug() << mBasicBlocks.size() << " basic blocks created";
 
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
@@ -121,8 +122,9 @@ bool FunctionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::VariableDefinition*)n);
 		case ast::Node::ntLabel:
 			return generate((ast::Label*)n);
+		default:
+			assert(0);
 	}
-	assert(0);
 	return false;
 }
 
@@ -131,8 +133,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 	Value cond = mExprGen.generate(n->mCondition);
 	assert(cond.isValid());
 	//If true
-	mCurrentBasicBlockIt++;
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	nextBasicBlock();
 	llvm::BasicBlock *ifTrueBB = mCurrentBasicBlock;
 	ifTrueBB->setName("If true");
 
@@ -140,8 +141,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 	if (!generate(&n->mIfTrue)) return false;
 
 	if (n->mElse.isEmpty()) {
-		mCurrentBasicBlockIt++;
-		mCurrentBasicBlock = *mCurrentBasicBlockIt;
+		nextBasicBlock();
 
 		//exit a if-statement
 		mBuilder->branch(mCurrentBasicBlock);
@@ -151,8 +151,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 		mBuilder->branch(cond, ifTrueBB, mCurrentBasicBlock);
 	}
 	else {
-		mCurrentBasicBlockIt++;
-		mCurrentBasicBlock = *mCurrentBasicBlockIt;
+		nextBasicBlock();
 		llvm::BasicBlock *elseBB = mCurrentBasicBlock;
 		elseBB->setName("Else");
 		mBuilder->setInsertPoint(elseBB);
@@ -357,8 +356,7 @@ bool FunctionCodeGenerator::generate(ast::Goto *n) {
 	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
 	mBuilder->branch(label->basicBlock());
 
-	mCurrentBasicBlockIt++;
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	nextBasicBlock();
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	return true;
 }
@@ -423,9 +421,8 @@ bool FunctionCodeGenerator::generate(ast::Redim *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::Label *n) {
-	mCurrentBasicBlockIt++;
-	mBuilder->branch(*mCurrentBasicBlockIt);
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	nextBasicBlock();
+	mBuilder->branch(mCurrentBasicBlock);
 	mCurrentBasicBlock->setName(("LABEL " + n->mName).toStdString());
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	return true;
@@ -561,4 +558,10 @@ bool FunctionCodeGenerator::generateDestructors() {
 		}
 	}
 	return true;
+}
+
+void FunctionCodeGenerator::nextBasicBlock() {
+	++mCurrentBasicBlockIt;
+	assert(mCurrentBasicBlockIt != mBasicBlocks.end());
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
 }
