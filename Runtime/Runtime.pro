@@ -54,6 +54,10 @@ llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
 llvm_compiler.input = LLVM_FILES
 QMAKE_EXTRA_COMPILERS += llvm_compiler
 
+win32 {
+	INCLUDEPATH += $$(BOOST_INCLUDE)
+}
+
 DESTDIR = $$PWD/../bin/runtime
 QMAKE_CXXFLAGS += -std=c++0x
 

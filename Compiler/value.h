@@ -1,10 +1,12 @@
 #ifndef VALUE_H
 #define VALUE_H
-class ValueType;
 #include "llvm.h"
 #include <QString>
 #include "constantvalue.h"
+
+class Builder;
 class Runtime;
+class ValueType;
 class Value {
 	public:
 		Value();
@@ -17,6 +19,7 @@ class Value {
 		bool isValid() const{return mValueType != 0;}
 		llvm::Value *value() const {return mValue;}
 		const ConstantValue &constant() const {return mConstant;}
+		void toLLVMValue(Builder *builder);
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;

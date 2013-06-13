@@ -53,19 +53,20 @@ Value ExpressionCodeGenerator::generate(ast::New *n) {
 
 Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 	Value val = generate(n->mOperand);
+	Value ret;
 	switch (n->mOperator) {
 		case ast::opMinus:
-			return mBuilder->minus(val);
+			ret = mBuilder->minus(val); break;
 		case ast::opNot:
-			return mBuilder->not_(val);
+			ret =  mBuilder->not_(val); break;
 		case ast::opPlus:
-			return mBuilder->plus(val);
+			ret = mBuilder->plus(val); break;
 		default:
 			assert(0);
 			return Value();
 	}
-
-
+	mBuilder->destruct(val);
+	return ret;
 }
 
 Value ExpressionCodeGenerator::generate(ast::Variable *n) {
@@ -129,13 +130,18 @@ Value ExpressionCodeGenerator::generate(ast::String *n) {
 
 Value ExpressionCodeGenerator::generate(ast::Expression *n) {
 	Value first = generate(n->mFirst);
-	if (!first.isValid()) return Value();
+	assert(first.isValid());
 
 
 	for (QList<ast::Operation>::ConstIterator i = n->mRest.begin(); i != n->mRest.end(); i++) {
 		Value second = generate(i->mOperand);
-		if (!second.isValid()) return Value();
+		assert(second.isValid());
 		Value result;
+		if (first.isConstant() ^ second.isConstant()) {
+			//String deleting hack
+			first.toLLVMValue(mBuilder);
+			second.toLLVMValue(mBuilder);
+		}
 		switch (i->mOperator) {
 			case ast::opEqual:
 				result = mBuilder->equal(first, second); break;
@@ -180,6 +186,7 @@ Value ExpressionCodeGenerator::generate(ast::Expression *n) {
 		assert(result.isValid());
 
 		mBuilder->destruct(first);
+		mBuilder->destruct(second);
 		first = result;
 	}
 	return first;

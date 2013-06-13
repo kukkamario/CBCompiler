@@ -1,3 +1,13 @@
+Print "Starting up"
+result = 1
+For i = 2 to 2131435
+	result = result * i + result / 3
+Next i
+Print "Something:" + result
+Print "Actual test:"
+
+
+
 alku = Timer()
 For i = 200000000 To 999999999
 	If i Mod 20 Then Goto ohi
@@ -18,5 +28,5 @@ Next i
 
 valmis:
 loppu = Timer()
-Print (loppu - alku)
-Print i
+Print "Time: " + (loppu - alku)
+Print "Result:" + i

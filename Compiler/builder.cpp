@@ -190,21 +190,7 @@ Value Builder::toValueType(ValueType *to, const Value &v) {
 
 llvm::Value *Builder::llvmValue(const Value &v) {
 	if (v.isConstant()) {
-		switch(v.valueType()->type()) {
-			case ValueType::Integer:
-				return llvmValue(v.constant().toInt());
-			case ValueType::Float:
-				return llvmValue(v.constant().toFloat());
-			case ValueType::Short:
-				return llvmValue(v.constant().toShort());
-			case ValueType::Byte:
-				return llvmValue(v.constant().toByte());
-			case ValueType::Boolean:
-				return llvmValue(v.constant().toBool());
-			case ValueType::String: {
-				return llvmValue(v.constant().toString());
-			}
-		}
+		return llvmValue(v.constant());
 	}
 
 	assert(v.value());
@@ -240,8 +226,32 @@ llvm::Value *Builder::llvmValue(bool t) {
 	return mIRBuilder.getInt1(t);
 }
 
+llvm::Value *Builder::llvmValue(const ConstantValue &v) {
+	switch(v.type()) {
+		case ValueType::Integer:
+			return llvmValue(v.toInt());
+		case ValueType::Float:
+			return llvmValue(v.toFloat());
+		case ValueType::Short:
+			return llvmValue(v.toShort());
+		case ValueType::Byte:
+			return llvmValue(v.toByte());
+		case ValueType::Boolean:
+			return llvmValue(v.toBool());
+		case ValueType::String: {
+			return llvmValue(v.toString());
+		}
+	}
+	assert(0);
+	return 0;
+}
 
-Value Builder::call(Function *func, const QList<Value> &params) {
+
+Value Builder::call(Function *func, QList<Value> &params) {
+	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
+		//String destruction hack...
+		i->toLLVMValue(this);
+	}
 	Value ret = func->call(this, params);
 	for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
 		destruct(*i);
@@ -351,7 +361,6 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
-					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -370,7 +379,6 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
-					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 			}
 		case ValueType::Short:
@@ -390,7 +398,6 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
-					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -413,7 +420,6 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(a);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
-					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}
@@ -427,13 +433,11 @@ Value Builder::add(const Value &a, const Value &b) {
 					Value as = toString(b);
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(as));
 					destruct(as);
-					destruct(a);
 					return Value(mRuntime->stringValueType(), result);
 				}
 				case ValueType::String: {
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(b));
 					destruct(a);
-					destruct(b);
 					return Value(mRuntime->stringValueType(), result);
 				}
 			}

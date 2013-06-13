@@ -6,6 +6,7 @@
 #include "booleanvaluetype.h"
 #include "bytevaluetype.h"
 #include "shortvaluetype.h"
+#include "builder.h"
 
 Value::Value():
 	mValueType(0), mValue(0) {
@@ -24,4 +25,11 @@ Value::Value(const ConstantValue &c, Runtime *r) :
 
 Value::Value(ValueType *t, llvm::Value *v):
 	mValueType(t), mValue(v) {
+}
+
+void Value::toLLVMValue(Builder *builder) {
+	if (isConstant()) {
+		mValue = builder->llvmValue(constant());
+		mConstant = ConstantValue();
+	}
 }
