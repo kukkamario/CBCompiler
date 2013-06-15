@@ -10,6 +10,10 @@ typedef QList<Node*> Block;
 }
 class Scope;
 
+/**
+ * @brief The CBFunction class
+ */
+
 class CBFunction : public Function {
 	public:
 		struct Parametre {

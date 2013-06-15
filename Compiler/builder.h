@@ -6,6 +6,13 @@
 #include <QList>
 #include "variablesymbol.h"
 #include "runtime.h"
+
+
+
+/**
+ * @brief The Builder class. Helper class for llvm-IR generation.
+ */
+
 class Builder {
 	public:
 		Builder(llvm::LLVMContext &context);

@@ -13,17 +13,28 @@ class ByteValueType;
 class BooleanValueType;
 class StringPool;
 class NullTypePointerValueType;
+
+/**
+ * @brief The Runtime class Loads LLVM-IR runtime from a bitcode file and creates the basic ValueTypes.
+ */
 class Runtime : public QObject {
 		Q_OBJECT
 	public:
 		static Runtime *instance();
 		Runtime();
 		~Runtime();
+		/**
+		 * @brief load Loads the runtime from a bitcode file.
+		 * @param strPool Pointer to the global string pool.
+		 * @param file Path to the runtime bitcode file
+		 * @return True, if loading succeeded, false otherwise
+		 */
 		bool load(StringPool *strPool, const QString &file);
 		llvm::Module *module() {return mModule;}
 		QList<RuntimeFunction*> functions() {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
 		llvm::Function *cbMain() {return mCBMain;}
+
 		StringValueType *stringValueType() {return mStringValueType;}
 		IntValueType *intValueType() {return mIntValueType;}
 		FloatValueType *floatValueType() {return mFloatValueType;}
@@ -31,6 +42,7 @@ class Runtime : public QObject {
 		ByteValueType *byteValueType() {return mByteValueType;}
 		BooleanValueType *booleanValueType() {return mBooleanValueType;}
 		NullTypePointerValueType *nullTypePointerValueType() {return mNullTypePointerValueType;}
+
 		ValueType *findValueType(ValueType::Type valType);
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);

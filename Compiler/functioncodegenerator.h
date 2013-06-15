@@ -10,18 +10,43 @@
 #include "expressioncodegenerator.h"
 #include "builder.h"
 class QFile;
-
+/**
+ * @brief The FunctionCodeGenerator class generates llvm-ir for a function. It expects AST and Scope to valid.
+ *
+ * @author Lassi Hämäläinen
+ */
 class FunctionCodeGenerator: public QObject{
 		Q_OBJECT
 	public:
 		explicit FunctionCodeGenerator(QObject *parent = 0);
+		/**
+		 * @brief Sets the runtime used for the generation.
+		 * @param r Runtime
+		 */
 		void setRuntime(Runtime *r);
+
+		/**
+		 * @brief setFunction
+		 * @param func The function in which generateFunctionCode generates the llvm-ir.
+		 */
 		void setFunction(llvm::Function *func);
 		void setIsMainScope(bool t);
 		void setScope(Scope *scope);
 		void setSetupBasicBlock(llvm::BasicBlock *bb);
+
+		/**
+		 * @brief setStringPool sets the pointer to the global string pool.
+		 * @param stringPool
+		 */
 		void setStringPool(StringPool *stringPool);
 
+		/**
+		 * @brief generateFunctionCode generates llvm-IR code for a AST tree.
+		 *
+		 * llvm::Function where llvm-IR is inserted have to be set using setFunction. The scope should be specificated with setScope.
+		 * @param n The function code block that contains AST.
+		 * @return True, if generation succeeded, otherwise false
+		 */
 		bool generateFunctionCode(ast::Block *n);
 
 		bool isMainScope()const{return mIsMainScope;}
@@ -66,6 +91,12 @@ class FunctionCodeGenerator: public QObject{
 		bool generateLocalVariables();
 		bool generateDestructors();
 
+		bool isCurrentBBEmpty() const { return mCurrentBasicBlock->getInstList().empty(); }
+		void nextBasicBlock();
+		void pushExit(const QVector<llvm::BasicBlock*>::ConstIterator &i) { mExitStack.push(i);}
+		void pushExit(ast::Node *n) { const QVector<llvm::BasicBlock*>::ConstIterator i = mExitLocations[n]; assert(i != mBasicBlocks.end()); pushExit(i); }
+		void popExit() { mExitStack.pop(); }
+		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
 
 		bool mIsMainScope;
 		Scope *mScope;
@@ -80,15 +111,6 @@ class FunctionCodeGenerator: public QObject{
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
-
-		bool isCurrentBBEmpty() const {
-			return mCurrentBasicBlock->getInstList().empty();
-		}
-		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
-		void pushExit(const QVector<llvm::BasicBlock*>::ConstIterator &i) { mExitStack.push(i);}
-		void pushExit(ast::Node *n) { const QVector<llvm::BasicBlock*>::ConstIterator i = mExitLocations[n]; assert(i != mBasicBlocks.end()); pushExit(i); }
-		void popExit() { mExitStack.pop(); }
-		void nextBasicBlock();
 	public slots:
 
 	signals:

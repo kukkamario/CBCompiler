@@ -66,7 +66,7 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file) {
 	Lexer::ReturnState ret = tokenize(file);
 	combineTokens();
 
-	//Dirty trick, btu works
+	//Dirty trick, but works
 	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
 	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
 	mTokens.append(Token(Token::EndOfTokens, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
@@ -105,7 +105,8 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			if (i == code.end()) return state;
 			readToEOL(i, code.end());
 			if (i != code.end()) {
-				addToken(Token(Token::EOL, i, ++i, line, curFile));
+				addToken(Token(Token::EOL, i, i + 1, line, curFile));
+				++i;
 				line++;
 			}
 			continue;
