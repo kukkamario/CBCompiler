@@ -27,7 +27,6 @@ class Parser : public QObject
 		 */
 		bool success() {return mStatus == Ok;}
 
-	private:
 		ast::ConstDefinition *tryConstDefinition(TokIterator &i);
 		ast::GlobalDefinition *tryGlobalDefinition(TokIterator &i);
 		ast::Variable::VarType tryVarAsType(TokIterator &i);

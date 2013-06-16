@@ -11,7 +11,9 @@ class ShortValueType : public ValueType
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		llvm::Value *constant(quint16 i);
+		llvm::Constant *constant(quint16 i) const;
+		llvm::Constant *defaultValue() const;
+
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
 	private:

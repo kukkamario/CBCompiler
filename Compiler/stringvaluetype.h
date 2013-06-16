@@ -20,7 +20,6 @@ class StringValueType : public ValueType {
 		bool setEqualityFunction(llvm::Function *func);
 		bool setRefFunction(llvm::Function *func);
 
-		llvm::Value *constructString(llvm::IRBuilder<> *builder, const QString &str);
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr);
 		void destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar);
 		llvm::Value *stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str);
@@ -38,6 +37,8 @@ class StringValueType : public ValueType {
 		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return false;}
+
+		llvm::Constant *defaultValue() const;
 	private:
 		llvm::Function *mConstructFunction;
 		llvm::Function *mAssignmentFunction;

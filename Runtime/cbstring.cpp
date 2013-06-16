@@ -1,20 +1,20 @@
 #include "cbstring.h"
 #include <boost/lexical_cast.hpp>
-std::string String::staticEmptyString;
+std::u32string String::staticEmptyString;
 
 String::String(CB_StringData *d) :
 	mData(d) {
 	if (mData) mData->increase();
 }
 
-String::String(const char *txt) :
+String::String(const char32_t *txt) :
 	mData(0) {
 	if (txt && txt[0] != 0) {
 		mData = new CB_StringData(txt);
 	}
 }
 
-String::String(const std::string &s) :
+String::String(const std::u32string &s) :
 	mData(0) {
 	if (!s.empty()) {
 		mData = new CB_StringData(s);
@@ -64,7 +64,14 @@ String::~String() {
 	}
 }
 
-const std::string &String::getRef() const {
+int String::size() const {
+	if (mData) {
+		return mData->mString.size();
+	}
+	return 0;
+}
+
+const std::u32string &String::getRef() const {
 	if (mData) {
 		return mData->mString;
 	}
@@ -90,7 +97,7 @@ bool CB_StringData::decrease() {
 
 //CBF
 
-extern "C" CBString CBF_CB_StringConstruct (const char *txt) {
+extern "C" CBString CBF_CB_StringConstruct (const char32_t *txt) {
 	if (txt) {
 		return new CB_StringData(txt);
 	}
@@ -152,13 +159,29 @@ extern "C" float CBF_CB_StringToFloat(CBString s) {
 }
 
 extern "C" CBString CBF_CB_FloatToString(float f) {
-	return new CB_StringData(boost::lexical_cast<std::string>(f));
-	return 0;
+	//return new CB_StringData(boost::lexical_cast<std::u32string>(f));
+	//std::basic_ostringstream<char32_t> out;
+	//out << f;
+	//return new CB_StringData(out.str());
 }
 
 extern "C" CBString CBF_CB_IntToString(int i) {
-	return new CB_StringData(boost::lexical_cast<std::string>(i));
-	return 0;
+	//return new CB_StringData(boost::lexical_cast<std::u32string>(i));
+	if (i == 0) {
+		return new CB_StringData(U"0");
+	}
+	std::u32string str;
+	if (i < 0) {
+		str += '-';
+		i = -i;
+	}
+	while (i) {
+		char32_t c = U'0' + i % 10;
+		i /= 10;
+		str += c;
+	}
+	std::reverse(str.begin(), str.end());
+	return new CB_StringData(str);
 }
 
 extern "C" bool CBF_CB_StringEquality(CBString a, CBString b) {

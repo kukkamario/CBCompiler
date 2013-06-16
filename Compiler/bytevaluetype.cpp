@@ -32,6 +32,10 @@ Value ByteValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toByte(v);
 }
 
-llvm::Value *ByteValueType::constant(quint8 i) {
+llvm::Constant *ByteValueType::constant(quint8 i) const {
 	return llvm::ConstantInt::get(mType, llvm::APInt(8, i, false));
+}
+
+llvm::Constant *ByteValueType::defaultValue() const {
+	return constant(0);
 }

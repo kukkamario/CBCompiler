@@ -16,7 +16,7 @@ bool StringValueType::setConstructFunction(llvm::Function *func) {
 
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != llvm::Type::getInt8PtrTy(func->getContext())) return false;
+	if (arg1 != llvm::Type::getInt32PtrTy(func->getContext())) return false;
 
 	mConstructFunction = func;
 	return true;
@@ -163,13 +163,12 @@ Value StringValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toString(v);
 }
 
-llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr) {
-	return builder->CreateCall(mConstructFunction, globalStrPtr);
+llvm::Constant *StringValueType::defaultValue() const {
+	return llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(mType));
 }
 
-llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, const QString &str) {
-	llvm::Value *globalStr = mStringPool->globalString(builder, str);
-	return constructString(builder, globalStr);
+llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr) {
+	return builder->CreateCall(mConstructFunction, globalStrPtr);
 }
 
 void StringValueType::destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar) {

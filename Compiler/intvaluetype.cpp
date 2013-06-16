@@ -33,6 +33,10 @@ Value IntValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toInt(v);
 }
 
-llvm::Value *IntValueType::constant(int v) {
+llvm::Constant *IntValueType::constant(int v) const {
 	return llvm::ConstantInt::get(mType, llvm::APInt(32, v, true));
+}
+
+llvm::Constant *IntValueType::defaultValue() const {
+	return constant(0);
 }

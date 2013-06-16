@@ -217,9 +217,7 @@ llvm::Value *Builder::llvmValue(const QString &s) {
 	if (s.isEmpty()) {
 		return llvm::ConstantPointerNull::get((llvm::PointerType*)mRuntime->stringValueType()->llvmType());
 	}
-
-	llvm::Value *v = mStringPool->globalString(&mIRBuilder, s);
-	return mRuntime->stringValueType()->constructString(&mIRBuilder, v);
+	return mStringPool->globalString(this, s).value();
 }
 
 llvm::Value *Builder::llvmValue(bool t) {
@@ -311,6 +309,18 @@ void Builder::destruct(const Value &a) {
 	if (a.isConstant() || a.valueType()->type() != ValueType::String) return;
 	assert(a.value());
 	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
+}
+
+llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {
+	return createGlobalVariable(type->llvmType(), isConstant, linkage, initializer, name);
+}
+
+llvm::GlobalVariable *Builder::createGlobalVariable(llvm::Type *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {
+	return new llvm::GlobalVariable(*mRuntime->module(),type, isConstant, linkage, initializer, name);
+}
+
+llvm::LLVMContext &Builder::context() {
+	return mRuntime->module()->getContext();
 }
 
 Value Builder::not_(const Value &a) {
@@ -946,5 +956,15 @@ Value Builder::equal(const Value &a, const Value &b) {
 
 Value Builder::notEqual(const Value &a, const Value &b) {
 	assert(0); return Value();
+}
+
+void Builder::pushInsertPoint() {
+	llvm::IRBuilder<>::InsertPoint insertPoint = mIRBuilder.saveIP();
+	mInsertPointStack.push(insertPoint);
+}
+
+void Builder::popInsertPoint() {
+	llvm::IRBuilder<>::InsertPoint insertPoint = mInsertPointStack.pop();
+	mIRBuilder.restoreIP(insertPoint);
 }
 

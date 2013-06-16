@@ -87,6 +87,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	mFuncCodeGen.setIsMainScope(true);
 	qDebug() << "Starting code generation";
 	bool valid =  mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
+	mFuncCodeGen.generateStringLiterals();
 	return valid;
 }
 

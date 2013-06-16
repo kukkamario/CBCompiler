@@ -30,6 +30,10 @@ Value ShortValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toShort(v);
 }
 
-llvm::Value *ShortValueType::constant(quint16 i) {
+llvm::Constant *ShortValueType::constant(quint16 i) const {
 	return llvm::ConstantInt::get(mType, llvm::APInt(16, i, false));
+}
+
+llvm::Constant *ShortValueType::defaultValue() const {
+	return constant(0);
 }

@@ -49,6 +49,8 @@ class FunctionCodeGenerator: public QObject{
 		 */
 		bool generateFunctionCode(ast::Block *n);
 
+		void generateStringLiterals();
+
 		bool isMainScope()const{return mIsMainScope;}
 		Scope *scope() const {return mScope;}
 		llvm::Function *function()const{return mFunction;}

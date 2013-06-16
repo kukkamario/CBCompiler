@@ -1,6 +1,7 @@
 #include "typepointervaluetype.h"
 #include "typesymbol.h"
 #include "value.h"
+#include "runtime.h"
 
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
@@ -24,7 +25,15 @@ Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
 	return v;
 }
 
+llvm::Constant *TypePointerValueType::defaultValue() const {
+	return llvm::ConstantPointerNull::get(mType->getPointerTo());
+}
+
 
 Value NullTypePointerValueType::cast(Builder *builder, const Value &v) const {
 	return Value();
+}
+
+llvm::Constant *NullTypePointerValueType::defaultValue() const {
+	return llvm::ConstantPointerNull::get(llvm::Type::getVoidTy(mRuntime->module()->getContext())->getPointerTo());
 }

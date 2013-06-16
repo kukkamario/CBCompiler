@@ -32,6 +32,10 @@ Value FloatValueType::cast(Builder *builder, const Value &v) const {
 }
 
 
-llvm::Value *FloatValueType::constant(float f) {
+llvm::Constant *FloatValueType::constant(float f) const {
 	return llvm::ConstantFP::get(mType->getContext(), llvm::APFloat(f));
+}
+
+llvm::Constant *FloatValueType::defaultValue() const {
+	return constant(0.0f);
 }

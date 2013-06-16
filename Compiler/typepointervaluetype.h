@@ -12,6 +12,7 @@ class TypePointerValueType : public ValueType {
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}
+		llvm::Constant *defaultValue() const;
 	private:
 		TypeSymbol *mTypeSymbol;
 };
@@ -25,5 +26,6 @@ class NullTypePointerValueType : public ValueType {
 		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}
+		llvm::Constant *defaultValue() const;
 };
 #endif // TYPEPOINTERVALUETYPE_H

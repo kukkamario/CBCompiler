@@ -27,7 +27,9 @@ class BooleanValueType : public ValueType {
 		  * If returned cost is over or equal to maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		llvm::Value *constant(bool t);
+		llvm::Constant *constant(bool t) const;
+
+		llvm::Constant* defaultValue() const;
 
 		/**
 		 * @brief Is ValueType a type pointer.

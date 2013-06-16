@@ -12,7 +12,9 @@ class IntValueType : public ValueType {
 		Value cast(Builder *builder, const Value &v) const;
 
 		Type type() const{return Integer;}
-		llvm::Value *constant(int v);
+		llvm::Constant *constant(int v) const;
+		llvm::Constant *defaultValue() const;
+
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
 	private:

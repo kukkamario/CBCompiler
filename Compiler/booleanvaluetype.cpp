@@ -30,6 +30,10 @@ Value BooleanValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toBoolean(v);
 }
 
-llvm::Value *BooleanValueType::constant(bool t) {
+llvm::Constant *BooleanValueType::constant(bool t) const {
 	return llvm::ConstantInt::get(mType, llvm::APInt(1, t ? 1 : 0));
+}
+
+llvm::Constant *BooleanValueType::defaultValue() const {
+	return constant(false);
 }

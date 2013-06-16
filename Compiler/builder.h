@@ -4,6 +4,7 @@
 #include "llvm.h"
 #include "function.h"
 #include <QList>
+#include <QStack>
 #include "variablesymbol.h"
 #include "runtime.h"
 
@@ -45,7 +46,12 @@ class Builder {
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
+		llvm::GlobalVariable *createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
+		llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
 		Runtime *runtime()const{return mRuntime;}
+		llvm::LLVMContext &context();
+
+		/// Operators: the caller has to destroy parameters
 
 		Value not_(const Value &a);
 		Value minus(const Value &a);
@@ -69,8 +75,12 @@ class Builder {
 		Value greaterEqual(const Value &a, const Value &b);
 		Value equal(const Value &a, const Value &b);
 		Value notEqual(const Value &a, const Value &b);
+
+		void pushInsertPoint();
+		void popInsertPoint();
 	private:
 		llvm::IRBuilder<> mIRBuilder;
+		QStack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
 		QList<llvm::Value*> mStringData;
 		Runtime *mRuntime;
 		StringPool *mStringPool;

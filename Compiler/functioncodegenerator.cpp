@@ -7,6 +7,7 @@
 #include <QDebug>
 #include "errorcodes.h"
 #include "warningcodes.h"
+#include "stringpool.h"
 
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
@@ -59,13 +60,14 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	}
 
 	if (!mSetupBasicBlock) {
-		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction);
+		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Setup", mFunction);
 	}
 	mBasicBlocks.append(mSetupBasicBlock);
 	mCurrentBasicBlock = mSetupBasicBlock;
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
 	qDebug() << "Generating basic blocks";
 
+	if (mIsMainScope) mBasicBlocks.append(llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction));
 	if (!basicBlockGenerationPass(n)) return false;
 	qDebug() << mBasicBlocks.size() << " basic blocks created";
 
@@ -76,14 +78,27 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	qDebug() << "Generating local variables";
 	if (!generateLocalVariables()) return false;
 
+	if (mIsMainScope) {
+		nextBasicBlock();
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+	}
+
 	qDebug() << "Generating code";
 	if (!generate(n)) return false;
 	qDebug() << "Generating destructors";
 	if (!generateDestructors()) return false;
 	qDebug() << "Generating finished";
-
 	if (mIsMainScope) mBuilder->irBuilder().CreateRetVoid();
+
 	return true;
+}
+
+void FunctionCodeGenerator::generateStringLiterals() {
+	mCurrentBasicBlockIt = mBasicBlocks.begin();
+	mBuilder->setInsertPoint(mSetupBasicBlock);
+	mStringPool->generateStringLiterals(mBuilder);
+	nextBasicBlock();
+	mBuilder->branch(mCurrentBasicBlock);
 }
 
 bool FunctionCodeGenerator::generate(ast::Node *n) {

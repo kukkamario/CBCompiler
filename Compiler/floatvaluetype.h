@@ -11,7 +11,8 @@ class FloatValueType : public ValueType {
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castCost(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		llvm::Value *constant(float f);
+		llvm::Constant *constant(float f) const;
+		llvm::Constant *defaultValue() const;
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
 	private:
