@@ -8,15 +8,16 @@
 #include "constantexpressionevaluator.h"
 #include "symbolcollectortypechecker.h"
 #include "functioncodegenerator.h"
+#include "settings.h"
 class CBFunction;
 class TypeSymbol;
 class CodeGenerator : public QObject{
 		Q_OBJECT
 	public:
 		CodeGenerator(QObject *parent = 0);
-		bool initialize(const QString &runtimeFile);
+		bool initialize(const QString &runtimeFile, const Settings &settings);
 		bool generate(ast::Program *program);
-		bool writeBitcode(const QString &path);
+		bool createExecutable(const QString &path);
 	private:
 		bool addRuntimeFunctions();
 		bool addFunctions(ast::Program *program);
@@ -25,6 +26,10 @@ class CodeGenerator : public QObject{
 		bool calculateConstants(ast::Program *program);
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
+
+		TypeSymbol *findTypeSymbol(const QString &typeName, QFile *f, int line);
+
+		Settings mSettings;
 		Runtime mRuntime;
 		StringPool mStringPool;
 		ConstantExpressionEvaluator mConstEval;
@@ -32,10 +37,7 @@ class CodeGenerator : public QObject{
 		QList<ValueType*> mValueTypes;
 		Scope mGlobalScope;
 		Scope mMainScope;
-
 		FunctionCodeGenerator mFuncCodeGen;
-
-		TypeSymbol *findTypeSymbol(const QString &typeName, QFile *f, int line);
 		QList<CBFunction*> mCBFunctions;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);

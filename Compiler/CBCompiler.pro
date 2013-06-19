@@ -80,7 +80,8 @@ SOURCES += main.cpp \
     functioncodegenerator.cpp \
     expressioncodegenerator.cpp \
     labelsymbol.cpp \
-    builder.cpp
+    builder.cpp \
+    settings.cpp
 
 HEADERS += \
     lexer.h \
@@ -122,4 +123,5 @@ HEADERS += \
     labelsymbol.h \
     builder.h \
     global.h \
-    warningcodes.h
+    warningcodes.h \
+    settings.h

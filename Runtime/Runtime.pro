@@ -14,12 +14,16 @@ SOURCES += \
     cbstring.cpp \
     main.cpp \
     referencecounter.cpp \
-    math.cpp
+    math.cpp \
+    error.cpp \
+    window.cpp
 
 HEADERS += \
     cbstring.h \
     referencecounter.h \
-    common.h
+    common.h \
+    error.h \
+    window.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll

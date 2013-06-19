@@ -91,7 +91,9 @@ ast::Block Parser::expectInlineBlock(Parser::TokIterator &i) {
 	return block;
 }
 
-ast::Program *Parser::parse(const QList<Token> &tokens) {
+ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings) {
+	mSettings = settings;
+
 	ast::Program *program = new ast::Program;
 	TokIterator i = tokens.begin();
 	while (i->mType != Token::EndOfTokens) {

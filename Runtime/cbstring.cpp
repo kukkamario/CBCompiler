@@ -2,6 +2,64 @@
 #include <boost/lexical_cast.hpp>
 std::u32string String::staticEmptyString;
 
+typedef u_int32_t uint32_t;
+typedef u_int8_t uint8_t;
+
+static
+std::codecvt_base::result
+ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_nxt,
+			 uint8_t* to, uint8_t* to_end, uint8_t*& to_nxt,
+			 unsigned long Maxcode = 0x10FFFF)
+{
+	frm_nxt = frm;
+	to_nxt = to;
+	/*if (mode & generate_header)
+	{
+		if (to_end-to_nxt < 3)
+			return codecvt_base::partial;
+		*to_nxt++ = static_cast<uint8_t>(0xEF);
+		*to_nxt++ = static_cast<uint8_t>(0xBB);
+		*to_nxt++ = static_cast<uint8_t>(0xBF);
+	}*/
+	for (; frm_nxt < frm_end; ++frm_nxt)
+	{
+		uint32_t wc = *frm_nxt;
+		if ((wc & 0xFFFFF800) == 0x00D800 || wc > Maxcode)
+			return std::codecvt_base::error;
+		if (wc < 0x000080)
+		{
+			if (to_end-to_nxt < 1)
+				return std::codecvt_base::partial;
+			*to_nxt++ = static_cast<uint8_t>(wc);
+		}
+		else if (wc < 0x000800)
+		{
+			if (to_end-to_nxt < 2)
+				return std::codecvt_base::partial;
+			*to_nxt++ = static_cast<uint8_t>(0xC0 | (wc >> 6));
+			*to_nxt++ = static_cast<uint8_t>(0x80 | (wc & 0x03F));
+		}
+		else if (wc < 0x010000)
+		{
+			if (to_end-to_nxt < 3)
+				return std::codecvt_base::partial;
+			*to_nxt++ = static_cast<uint8_t>(0xE0 |  (wc >> 12));
+			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x0FC0) >> 6));
+			*to_nxt++ = static_cast<uint8_t>(0x80 |  (wc & 0x003F));
+		}
+		else // if (wc < 0x110000)
+		{
+			if (to_end-to_nxt < 4)
+				return std::codecvt_base::partial;
+			*to_nxt++ = static_cast<uint8_t>(0xF0 |  (wc >> 18));
+			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x03F000) >> 12));
+			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x000FC0) >> 6));
+			*to_nxt++ = static_cast<uint8_t>(0x80 |  (wc & 0x00003F));
+		}
+	}
+	return std::codecvt_base::ok;
+}
+
 String::String(CB_StringData *d) :
 	mData(d) {
 	if (mData) mData->increase();
@@ -69,6 +127,18 @@ int String::size() const {
 		return mData->mString.size();
 	}
 	return 0;
+}
+
+std::string String::toUtf8() const {
+	if (mData == 0 || mData->mString.empty()) {
+		return std::string();
+	}
+	std::string utf8_str(mData->mString.size() * 4, '\0');
+	const char32_t* fromNext;
+	uint8_t* toNext;
+	ucs4_to_utf8(&mData->mString[0], &mData->mString[mData->mString.size()], fromNext, (uint8_t*)&utf8_str[0], (uint8_t*)&utf8_str[utf8_str.size()], toNext);
+	utf8_str.resize((char*)toNext - &utf8_str[0]);
+	return utf8_str;
 }
 
 const std::u32string &String::getRef() const {

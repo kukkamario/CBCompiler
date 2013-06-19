@@ -23,6 +23,7 @@ class String {
 		bool operator == (const String &a);
 		~String();
 		int size() const;
+		std::string toUtf8() const;
 		const std::u32string &getRef() const;
 
 		/** USE ONLY FOR RETURNING STRING FROM RUNTIME FUNCTION */

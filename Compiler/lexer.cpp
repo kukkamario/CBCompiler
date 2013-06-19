@@ -62,7 +62,9 @@ Lexer::Lexer()
 	mKeywords["include"] = Token::kInclude;
 }
 
-Lexer::ReturnState Lexer::tokenizeFile(const QString &file) {
+Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &settings) {
+	mSettings = settings;
+
 	Lexer::ReturnState ret = tokenize(file);
 	combineTokens();
 

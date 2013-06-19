@@ -5,6 +5,7 @@
 #include "token.h"
 #include <QMap>
 #include <QPair>
+#include "settings.h"
 #include <assert.h>
 
 /**
@@ -27,9 +28,10 @@ class Lexer: public QObject
 		/**
 		 * @brief tokenizeFile tokenizes file and all files included inside it. Emits warning and error signals.
 		 * @param file Path to file, relative to current directory.
+		 * @param settings Settings
 		 * @return ReturnState::Success, if the lexical analysis succeeded and ReturnState::Error or ReturnState::ErrorButContinue otherwise.
 		 */
-		ReturnState tokenizeFile(const QString &file);
+		ReturnState tokenizeFile(const QString &file, const Settings &settings);
 
 		void addToken(const Token &tok);
 
@@ -58,6 +60,7 @@ class Lexer: public QObject
 		QList<QPair<QFile*, QString> > mFiles; //File and code
 		QList<Token> mTokens;
 		QMap<QString, Token::Type> mKeywords;
+		Settings mSettings;
 
 		/**
 		 * @brief combineTokens Combines tokens like "End If" to "EndIf".

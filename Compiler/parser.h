@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include <QObject>
+#include "settings.h"
 #include "token.h"
 #include "abstractsyntaxtree.h"
 
@@ -19,7 +20,7 @@ class Parser : public QObject
 		 * @param tokens Token list
 		 * @return The abstract syntax tree generated
 		 */
-		ast::Program *parse(const QList<Token> &tokens);
+		ast::Program *parse(const QList<Token> &tokens, const Settings &settings);
 
 		/**
 		 * @brief success
@@ -67,12 +68,15 @@ class Parser : public QObject
 		ast::Node *tryAssignmentExpression(TokIterator &i);
 		QString expectIdentifier(TokIterator &i);
 		void expectEndOfStatement(TokIterator &i);
+	private:
 		enum Status {
 			Error,
 			ErrorButContinue,
 			Ok
 		};
+
 		Status mStatus;
+		Settings mSettings;
 
 	signals:
 		void error(int code, QString msg, int line, QFile *file);

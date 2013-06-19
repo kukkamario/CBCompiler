@@ -36,7 +36,9 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	connect(&mFuncCodeGen, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 }
 
-bool CodeGenerator::initialize(const QString &runtimeFile) {
+bool CodeGenerator::initialize(const QString &runtimeFile, const Settings &settings) {
+	mSettings = settings;
+	mTypeChecker.setForceVariableDeclaration(settings.forceVariableDeclaration());
 	if (!mRuntime.load(&mStringPool, runtimeFile)) {
 		return false;
 	}
@@ -91,7 +93,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	return valid;
 }
 
-bool CodeGenerator::writeBitcode(const QString &path) {
+bool CodeGenerator::createExecutable(const QString &path) {
 	std::string errorInfo;
 	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", errorInfo, llvm::raw_fd_ostream::F_Binary);
 	if (errorInfo.empty()) {
@@ -103,15 +105,11 @@ bool CodeGenerator::writeBitcode(const QString &path) {
 		return false;
 	}
 	qDebug() << "Optimizing bitcode...\n";
-	system("opt -O3 -o optimized_bitcode.bc raw_bitcode.bc");
+	if (!mSettings.callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) return false;
 	qDebug() << "Creating native assembly...\n";
-	system("llc optimized_bitcode.bc -o native_asm.s"); //-filetype obj -o temp.o
+	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) return false;
 	qDebug() << "Building binary...\n";
-#ifdef _WIN32
-	system("mingw32-g++ -o cbrun native_asm.s");
-#else
-    system("g++ -o cbrun native_asm.s");
-#endif
+	if (!mSettings.callLinker("llc", path)) return false;
 	qDebug() << "Success\n";
 	return true;
 }

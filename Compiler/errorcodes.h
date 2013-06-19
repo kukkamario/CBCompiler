@@ -3,9 +3,11 @@
 
 namespace ErrorCodes {
 enum ErrorCode {
-	ecLexicalAnalysingFailed,
+	//Settings
+	ecSettingsLoadingFailed = 11,
 
 	//Lexer
+	ecLexicalAnalysingFailed,
 	ecCantOpenFile,
 	ecExpectingEndOfString,
 	ecExpectingRemEndBeforeEOF,
@@ -51,6 +53,7 @@ enum ErrorCode {
 	ecInvalidRuntime,
 
 	//Code generation
+	ecCodeGeneratorInitializationFailed,
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
