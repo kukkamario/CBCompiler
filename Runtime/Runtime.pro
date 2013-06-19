@@ -16,14 +16,19 @@ SOURCES += \
     referencecounter.cpp \
     math.cpp \
     error.cpp \
-    window.cpp
+    window.cpp \
+    rendertarget.cpp \
+    gfx.cpp
 
 HEADERS += \
     cbstring.h \
     referencecounter.h \
     common.h \
     error.h \
-    window.h
+    window.h \
+    rendertarget.h \
+    system.h \
+    gfx.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll
@@ -64,6 +69,8 @@ win32 {
 
 DESTDIR = $$PWD/../bin/runtime
 QMAKE_CXXFLAGS += -std=c++0x
+
+DEFINES += ALLEGRO_STATIC
 
 OTHER_FILES += \
     atomic_operations.ll

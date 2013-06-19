@@ -233,6 +233,7 @@ extern "C" CBString CBF_CB_FloatToString(float f) {
 	//std::basic_ostringstream<char32_t> out;
 	//out << f;
 	//return new CB_StringData(out.str());
+	return 0;
 }
 
 extern "C" CBString CBF_CB_IntToString(int i) {
