@@ -44,8 +44,19 @@ QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
 QMAKE_CXXFLAGS = -emit-llvm
-QMAKE_LIB = llvm-link -o
-QMAKE_AR = llvm-link -o  #llvm-ar cqs
+
+linux-g++-64 {
+	QMAKE_LIB = llvm-link -o
+	QMAKE_AR = llvm-link -o  #llvm-ar cqs
+}
+linux-g++-32 {
+	QMAKE_LIB = llvm-link -o
+	QMAKE_AR = llvm-link -o  #llvm-ar cqs
+}
+win32 {
+	QMAKE_LIB = llvm-link -o
+}
+
 
 QMAKE_RUN_CC		= $(CC) $(CCFLAGS) $(INCPATH) -c $src -o $obj
 QMAKE_RUN_CC_IMP	= $(CC) $(CCFLAGS) $(INCPATH) -c $< -o $@
@@ -65,6 +76,7 @@ QMAKE_EXTRA_COMPILERS += llvm_compiler
 
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
+	INCLUDEPATH += $$(ALLEGRO_INCLUDE)
 }
 
 DESTDIR = $$PWD/../bin/runtime
@@ -72,5 +84,4 @@ QMAKE_CXXFLAGS += -std=c++0x
 
 DEFINES += ALLEGRO_STATIC
 
-OTHER_FILES += \
-    atomic_operations.ll
+OTHER_FILES += $LLVM_FILES

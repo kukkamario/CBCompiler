@@ -1,13 +1,15 @@
 #include "cbstring.h"
-#include <boost/lexical_cast.hpp>
+#include <stdint.h>
+#include <algorithm>
+//#include <boost/lexical_cast.hpp>
 std::u32string String::staticEmptyString;
 
+#ifndef _WIN32
 typedef u_int32_t uint32_t;
 typedef u_int8_t uint8_t;
+#endif
 
-static
-std::codecvt_base::result
-ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_nxt,
+static void ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_nxt,
 			 uint8_t* to, uint8_t* to_end, uint8_t*& to_nxt,
 			 unsigned long Maxcode = 0x10FFFF)
 {
@@ -25,24 +27,24 @@ ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_
 	{
 		uint32_t wc = *frm_nxt;
 		if ((wc & 0xFFFFF800) == 0x00D800 || wc > Maxcode)
-			return std::codecvt_base::error;
+			return;
 		if (wc < 0x000080)
 		{
 			if (to_end-to_nxt < 1)
-				return std::codecvt_base::partial;
+				return;
 			*to_nxt++ = static_cast<uint8_t>(wc);
 		}
 		else if (wc < 0x000800)
 		{
 			if (to_end-to_nxt < 2)
-				return std::codecvt_base::partial;
+				return;
 			*to_nxt++ = static_cast<uint8_t>(0xC0 | (wc >> 6));
 			*to_nxt++ = static_cast<uint8_t>(0x80 | (wc & 0x03F));
 		}
 		else if (wc < 0x010000)
 		{
 			if (to_end-to_nxt < 3)
-				return std::codecvt_base::partial;
+				return;
 			*to_nxt++ = static_cast<uint8_t>(0xE0 |  (wc >> 12));
 			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x0FC0) >> 6));
 			*to_nxt++ = static_cast<uint8_t>(0x80 |  (wc & 0x003F));
@@ -50,14 +52,14 @@ ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_
 		else // if (wc < 0x110000)
 		{
 			if (to_end-to_nxt < 4)
-				return std::codecvt_base::partial;
+				return;
 			*to_nxt++ = static_cast<uint8_t>(0xF0 |  (wc >> 18));
 			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x03F000) >> 12));
 			*to_nxt++ = static_cast<uint8_t>(0x80 | ((wc & 0x000FC0) >> 6));
 			*to_nxt++ = static_cast<uint8_t>(0x80 |  (wc & 0x00003F));
 		}
 	}
-	return std::codecvt_base::ok;
+	return;
 }
 
 String::String(CB_StringData *d) :
@@ -209,22 +211,22 @@ extern "C" void CBF_CB_StringRef(CBString a) {
 }
 
 extern "C" int CBF_CB_StringToInt(CBString s) {
-	if (!s) return 0;
+	/*if (!s) return 0;
 	try {
 		return boost::lexical_cast<int>(s->mString);
 	}catch(boost::bad_lexical_cast &) {
 		return 0;
-	}
+	}*/
 	return 0;
 }
 
 extern "C" float CBF_CB_StringToFloat(CBString s) {
-	if (!s) return 0;
+	/*if (!s) return 0;
 	try {
 		return boost::lexical_cast<float>(s->mString);
 	}catch(boost::bad_lexical_cast &) {
 		return 0;
-	}
+	}*/
 	return 0;
 }
 
