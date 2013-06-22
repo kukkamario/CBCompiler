@@ -53,9 +53,6 @@ linux-g++-32 {
 	QMAKE_LIB = llvm-link -o
 	QMAKE_AR = llvm-link -o  #llvm-ar cqs
 }
-win32 {
-	QMAKE_LIB = llvm-link -o
-}
 
 
 QMAKE_RUN_CC		= $(CC) $(CCFLAGS) $(INCPATH) -c $src -o $obj
@@ -66,7 +63,7 @@ QMAKE_RUN_CXX_IMP	= $(CXX) $(CXXFLAGS) $(INCPATH) -c $< -o $@
 QMAKE_EXT_OBJ           = .bc
 QMAKE_EXT_RES           = _res.bc
 
-QMAKE_PREFIX_STATICLIB  = lib
+#QMAKE_PREFIX_STATICLIB  = lib
 QMAKE_EXTENSION_STATICLIB = bc
 
 llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
@@ -77,6 +74,13 @@ QMAKE_EXTRA_COMPILERS += llvm_compiler
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
 	INCLUDEPATH += $$(ALLEGRO_INCLUDE)
+
+	#overrides default link
+	#and creates warning... :/
+	#TODO: better solution?
+	win_link.target = $(DESTDIR_TARGET)
+	win_link.commands = llvm-link -o $(DESTDIR_TARGET) $(OBJECTS)
+	QMAKE_EXTRA_TARGETS += win_link
 }
 
 DESTDIR = $$PWD/../bin/runtime
