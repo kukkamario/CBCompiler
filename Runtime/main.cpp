@@ -10,20 +10,26 @@ extern "C" void CBF_CB_main();
 
 int main() {
 
+	info(U"Initializing allegro");
 	if (!al_init()) {
 		error(U"Allegro initialization failed");
 		return 1;
 	}
+	info(U"Initializing primitives addon");
 	al_init_primitives_addon();
 
+	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
 
+	info(U"Initilizing gfx");
 	initGfx();
 
 
 	//Begin execution
+	info(U"Beginning execution");
 	CBF_CB_main();
+
 	closeProgram();
 
 	return 0;

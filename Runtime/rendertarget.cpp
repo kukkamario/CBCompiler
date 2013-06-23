@@ -1,8 +1,7 @@
 #include "rendertarget.h"
 RenderTarget *RenderTarget::sCurrentTarget = 0;
 
-RenderTarget::RenderTarget()
-{
+RenderTarget::RenderTarget() {
 }
 
 RenderTarget::~RenderTarget() {

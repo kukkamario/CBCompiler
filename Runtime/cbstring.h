@@ -18,10 +18,11 @@ class String {
 		String(CB_StringData *d);
 		String(const std::u32string &s);
 		String(const String &o);
+		~String();
+
 		String & operator =(const String &o);
 		String operator +(const String &a);
 		bool operator == (const String &a);
-		~String();
 		int size() const;
 		std::string toUtf8() const;
 		const std::u32string &getRef() const;

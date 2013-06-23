@@ -5,8 +5,10 @@
 #include <locale>
 #include <stdint.h>
 #include "window.h"
+#include "error.h"
 
 void closeProgram() {
+	info(U"Closing program");
 	Window::instance()->close();
 	exit(0);
 }

@@ -19,7 +19,12 @@ CBEXPORT void CBF_drawscreen() {
 }
 
 CBEXPORT void CBF_colorIII(int r, int g, int b) {
+//	sCurrentColor.r = r / 255.0;
+//	sCurrentColor.g = g / 255.0;
+//	sCurrentColor.b = b / 255.0;
+//	sCurrentColor.a = 1.0;
 	sCurrentColor = al_map_rgb(r, g, b);
+//	printf("Color %i, %i, %i (%f, %f, %f)\n",r, g, b, sCurrentColor.r, sCurrentColor.g, sCurrentColor.b);
 }
 
 CBEXPORT void CBF_colorIIII(int r, int g, int b, int a) {

@@ -6,6 +6,7 @@
 static Window *sInstance = 0;
 
 Window::Window():
+	RenderTarget(),
 	mDisplay(0),
 	mEventQueue(0) {
 	assert(sInstance == 0);
@@ -28,10 +29,14 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 		case Windowed:
 			al_set_new_display_flags(ALLEGRO_WINDOWED | ALLEGRO_OPENGL); break;
 		case Resizable:
-			al_set_new_bitmap_flags(ALLEGRO_RESIZABLE | ALLEGRO_OPENGL); break;
+			al_set_new_display_flags(ALLEGRO_RESIZABLE | ALLEGRO_OPENGL); break;
 		case FullScreen:
-			al_set_new_bitmap_flags(ALLEGRO_FULLSCREEN | ALLEGRO_OPENGL); break;
+			al_set_new_display_flags(ALLEGRO_FULLSCREEN | ALLEGRO_OPENGL); break;
 	}
+	al_set_new_display_option(ALLEGRO_DEPTH_SIZE,0,ALLEGRO_SUGGEST);
+	al_set_new_display_option(ALLEGRO_SUPPORT_NPOT_BITMAP,1,ALLEGRO_SUGGEST);
+	al_set_new_display_option(ALLEGRO_CAN_DRAW_INTO_BITMAP,1,ALLEGRO_REQUIRE);
+	al_set_new_display_option(ALLEGRO_COMPATIBLE_DISPLAY,1,ALLEGRO_REQUIRE);
 	mDisplay = al_create_display(width, height);
 	if (mDisplay == 0) {
 		error(U"Creating a window failed");
@@ -51,7 +56,6 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 	mBackgroundColor = al_map_rgb(0,0,0);
 
 	activate();
-	al_clear_to_color(mBackgroundColor);
 
 	return true;
 

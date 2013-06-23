@@ -9,6 +9,7 @@ typedef u_int32_t uint32_t;
 typedef u_int8_t uint8_t;
 #endif
 
+
 static void ucs4_to_utf8(const char32_t* frm, const char32_t* frm_end, const char32_t*& frm_nxt,
 			 uint8_t* to, uint8_t* to_end, uint8_t*& to_nxt,
 			 unsigned long Maxcode = 0x10FFFF)
@@ -90,8 +91,8 @@ String & String::operator=(const String &o) {
 	this->mData = o.mData;
 	if (this->mData) this->mData->increase();
 	if (tD) {
-		if (mData->decrease()) {
-			delete mData;
+		if (tD->decrease()) {
+			delete tD;
 		}
 
 	}
@@ -182,13 +183,13 @@ extern "C" void CBF_CB_StringDestruct (CBString str) {
 }
 
 extern "C" void CBF_CB_StringAssign(CBString *target, CBString s) {
+	if (s) {
+		s->increase();
+	}
 	if ((*target)) {
 		if((*target)->decrease()) {
 			delete *target;
 		}
-	}
-	if (s) {
-		s->increase();
 	}
 	*target = s;
 }
