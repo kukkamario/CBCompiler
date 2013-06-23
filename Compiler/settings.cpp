@@ -8,7 +8,7 @@ Settings::Settings() :
 bool Settings::loadDefaults() {
 
 
-#ifdef _WIN
+#ifdef _WIN32
 	mLoadPath = "settings_win.ini";
 #else
 	mLoadPath = "settings_linux.ini";
