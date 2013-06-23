@@ -1,0 +1,8 @@
+Repeat
+	For x = 0 To 255
+		Color x,255-x,0
+		Line 200,150,x,0
+    Next x
+    DrawScreen
+
+Forever

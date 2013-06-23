@@ -90,14 +90,14 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 	assert(success);
 
 	QTextStream stream(curFile);
-	QString code2 = stream.readAll().toLower();
+	QString code2 = stream.readAll();
 	curFile->close();
 	mFiles.append(QPair<QFile*, QString>(curFile, code2));
-	const QString &code = mFiles.last().second;
+	QString &code = mFiles.last().second;
 
 	ReturnState state = Success;
 	int line = 1;
-	for (QString::const_iterator i = code.begin(); i != code.end();) {
+	for (QString::iterator i = code.begin(); i != code.end();) {
 		if (i->category() == QChar::Separator_Space || *i == char(9) /* horizontal tab */) { // Space
 			i++;
 			continue;
@@ -181,7 +181,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			continue;
 		}
 		if (*i == '<') {
-			QString::const_iterator start = i;
+			QString::iterator start = i;
 			i++;
 			if (*i == '=') {
 				addToken(Token(Token::opLessEqual, start, ++i, line, curFile));
@@ -195,7 +195,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			continue;
 		}
 		if (*i == '>') {
-			QString::const_iterator start = i;
+			QString::iterator start = i;
 			i++;
 			if (*i == '=') {
 				addToken(Token(Token::opGreaterEqual, start, ++i, line, curFile));
@@ -205,7 +205,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			continue;
 		}
 		if (*i == '=') {
-			QString::const_iterator start = i;
+			QString::iterator start = i;
 			i++;
 			if (i != code.end()) {
 				if (*i == '>') {
@@ -267,7 +267,7 @@ void Lexer::addToken(const Token &tok) {
 }
 
 
-Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::const_iterator &end) {
+Lexer::ReturnState Lexer::readToEOL(QString::iterator &i, const QString::iterator &end) {
 	while (i != end) {
 		if (*i == '\n') {
 			return Success;
@@ -277,11 +277,11 @@ Lexer::ReturnState Lexer::readToEOL(QString::const_iterator &i, const QString::c
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file) {
+Lexer::ReturnState Lexer::readToRemEnd(QString::iterator &i, const QString::iterator &end, int &line, QFile *file) {
 	const char * const endRem = "remend";
 	int foundIndex = 0;
 	while (i != end) {
-		if (*i == endRem[foundIndex]) {
+		if (i->toLower() == endRem[foundIndex]) {
 			foundIndex++;
 			if (foundIndex == 6) {
 				i++;
@@ -300,15 +300,15 @@ Lexer::ReturnState Lexer::readToRemEnd(QString::const_iterator &i, const QString
 	return Lexer::Error;
 }
 
-Lexer::ReturnState Lexer::readFloatDot(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file) {
-	QString::const_iterator begin = i;
+Lexer::ReturnState Lexer::readFloatDot(QString::iterator &i, const QString::iterator &end, int line, QFile * file) {
+	QString::iterator begin = i;
 	while (i != end) {
 		if (!(i->isDigit())) { //Not a number
 			break;
 		}
 		i++;
 	}
-	if (*i == 'e') {
+	if (i->toLower() == 'e') {
 		i++;
 		if (*i == '-' || *i == '+') {
 			i++;
@@ -324,9 +324,9 @@ Lexer::ReturnState Lexer::readFloatDot(QString::const_iterator &i, const QString
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readNum(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile *file)
+Lexer::ReturnState Lexer::readNum(QString::iterator &i, const QString::iterator &end, int line, QFile *file)
 {
-	QString::const_iterator begin = i;
+	QString::iterator begin = i;
 	while (i != end) {
 		if (!(i->isDigit())) { //Not a number
 			break;
@@ -341,7 +341,7 @@ Lexer::ReturnState Lexer::readNum(QString::const_iterator &i, const QString::con
 			}
 			i++;
 		}
-		if (*i == 'e') {
+		if (i->toLower() == 'e') {
 			i++;
 			if (*i == '-' || *i == '+') {
 				i++;
@@ -362,11 +362,11 @@ Lexer::ReturnState Lexer::readNum(QString::const_iterator &i, const QString::con
 }
 
 
-Lexer::ReturnState Lexer::readHex(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file)
+Lexer::ReturnState Lexer::readHex(QString::iterator &i, const QString::iterator &end, int line, QFile * file)
 {
-	QString::const_iterator begin = i;
+	QString::iterator begin = i;
 	while (i != end) {
-		if (!(i->isDigit() || (*i >= QChar('a') && *i <= QChar('f')))) { //Not hex
+		if (!(i->isDigit() || (i->toLower() >= QChar('a') && i->toLower() <= QChar('f')))) { //Not hex
 			addToken(Token(Token::IntegerHex, begin, i, line, file));
 			return Success;
 		}
@@ -375,10 +375,10 @@ Lexer::ReturnState Lexer::readHex(QString::const_iterator &i, const QString::con
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readString(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file)
+Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterator &end, int &line, QFile *file)
 {
 	++i;
-	QString::const_iterator begin = i;
+	QString::iterator begin = i;
 	while (i != end) {
 		if (*i == '"') {
 			addToken(Token(Token::String, begin, i, line, file));
@@ -394,16 +394,18 @@ Lexer::ReturnState Lexer::readString(QString::const_iterator &i, const QString::
 	return ErrorButContinue;
 }
 
-Lexer::ReturnState Lexer::readIdentifier(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file)
+Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::iterator &end, int &line, QFile *file)
 {
-	QString::const_iterator begin = i;
+	QString::iterator begin = i;
 	QString name;
+	*i = i->toLower();
 	name += *i;
 	i++;
 	while (i != end) {
 		if (!i->isLetterOrNumber() && *i != '_') {
 			break;
 		}
+		*i = i->toLower(); //Lower
 		name += *i;
 		i++;
 	}

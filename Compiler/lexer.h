@@ -67,13 +67,13 @@ class Lexer: public QObject
 		 */
 		void combineTokens();
 
-		ReturnState readToEOL(QString::const_iterator &i, const QString::const_iterator &end);
-		ReturnState readToRemEnd(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile *file);
-		ReturnState readFloatDot(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file);
-		ReturnState readNum(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file);
-		ReturnState readHex(QString::const_iterator &i, const QString::const_iterator &end, int line, QFile * file);
-		ReturnState readString(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile * file);
-		ReturnState readIdentifier(QString::const_iterator &i, const QString::const_iterator &end, int &line, QFile * file);
+		ReturnState readToEOL(QString::iterator &i, const QString::iterator &end);
+		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, int &line, QFile *file);
+		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
+		ReturnState readNum(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
+		ReturnState readHex(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
+		ReturnState readString(QString::iterator &i, const QString::iterator &end, int &line, QFile * file);
+		ReturnState readIdentifier(QString::iterator &i, const QString::iterator &end, int &line, QFile * file);
 	signals:
 		void warning(int code, QString msg, int line, QFile *file);
 		void error(int code, QString msg, int line, QFile *file);
