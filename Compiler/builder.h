@@ -76,6 +76,7 @@ class Builder {
 		Value equal(const Value &a, const Value &b);
 		Value notEqual(const Value &a, const Value &b);
 
+		//Dont work. Dont use
 		void pushInsertPoint();
 		void popInsertPoint();
 	private:

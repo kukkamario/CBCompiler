@@ -43,13 +43,9 @@ linux-g++-64 {
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
-QMAKE_CXXFLAGS = -emit-llvm
+QMAKE_CXXFLAGS = -emit-llvm -std=c++0x
 
-linux-g++-64 {
-	QMAKE_LIB = llvm-link -o
-	QMAKE_AR = llvm-link -o  #llvm-ar cqs
-}
-linux-g++-32 {
+linux-g++* {
 	QMAKE_LIB = llvm-link -o
 	QMAKE_AR = llvm-link -o  #llvm-ar cqs
 }
@@ -84,7 +80,6 @@ win32 {
 }
 
 DESTDIR = $$PWD/../bin/runtime
-QMAKE_CXXFLAGS += -std=c++0x
 
 DEFINES += ALLEGRO_STATIC
 
