@@ -157,6 +157,10 @@ CBString String::returnCBString() {
 	return mData;
 }
 
+String::operator CBString() {
+	return returnCBString();
+}
+
 
 void CB_StringData::increase() {
 	mRefCount.increase();

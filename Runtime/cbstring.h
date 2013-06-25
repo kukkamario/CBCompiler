@@ -29,6 +29,7 @@ class String {
 
 		/** USE ONLY FOR RETURNING STRING FROM RUNTIME FUNCTION */
 		CBString returnCBString();
+		operator CBString ();
 	private:
 
 		CB_StringData *mData;
