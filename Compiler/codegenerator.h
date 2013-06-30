@@ -27,6 +27,8 @@ class CodeGenerator : public QObject{
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
 
+		void addPredefinedConstantSymbols();
+
 		TypeSymbol *findTypeSymbol(const QString &typeName, QFile *f, int line);
 
 		Settings mSettings;

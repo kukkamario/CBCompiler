@@ -66,6 +66,8 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &sett
 	mSettings = settings;
 
 	Lexer::ReturnState ret = tokenize(file);
+	if (ret == Lexer::Error) return Lexer::Error;
+
 	combineTokens();
 
 	//Dirty trick, but works

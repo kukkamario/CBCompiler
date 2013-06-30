@@ -34,6 +34,8 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	connect(&mTypeChecker, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 	connect(&mFuncCodeGen, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mFuncCodeGen, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
+
+	addPredefinedConstantSymbols();
 }
 
 bool CodeGenerator::initialize(const QString &runtimeFile, const Settings &settings) {
@@ -360,6 +362,11 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 
 
 	return valid;
+}
+
+void CodeGenerator::addPredefinedConstantSymbols() {
+	ConstantSymbol *sym = new ConstantSymbol("pi", ConstantValue(M_PI), 0, 0);
+	mGlobalScope.addSymbol(sym);
 }
 
 
