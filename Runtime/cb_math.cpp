@@ -33,3 +33,9 @@ CBEXPORT int CBF_absI(int i) {
 	return abs(i);
 }
 
+CBEXPORT float CBF_wrapAngleF(float a) {
+	a = fmod(a,360.0);
+	if (a < 0)
+		a += 360;
+	return a;
+}

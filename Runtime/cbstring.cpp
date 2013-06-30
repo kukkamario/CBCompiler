@@ -1,8 +1,10 @@
 #include "cbstring.h"
 #include <stdint.h>
 #include <algorithm>
+#include <allegro5/allegro5.h>
 //#include <boost/lexical_cast.hpp>
-std::u32string String::staticEmptyString;
+std::u32string String::sEmptyString;
+std::string String::sEmptyUtf8String;
 
 #ifndef _WIN32
 typedef u_int32_t uint32_t;
@@ -132,23 +134,47 @@ int String::size() const {
 	return 0;
 }
 
-std::string String::toUtf8() const {
-	if (mData == 0 || mData->mString.empty()) {
-		return std::string();
+bool String::empty() const {
+	return mData || mData->mString.empty();
+}
+
+void String::detach() {
+	if (!mData) return;
+	if (mData->mRefCount == 1) {
+		mData->mUtf8String.clear();
+		return;
 	}
-	std::string utf8_str(mData->mString.size() * 4, '\0');
-	const char32_t* fromNext;
-	uint8_t* toNext;
-	ucs4_to_utf8(&mData->mString[0], &mData->mString[mData->mString.size()], fromNext, (uint8_t*)&utf8_str[0], (uint8_t*)&utf8_str[utf8_str.size()], toNext);
-	utf8_str.resize((char*)toNext - &utf8_str[0]);
-	return utf8_str;
+	mData->decrease();
+	CB_StringData *newData = new CB_StringData(mData->mString);
+	mData = newData;
+}
+
+const std::string &String::toUtf8() const {
+	if (mData == 0 || mData->mString.empty()) {
+		return sEmptyUtf8String;
+	}
+	if (mData->mUtf8String.empty()) {
+		mData->mUtf8String.resize(mData->mString.size() * 4, '\0');
+		const char32_t* fromNext;
+		uint8_t* toNext;
+		ucs4_to_utf8(&mData->mString[0], &mData->mString[mData->mString.size()], fromNext, (uint8_t*)&mData->mUtf8String[0], (uint8_t*)&mData->mUtf8String[mData->mUtf8String.size()], toNext);
+		mData->mUtf8String.resize((char*)toNext - &mData->mUtf8String[0]);
+	}
+	 return mData->mUtf8String;
+}
+
+ALLEGRO_USTR *String::toALLEGRO_USTR() const {
+	if (empty()) return 0; //al_ustr_empty_string();
+	const std::string &utf8Str = toUtf8();
+	ALLEGRO_USTR *ret = al_ustr_new_from_buffer(utf8Str.c_str(), utf8Str.size() + 1);
+	return ret;
 }
 
 const std::u32string &String::getRef() const {
 	if (mData) {
 		return mData->mString;
 	}
-	return staticEmptyString;
+	return sEmptyString;
 }
 
 CBString String::returnCBString() {
@@ -169,109 +195,3 @@ void CB_StringData::increase() {
 bool CB_StringData::decrease() {
 	return !mRefCount.decrease();
 }
-
-
-
-//CBF
-
-extern "C" CBString CBF_CB_StringConstruct (const char32_t *txt) {
-	if (txt) {
-		return new CB_StringData(txt);
-	}
-	return 0;
-}
-
-extern "C" void CBF_CB_StringDestruct (CBString str) {
-	if (str)
-		if (str->decrease()) delete str;
-}
-
-extern "C" void CBF_CB_StringAssign(CBString *target, CBString s) {
-	if (s) {
-		s->increase();
-	}
-	if ((*target)) {
-		if((*target)->decrease()) {
-			delete *target;
-		}
-	}
-	*target = s;
-}
-
-
-extern "C" CBString CBF_CB_StringAddition(CBString a, CBString b) {
-	if (!a) {
-		if (b) b->increase();
-		return b;
-	}
-	if (!b) {
-		if (a) a->increase();
-		return a;
-	}
-	return new CB_StringData(a->mString + b->mString);
-}
-
-extern "C" void CBF_CB_StringRef(CBString a) {
-	if (a) a->mRefCount.increase();
-}
-
-extern "C" int CBF_CB_StringToInt(CBString s) {
-	/*if (!s) return 0;
-	try {
-		return boost::lexical_cast<int>(s->mString);
-	}catch(boost::bad_lexical_cast &) {
-		return 0;
-	}*/
-	return 0;
-}
-
-extern "C" float CBF_CB_StringToFloat(CBString s) {
-	/*if (!s) return 0;
-	try {
-		return boost::lexical_cast<float>(s->mString);
-	}catch(boost::bad_lexical_cast &) {
-		return 0;
-	}*/
-	return 0;
-}
-
-extern "C" CBString CBF_CB_FloatToString(float f) {
-	//return new CB_StringData(boost::lexical_cast<std::u32string>(f));
-	//std::basic_ostringstream<char32_t> out;
-	//out << f;
-	//return new CB_StringData(out.str());
-	return 0;
-}
-
-extern "C" CBString CBF_CB_IntToString(int i) {
-	//return new CB_StringData(boost::lexical_cast<std::u32string>(i));
-	if (i == 0) {
-		return new CB_StringData(U"0");
-	}
-	std::u32string str;
-	if (i < 0) {
-		str += '-';
-		i = -i;
-	}
-	while (i) {
-		char32_t c = U'0' + i % 10;
-		i /= 10;
-		str += c;
-	}
-	std::reverse(str.begin(), str.end());
-	return new CB_StringData(str);
-}
-
-extern "C" bool CBF_CB_StringEquality(CBString a, CBString b) {
-	if (a == b) return true;
-	if (a == 0 || a->mString.empty()) {
-		if (b == 0 || b->mString.empty()) {
-			return true;
-		}
-		return false;
-	}
-	if (b == 0 || b->mString.empty()) return false;
-	return a->mString == b->mString;
-}
-
-

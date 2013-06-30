@@ -1,11 +1,14 @@
 #ifndef STRING_H
 #define STRING_H
+#include <allegro5/allegro.h>
 #include <string>
 #include "referencecounter.h"
+
 struct CB_StringData {
 		CB_StringData(const char32_t *txt) : mString(txt), mRefCount(1) {}
 		CB_StringData(const std::u32string &txt) : mString(txt), mRefCount(1) {}
 		std::u32string mString;
+		mutable std::string mUtf8String;
 		ReferenceCounter mRefCount;
 		void increase();
 		bool decrease();
@@ -23,8 +26,13 @@ class String {
 		String & operator =(const String &o);
 		String operator +(const String &a);
 		bool operator == (const String &a);
+
 		int size() const;
-		std::string toUtf8() const;
+		bool empty() const;
+
+		void detach();
+		const std::string &toUtf8() const;
+		ALLEGRO_USTR *toALLEGRO_USTR() const;
 		const std::u32string &getRef() const;
 
 		/** USE ONLY FOR RETURNING STRING FROM RUNTIME FUNCTION */
@@ -34,6 +42,7 @@ class String {
 
 		CB_StringData *mData;
 
-		static std::u32string staticEmptyString;
+		static std::u32string sEmptyString;
+		static std::string sEmptyUtf8String;
 };
 #endif // STRING_H

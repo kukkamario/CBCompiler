@@ -15,12 +15,16 @@ class Window : RenderTarget{
 		static Window *instance();
 
 		bool create(int width = 400, int height = 300, WindowMode windowMode = Windowed);
+		void resize(int width = 400, int height = 300, WindowMode windowMode = Windowed);
+
 		void close();
 
 		bool isValid() const;
 		bool activate();
 		bool deactivate();
 		void drawscreen();
+
+		int fps() const { return mFPS; }
 
 		void handleEvent(const ALLEGRO_EVENT &event);
 
@@ -30,6 +34,11 @@ class Window : RenderTarget{
 		ALLEGRO_DISPLAY *mDisplay;
 		ALLEGRO_EVENT_QUEUE *mEventQueue;
 		ALLEGRO_COLOR mBackgroundColor;
+		WindowMode mWindowMode;
+
+		int mFPS;
+		int mFPSCounter;
+		double mLastFPSUpdate;
 };
 
 #endif // WINDOW_H

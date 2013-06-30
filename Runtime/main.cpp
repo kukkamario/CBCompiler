@@ -5,6 +5,7 @@
 #include "window.h"
 #include "system.h"
 #include "gfx.h"
+#include "text.h"
 
 extern "C" void CBF_CB_main();
 
@@ -15,15 +16,15 @@ int main() {
 		error(U"Allegro initialization failed");
 		return 1;
 	}
-	info(U"Initializing primitives addon");
-	al_init_primitives_addon();
+	initGfx();
+	initText();
 
 	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
 
 	info(U"Initilizing gfx");
-	initGfx();
+
 
 
 	//Begin execution

@@ -8,7 +8,10 @@ static Window *sInstance = 0;
 Window::Window():
 	RenderTarget(),
 	mDisplay(0),
-	mEventQueue(0) {
+	mEventQueue(0),
+	mFPS(0),
+	mFPSCounter(0),
+	mLastFPSUpdate (0.0) {
 	assert(sInstance == 0);
 	sInstance = this;
 }
@@ -33,6 +36,7 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 		case FullScreen:
 			al_set_new_display_flags(ALLEGRO_FULLSCREEN | ALLEGRO_OPENGL); break;
 	}
+	mWindowMode = windowMode;
 	al_set_new_display_option(ALLEGRO_DEPTH_SIZE,0,ALLEGRO_SUGGEST);
 	al_set_new_display_option(ALLEGRO_SUPPORT_NPOT_BITMAP,1,ALLEGRO_SUGGEST);
 	al_set_new_display_option(ALLEGRO_CAN_DRAW_INTO_BITMAP,1,ALLEGRO_REQUIRE);
@@ -59,6 +63,35 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 
 	return true;
 
+}
+
+void Window::resize(int width, int height, Window::WindowMode windowMode) {
+	assert(mDisplay);
+
+	if (windowMode == mWindowMode) {
+		al_resize_display(mDisplay, width, height);
+	}
+
+
+	al_unregister_event_source(mEventQueue, al_get_display_event_source(mDisplay));
+	al_destroy_display(mDisplay);
+	switch (windowMode) {
+		case Windowed:
+			al_set_new_display_flags(ALLEGRO_WINDOWED | ALLEGRO_OPENGL); break;
+		case Resizable:
+			al_set_new_display_flags(ALLEGRO_RESIZABLE | ALLEGRO_OPENGL); break;
+		case FullScreen:
+			al_set_new_display_flags(ALLEGRO_FULLSCREEN | ALLEGRO_OPENGL); break;
+	}
+	mDisplay = al_create_display(width, height);
+	if (mDisplay == 0) {
+		error(U"Creating a window failed");
+		closeProgram();
+	}
+
+	al_register_event_source(mEventQueue, al_get_display_event_source(mDisplay));
+
+	activate();
 }
 
 void Window::close() {
@@ -89,6 +122,16 @@ void Window::drawscreen() {
 		handleEvent(e);
 	}
 	al_flip_display();
+
+	mFPS++;
+	double sysTime = systemTimeInSec();
+	if (sysTime >= mLastFPSUpdate + 1.0) {
+		mLastFPSUpdate = sysTime;
+		mFPS = mFPSCounter;
+		mFPSCounter = 0;
+	}
+
+
 	activate();
 
 	al_clear_to_color(mBackgroundColor);

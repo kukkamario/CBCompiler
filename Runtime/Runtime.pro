@@ -10,25 +10,31 @@ TARGET = Runtime
 TEMPLATE = lib
 CONFIG += staticlib
 SOURCES += \
-    system.cpp \
-    cbstring.cpp \
     main.cpp \
     referencecounter.cpp \
-    math.cpp \
     error.cpp \
     window.cpp \
     rendertarget.cpp \
-    gfx.cpp
+    cb_text.cpp \
+    cb_string.cpp \
+    cb_gfx.cpp \
+    cb_math.cpp \
+    cb_system.cpp \
+    gfx.cpp \
+    cbstring.cpp \
+    system.cpp \
+    text.cpp
 
 HEADERS += \
-    cbstring.h \
     referencecounter.h \
     common.h \
     error.h \
     window.h \
     rendertarget.h \
     system.h \
-    gfx.h
+    gfx.h \
+    text.h \
+    cbstring.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll
