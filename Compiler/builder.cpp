@@ -12,11 +12,23 @@
 Builder::Builder(llvm::LLVMContext &context) :
 	mRuntime(0),
 	mStringPool(0),
-	mIRBuilder(context){
+	mIRBuilder(context),
+	mMemCopy(0),
+	mMemSet(0) {
 }
 
 void Builder::setRuntime(Runtime *r) {
 	mRuntime = r;
+	if (!mMemCopy) {
+		mMemCopy = mRuntime->module()->getFunction("llvm.memcpy.p0i8.p0i8.i32");
+		assert(mMemCopy);
+	}
+
+	if (!mMemSet) {
+		mMemSet = mRuntime->module()->getFunction("llvm.memset.p0i8.i32");
+		assert(mMemSet);
+	}
+
 }
 
 void Builder::setStringPool(StringPool *s) {
@@ -1265,6 +1277,38 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 	}
 
 	assert(0); return Value();
+}
+
+void Builder::memCopy(llvm::Value *src, llvm::Value *dest, llvm::Value *num) {
+	assert(src->getType()->isPointerTy());
+	assert(dest->getType()->isPointerTy());
+	assert(num->getType() == llvm::IntegerType::get(context(), 32));
+
+	//Cast src and dest to i8* if they are not already
+	if (src->getType() != llvm::IntegerType::get(context(), 8)->getPointerTo()) {
+		src = mIRBuilder.CreateBitCast(src, llvm::IntegerType::get(context(), 8)->getPointerTo());
+	}
+	if (dest->getType() != llvm::IntegerType::get(context(), 8)->getPointerTo()) {
+		dest = mIRBuilder.CreateBitCast(dest, llvm::IntegerType::get(context(), 8)->getPointerTo());
+	}
+
+	mIRBuilder.CreateCall3(mMemCopy, dest, src, num);
+}
+
+void Builder::memSet(llvm::Value *ptr, llvm::Value *num, llvm::Value *value) {
+	if (value == 0) {
+		value = llvm::ConstantInt::get(llvm::IntegerType::get(context(), 8), 0); //i8 zero
+	}
+	assert(ptr->getType()->isPointerTy());
+	assert(num->getType() == llvm::IntegerType::get(context(), 32));
+	assert(value->getType() == llvm::IntegerType::get(context(), 8));
+
+	//Cast src and dest to i8* if they are not already
+	if (ptr->getType() != llvm::IntegerType::get(context(), 8)->getPointerTo()) {
+		ptr = mIRBuilder.CreateBitCast(ptr, llvm::IntegerType::get(context(), 8)->getPointerTo());
+	}
+
+	mIRBuilder.CreateCall5(mMemSet, ptr, value, num, /* align */ mIRBuilder.getInt32(0), /* volatile */mIRBuilder.getFalse());
 }
 
 //TODO: These dont seems to work? Why?

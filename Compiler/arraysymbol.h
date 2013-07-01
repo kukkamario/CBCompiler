@@ -1,7 +1,10 @@
 #ifndef ARRAYSYMBOL_H
 #define ARRAYSYMBOL_H
 #include "symbol.h"
+#include "llvm.h"
 class ValueType;
+class Builder;
+
 /**
  * @brief The ArraySymbol class.
  */
@@ -32,9 +35,24 @@ class ArraySymbol : public Symbol {
 		 * @return ValueType of the items of the array.
 		 */
 		ValueType *valueType()const {return mValueType;}
+
+		/**
+		 * @brief globalArrayData returns a pointer to the global variable which contains the data of the array.
+		 */
+		llvm::GlobalVariable *globalArrayData() const { return mGlobalArrayData; }
+		/**
+		 * @brief globalDimensionSizes returns a pointer to the global variable which contains a integer array representing sizes of the dimensions of the array.
+		 * The integer array has dimensions() elements.
+		 */
+		llvm::GlobalVariable *globalDimensionSizes() const { return mGlobalDimensionSizes; }
+
+		void createGlobalVariables(Builder *builder);
 	private:
 		ValueType *mValueType;
 		int mDimensions;
+
+		llvm::GlobalVariable *mGlobalArrayData;
+		llvm::GlobalVariable *mGlobalDimensionSizes;
 };
 
 #endif // ARRAYSYMBOL_H

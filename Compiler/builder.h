@@ -76,6 +76,21 @@ class Builder {
 		Value equal(const Value &a, const Value &b);
 		Value notEqual(const Value &a, const Value &b);
 
+		/**
+		 * @brief Copies the values of num bytes from the location pointed by src directly to the memory block pointed by dest.
+		 * @param src Source pointer, a pointer type
+		 * @param dest Destination pointer, a pointer type
+		 * @param num i32
+		 */
+		void memCopy(llvm::Value *src, llvm::Value *dest, llvm::Value *num);
+		/**
+		 * @brief Sets the first num bytes of the block of memory pointed by ptr to the specified value (i8)
+		 * @param ptr
+		 * @param num
+		 * @param value
+		 */
+		void memSet(llvm::Value *ptr, llvm::Value *num, llvm::Value *value = 0);
+
 		//Dont work. Dont use
 		void pushInsertPoint();
 		void popInsertPoint();
@@ -85,6 +100,9 @@ class Builder {
 		QList<llvm::Value*> mStringData;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
+
+		llvm::Function *mMemCopy;
+		llvm::Function *mMemSet;
 };
 
 #endif // BUILDER_H
