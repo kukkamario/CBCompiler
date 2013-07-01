@@ -135,6 +135,10 @@ bool StringValueType::setRefFunction(llvm::Function *func) {
 	return true;
 }
 
+void StringValueType::assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *string) {
+	builder->CreateCall2(mAssignmentFunction, var, string);
+}
+
 
 ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
 	switch (to->type()) {

@@ -1,5 +1,6 @@
 #include "text.h"
 #include <allegro5/allegro_ttf.h>
+#include "error.h"
 
 static ALLEGRO_FONT *mDefaultFont = 0;
 static ALLEGRO_FONT *mCurrentFont = 0;
@@ -11,6 +12,10 @@ void initText() {
 #endif
 
 	mCurrentFont = mDefaultFont;
+
+	if (!mDefaultFont) {
+		error(U"Failed to default font");
+	}
 }
 
 

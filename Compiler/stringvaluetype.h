@@ -20,6 +20,7 @@ class StringValueType : public ValueType {
 		bool setEqualityFunction(llvm::Function *func);
 		bool setRefFunction(llvm::Function *func);
 
+		void assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *string);
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr);
 		void destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar);
 		llvm::Value *stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str);

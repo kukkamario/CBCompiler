@@ -286,7 +286,12 @@ void Builder::construct(VariableSymbol *var) {
 
 void Builder::store(VariableSymbol *var, const Value &v) {
 	llvm::Value *val = llvmValue(var->valueType()->cast(this, v));
-	mIRBuilder.CreateStore(val, var->alloca_());
+	if (var->valueType()->type() == ValueType::String) {
+		mRuntime->stringValueType()->assignString(&mIRBuilder, var->alloca_(), val);
+	}
+	else {
+		mIRBuilder.CreateStore(val, var->alloca_());
+	}
 }
 
 Value Builder::load(const VariableSymbol *var) {

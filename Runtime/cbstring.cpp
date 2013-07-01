@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <algorithm>
 #include <allegro5/allegro5.h>
+#include "error.h"
+
 //#include <boost/lexical_cast.hpp>
 std::u32string String::sEmptyString;
 std::string String::sEmptyUtf8String;
@@ -135,7 +137,7 @@ int String::size() const {
 }
 
 bool String::empty() const {
-	return mData || mData->mString.empty();
+	return mData == 0 || mData->mString.empty();
 }
 
 void String::detach() {
@@ -150,7 +152,8 @@ void String::detach() {
 }
 
 const std::string &String::toUtf8() const {
-	if (mData == 0 || mData->mString.empty()) {
+	//printf("toUtf8\n");
+	if (empty()) {
 		return sEmptyUtf8String;
 	}
 	if (mData->mUtf8String.empty()) {
@@ -164,9 +167,11 @@ const std::string &String::toUtf8() const {
 }
 
 ALLEGRO_USTR *String::toALLEGRO_USTR() const {
+	//printf("AL\n");
 	if (empty()) return 0; //al_ustr_empty_string();
 	const std::string &utf8Str = toUtf8();
-	ALLEGRO_USTR *ret = al_ustr_new_from_buffer(utf8Str.c_str(), utf8Str.size() + 1);
+	//printf("toALLEGRO_USTR \"%s\"\n", utf8Str.c_str());
+	ALLEGRO_USTR *ret = al_ustr_new_from_buffer(utf8Str.c_str(), utf8Str.size());
 	return ret;
 }
 

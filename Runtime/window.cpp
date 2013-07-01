@@ -41,6 +41,7 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 	al_set_new_display_option(ALLEGRO_SUPPORT_NPOT_BITMAP,1,ALLEGRO_SUGGEST);
 	al_set_new_display_option(ALLEGRO_CAN_DRAW_INTO_BITMAP,1,ALLEGRO_REQUIRE);
 	al_set_new_display_option(ALLEGRO_COMPATIBLE_DISPLAY,1,ALLEGRO_REQUIRE);
+	al_set_new_display_option(ALLEGRO_VSYNC, 2, ALLEGRO_SUGGEST);
 	mDisplay = al_create_display(width, height);
 	if (mDisplay == 0) {
 		error(U"Creating a window failed");
@@ -123,7 +124,7 @@ void Window::drawscreen() {
 	}
 	al_flip_display();
 
-	mFPS++;
+	mFPSCounter++;
 	double sysTime = systemTimeInSec();
 	if (sysTime >= mLastFPSUpdate + 1.0) {
 		mLastFPSUpdate = sysTime;

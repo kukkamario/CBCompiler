@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "error.h"
 #include "rendertarget.h"
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -40,8 +41,12 @@ void drawCircle(float x, float y, float d, bool fill) {
 
 
 void drawText(const String &str, float x, float y) {
+
+	//info(U"DrawText1");
 	ALLEGRO_USTR *ustr = str.toALLEGRO_USTR();
 	if (ustr) {
+		//info(U"DrawText2");
+		//info(str);
 		al_draw_ustr(currentFont(), sCurrentColor, x, y, 0, ustr);
 		al_ustr_free(ustr);
 	}
