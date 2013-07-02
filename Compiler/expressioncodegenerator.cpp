@@ -5,6 +5,7 @@
 #include "errorcodes.h"
 #include "functionsymbol.h"
 #include "arraysymbol.h"
+#include "variablesymbol.h"
 
 ExpressionCodeGenerator::ExpressionCodeGenerator(QObject *parent):
 	QObject(parent),

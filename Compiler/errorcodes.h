@@ -51,6 +51,7 @@ enum ErrorCode {
 	//Runtime
 	ecCantLoadRuntime,
 	ecInvalidRuntime,
+	ecPrefixReserved,
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,

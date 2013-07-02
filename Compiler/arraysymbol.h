@@ -41,10 +41,11 @@ class ArraySymbol : public Symbol {
 		 */
 		llvm::GlobalVariable *globalArrayData() const { return mGlobalArrayData; }
 		/**
-		 * @brief globalDimensionSizes returns a pointer to the global variable which contains a integer array representing sizes of the dimensions of the array.
-		 * The integer array has dimensions() elements.
+		 * @brief globalIndexMultiplierArray returns a pointer to the global variable which contains a integer array representing values
+		 * which are used to calculate place of an element in multidimensional array. The integer array has dimensions() - 1 elements (the last element would always be 1 so it's useless to save it).
+		 * If mDimensions == 1 then globalIndexMultiplier() returns 0;
 		 */
-		llvm::GlobalVariable *globalDimensionSizes() const { return mGlobalDimensionSizes; }
+		llvm::GlobalVariable *globalIndexMultiplierArray() const { return mGlobalIndexMultiplierArray; }
 
 		void createGlobalVariables(Builder *builder);
 	private:
@@ -52,7 +53,7 @@ class ArraySymbol : public Symbol {
 		int mDimensions;
 
 		llvm::GlobalVariable *mGlobalArrayData;
-		llvm::GlobalVariable *mGlobalDimensionSizes;
+		llvm::GlobalVariable *mGlobalIndexMultiplierArray;
 };
 
 #endif // ARRAYSYMBOL_H

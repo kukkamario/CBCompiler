@@ -42,6 +42,8 @@ class BooleanValueType : public ValueType {
 		 * @return true
 		 */
 		bool isNumber() const{return true;}
+
+		int size() const { return 1; }
 	private:
 		llvm::Type *mType;
 };

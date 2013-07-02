@@ -167,6 +167,18 @@ Value StringValueType::cast(Builder *builder, const Value &v) const {
 	return builder->toString(v);
 }
 
+int StringValueType::size() const {
+	switch (mRuntime->module()->getPointerSize()) {
+		case llvm::Module::Pointer32:
+			return 4;
+		case llvm::Module::Pointer64:
+			return 8;
+		default:
+			assert("Unknown pointer size" && 0);
+			return false;
+	}
+}
+
 llvm::Constant *StringValueType::defaultValue() const {
 	return llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(mType));
 }

@@ -16,6 +16,7 @@ class ShortValueType : public ValueType
 
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
+		int size() const { return 2; }
 	private:
 };
 

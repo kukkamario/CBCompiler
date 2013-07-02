@@ -8,6 +8,14 @@
 #include "error.h"
 #include "system.h"
 
+extern "C" char *CBF_CB_Allocate(int size) {
+	return new char[size];
+}
+
+extern "C" void CBF_CB_Free(char *mem) {
+	delete [] mem;
+}
+
 extern "C" void CBF_printI(int i) {
 	printf("%i\n", i);
 }

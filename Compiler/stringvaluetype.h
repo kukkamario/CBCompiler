@@ -38,6 +38,7 @@ class StringValueType : public ValueType {
 		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return false;}
+		int size() const;
 
 		llvm::Constant *defaultValue() const;
 	private:

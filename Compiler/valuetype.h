@@ -37,8 +37,15 @@ class ValueType {
 		virtual bool isTypePointer() const = 0;
 		virtual bool isNumber() const = 0;
 		virtual llvm::Constant *defaultValue() const = 0;
+
+		/**
+		 * @brief size Returns ValueType's size in bytes.
+		 * @return Size of ValueType in bytes.
+		 */
+		virtual int size() const = 0;
+
 		/** Calculates cost for casting this ValueType to given ValueType.
-		 *If returned cost is over maxCastCost, cast cannot be done. */
+		 *If returned cost is over or equal to maxCastCost, cast cannot be done. */
 		virtual CastCostType castCost(ValueType *to) const = 0;
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 		llvm::LLVMContext &context();

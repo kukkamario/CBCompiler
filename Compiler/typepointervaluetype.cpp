@@ -29,6 +29,18 @@ llvm::Constant *TypePointerValueType::defaultValue() const {
 	return llvm::ConstantPointerNull::get(mType->getPointerTo());
 }
 
+int TypePointerValueType::size() const {
+	switch (mRuntime->module()->getPointerSize()) {
+		case llvm::Module::Pointer32:
+			return 4;
+		case llvm::Module::Pointer64:
+			return 8;
+		default:
+			assert("Unknown pointer size" && 0);
+			return false;
+	}
+}
+
 
 Value NullTypePointerValueType::cast(Builder *builder, const Value &v) const {
 	return Value();
@@ -36,4 +48,16 @@ Value NullTypePointerValueType::cast(Builder *builder, const Value &v) const {
 
 llvm::Constant *NullTypePointerValueType::defaultValue() const {
 	return llvm::ConstantPointerNull::get(llvm::Type::getVoidTy(mRuntime->module()->getContext())->getPointerTo());
+}
+
+int NullTypePointerValueType::size() const {
+	switch (mRuntime->module()->getPointerSize()) {
+		case llvm::Module::Pointer32:
+			return 4;
+		case llvm::Module::Pointer64:
+			return 8;
+		default:
+			assert("Unknown pointer size" && 0);
+			return false;
+	}
 }

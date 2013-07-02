@@ -7,28 +7,18 @@
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
 #include "booleanvaluetype.h"
+#include "variablesymbol.h"
+#include "arraysymbol.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
 	mRuntime(0),
 	mStringPool(0),
-	mIRBuilder(context),
-	mMemCopy(0),
-	mMemSet(0) {
+	mIRBuilder(context) {
 }
 
 void Builder::setRuntime(Runtime *r) {
 	mRuntime = r;
-	if (!mMemCopy) {
-		mMemCopy = mRuntime->module()->getFunction("llvm.memcpy.p0i8.p0i8.i32");
-		assert(mMemCopy);
-	}
-
-	if (!mMemSet) {
-		mMemSet = mRuntime->module()->getFunction("llvm.memset.p0i8.i32");
-		assert(mMemSet);
-	}
-
 }
 
 void Builder::setStringPool(StringPool *s) {
@@ -326,6 +316,85 @@ void Builder::destruct(const Value &a) {
 	if (a.isConstant() || a.valueType()->type() != ValueType::String) return;
 	assert(a.value());
 	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
+}
+
+void Builder::initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes) {
+	assert(array->dimensions() == dimSizes.size());
+
+	llvm::Value *memSize = calculateArrayMemorySize(array, dimSizes);
+	llvm::Value *mem = mIRBuilder.CreateBitCast(allocate(memSize), array->valueType()->llvmType());
+	mIRBuilder.CreateStore(mem, array->globalArrayData());
+
+	fillArrayIndexMultiplierArray(array, dimSizes);
+
+}
+
+void Builder::arraySubscriptStore(ArraySymbol *array, const QList<Value> &dims, const Value &val) {
+	mIRBuilder.CreateStore(llvmValue(array->valueType()->cast(this, val)), arrayElementPointer(array, dims));
+}
+
+Value Builder::arraySubscriptLoad(ArraySymbol *array, const QList<Value> &dims) {
+	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
+}
+
+llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
+
+	QList<Value>::ConstIterator i = dimSizes.begin();
+	llvm::Value *result = llvmValue(toInt(*i));
+	for (; i != dimSizes.end(); i++) {
+		result = mIRBuilder.CreateMul(result, llvmValue(toInt(*i)));
+	}
+	return result;
+}
+
+llvm::Value *Builder::calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes) {
+	llvm::Value *elements = calculateArrayElementCount(dimSizes);
+	int sizeOfElement = array->valueType()->size();
+	return mIRBuilder.CreateMul(elements, llvmValue(sizeOfElement));
+}
+
+llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const QList<Value> &index) {
+	assert(array->dimensions() == index.size());
+	if (array->dimensions() == 1) {
+		return mIRBuilder.CreateGEP(array->globalArrayData(), llvmValue(toInt(index.first())));
+	}
+	else { // array->dimensions() > 1
+		QList<Value>::ConstIterator i = index.begin();
+		llvm::Value *arrIndex =  mIRBuilder.CreateMul(llvmValue(toInt(*i)), arrayIndexMultiplier(array, 0));
+		int multIndex = 1;
+		i++;
+		for (QList<Value>::ConstIterator end = --index.end(); i != end; ++i) {
+			arrIndex = mIRBuilder.CreateAdd(arrIndex, mIRBuilder.CreateMul(llvmValue(toInt(*i)), arrayIndexMultiplier(array, multIndex)));
+			multIndex++;
+		}
+		return mIRBuilder.CreateAdd(arrIndex, llvmValue(toInt(*i)));
+	}
+}
+
+llvm::Value *Builder::arrayIndexMultiplier(ArraySymbol *array, int index) {
+	assert(index >= 0 && index < array->dimensions() - 1);
+	return mIRBuilder.CreateLoad(mIRBuilder.CreateGEP(array->globalIndexMultiplierArray(), llvmValue(index)));
+}
+
+void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes) {
+	assert(array->dimensions() == dimSizes.size());
+
+	if (array->dimensions() > 1) {
+		QList<Value>::ConstIterator i = --dimSizes.end();
+		llvm::Value *multiplier = llvmValue(toInt(*i));
+		int arrIndex = array->dimensions() - 2;
+		while(i != dimSizes.begin()) {
+			llvm::Value *pointerToArrayElement = mIRBuilder.CreateGEP(array->globalArrayData(), llvmValue(arrIndex));
+			mIRBuilder.CreateStore(multiplier, pointerToArrayElement);
+
+			--i;
+			if (i != dimSizes.begin()) {
+				multiplier = mIRBuilder.CreateMul(multiplier, llvmValue(toInt(*i)));
+				--arrIndex;
+			}
+		}
+	}
+
 }
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {
@@ -1279,7 +1348,7 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 	assert(0); return Value();
 }
 
-void Builder::memCopy(llvm::Value *src, llvm::Value *dest, llvm::Value *num) {
+void Builder::memCopy(llvm::Value *src, llvm::Value *dest, llvm::Value *num, int align) {
 	assert(src->getType()->isPointerTy());
 	assert(dest->getType()->isPointerTy());
 	assert(num->getType() == llvm::IntegerType::get(context(), 32));
@@ -1292,13 +1361,10 @@ void Builder::memCopy(llvm::Value *src, llvm::Value *dest, llvm::Value *num) {
 		dest = mIRBuilder.CreateBitCast(dest, llvm::IntegerType::get(context(), 8)->getPointerTo());
 	}
 
-	mIRBuilder.CreateCall3(mMemCopy, dest, src, num);
+	mIRBuilder.CreateMemCpy(dest, src, num, align);
 }
 
-void Builder::memSet(llvm::Value *ptr, llvm::Value *num, llvm::Value *value) {
-	if (value == 0) {
-		value = llvm::ConstantInt::get(llvm::IntegerType::get(context(), 8), 0); //i8 zero
-	}
+void Builder::memSet(llvm::Value *ptr, llvm::Value *num, llvm::Value *value, int align) {
 	assert(ptr->getType()->isPointerTy());
 	assert(num->getType() == llvm::IntegerType::get(context(), 32));
 	assert(value->getType() == llvm::IntegerType::get(context(), 8));
@@ -1308,8 +1374,30 @@ void Builder::memSet(llvm::Value *ptr, llvm::Value *num, llvm::Value *value) {
 		ptr = mIRBuilder.CreateBitCast(ptr, llvm::IntegerType::get(context(), 8)->getPointerTo());
 	}
 
-	mIRBuilder.CreateCall5(mMemSet, ptr, value, num, /* align */ mIRBuilder.getInt32(0), /* volatile */mIRBuilder.getFalse());
+	mIRBuilder.CreateMemSet(ptr, value, num, align);
 }
+
+llvm::Value *Builder::allocate(llvm::Value *size) {
+	assert(size->getType() == mIRBuilder.getInt32Ty());
+	return mIRBuilder.CreateCall(mRuntime->allocatorFunction(), size);
+}
+
+void Builder::free(llvm::Value *ptr) {
+	assert(ptr->getType()->isPointerTy());
+	ptr = pointerToBytePointer(ptr);
+	mIRBuilder.CreateCall(mRuntime->freeFunction(), ptr);
+}
+
+llvm::Value *Builder::pointerToBytePointer(llvm::Value *ptr) {
+	assert(ptr->getType()->isPointerTy());
+	if (ptr->getType() != llvm::IntegerType::get(context(), 8)->getPointerTo()) {
+		ptr = mIRBuilder.CreateBitCast(ptr, llvm::IntegerType::get(context(), 8)->getPointerTo());
+	}
+	return ptr;
+}
+
+
+
 
 //TODO: These dont seems to work? Why?
 void Builder::pushInsertPoint() {
@@ -1321,4 +1409,5 @@ void Builder::popInsertPoint() {
 	llvm::IRBuilder<>::InsertPoint insertPoint = mInsertPointStack.pop();
 	mIRBuilder.restoreIP(insertPoint);
 }
+
 

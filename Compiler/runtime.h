@@ -44,9 +44,15 @@ class Runtime : public QObject {
 		NullTypePointerValueType *nullTypePointerValueType() {return mNullTypePointerValueType;}
 
 		ValueType *findValueType(ValueType::Type valType);
+
+		llvm::Function *allocatorFunction() const { return mAllocatorFunction; }
+		llvm::Function *freeFunction() const { return mFreeFunction; }
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);
+		void addDefaultRuntimeFunction(llvm::Function *func, const QString &name);
 		bool loadValueTypes(StringPool *strPool);
+		bool isAllocatorFunctionValid();
+		bool isFreeFuntionValid();
 
 		bool mValid;
 		llvm::Module *mModule;
@@ -61,6 +67,9 @@ class Runtime : public QObject {
 		BooleanValueType *mBooleanValueType;
 		NullTypePointerValueType *mNullTypePointerValueType;
 		QMap<ValueType::Type, ValueType *> mValueTypeEnum;
+
+		llvm::Function *mAllocatorFunction;
+		llvm::Function *mFreeFunction;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

@@ -35,19 +35,19 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 	llvm::SMDiagnostic diagnostic;
 	mModule = llvm::ParseIRFile(file.toStdString(), diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
-        emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), 0, 0);
+		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), 0, 0);
 		return false;
 	}
 
 	if (!loadValueTypes(strPool)) return false;
 
+	QString funcName;
 	for (llvm::Module::FunctionListType::iterator i = mModule->getFunctionList().begin(); i != mModule->getFunctionList().end(); i++) {
 		llvm::Function *func = &(*i);
 
 		const char * const runtimeFuncNamePrefix = "CBF_";
 		int c = 0;
 		bool runtimeFunc = false;
-		QString funcName;
 		for (llvm::StringRef::const_iterator i = func->getName().begin(); i != func->getName().end(); i++) {
 			if (runtimeFuncNamePrefix[c] != *i) {
 				runtimeFunc = false;
@@ -56,6 +56,8 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 
 			c++;
 			if (c == 4) {
+
+				funcName.clear();
 				runtimeFunc = true;
 				for (i++; i != func->getName().end(); i++) {
 					funcName += *i;
@@ -64,12 +66,11 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 			}
 		}
 		if (!runtimeFunc || funcName.isEmpty()) continue;
-		qDebug() << "Runtime function: " << funcName;
 
 		addRuntimeFunction(func, funcName);
 	}
 	if (!(mStringValueType && mByteValueType && mShortValueType && mIntValueType && mFloatValueType)) return false;
-	if (!mStringValueType->isValid()) return false;
+	if (!(mStringValueType->isValid() && isAllocatorFunctionValid() && isFreeFuntionValid())) return false;
 	return mValid;
 }
 
@@ -113,12 +114,43 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	return true;
 }
 
+bool Runtime::isAllocatorFunctionValid() {
+	if (!mAllocatorFunction) return false;
+	if (mAllocatorFunction->arg_size() != 1) return false;
+	if (mAllocatorFunction->arg_begin()->getType() != llvm::IntegerType::get(mModule->getContext(), 32)) return false;
+	return mAllocatorFunction->getReturnType() == llvm::IntegerType::get(mModule->getContext(), 8)->getPointerTo();
+}
+
+bool Runtime::isFreeFuntionValid() {
+	if (!mFreeFunction) return false;
+	if (mFreeFunction->arg_size() != 1) return false;
+	if (mFreeFunction->arg_begin()->getType() != llvm::IntegerType::get(mModule->getContext(), 8)->getPointerTo()) return false;
+	return mAllocatorFunction->getReturnType() == llvm::Type::getVoidTy(mModule->getContext());
+}
+
 
 void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 	if (name == "CB_main") {
 		mCBMain = func;
 		return;
 	}
+	if (name.startsWith("CB_")) {
+		addDefaultRuntimeFunction(func, name);
+	}
+
+	RuntimeFunction *rtfunc = new RuntimeFunction(this);
+	if (rtfunc->construct(func, name)) {
+		mFunctions.append(rtfunc);
+		return;
+	}
+	else {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid runtime function \"%1\"").arg(QString::fromStdString(func->getName())), 0, 0);
+		mValid = false;
+		delete rtfunc;
+	}
+}
+
+void Runtime::addDefaultRuntimeFunction(llvm::Function *func, const QString &name) {
 	if (name == "CB_StringConstruct") {
 		if (!mStringValueType->setConstructFunction(func)) {
 			mValid = false;
@@ -173,7 +205,7 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		return;
 	}
 	if (name == "CB_StringAddition") {
-		if (!mStringValueType->setAdditionFunction(func)) { 
+		if (!mStringValueType->setAdditionFunction(func)) {
 			mValid = false;
 			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_StringAddition"), 0, 0);
 		}
@@ -186,7 +218,6 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		}
 		return;
 	}
-
 	if (name == "CB_StringRef") {
 		if (!mStringValueType->setRefFunction(func)) {
 			mValid = false;
@@ -194,18 +225,15 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 		}
 		return;
 	}
-
-
-	RuntimeFunction *rtfunc = new RuntimeFunction(this);
-	if (rtfunc->construct(func, name)) {
-		mFunctions.append(rtfunc);
-		return;
+	if (name == "CB_Allocate") {
+		mAllocatorFunction = func;
 	}
-	else {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid runtime function \"%1\"").arg(QString::fromStdString(func->getName())), 0, 0);
-		mValid = false;
-		delete rtfunc;
+
+	if (name == "CB_Free") {
+		mFreeFunction = func;
 	}
+
+	emit warning(ErrorCodes::ecPrefixReserved, tr("Prefix \"CB_\" is reserved for default runtime functions. Function \"%1\" is ignored.").arg("CBF_" + name), 0, 0);
 }
 
 
