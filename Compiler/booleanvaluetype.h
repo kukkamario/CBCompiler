@@ -25,7 +25,7 @@ class BooleanValueType : public ValueType {
 
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over or equal to maxCastCost, cast cannot be done. */
-		CastCostType castCost(ValueType *to) const;
+		CastCostType castingCostToOtherValueType(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		llvm::Constant *constant(bool t) const;
 

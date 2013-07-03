@@ -8,7 +8,7 @@ FloatValueType::FloatValueType(Runtime *runtime, llvm::Module *mod) :
 	mType = llvm::Type::getFloatTy(mod->getContext());
 }
 
-ValueType::CastCostType FloatValueType::castCost(ValueType *to) const {
+ValueType::CastCostType FloatValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case Float:
 			return 0;

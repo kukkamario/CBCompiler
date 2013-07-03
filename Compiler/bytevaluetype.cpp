@@ -9,7 +9,7 @@ ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt8Ty(mod->getContext());
 }
 
-ValueType::CastCostType ByteValueType::castCost(ValueType *to) const {
+ValueType::CastCostType ByteValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case ValueType::Byte:
 			return 0;

@@ -6,7 +6,7 @@ class IntValueType : public ValueType {
 		IntValueType(Runtime *r, llvm::Module *mod);
 		QString name() const {return QObject::tr("Integer");}
 		llvm::Type *llvmType() {return mType;}
-		CastCostType castCost(ValueType *to) const;
+		CastCostType castingCostToOtherValueType(ValueType *to) const;
 
 		/** Casts given value to this ValueType */
 		Value cast(Builder *builder, const Value &v) const;

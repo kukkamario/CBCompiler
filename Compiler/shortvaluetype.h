@@ -9,7 +9,7 @@ class ShortValueType : public ValueType
 		Type type() const{return Short;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
-		CastCostType castCost(ValueType *to) const;
+		CastCostType castingCostToOtherValueType(ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		llvm::Constant *constant(quint16 i) const;
 		llvm::Constant *defaultValue() const;

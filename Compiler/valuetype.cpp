@@ -6,6 +6,10 @@ ValueType::ValueType(Runtime *r):
 {
 }
 
+bool ValueType::canBeCastedToValueType(ValueType *to) const {
+	return castingCostToOtherValueType(to) < maxCastCost;
+}
+
 llvm::LLVMContext &ValueType::context() {
 	assert(mType);
 	return mType->getContext();

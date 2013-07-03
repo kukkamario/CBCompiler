@@ -10,7 +10,7 @@ IntValueType::IntValueType(Runtime *r, llvm::Module *mod) :
 
 
 
-ValueType::CastCostType IntValueType::castCost(ValueType *to) const {
+ValueType::CastCostType IntValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case ValueType::Integer:
 			return 0;

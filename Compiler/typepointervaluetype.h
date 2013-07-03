@@ -7,7 +7,7 @@ class TypePointerValueType : public ValueType {
 		TypePointerValueType(Runtime *r, TypeSymbol *s);
 		Type type()const{return TypePointer;}
 		virtual QString name()const;
-		virtual CastCostType castCost(ValueType *to) const;
+		virtual CastCostType castingCostToOtherValueType(ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
@@ -23,7 +23,7 @@ class NullTypePointerValueType : public ValueType {
 		NullTypePointerValueType(Runtime *r) :ValueType(r){}
 		Type type() const {return NULLTypePointer;}
 		QString name() const {return "NULL";}
-		CastCostType castCost(ValueType *) const {return 0;}
+		CastCostType castingCostToOtherValueType(ValueType *) const {return 0;}
 		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}

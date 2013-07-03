@@ -13,7 +13,7 @@ QString TypePointerValueType::name() const {
 	return mTypeSymbol->name();
 }
 
-ValueType::CastCostType TypePointerValueType::castCost(ValueType *to) const {
+ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueType *to) const {
 	if (to == this) return 0;
 	return maxCastCost;
 }

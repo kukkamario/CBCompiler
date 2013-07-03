@@ -87,6 +87,10 @@ enum ErrorCode {
 	ecLabelAlreadyDefined,
 	ecInvalidExit,
 	ecCantUseCommandInsideExpression,
+	ecSymbolNotArray,
+	ecArrayDimensionCountDoesntMatch,
+	ecExpectingNumberValue,
+	ecDangerousFloatToIntCast,
 
 	ecCantWriteBitcodeFile,
 

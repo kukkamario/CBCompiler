@@ -70,7 +70,7 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 		addRuntimeFunction(func, funcName);
 	}
 	if (!(mStringValueType && mByteValueType && mShortValueType && mIntValueType && mFloatValueType)) return false;
-	if (!(mStringValueType->isValid() && isAllocatorFunctionValid() && isFreeFuntionValid())) return false;
+	if (!mStringValueType->isValid()) return false;
 	return mValid;
 }
 
@@ -125,17 +125,14 @@ bool Runtime::isFreeFuntionValid() {
 	if (!mFreeFunction) return false;
 	if (mFreeFunction->arg_size() != 1) return false;
 	if (mFreeFunction->arg_begin()->getType() != llvm::IntegerType::get(mModule->getContext(), 8)->getPointerTo()) return false;
-	return mAllocatorFunction->getReturnType() == llvm::Type::getVoidTy(mModule->getContext());
+	return mFreeFunction->getReturnType() == llvm::Type::getVoidTy(mModule->getContext());
 }
 
 
 void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
-	if (name == "CB_main") {
-		mCBMain = func;
-		return;
-	}
 	if (name.startsWith("CB_")) {
 		addDefaultRuntimeFunction(func, name);
+		return;
 	}
 
 	RuntimeFunction *rtfunc = new RuntimeFunction(this);
@@ -151,6 +148,10 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 }
 
 void Runtime::addDefaultRuntimeFunction(llvm::Function *func, const QString &name) {
+	if (name == "CB_main") {
+		mCBMain = func;
+		return;
+	}
 	if (name == "CB_StringConstruct") {
 		if (!mStringValueType->setConstructFunction(func)) {
 			mValid = false;
@@ -227,10 +228,20 @@ void Runtime::addDefaultRuntimeFunction(llvm::Function *func, const QString &nam
 	}
 	if (name == "CB_Allocate") {
 		mAllocatorFunction = func;
+		if (!isAllocatorFunctionValid()) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_Allocate"), 0, 0);
+			mValid = false;
+		}
+		return;
 	}
 
 	if (name == "CB_Free") {
 		mFreeFunction = func;
+		if (!isFreeFuntionValid()) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_Free"), 0, 0);
+			mValid = false;
+		}
+		return;
 	}
 
 	emit warning(ErrorCodes::ecPrefixReserved, tr("Prefix \"CB_\" is reserved for default runtime functions. Function \"%1\" is ignored.").arg("CBF_" + name), 0, 0);

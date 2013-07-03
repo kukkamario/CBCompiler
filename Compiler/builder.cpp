@@ -286,14 +286,18 @@ void Builder::construct(VariableSymbol *var) {
 
 }
 
-void Builder::store(VariableSymbol *var, const Value &v) {
-	llvm::Value *val = llvmValue(var->valueType()->cast(this, v));
-	if (var->valueType()->type() == ValueType::String) {
-		mRuntime->stringValueType()->assignString(&mIRBuilder, var->alloca_(), val);
+void Builder::store(llvm::Value *ptr, const Value &v) {
+	assert(ptr->getType() == v.valueType()->llvmType()->getPointerTo());
+	if (v.valueType()->type() == ValueType::String) {
+		mRuntime->stringValueType()->assignString(&mIRBuilder, ptr, llvmValue(v));
 	}
 	else {
-		mIRBuilder.CreateStore(val, var->alloca_());
+		mIRBuilder.CreateStore(llvmValue(v), ptr);
 	}
+}
+
+void Builder::store(VariableSymbol *var, const Value &v) {
+	store(var->alloca_(), var->valueType()->cast(this, v));
 }
 
 Value Builder::load(const VariableSymbol *var) {
@@ -322,18 +326,19 @@ void Builder::initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 
 	llvm::Value *memSize = calculateArrayMemorySize(array, dimSizes);
-	llvm::Value *mem = mIRBuilder.CreateBitCast(allocate(memSize), array->valueType()->llvmType());
+	llvm::Value *mem = mIRBuilder.CreateBitCast(allocate(memSize), array->valueType()->llvmType()->getPointerTo());
+	memSet(mem, memSize, llvmValue(uint8_t(0)));
 	mIRBuilder.CreateStore(mem, array->globalArrayData());
 
 	fillArrayIndexMultiplierArray(array, dimSizes);
 
 }
 
-void Builder::arraySubscriptStore(ArraySymbol *array, const QList<Value> &dims, const Value &val) {
-	mIRBuilder.CreateStore(llvmValue(array->valueType()->cast(this, val)), arrayElementPointer(array, dims));
+void Builder::store(ArraySymbol *array, const QList<Value> &dims, const Value &val) {
+	store(arrayElementPointer(array, dims), array->valueType()->cast(this, val));
 }
 
-Value Builder::arraySubscriptLoad(ArraySymbol *array, const QList<Value> &dims) {
+Value Builder::load(ArraySymbol *array, const QList<Value> &dims) {
 	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
 }
 
@@ -356,7 +361,7 @@ llvm::Value *Builder::calculateArrayMemorySize(ArraySymbol *array, const QList<V
 llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const QList<Value> &index) {
 	assert(array->dimensions() == index.size());
 	if (array->dimensions() == 1) {
-		return mIRBuilder.CreateGEP(array->globalArrayData(), llvmValue(toInt(index.first())));
+		return mIRBuilder.CreateGEP(mIRBuilder.CreateLoad(array->globalArrayData()), llvmValue(toInt(index.first())));
 	}
 	else { // array->dimensions() > 1
 		QList<Value>::ConstIterator i = index.begin();
@@ -367,13 +372,15 @@ llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const QList<Value>
 			arrIndex = mIRBuilder.CreateAdd(arrIndex, mIRBuilder.CreateMul(llvmValue(toInt(*i)), arrayIndexMultiplier(array, multIndex)));
 			multIndex++;
 		}
-		return mIRBuilder.CreateAdd(arrIndex, llvmValue(toInt(*i)));
+		arrIndex = mIRBuilder.CreateAdd(arrIndex, llvmValue(toInt(*i)));
+		return mIRBuilder.CreateGEP(mIRBuilder.CreateLoad(array->globalArrayData()), arrIndex);
 	}
 }
 
 llvm::Value *Builder::arrayIndexMultiplier(ArraySymbol *array, int index) {
 	assert(index >= 0 && index < array->dimensions() - 1);
-	return mIRBuilder.CreateLoad(mIRBuilder.CreateGEP(array->globalIndexMultiplierArray(), llvmValue(index)));
+	llvm::Value *gepParams[2] = { llvmValue(0), llvmValue(index) };
+	return mIRBuilder.CreateLoad(mIRBuilder.CreateGEP(array->globalIndexMultiplierArray(), gepParams));
 }
 
 void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes) {
@@ -384,7 +391,8 @@ void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Valu
 		llvm::Value *multiplier = llvmValue(toInt(*i));
 		int arrIndex = array->dimensions() - 2;
 		while(i != dimSizes.begin()) {
-			llvm::Value *pointerToArrayElement = mIRBuilder.CreateGEP(array->globalArrayData(), llvmValue(arrIndex));
+			llvm::Value *gepParams[2] = { llvmValue(0), llvmValue(arrIndex) };
+			llvm::Value *pointerToArrayElement = mIRBuilder.CreateGEP(array->globalIndexMultiplierArray(), gepParams);
 			mIRBuilder.CreateStore(multiplier, pointerToArrayElement);
 
 			--i;

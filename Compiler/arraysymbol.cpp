@@ -16,19 +16,23 @@ QString ArraySymbol::info() const {
 }
 
 void ArraySymbol::createGlobalVariables(Builder *builder) {
-	mGlobalArrayData = new llvm::GlobalVariable(
+	mGlobalArrayData = builder->createGlobalVariable(
 				mValueType->llvmType()->getPointerTo(),
 				false,
-				llvm::GlobalValue::PrivateLinkage,
+				llvm::GlobalValue::CommonLinkage,
 				llvm::ConstantPointerNull::get(mValueType->llvmType()->getPointerTo()),
 				(name() + "_array_data").toStdString());
 
 	if (mDimensions > 1) {
-		mGlobalIndexMultiplierArray = new llvm::GlobalVariable(
-					llvm::ArrayType::get(llvm::IntegerType::get(builder->context(), 32), mDimensions - 1),
+		//Initialize a global array filled with zeros
+		llvm::ArrayType *type = llvm::ArrayType::get(llvm::IntegerType::get(builder->context(), 32), mDimensions - 1);
+		std::vector<llvm::Constant*> zeros(mDimensions - 1, builder->irBuilder().getInt32(0));
+		llvm::Constant *zeroArr = llvm::ConstantArray::get(type, zeros);
+		mGlobalIndexMultiplierArray = builder->createGlobalVariable(
+					type,
 					false,
-					llvm::GlobalValue::PrivateLinkage,
-					0,
+					llvm::GlobalValue::CommonLinkage,
+					zeroArr,
 					(name() + "_dimension_multipliers").toStdString());
 	}
 }

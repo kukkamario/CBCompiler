@@ -140,7 +140,7 @@ void StringValueType::assignString(llvm::IRBuilder<> *builder, llvm::Value *var,
 }
 
 
-ValueType::CastCostType StringValueType::castCost(ValueType *to) const {
+ValueType::CastCostType StringValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case String:
 			return 0;

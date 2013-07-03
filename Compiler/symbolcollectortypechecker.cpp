@@ -221,12 +221,12 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 			case ast::opAnd:
 			case ast::opOr:
 			case ast::opXor:
-				if (first->castCost(mRuntime->booleanValueType()) < ValueType::maxCastCost && second->castCost(mRuntime->booleanValueType()) < ValueType::maxCastCost ) {
+				if (first->canBeCastedToValueType(mRuntime->booleanValueType()) && second->canBeCastedToValueType(mRuntime->booleanValueType())) {
 					mExpressionLevel--;
 					return mRuntime->booleanValueType();
 				}
 			default:
-				assert(0);
+				assert("Invalid operator" && 0);
 				mExpressionLevel--;
 				return 0;
 		}
@@ -273,32 +273,16 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 	Symbol *sym = mScope->find(s->mName);
 	if (!sym) {
 		emit error(ErrorCodes::ecCantFindSymbol, tr("Can't find function or array with name \"%1\"").arg(s->mName), mLine, mFile);
+		return 0;
 	}
 	if (sym->type() == Symbol::stArray) {
 		ArraySymbol *array = static_cast<ArraySymbol*>(sym);
-		bool err = false;
-		for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
-			ValueType *p = typeCheckExpression(*i);
-			if (p) {
-				if (!(p->type() == ValueType::Integer || p->type() == ValueType::Short || p->type() == ValueType::Byte)) {
-					emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array subscript should be integer value"), mLine, mFile);
-					err = true;
-				}
-			}
-			else {
-				err = true;
-			}
-		}
-		if (array->dimensions() != s->mParams.size()) {
-			emit error(ErrorCodes::ecInvalidArraySubscript, tr("Array dimensions don't match, expecing %1 array subscripts").arg(QString::number(array->dimensions())), mLine, mFile);
-			err = true;
-		}
-		if (err) return 0;
+		if (!validateArrayIndex(array, s->mParams)) return 0;
 		return array->valueType();
 	}
 	else if (sym->type() == Symbol::stFunctionOrCommand) {
 		FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
-        bool err = false;
+		bool err = false;
 		QList<ValueType*> params;
 		for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
 			ValueType *p = typeCheck(*i);
@@ -514,8 +498,18 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::AssignmentExpression *s) {
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ArraySubscriptAssignmentExpression *s) {
-	assert(0 && "STUB");
-	return false;
+	mLine = s->mLine;
+	mFile = s->mFile;
+	ArraySymbol *array = findAndValidateArraySymbol(s->mArrayName);
+	if (!array) return false;
+	if (!validateArrayIndex(array, s->mSubscripts)) return false;
+	ValueType *valTy = typeCheckExpression(s->mValue);
+	if (!valTy) return false;
+	if (!valTy->canBeCastedToValueType(array->valueType())) {
+		emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. No valid conversion from %1 to %2.").arg(valTy->name(), array->valueType()->name()), mLine, mFile);
+		return false;
+	}
+	return true;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
@@ -719,7 +713,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Return *s) {
 		}
 		ValueType *retVal = typeCheckExpression(s->mValue);
 		if (!retVal) return false;
-		if (retVal->castCost(mReturnValueType) >= ValueType::maxCastCost) {
+		if (retVal->castingCostToOtherValueType(mReturnValueType) >= ValueType::maxCastCost) {
 			emit error(ErrorCodes::ecInvalidReturn, tr("The type of the returned value doesn't match the return type of the function"), mLine, mFile);
 			return false;
 		}
@@ -777,6 +771,42 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Exit *s) {
 	return true;
 }
 
+ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QString &name) {
+	Symbol *sym = mScope->find(name);
+	if (sym->type() != Symbol::stArray) {
+		emit error(ErrorCodes::ecSymbolNotArray, tr("Symbol \"%1\" is not an array.").arg(name), mLine, mFile);
+		return 0;
+	}
+	return static_cast<ArraySymbol*>(sym);
+
+}
+
+bool SymbolCollectorTypeChecker::validateArrayIndex(ArraySymbol *array, const QList<ast::Node *> &index) {
+	if (array->dimensions() != index.size()) {
+		emit error(ErrorCodes::ecArrayDimensionCountDoesntMatch, tr("The array \"%1\" has %2 dimensions").arg(array->name(), QString::number(array->dimensions())), mLine, mFile);
+		return false;
+	}
+	bool valid = true;
+	int indexNum = 1;
+	for (QList<ast::Node*>::ConstIterator i = index.begin(); i != index.end(); i++) {
+		ValueType *valTy = typeCheckExpression(*i);
+		if (!valTy) {
+			valid = false;
+			continue;
+		}
+		if (!valTy->isNumber()) {
+			emit error(ErrorCodes::ecExpectingNumberValue, tr("Array indices should be number values. %1 value was given as %2. index of the array \"%3\"").arg(
+						   valTy->name(), QString::number(indexNum), array->name()), mLine, mFile);
+			valid = false;
+		}
+		if (valTy == mRuntime->floatValueType()) {
+			emit warning(ErrorCodes::ecDangerousFloatToIntCast, tr("Casting a float value to integer for an array \"%1\"subscript operation.").arg(array->name()), mLine, mFile);
+		}
+		indexNum++;
+	}
+	return valid;
+}
+
 ValueType *SymbolCollectorTypeChecker::checkTypePointerType(const QString &typeName) {
 	Symbol *sym = mScope->find(typeName);
 	if (!sym) {
@@ -791,7 +821,7 @@ ValueType *SymbolCollectorTypeChecker::checkTypePointerType(const QString &typeN
 }
 
 bool SymbolCollectorTypeChecker::tryCastToBoolean(ValueType *t) {
-	if (t->castCost(mRuntime->booleanValueType()) >= ValueType::maxCastCost) {
+	if (t->castingCostToOtherValueType(mRuntime->booleanValueType()) >= ValueType::maxCastCost) {
 		emit error(ErrorCodes::ecNoCastFromTypePointer, tr("Required a value which can be casted to boolean"), mLine, mFile);
 		return false;
 	}

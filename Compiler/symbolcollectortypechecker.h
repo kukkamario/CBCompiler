@@ -6,6 +6,8 @@
 class Scope;
 class ValueType;
 class Runtime;
+class ArraySymbol;
+
 class SymbolCollectorTypeChecker : public QObject {
 		Q_OBJECT
 	public:
@@ -53,6 +55,9 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::Goto *s);
 		bool checkStatement(ast::Gosub *s);
 		bool checkStatement(ast::Exit *s);
+
+		ArraySymbol *findAndValidateArraySymbol(const QString &name);
+		bool validateArrayIndex(ArraySymbol *array, const QList<ast::Node*> &index);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 

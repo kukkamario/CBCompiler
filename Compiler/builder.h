@@ -41,14 +41,15 @@ class Builder {
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
 
 		void construct(VariableSymbol *var);
+		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);
+		void store(ArraySymbol *array, const QList<Value> &dims, const Value &val);
 		Value load(const VariableSymbol *var);
+		Value load(ArraySymbol *array, const QList<Value> &dims);
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
 		void initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes);
-		void arraySubscriptStore(ArraySymbol *array, const QList<Value> &dims, const Value &val);
-		Value arraySubscriptLoad(ArraySymbol *array, const QList<Value> &dims);
 		llvm::Value *calculateArrayElementCount(const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes);
 		/**

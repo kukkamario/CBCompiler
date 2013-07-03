@@ -52,6 +52,17 @@ Value ExpressionCodeGenerator::generate(ast::New *n) {
 	return Value();
 }
 
+QList<Value> ExpressionCodeGenerator::generateParameterList(const QList<ast::Node *> &params) {
+	QList<Value> result;
+	result.reserve(params.size());
+	for (QList<ast::Node*>::ConstIterator i = params.begin(); i != params.end(); i++) {
+		Value val = generate(*i);
+		assert(val.isValid());
+		result.append(val);
+	}
+	return result;
+}
+
 Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 	Value val = generate(n->mOperand);
 	Value ret;
@@ -110,7 +121,9 @@ Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
 		return ret;
 	}
 	if (sym->type() == Symbol::stArray) {
-		assert("TODO: arrays" && 0);
+		ArraySymbol *array = static_cast<ArraySymbol*>(sym);
+		QList<Value> dims = generateParameterList(n->mParams);
+		return mBuilder->load(array, dims);
 	}
 
 	assert(0);

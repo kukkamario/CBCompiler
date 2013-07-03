@@ -7,7 +7,7 @@ ShortValueType::ShortValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt16Ty(mod->getContext());
 }
 
-ValueType::CastCostType ShortValueType::castCost(ValueType *to) const {
+ValueType::CastCostType ShortValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case ValueType::Short:
 			return 0;

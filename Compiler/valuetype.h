@@ -44,9 +44,10 @@ class ValueType {
 		 */
 		virtual int size() const = 0;
 
+		bool canBeCastedToValueType(ValueType *to) const;
 		/** Calculates cost for casting this ValueType to given ValueType.
 		 *If returned cost is over or equal to maxCastCost, cast cannot be done. */
-		virtual CastCostType castCost(ValueType *to) const = 0;
+		virtual CastCostType castingCostToOtherValueType(ValueType *to) const = 0;
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 		llvm::LLVMContext &context();
 	protected:

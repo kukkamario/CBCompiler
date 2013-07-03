@@ -254,7 +254,7 @@ bool FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
 bool FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) { // Function or command call
 	Symbol *sym = scope()->find(n->mName);
 	if (sym->type() == Symbol::stArray) {
-		emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored useless array %1 subscript"), n->mLine, n->mFile);
+		emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored useless array \"%1\" subscript"), n->mLine, n->mFile);
 		return true;
 	}
 	assert(sym->type() == Symbol::stFunctionOrCommand);
@@ -301,11 +301,28 @@ bool FunctionCodeGenerator::generate(ast::Block *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::ArrayDefinition *n) {
-	assert(0); return false;
+	Symbol *sym = mScope->find(n->mName);
+	assert(sym && sym->type() == Symbol::stArray);
+	ArraySymbol *array = static_cast<ArraySymbol*>(sym);
+
+	QList<Value> dimensions = mExprGen.generateParameterList(n->mDimensions);
+
+	array->createGlobalVariables(mBuilder);
+	mBuilder->initilizeArray(array, dimensions);
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::ArraySubscriptAssignmentExpression *n) {
-	assert(0); return false;
+	Symbol *sym = mScope->find(n->mArrayName);
+	assert(sym && sym->type() == Symbol::stArray);
+	ArraySymbol *array = static_cast<ArraySymbol*>(sym);
+
+	QList<Value> dims = mExprGen.generateParameterList(n->mSubscripts);
+
+	Value value = mExprGen.generate(n->mValue);
+	assert(value.isValid());
+	mBuilder->store(array, dims, value);
+	return true;
 }
 
 bool FunctionCodeGenerator::generate(ast::SelectStatement *n) {
@@ -552,6 +569,7 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::SelectStatement *n) {
 	assert("STUB" && 0);
 	return false;
 }
+
 
 void FunctionCodeGenerator::addBasicBlock() {
 	mCurrentBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "BasicBlock", mFunction);
