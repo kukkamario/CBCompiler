@@ -41,13 +41,21 @@ void drawCircle(float x, float y, float d, bool fill) {
 
 
 void drawText(const String &str, float x, float y) {
-
-	//info(U"DrawText1");
+	assert(RenderTarget::activated());
 	ALLEGRO_USTR *ustr = str.toALLEGRO_USTR();
 	if (ustr) {
-		//info(U"DrawText2");
-		//info(str);
 		al_draw_ustr(currentFont(), sCurrentColor, x, y, 0, ustr);
 		al_ustr_free(ustr);
+	}
+}
+
+
+void drawBox(float x, float y, float w, float h, bool fill) {
+	assert(RenderTarget::activated());
+	if (fill) {
+		al_draw_filled_rectangle(x, y, x + w, y + h, sCurrentColor);
+	}
+	else {
+		al_draw_rectangle(x, y, x + w, y + h, sCurrentColor, 1.0f);
 	}
 }

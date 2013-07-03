@@ -61,6 +61,14 @@ CBEXPORT void CBF_circleFFFI(float x, float y, float d, int fill) {
 	drawCircle(x, y, d, fill);
 }
 
+CBEXPORT void CBF_boxFFFF(float x, float y, float w, float h) {
+	drawBox(x, y, w, h);
+}
+
+CBEXPORT void CBF_boxFFFFI(float x, float y, float w, float h, int fill) {
+	drawBox(x, y, w, h, fill);
+}
+
 CBEXPORT void CBF_textFFS(float x, float y, CBString str) {
 	drawText(str, x, y);
 }
