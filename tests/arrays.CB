@@ -1,0 +1,19 @@
+Dim array(10,2)
+Dim array2(12)
+
+for x = 0 to 9
+	for y = 0 to 1
+		array(x,y) = x + y
+	next y
+next x
+
+
+for x = 0 to 9
+	for y = 0 to 1
+		Print array(x,y)
+	next y
+next x
+
+Print array2(3)
+
+ 
