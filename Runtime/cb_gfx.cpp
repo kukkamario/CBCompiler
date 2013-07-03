@@ -1,10 +1,10 @@
-#include "gfx.h"
+#include "gfxinterface.h"
 #include "window.h"
 #include "error.h"
 #include <stdio.h>
 #include "common.h"
 #include <allegro5/allegro_primitives.h>
-
+using namespace gfx;
 CBEXPORT void CBF_drawscreen() {
 	Window::instance()->drawscreen();
 }

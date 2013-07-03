@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "window.h"
 #include "error.h"
-#include "system.h"
+#include "systeminterface.h"
 
 extern "C" char *CBF_CB_Allocate(int size) {
 	return new char[size];
@@ -37,11 +37,11 @@ extern "C" void CBF_print() {
 }
 
 extern "C" int CBF_timer() {
-	return systemTimeInMSec();
+	return sys::timeInMSec();
 }
 
 extern "C" void CBF_end() {
-	closeProgram();
+	sys::closeProgram();
 }
 
 extern "C" int CBF_fps() {

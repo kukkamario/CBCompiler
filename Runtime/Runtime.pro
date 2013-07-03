@@ -20,10 +20,11 @@ SOURCES += \
     cb_gfx.cpp \
     cb_math.cpp \
     cb_system.cpp \
-    gfx.cpp \
     cbstring.cpp \
-    system.cpp \
-    text.cpp
+    mathinterface.cpp \
+    gfxinterface.cpp \
+    systeminterface.cpp \
+    textinterface.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -31,10 +32,11 @@ HEADERS += \
     error.h \
     window.h \
     rendertarget.h \
-    system.h \
-    gfx.h \
-    text.h \
-    cbstring.h
+    cbstring.h \
+    mathinterface.h \
+    gfxinterface.h \
+    textinterface.h \
+    systeminterface.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll

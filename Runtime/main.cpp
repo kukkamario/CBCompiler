@@ -3,9 +3,9 @@
 #include <allegro5/allegro_primitives.h>
 #include "error.h"
 #include "window.h"
-#include "system.h"
-#include "gfx.h"
-#include "text.h"
+#include "systeminterface.h"
+#include "gfxinterface.h"
+#include "textinterface.h"
 
 extern "C" void CBF_CB_main();
 
@@ -16,8 +16,8 @@ int main() {
 		error(U"Allegro initialization failed");
 		return 1;
 	}
-	initGfx();
-	initText();
+	gfx::initGfx();
+	text::initText();
 
 	info(U"Creating a window");
 	Window *window = new Window();
@@ -31,7 +31,7 @@ int main() {
 	info(U"Beginning execution");
 	CBF_CB_main();
 
-	closeProgram();
+	sys::closeProgram();
 
 	return 0;
 }

@@ -1,7 +1,7 @@
 #include "window.h"
 #include <assert.h>
 #include "error.h"
-#include "system.h"
+#include "systeminterface.h"
 
 static Window *sInstance = 0;
 
@@ -87,7 +87,7 @@ void Window::resize(int width, int height, Window::WindowMode windowMode) {
 	mDisplay = al_create_display(width, height);
 	if (mDisplay == 0) {
 		error(U"Creating a window failed");
-		closeProgram();
+		sys::closeProgram();
 	}
 
 	al_register_event_source(mEventQueue, al_get_display_event_source(mDisplay));
@@ -125,7 +125,7 @@ void Window::drawscreen() {
 	al_flip_display();
 
 	mFPSCounter++;
-	double sysTime = systemTimeInSec();
+	double sysTime = sys::timeInSec();
 	if (sysTime >= mLastFPSUpdate + 1.0) {
 		mLastFPSUpdate = sysTime;
 		mFPS = mFPSCounter;
@@ -147,10 +147,10 @@ void Window::handleEvent(const ALLEGRO_EVENT &event) {
 		case ALLEGRO_EVENT_KEY_DOWN:
 			//Safe exit
 			if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
-				closeProgram();
+				sys::closeProgram();
 			}
 			break;
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
-			closeProgram(); break;
+			sys::closeProgram(); break;
 	}
 }

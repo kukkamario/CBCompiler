@@ -1,1 +1,1 @@
-#include "text.h"
+#include "textinterface.h"

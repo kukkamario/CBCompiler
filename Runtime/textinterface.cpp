@@ -1,10 +1,10 @@
-#include "text.h"
+#include "textinterface.h"
 #include <allegro5/allegro_ttf.h>
 #include "error.h"
 
 static ALLEGRO_FONT *mDefaultFont = 0;
 static ALLEGRO_FONT *mCurrentFont = 0;
-void initText() {
+void text::initText() {
 	al_init_font_addon();
 	al_init_ttf_addon();
 #ifdef WIN32
@@ -19,7 +19,7 @@ void initText() {
 }
 
 
-ALLEGRO_FONT *currentFont() {
+ALLEGRO_FONT *text::currentFont() {
 	assert(mCurrentFont);
 	return mCurrentFont;
 }
