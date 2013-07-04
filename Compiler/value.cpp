@@ -7,6 +7,7 @@
 #include "bytevaluetype.h"
 #include "shortvaluetype.h"
 #include "builder.h"
+#include <QDebug>
 
 Value::Value():
 	mValueType(0), mValue(0) {
@@ -32,4 +33,14 @@ void Value::toLLVMValue(Builder *builder) {
 		mValue = builder->llvmValue(constant());
 		mConstant = ConstantValue();
 	}
+}
+
+void Value::dump() const {
+	if (!isValid()) {
+		qDebug("Invalid Value");
+		return;
+	}
+	qDebug() << "Value:" << mValueType->name();
+	if (isConstant())
+	qDebug() << "\t = " << constant().valueInfo();
 }

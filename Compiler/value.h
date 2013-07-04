@@ -20,6 +20,7 @@ class Value {
 		llvm::Value *value() const {return mValue;}
 		const ConstantValue &constant() const {return mConstant;}
 		void toLLVMValue(Builder *builder);
+		void dump() const;
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;

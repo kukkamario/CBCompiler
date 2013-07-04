@@ -77,7 +77,7 @@ extern "C" CBString CBF_CB_IntToString(int i) {
 	}
 	std::u32string str;
 	if (i < 0) {
-		str += '-';
+		str += U'-';
 		i = -i;
 	}
 	while (i) {

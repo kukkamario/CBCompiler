@@ -33,7 +33,7 @@ Repeat
         If enemy_x(i)<0 Or enemy_x(i)>390 Then enemy_plusx(i)= -enemy_plusx(i)
         If enemy_y(i)<0 Or enemy_y(i)>290 Then enemy_plusy(i)= -enemy_plusy(i)
     Next i
-    
+    Text 10, 10, FPS()
     DrawScreen
     
 Forever

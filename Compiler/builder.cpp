@@ -248,9 +248,15 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 
 
 Value Builder::call(Function *func, QList<Value> &params) {
+	Function::ParamList paramTypes = func->paramTypes();
+	assert(paramTypes.size() == params.size());
+	Function::ParamList::ConstIterator pi = paramTypes.begin();
 	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
-		//String destruction hack...
+		//Cast to the right value type
+		*i = (*pi)->cast(this, *i);
+		//string destruction hack
 		i->toLLVMValue(this);
+		pi++;
 	}
 	Value ret = func->call(this, params);
 	for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {

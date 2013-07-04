@@ -78,15 +78,10 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 
 Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	std::vector<llvm::Value*> p;
-	QList<Value>::ConstIterator pi = params.begin();
-	for (ParamList::ConstIterator i = mParamTypes.begin(); i != mParamTypes.end(); ++i) {
-		assert(*i);
-		assert(pi->isValid());
-		Value param = (*i)->cast(builder, *pi);
-		llvm::Value *val = builder->llvmValue(param);
-		p.push_back(val);
-		pi++;
+	foreach(const Value &val, params) {
+		p.push_back(builder->llvmValue(val));
 	}
+
 	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
 	if (isCommand()) {
 		return Value();
