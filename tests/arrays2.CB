@@ -1,0 +1,39 @@
+Dim enemy_x#(100)
+Dim enemy_y#(100)
+Dim enemy_plusx(100) As Float
+Dim enemy_plusy(100) As Float
+
+Dim i As Integer
+Dim angle As Integer
+
+'First apply a random position for all enemies 
+For i=0 To 99
+    enemy_x(i)=Rand(390)
+    enemy_y(i)=Rand(290)
+    angle=Rand(360)
+    enemy_plusx(i)=Cos(angle)
+    enemy_plusy(i)=Sin(angle)
+Next i
+
+Color 0,255,0
+
+'The main loop 
+Repeat
+    
+    'update all enemies
+    For i=0 To 99
+        'draw
+        Box enemy_x(i),enemy_y(i),10,10,OFF
+        
+        'move
+        enemy_x(i)=enemy_x(i)+enemy_plusx(i)
+        enemy_y(i)=enemy_y(i)+enemy_plusy(i)
+        
+        'bounce
+        If enemy_x(i)<0 Or enemy_x(i)>390 Then enemy_plusx(i)= -enemy_plusx(i)
+        If enemy_y(i)<0 Or enemy_y(i)>290 Then enemy_plusy(i)= -enemy_plusy(i)
+    Next i
+    
+    DrawScreen
+    
+Forever
