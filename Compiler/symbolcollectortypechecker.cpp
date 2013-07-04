@@ -823,6 +823,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscript
 
 		return checkStatement(commandCall);
 	}
+	emit error(ErrorCodes::ecSymbolNotArrayOrCommand, tr("Symbol \"%1\" is not an array or a command").arg(s->mName), mLine, mFile);
+	return 0;
 }
 
 ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QString &name) {

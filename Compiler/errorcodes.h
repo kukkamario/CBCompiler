@@ -88,6 +88,7 @@ enum ErrorCode {
 	ecInvalidExit,
 	ecCantUseCommandInsideExpression,
 	ecSymbolNotArray,
+	ecSymbolNotArrayOrCommand,
 	ecArrayDimensionCountDoesntMatch,
 	ecExpectingNumberValue,
 	ecDangerousFloatToIntCast,
