@@ -110,6 +110,7 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mValueTypeEnum[ValueType::String]  = stringValueType();
 	mValueTypeEnum[ValueType::Short] = shortValueType();
 	mValueTypeEnum[ValueType::Byte] = byteValueType();
+	mValueTypeEnum[ValueType::Boolean] = booleanValueType();
 	mValueTypeEnum[ValueType::NULLTypePointer] = mNullTypePointerValueType;
 	return true;
 }

@@ -15,6 +15,7 @@
 #include "conversionhelper.h"
 #include "cbfunction.h"
 #include <fstream>
+#include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
@@ -102,16 +103,19 @@ bool CodeGenerator::generate(ast::Program *program) {
 
 bool CodeGenerator::createExecutable(const QString &path) {
 	std::string errorInfo;
+	std::string fileOpenErrorInfo;
 	if (llvm::verifyModule(*mRuntime.module(), llvm::ReturnStatusAction, &errorInfo)) { //Invalid module
-		std::ofstream out;
-		out.open("verifier.log");
+		llvm::AssemblyAnnotationWriter asmAnnoWriter;
+		llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo);
 		out << errorInfo;
+		out << "\n\n\n-----LLVM-IR-----\n\n\n";
+		mRuntime.module()->print(out, &asmAnnoWriter);
 		out.close();
 		qDebug("Invalid module. See verifier.log");
 		return false;
 	}
-	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", errorInfo, llvm::raw_fd_ostream::F_Binary);
-	if (errorInfo.empty()) {
+	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::raw_fd_ostream::F_Binary);
+	if (fileOpenErrorInfo.empty()) {
 		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
 		bitcodeFile.close();
 	}
@@ -379,6 +383,14 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 
 void CodeGenerator::addPredefinedConstantSymbols() {
 	ConstantSymbol *sym = new ConstantSymbol("pi", ConstantValue(M_PI), 0, 0);
+	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("on", ConstantValue(true), 0, 0);
+	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("off", ConstantValue(false), 0, 0);
+	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("true", ConstantValue(true), 0, 0);
+	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("false", ConstantValue(false), 0, 0);
 	mGlobalScope.addSymbol(sym);
 }
 

@@ -6,7 +6,7 @@ int math::rand(int max) {
 
 
 int math::rand(int min, int max) {
-	return min + (max - min) % ::rand();
+	return min + ::rand() % (max - min);
 }
 
 

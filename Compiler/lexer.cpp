@@ -78,7 +78,6 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &sett
 }
 
 Lexer::ReturnState Lexer::tokenize(const QString &file) {
-	emit error(0, "sadas", 0,0);
 	QFile *curFile = new QFile(file);
 	if (!curFile->open(QFile::ReadOnly | QFile::Text)) {
 		delete curFile;

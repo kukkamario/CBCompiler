@@ -13,7 +13,7 @@ class SymbolCollectorTypeChecker : public QObject {
 	public:
 		SymbolCollectorTypeChecker();
 		void setRuntime(Runtime *r) {mRuntime = r;}
-		bool run(const ast::Block *block, Scope *scope);
+		bool run(ast::Block *block, Scope *scope);
 		void setForceVariableDeclaration(bool s) {mForceVariableDeclaration = s;}
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
@@ -35,7 +35,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		ValueType *typeCheck(ast::TypePtrField *s);
 		ValueType *typeCheck(ast::Variable *s);
 
-		bool checkBlock(const ast::Block *block);
+		bool checkBlock(ast::Block *block);
 		bool checkStatement(ast::Node *s);
 		bool checkStatement(ast::IfStatement *s);
 		bool checkStatement(ast::WhileStatement *s);
@@ -55,6 +55,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::Goto *s);
 		bool checkStatement(ast::Gosub *s);
 		bool checkStatement(ast::Exit *s);
+		bool checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s);
 
 		ArraySymbol *findAndValidateArraySymbol(const QString &name);
 		bool validateArrayIndex(ArraySymbol *array, const QList<ast::Node*> &index);
@@ -64,6 +65,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool tryCastToBoolean(ValueType *t);
 
 		ValueType *checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName = QString());
+
+		void replaceParentBlockNode(ast::Node *search, ast::Node *replace);
 
 		bool mForceVariableDeclaration;
 		Runtime *mRuntime;
@@ -76,6 +79,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		QMultiMap<QString, CodeLineInfo> mRequiredLabels;
 		bool insideExpression() { return mExpressionLevel > 0; }
 		int mExpressionLevel;
+		ast::Block *mParentBlock;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

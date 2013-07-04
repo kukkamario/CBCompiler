@@ -24,7 +24,8 @@ SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mGlobalScope(0),
 	mReturnValueType(0),
 	mExitLevel(0),
-	mExpressionLevel(0)
+	mExpressionLevel(0),
+	mParentBlock(0)
 {
 }
 
@@ -373,7 +374,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Variable *s) {
 	return checkVariable(s->mName, s->mVarType, s->mTypeName);
 }
 
-bool SymbolCollectorTypeChecker::run(const ast::Block *block, Scope *scope) {
+bool SymbolCollectorTypeChecker::run(ast::Block *block, Scope *scope) {
 	mExitLevel = 0;
 	mScope = scope;
 	bool valid = checkBlock(block);
@@ -396,8 +397,9 @@ ValueType *SymbolCollectorTypeChecker::typeCheckExpression(ast::Node *s) {
 	return ret;
 }
 
-bool SymbolCollectorTypeChecker::checkBlock(const ast::Block *block) {
+bool SymbolCollectorTypeChecker::checkBlock(ast::Block *block) {
 	bool valid = true;
+	mParentBlock = block;
 	for (ast::Block::ConstIterator i = block->begin(); i != block->end(); i++) {
 		if (!checkStatement(*i)) {
 			valid = false;
@@ -442,6 +444,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 			return checkStatement((ast::Goto*)s);
 		case ast::Node::ntExit:
 			return checkStatement((ast::Exit*)s);
+		case ast::Node::ntCommandCallOrArraySubscriptAssignmentExpression:
+			return checkStatement((ast::CommandCallOrArraySubscriptAssignmentExpression*)s);
 		default:
 			assert(0);
 	}
@@ -771,8 +775,62 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Exit *s) {
 	return true;
 }
 
+bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s) {
+	mFile = s->mFile;
+	mLine = s->mLine;
+	Symbol *sym = mScope->find(s->mName);
+	if (!sym) {
+		emit error(ErrorCodes::ecCantFindSymbol, tr("Cant find symbol '%1'").arg(s->mName), mLine, mFile);
+		return false;
+	}
+	if (sym->type() == Symbol::stArray) {
+		ast::ArraySubscriptAssignmentExpression *arrAssign = new ast::ArraySubscriptAssignmentExpression;
+		arrAssign->mArrayName = s->mName;
+		arrAssign->mFile = s->mFile;
+		arrAssign->mLine = s->mLine;
+		arrAssign->mSubscripts = QList<ast::Node*>() << s->mIndexOrExpressionInParentheses;
+		arrAssign->mValue = s->mEqualTo;
+
+		//replace ast::CommandCallOrArraySubscriptAssignmentExpression with ast::ArraySubscriptAssignmentExpression
+		replaceParentBlockNode(s, arrAssign);
+
+		s->mEqualTo = 0;
+		s->mIndexOrExpressionInParentheses = 0;
+		delete s;
+
+		return checkStatement(arrAssign);
+	}
+	else if (sym->type() == Symbol::stFunctionOrCommand) { //s is ast::CommandCall with equality operator. command (x + 32) = 23
+		ast::Expression *param = new ast::Expression;
+		param->mFirst = s->mIndexOrExpressionInParentheses;
+		param->mRest = QList<ast::Operation>() << ast::Operation(ast::opEqual, s->mEqualTo);
+
+
+		ast::CommandCall *commandCall = new ast::CommandCall;
+		commandCall->mFile = s->mFile;
+		commandCall->mLine = s->mLine;
+		commandCall->mName = s->mName;
+		commandCall->mParams = QList<ast::Node*>() << param;
+
+		assert(mParentBlock);
+
+		//replace ast::CommandCallOrArraySubscriptAssignmentExpression with ast::CommandCall
+		replaceParentBlockNode(s, commandCall);
+
+		s->mEqualTo = 0;
+		s->mIndexOrExpressionInParentheses = 0;
+		delete s;
+
+		return checkStatement(commandCall);
+	}
+}
+
 ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QString &name) {
 	Symbol *sym = mScope->find(name);
+	if (!sym) {
+		emit error(ErrorCodes::ecCantFindSymbol, tr("Cant find array '%1'").arg(name), mLine, mFile);
+		return 0;
+	}
 	if (sym->type() != Symbol::stArray) {
 		emit error(ErrorCodes::ecSymbolNotArray, tr("Symbol \"%1\" is not an array.").arg(name), mLine, mFile);
 		return 0;
@@ -885,5 +943,17 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::V
 		mScope->addSymbol(varSym);
 		return vt;
 	}
+}
+
+void SymbolCollectorTypeChecker::replaceParentBlockNode(ast::Node *search, ast::Node *replace) {
+	int index = 0;
+	for (ast::Block::Iterator i = mParentBlock->begin(); i != mParentBlock->end(); i++) {
+		if (*i == search) {
+			mParentBlock->replace(index, replace);
+			return;
+		}
+		index++;
+	}
+	assert("Cant find node" && 0);
 }
 

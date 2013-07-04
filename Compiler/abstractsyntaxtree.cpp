@@ -100,6 +100,8 @@ void Printer::printNode(const Node *s, int tab) {
 			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
 		case Node::ntFunctionDefinition:
 			printFunctionDefinition((FunctionDefinition*)s, tab); return;
+		case Node::ntCommandCallOrArraySubscriptAssignmentExpression:
+			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
 		default:
 			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
@@ -173,7 +175,7 @@ void Printer::printRepeatUntilStatement(const RepeatUntilStatement *s, int tab) 
 
 void Printer::printSelectStatement(const SelectStatement *s, int tab) {
 	printLine("Select", tab);
-	printVariable(s->mVarible, tab + 1);
+	printVariable(s->mVariable, tab + 1);
 	for (QList<Case>::ConstIterator i = s->mCases.begin(); i != s->mCases.end(); i++) {
 		printLine("Case", tab);
 		printNode(i->mCase, tab + 1);
@@ -296,6 +298,16 @@ void Printer::printArraySubscriptAssignmentExpression(const ArraySubscriptAssign
 	}
 	printLine(") =", tab - 1);
 	printNode(s->mValue, tab);
+}
+
+void Printer::printCommandCallOrArraySubscriptAssignmentExpression(const CommandCallOrArraySubscriptAssignmentExpression *s, int tab) {
+	printLine ("Command call or array subscript assignment", tab);
+	printLine (s->mName, tab);
+	printLine("(", tab);
+	tab++;
+	printNode( s->mIndexOrExpressionInParentheses, tab);
+	printLine (") = ", tab - 1);
+	printNode( s->mEqualTo, tab);
 }
 
 void Printer::printUnary(const Unary *s, int tab) {
@@ -454,6 +466,12 @@ void Printer::printLine(const QString &txt, int tab) {
 			return;
 		}
 		qDebug("%s", qPrintable(txt));
+	}
+}
+
+TypeDefinition::~TypeDefinition() {
+	for (QList<QPair<int, Variable*> >::Iterator i = mFields.begin(); i != mFields.end(); i++) {
+		delete (*i).second;
 	}
 }
 

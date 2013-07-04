@@ -433,7 +433,9 @@ Value Builder::minus(const Value &a) {
 	if (a.valueType()->type() == ValueType::Boolean) {
 		return Value(mRuntime->intValueType(), mIRBuilder.CreateNeg(llvmValue(toInt(a))));
 	}
-
+	if (a.valueType()->type() == ValueType::Float) {
+		return Value(a.valueType(), mIRBuilder.CreateFNeg(llvmValue(a)));
+	}
 	return Value(a.valueType(), mIRBuilder.CreateNeg(llvmValue(a)));
 }
 

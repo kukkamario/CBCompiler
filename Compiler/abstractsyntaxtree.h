@@ -59,6 +59,7 @@ struct Node {
 		ntConstDefinition,//Const
 		ntAssignmentExpression, //a = (...)
 		ntArraySubscriptAssignmentExpression, // array( 123, 42) = ...
+		ntCommandCallOrArraySubscriptAssignmentExpression, // array (21 + 23) = 123, command (x +2 ) = 23
 		ntUnary,
 		ntReturn,
 		ntExit,
@@ -74,9 +75,13 @@ struct Node {
 		ntNew			// new (type)
 	};
 	virtual Type type() const = 0;
+	virtual ~Node() { }
 };
 
-typedef QList<Node*> Block;
+struct Block : public QList<Node*> {
+		Block() {}
+		//~Block() { qDeleteAll(*this); }
+};
 
 struct Variable : Node {
 		enum VarType {
@@ -123,6 +128,7 @@ struct Float : Node {
 
 struct VariableDefinition : Node {
 		Type type() const {return ntVariableDefinition;}
+		~VariableDefinition() { qDeleteAll(mDefinitions);}
 		QList<Variable*> mDefinitions;
 		int mLine;
 		QFile *mFile;
@@ -130,6 +136,7 @@ struct VariableDefinition : Node {
 
 struct TypeDefinition : Node {
 		Type type() const {return ntTypeDefinition;}
+		~TypeDefinition();
 		QString mName;
 		QList<QPair<int, Variable*> > mFields;
 		int mLine;
@@ -156,11 +163,13 @@ struct Gosub : Node {
 
 struct Unary : Node {
 		Type type() const { return ntUnary;}
+		~Unary() { delete mOperand; }
 		Operator mOperator;
 		Node *mOperand;
 };
 
 struct FunctionParametreDefinition {
+		~FunctionParametreDefinition() { if (mDefaultValue) delete mDefaultValue; }
 		Variable mVariable;
 		Node *mDefaultValue; //Null if not specified
 };
@@ -189,6 +198,7 @@ struct TypePtrField : Node {
 };
 
 struct FunctionCallOrArraySubscript : Node {
+		~FunctionCallOrArraySubscript() { qDeleteAll(mParams); }
 		Type type() const {return ntFunctionCallOrArraySubscript;}
 		QString mName;
 		QList<Node*> mParams;
@@ -196,7 +206,18 @@ struct FunctionCallOrArraySubscript : Node {
 		QFile *mFile;
 };
 
+struct CommandCallOrArraySubscriptAssignmentExpression : Node {
+		~CommandCallOrArraySubscriptAssignmentExpression() { if (mIndexOrExpressionInParentheses) delete mIndexOrExpressionInParentheses; if (mEqualTo) delete mEqualTo; }
+		Type type() const { return ntCommandCallOrArraySubscriptAssignmentExpression; }
+		QString mName;
+		Node *mIndexOrExpressionInParentheses;
+		Node *mEqualTo;
+		int mLine;
+		QFile *mFile;
+};
+
 struct CommandCall: Node {
+		~CommandCall() { qDeleteAll(mParams); }
 		Type type() const{return ntCommandCall;}
 		QString mName;
 		QList<Node*> mParams;
@@ -205,6 +226,7 @@ struct CommandCall: Node {
 };
 
 struct ConstDefinition: Node {
+		~ConstDefinition() { delete mValue; }
 		Type type() const{return ntConstDefinition;}
 		QString mName;
 		Variable::VarType mVarType;
@@ -222,6 +244,7 @@ struct Label: Node {
 
 
 struct GlobalDefinition : Node {
+		~GlobalDefinition() { qDeleteAll(mDefinitions); }
 		Type type() const {return ntGlobalDefinition;}
 		QList<Variable*> mDefinitions;
 		int mLine;
@@ -229,6 +252,7 @@ struct GlobalDefinition : Node {
 };
 
 struct ArrayDefinition : Node {
+		~ArrayDefinition() { qDeleteAll(mDimensions); }
 		Type type() const{ return ntArrayDefinition;}
 		QString mName;
 		Variable::VarType mType;
@@ -239,18 +263,21 @@ struct ArrayDefinition : Node {
 
 struct Operation {
 		Operation(Operator opp, Node *opr) : mOperator(opp), mOperand(opr) {}
+		//~Operation() { delete mOperand; }
 		Operator mOperator;
 		Node *mOperand;
 };
 
 
 struct Expression :Node{
+		~Expression() { delete mFirst; }
 		Type type() const {return ntExpression;}
 		Node *mFirst;
 		QList<Operation> mRest;
 };
 
 struct AssignmentExpression : Node{
+		~AssignmentExpression() { delete mVariable; delete mExpression; }
 		Type type() const{return ntAssignmentExpression;}
 		Node *mVariable;
 		Node *mExpression;
@@ -259,6 +286,7 @@ struct AssignmentExpression : Node{
 };
 
 struct ArraySubscriptAssignmentExpression : Node {
+		~ArraySubscriptAssignmentExpression() { qDeleteAll(mSubscripts); delete mValue; }
 		Type type() const {return ntArraySubscriptAssignmentExpression;}
 		QString mArrayName;
 		QList<Node*> mSubscripts;
@@ -270,6 +298,7 @@ struct ArraySubscriptAssignmentExpression : Node {
 
 struct IfStatement : Node {
 		IfStatement():mCondition(0) {}
+		~IfStatement() { delete mCondition; }
 		Type type() const {return ntIfStatement;}
 		Node *mCondition;
 		Block mIfTrue;
@@ -280,6 +309,7 @@ struct IfStatement : Node {
 };
 
 struct Case {
+		~Case() { delete mCase; }
 		Node *mCase;
 		Block mBlock;
 		int mLine;
@@ -287,8 +317,9 @@ struct Case {
 };
 
 struct SelectStatement : Node {
+		~SelectStatement() { delete mVariable; }
 		Type type() const {return ntSelectStatement;}
-		Variable *mVarible;
+		Variable *mVariable;
 		QList<Case> mCases;
 		Block mDefault;
 		QFile *mFile;
@@ -298,6 +329,7 @@ struct SelectStatement : Node {
 
 struct ForToStatement : Node {
 		ForToStatement() : mFrom(0), mTo(0), mStep(0), mFile(0){}
+		~ForToStatement() { delete mFrom; delete mTo; if(mStep) delete mStep; }
 		Type type() const{return ntForToStatement;}
 		QString mVarName;
 		Variable::VarType mVarType;
@@ -324,6 +356,7 @@ struct ForEachStatement : Node {
 
 struct WhileStatement : Node {
 		WhileStatement(): mCondition(0) {}
+		~WhileStatement() { delete mCondition; }
 		Type type() const{return ntWhileStatement;}
 		Node *mCondition;
 		Block mBlock;
@@ -342,6 +375,7 @@ struct RepeatForeverStatement : Node {
 
 struct RepeatUntilStatement : Node {
 		RepeatUntilStatement(): mCondition(0) {}
+		~RepeatUntilStatement() { delete mCondition; }
 		Type type()const {return ntRepeatUntilStatement;}
 		Block mBlock;
 		Node *mCondition;
@@ -351,6 +385,7 @@ struct RepeatUntilStatement : Node {
 };
 
 struct Redim : Node {
+		~Redim() { qDeleteAll(mDimensions); }
 		Type type() const{return ntRedim;}
 		QString mName;
 		Variable::VarType mType;
@@ -362,6 +397,7 @@ struct Redim : Node {
 
 
 struct Program {
+		~Program() { qDeleteAll(mTypes); qDeleteAll(mConstants); qDeleteAll(mFunctions); qDeleteAll(mGlobals); }
 		QList<TypeDefinition*> mTypes;
 		QList<ConstDefinition*> mConstants;
 		QList<FunctionDefinition*> mFunctions;
@@ -402,6 +438,7 @@ class Printer : public QObject{
 		void printGlobalDefinition(const GlobalDefinition *s, int tab = 0);
 		void printAssignmentExpression(const AssignmentExpression *s, int tab = 0);
 		void printArraySubscriptAssignmentExpression(const ArraySubscriptAssignmentExpression *s, int tab = 0);
+		void printCommandCallOrArraySubscriptAssignmentExpression(const CommandCallOrArraySubscriptAssignmentExpression *s, int tab = 0);
 		void printUnary(const Unary *s, int tab = 0);
 		void printReturn(const Return *s, int tab = 0);
 		void printExit(const Exit *s, int tab = 0);

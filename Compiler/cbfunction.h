@@ -3,11 +3,7 @@
 #include "function.h"
 #include "constantvalue.h"
 #include <QPair>
-namespace ast {
-struct FunctionDefinition;
-struct Node;
-typedef QList<Node*> Block;
-}
+#include "abstractsyntaxtree.h"
 class Scope;
 
 /**
