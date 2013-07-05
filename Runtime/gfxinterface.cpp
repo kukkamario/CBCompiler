@@ -59,3 +59,9 @@ void gfx::drawBox(float x, float y, float w, float h, bool fill) {
 		al_draw_rectangle(x, y, x + w, y + h, sCurrentColor, 1.0f);
 	}
 }
+
+
+void gfx::drawDot(float x, float y) {
+	assert(RenderTarget::activated());
+	al_draw_pixel(x, y, sCurrentColor);
+}

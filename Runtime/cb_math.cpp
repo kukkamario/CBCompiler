@@ -35,6 +35,30 @@ CBEXPORT int CBF_absI(int i) {
 	return abs(i);
 }
 
+CBEXPORT float CBF_sqrtF(float f) {
+	return sqrtf(f);
+}
+
+CBEXPORT float CBF_distanceFFFF(float x1, float y1, float x2, float y2) {
+	return distance(x1, y1, x2, y2);
+}
+
+CBEXPORT float CBF_maxFF(float a, float b) {
+	return max(a, b);
+}
+
+CBEXPORT int CBF_maxII(int a, int b) {
+	return max(a, b);
+}
+
+CBEXPORT float CBF_minFF(float a, float b) {
+	return min(a, b);
+}
+
+CBEXPORT int CBF_minII(int a, int b) {
+	return min(a, b);
+}
+
 CBEXPORT float CBF_wrapAngleF(float a) {
 	return wrapAngle(a);
 }

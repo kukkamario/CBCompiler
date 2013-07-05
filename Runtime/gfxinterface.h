@@ -10,5 +10,6 @@ namespace gfx {
 	void drawCircle(float x, float y, float d, bool fill = true);
 	void drawText(const String &str, float x, float y);
 	void drawBox(float x, float y, float w, float h, bool fill = true);
+	void drawDot(float x, float y);
 }
 #endif // GFX_H

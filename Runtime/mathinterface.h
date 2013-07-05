@@ -29,5 +29,21 @@ namespace math {
 	double rnd(double min, double max);
 	void randomize(int seed);
 	double wrapAngle(double a);
+	double distance(double x1, double y1, double x2, double y2);
+
+	template <typename T>
+	T square(T a) {
+		return a * a;
+	}
+
+	template <typename T>
+	T max(T a, T b) {
+		return a > b ? a : b;
+	}
+
+	template <typename T>
+	T min(T a, T b) {
+		return a < b ? a : b;
+	}
 }
 #endif // MATH_H

@@ -74,5 +74,9 @@ CBEXPORT void CBF_textFFS(float x, float y, CBString str) {
 	drawText(str, x, y);
 }
 
+CBEXPORT void CBF_dotFF(float x, float y) {
+	drawDot(x, y);
+}
+
 
 

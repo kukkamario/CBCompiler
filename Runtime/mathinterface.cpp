@@ -34,3 +34,8 @@ double math::rnd(double max) {
 double math::rnd(double min, double max) {
 	return min + rnd() * (max - min);
 }
+
+
+double math::distance(double x1, double y1, double x2, double y2) {
+	return sqrt(square(x1 - x2) + square(y1 - y2));
+}
