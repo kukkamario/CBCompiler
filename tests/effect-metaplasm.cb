@@ -1,62 +1,49 @@
-//SCREEN 400,300,32',0
-
-Const Stepp=1
-scale#=1.5
-pyöritys#=1
+Const STEPP = 1
+scale# = 1.5
+pyöritys# = 1
 Dim palettiR(255)
 Dim palettiG(255)
 Dim palettiB(255)
-    FOr i=0 To 255
-        //b=i*0.9+0.1*255
-        //If b<0 Then b=0
-        //Color Sin(i*2)*i/2+127,Sin(i*3)*i/2+127,Sin(b*4)*i/2+127
-        //Color (i/16.0)^2,(i/16.0)^2,(Sin(i/2.833)*230/16)^2
-        r# = (i/16.0)
-        r# = r * r
-        g# = (i/16.0)
-        g# = g * g
-        b# = (Sin(i/2.833)*230/16)
-        b# = b * b
-        //Dot 0,0
-        'paletti(i)= r Shl 16 + g Shl 8 + b
-        palettiR(i) = r
-        palettiG(i) = g
-        palettiB(i) = b
-    Next i
-Repeat 
-//SetWindow Str(FPS())+"  "+Str(level#)+" Zoomi: nuolet = "+scale+" "+str(vk)
+For i=0 To 255
+    r# = (i / 16.0)
+    r# = r * r
+    g# = (i / 16.0)
+    g# = g * g
+    b# = Sin(i / 2.833) * 230 / 16
+    b# = b * b
+    palettiR(i) = r
+    palettiG(i) = g
+    palettiB(i) = b
+Next i
+Repeat
+    pyöritys = pyöritys + 2.5
+    aika = aika+1
+    vesiaika = vesiaika + 35
+    level# = 1000 / (scale * scale * scale)
 
-pyöritys = pyöritys + 2.5
-aika=aika+1
-vesiaika = vesiaika+35
-level#=1000/(scale*scale*scale)
+    If level# = 0 Then level# = 240
+    For x=0 To 400 Step STEPP
+        For y=0 To 300 Step STEPP
+            //pyöritys:
+            d# = Distance(200, 150, x, y)
+            k# = WrapAngle(ATan((y - 150.5) / (x - 200.5)) + pyöritys)
+            If x > 200 Then k = k - 180
+            x2 = Sin(k) * d * scale + 200
+            y2 = Cos(k) * d * scale + 150
+            col = Min(255.0, (64 + 63 * Sin(vesiaika + (x + Sin(vesiaika + y2 * 2) * 20) * 2) + 64 + 63 * Sin(vesiaika * 1.5 + x2 * scale * 3 + Sin(y2 *scale) * 50 - Sin(vesiaika * 1.4) * 20) + 64 + 63 * Sin(y2 * scale * (1.2 + Sin(vesiaika / 5) / 2))) / 2)
+            col = col / 400.0 * level - level/2
+            arvo = 0
+            scaleI = 30/scale
+            arvo = arvo + (scaleI Shl 8) / Distance(x2, y2, 200 + Cos((aika - col) / 5.25) * 150, 150 + Cos((aika - col) / 3.141159) * 150)
+            scaleI = 40/scale
+            arvo = arvo + (scaleI Shl 8) / Distance(x2 , y2, 200 + Sin((aika - col) / 4.32) * 150, 150 + Sin((aika - col) / 2.983) * 150)
+            scaleI = 30/scale
+            arvo = arvo + (scaleI Shl 8) / Distance(x2, y2, 200 + Sin((aika - col) / 2.63) * 150, 150 + Sin(( aika - col) / 3.483) * 150)
 
-If level#=0 Then level#=240
-For x=0 To 400 Step stepp
-For y=0 To 300 Step stepp
-//pyöritys:
-d#=Distance(200,150,x,y)
-k#=WrapAngle(ATan((y-150.5)/(x-200.5))+pyöritys)
-If x>200 then k = k-180
-x2=Sin(k)*d*scale+200
-y2=Cos(k)*d*scale+150
-'col=64+63*Sin(x+aika)+64+63*Sin(x+aika+y)+64+63*Sin(y+aika)+64+63*Sin(sqrt((401-x)*(301-y))+aika)'128+127*Sin(x/(2+1*Cos(y*(Sin(aika/3)))))*Cos(y/(3+1*Sin(x/(Sin(aika/3)+2))))
-col=Min(255.0,(64+63*Sin(vesiaika+(x+Sin(vesiaika+y2*2)*20)*2)+64+63*Sin(vesiaika*1.5+x2*scale*3+Sin(y2*scale)*50-Sin(vesiaika*1.4)*20)+64+63*Sin(y2*scale*(1.2+Sin(vesiaika/5)/2)))/2)
-col=col/400.0*level-level/2
-arvo=0
-scaleI = 30/scale
-arvo=arvo+(scaleI Shl 8)/(Distance(x2,y2,200+Cos((aika-col)/5.25)*150,150+Cos((aika-col)/3.141159)*150))
-scaleI = 40/scale
-arvo=arvo+(scaleI Shl 8)/Distance(x2,y2,200+Sin((aika-col)/4.32)*150,150+Sin((aika-col)/2.983)*150)
-scaleI = 30/scale
-arvo=arvo+(scaleI Shl 8)/Distance(x2,y2,200+Sin((aika-col)/2.63)*150,150+Sin((aika-col)/3.483)*150)
-
-i = Max(0,Min(255,arvo))
-'Color 0,0,paletti(Max(0,Min(255,arvo)))'0,0,min(255,arvo)'128+127*Sin(col+aika) ,128+127*Sin(col*2.486-aika/1.234), 128+127*Cos(col/2.3+aika*1.436)
-Color palettiR(i), palettiG(i), palettiB(i)
-Box x,y,stepp,stepp
-
-Next y
-Next x
-DrawScreen
+            i = Max(0, Min(255, arvo))
+            Color palettiR(i), palettiG(i), palettiB(i)
+            Box x, y, STEPP, STEPP
+        Next y
+    Next x
+    DrawScreen
 Forever
