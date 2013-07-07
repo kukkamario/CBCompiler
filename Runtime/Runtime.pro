@@ -53,9 +53,10 @@ QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
 QMAKE_CXXFLAGS = -emit-llvm -std=c++0x
 
-linux-g++* {
+unix {
 	QMAKE_LIB = llvm-link -o
 	QMAKE_AR = llvm-link -o  #llvm-ar cqs
+	QMAKE_RANLIB = ''
 }
 
 
