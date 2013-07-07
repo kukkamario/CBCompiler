@@ -6,7 +6,7 @@
 
 #ifdef __MACH__
 namespace std {
-    typedef basic_string<char32_t> u32string;
+	typedef basic_string<char32_t> u32string;
 }
 #endif
 
