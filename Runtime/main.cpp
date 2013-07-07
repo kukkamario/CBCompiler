@@ -9,7 +9,7 @@
 
 extern "C" void CBF_CB_main();
 
-int main() {
+int main(int argc, char **argv) {
 
 	info(U"Initializing allegro");
 	if (!al_init()) {

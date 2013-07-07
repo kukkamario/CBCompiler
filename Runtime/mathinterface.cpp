@@ -1,5 +1,6 @@
 #include "mathinterface.h"
-#include "random"
+#include <cstdlib>
+
 int math::rand(int max) {
 	return rand(0, max);
 }

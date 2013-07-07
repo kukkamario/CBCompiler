@@ -4,6 +4,12 @@
 #include <string>
 #include "referencecounter.h"
 
+#ifdef __MACH__
+namespace std {
+    typedef basic_string<char32_t> u32string;
+}
+#endif
+
 struct CB_StringData {
 		CB_StringData(const char32_t *txt) : mString(txt), mRefCount(1) {}
 		CB_StringData(const std::u32string &txt) : mString(txt), mRefCount(1) {}
