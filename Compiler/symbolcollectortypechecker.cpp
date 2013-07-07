@@ -399,12 +399,14 @@ ValueType *SymbolCollectorTypeChecker::typeCheckExpression(ast::Node *s) {
 
 bool SymbolCollectorTypeChecker::checkBlock(ast::Block *block) {
 	bool valid = true;
+	ast::Block *tmpParentBlock = mParentBlock;
 	mParentBlock = block;
 	for (ast::Block::ConstIterator i = block->begin(); i != block->end(); i++) {
 		if (!checkStatement(*i)) {
 			valid = false;
 		}
 	}
+	mParentBlock = tmpParentBlock;
 	return valid;
 }
 
