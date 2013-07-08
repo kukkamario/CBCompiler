@@ -1,6 +1,10 @@
 #include "settings.h"
 #include <QSettings>
 #include <QProcess>
+#include <QCoreApplication>
+#include <QDir>
+#include <QDebug>
+
 Settings::Settings() :
 	mFVD(false) {
 }
@@ -9,9 +13,9 @@ bool Settings::loadDefaults() {
 
 
 #ifdef _WIN32
-	mLoadPath = "settings_win.ini";
+	mLoadPath = QCoreApplication::applicationDirPath() + "\\settings_win.ini";
 #else
-	mLoadPath = "settings_linux.ini";
+	mLoadPath = QCoreApplication::applicationDirPath() + "/settings_linux.ini";
 #endif
 
 
@@ -52,13 +56,25 @@ bool Settings::loadDefaults() {
 }
 
 bool Settings::callOpt(const QString &inputFile, const QString &outputFile) const {
-	return QProcess::execute(mOpt.arg(mOptFlags, inputFile, outputFile)) == 0;
+	QString p = QDir::currentPath();
+	QDir::setCurrent(QCoreApplication::applicationDirPath());
+	int ret = QProcess::execute(mOpt.arg(mOptFlags, inputFile, outputFile));
+	QDir::setCurrent(p);
+	return ret == 0;
 }
 
 bool Settings::callLLC(const QString &inputFile, const QString &outputFile) const {
-	return QProcess::execute(mLLC.arg(mLLCFlags, inputFile, outputFile)) == 0;
+	QString p = QDir::currentPath();
+	QDir::setCurrent(QCoreApplication::applicationDirPath());
+	int ret = QProcess::execute(mLLC.arg(mLLCFlags, inputFile, outputFile));
+	QDir::setCurrent(p);
+	return ret == 0;
 }
 
 bool Settings::callLinker(const QString &inputFile, const QString &outputFile) const {
-	return QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, outputFile)) == 0;
+	QString p = QDir::currentPath();
+	QDir::setCurrent(QCoreApplication::applicationDirPath());
+	int ret = QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, "\"" + p + "/" + outputFile + "\""));
+	QDir::setCurrent(p);
+	return ret == 0;
 }

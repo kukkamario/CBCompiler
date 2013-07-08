@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
 	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
 
-	const QString runtimePath("runtime/libRuntime.bc");
+	const QString runtimePath(QCoreApplication::applicationDirPath() + "/runtime/libRuntime.bc");
 
 	timer.start();
 	if (!codeGenerator.initialize(runtimePath, settings)) {

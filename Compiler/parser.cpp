@@ -151,6 +151,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 		}
 		else {
 			emit error(ErrorCodes::ecUnexpectedToken, tr("Unexpected token \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
 			return program;
 		}
 	}
