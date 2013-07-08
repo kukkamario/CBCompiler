@@ -1170,7 +1170,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 				case ValueType::Short:
 				case ValueType::Byte:
 				case ValueType::Boolean:
-					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(a), llvmValue(toInt(b))));
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpOEQ(llvmValue(a), llvmValue(toFloat(b))));
 				case ValueType::String: {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
