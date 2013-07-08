@@ -30,12 +30,14 @@ void gfx::drawLine(float x1, float y1, float x2, float y2) {
 
 
 void gfx::drawCircle(float x, float y, float d, bool fill) {
+	assert(RenderTarget::activated());
+	if (d <= 0) return;
 	float r = d * 0.5f;
 	if (fill) {
-		al_draw_filled_circle(x - r, y - r, r, sCurrentColor);
+		al_draw_filled_circle(x + r, y + r, r, sCurrentColor);
 	}
 	else {
-		al_draw_circle(x - r, y - r, r, sCurrentColor, 1.0f);
+		al_draw_circle(x + r, y + r, r, sCurrentColor, 1.0f);
 	}
 }
 
