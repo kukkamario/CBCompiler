@@ -249,7 +249,7 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 
 Value Builder::call(Function *func, QList<Value> &params) {
 	Function::ParamList paramTypes = func->paramTypes();
-	assert(paramTypes.size() == params.size());
+	assert(func->requiredParams() >= params.size() && params.size() <= paramTypes.size());
 	Function::ParamList::ConstIterator pi = paramTypes.begin();
 	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
 		//Cast to the right value type
@@ -274,6 +274,10 @@ void Builder::branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlo
 	mIRBuilder.CreateCondBr(llvmValue(toBoolean(cond)), ifTrue, ifFalse);
 }
 
+void Builder::returnValue(ValueType *retType, const Value &v) {
+	mIRBuilder.CreateRet(llvmValue(retType->cast(this, v)));
+}
+
 void Builder::construct(VariableSymbol *var) {
 	llvm::Value *allocaInst = mIRBuilder.CreateAlloca(var->valueType()->llvmType());
 	var->setAlloca(allocaInst);
@@ -292,6 +296,11 @@ void Builder::construct(VariableSymbol *var) {
 
 }
 
+void Builder::store(llvm::Value *ptr, llvm::Value *val) {
+	assert(ptr->getType() == val->getType()->getPointerTo());
+	mIRBuilder.CreateStore(val, ptr);
+}
+
 void Builder::store(llvm::Value *ptr, const Value &v) {
 	assert(ptr->getType() == v.valueType()->llvmType()->getPointerTo());
 	if (v.valueType()->type() == ValueType::String) {
@@ -303,7 +312,17 @@ void Builder::store(llvm::Value *ptr, const Value &v) {
 }
 
 void Builder::store(VariableSymbol *var, const Value &v) {
-	store(var->alloca_(), var->valueType()->cast(this, v));
+	store(var, llvmValue(var->valueType()->cast(this, v)));
+}
+
+void Builder::store(VariableSymbol *var, llvm::Value *val) {
+	assert(var->valueType()->llvmType() == val->getType());
+	if (var->valueType()->type() == ValueType::String) {
+		mRuntime->stringValueType()->assignString(&mIRBuilder, var->alloca_(), val);
+	}
+	else {
+		store(var->alloca_(), val);
+	}
 }
 
 Value Builder::load(const VariableSymbol *var) {

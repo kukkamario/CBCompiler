@@ -39,10 +39,13 @@ class Builder {
 		Value call(Function *func, QList<Value> &params);
 		void branch(llvm::BasicBlock *dest);
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
+		void returnValue(ValueType *retType, const Value &v);
 
 		void construct(VariableSymbol *var);
+		void store(llvm::Value *ptr, llvm::Value *val);
 		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);
+		void store(VariableSymbol *var, llvm::Value *val);
 		void store(ArraySymbol *array, const QList<Value> &dims, const Value &val);
 		Value load(const VariableSymbol *var);
 		Value load(ArraySymbol *array, const QList<Value> &dims);
