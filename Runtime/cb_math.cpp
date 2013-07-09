@@ -79,6 +79,6 @@ CBEXPORT int CBF_randII(int min, int max) {
 	return rand(min, max);
 }
 
-CBEXPORT void randomizeI(int seed) {
+CBEXPORT void CBF_randomizeI(int seed) {
 	randomize(seed);
 }
