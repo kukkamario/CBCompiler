@@ -50,7 +50,7 @@ void FunctionCodeGenerator::setStringPool(StringPool *stringPool) {
 
 bool FunctionCodeGenerator::generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc) {
 	mFunction = cbFunc->function();
-	mScope = cbFunc->scope();
+	setScope(cbFunc->scope());
 	mBasicBlocks.clear();
 	mReturnType = cbFunc->returnValue();
 	createBuilder();
@@ -78,7 +78,9 @@ bool FunctionCodeGenerator::generateCBFunction(ast::FunctionDefinition *func, CB
 
 	if (!generate(&func->mBlock)) return false;
 
-	if (!mCurrentBasicBlock->getTerminator()) { //No return
+	mCurrentBasicBlock = mBasicBlocks.last();
+	if (!mCurrentBasicBlock->getTerminator()) {
+		mBuilder->setInsertPoint(mCurrentBasicBlock); //No return
 		if (!generateDestructors()) return false;
 		mBuilder->returnValue(mReturnType, Value(mReturnType, mReturnType->defaultValue()));
 	}
@@ -198,6 +200,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 
 	mBuilder->setInsertPoint(ifTrueBB);
 	if (!generate(&n->mIfTrue)) return false;
+	llvm::BasicBlock *ifTrueEndBB = mCurrentBasicBlock;
 
 	if (n->mElse.isEmpty()) {
 		nextBasicBlock();
@@ -224,7 +227,7 @@ bool FunctionCodeGenerator::generate(ast::IfStatement *n) {
 		mBuilder->setInsertPoint(ifBB);
 		mBuilder->branch(cond, ifTrueBB, elseBB);
 
-		mBuilder->setInsertPoint(ifTrueBB);
+		mBuilder->setInsertPoint(ifTrueEndBB);
 		mBuilder->branch(mCurrentBasicBlock);
 	}
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
