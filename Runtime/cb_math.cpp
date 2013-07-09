@@ -82,3 +82,11 @@ CBEXPORT int CBF_randII(int min, int max) {
 CBEXPORT void CBF_randomizeI(int seed) {
 	randomize(seed);
 }
+
+CBEXPORT float CBF_roundUp(float f) {
+	return ceilf(f);
+}
+
+CBEXPORT float CBF_roundDown(float f) {
+	return floorf(f);
+}
