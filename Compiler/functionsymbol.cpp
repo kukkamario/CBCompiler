@@ -28,7 +28,7 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 	//No overloads
 	if (mFunctions.size() == 1) {
 		Function *f = mFunctions.first();
-		if (f->paramTypes().size() < paramTypes.size() || f->requiredParams() > paramTypes.size() || (f->returnValue() != 0) == command) {
+		if (f->requiredParams() > paramTypes.size() || (f->returnValue() != 0) == command) {
 			if (err) *err = oseCannotFindAny;
 			return 0;
 		}
