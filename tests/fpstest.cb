@@ -20,7 +20,6 @@ Repeat
     Next i
     fpsc = fpsc + 1
     Color 255,255,255
-	fpsstr$ = FPS()
-    Text 10,10,fpsstr$
+    Text 10,10, FPS()
     DrawScreen
 Forever
