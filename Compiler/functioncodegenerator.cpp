@@ -8,16 +8,19 @@
 #include "errorcodes.h"
 #include "warningcodes.h"
 #include "stringpool.h"
+#include "cbfunction.h"
 
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
 	mCurrentBasicBlock(0),
-	mIsMainScope(false),
 	mFunction(0),
 	mCurrentBasicBlockIt(mBasicBlocks.end()),
 	mExprGen(this),
 	mBuilder(0),
-	mSetupBasicBlock(0){
+	mSetupBasicBlock(0),
+	mReturnType(0),
+	mStringLiteralInitializationBasicBlock(0),
+	mStringLiteralInitializationExitBasicBlock(0) {
 	connect(&mExprGen, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mExprGen,SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
 }
@@ -28,10 +31,6 @@ void FunctionCodeGenerator::setRuntime(Runtime *r) {
 
 void FunctionCodeGenerator::setFunction(llvm::Function *func) {
 	mFunction = func;
-}
-
-void FunctionCodeGenerator::setIsMainScope(bool t) {
-	mIsMainScope = t;
 }
 
 void FunctionCodeGenerator::setScope(Scope *scope) {
@@ -49,25 +48,57 @@ void FunctionCodeGenerator::setStringPool(StringPool *stringPool) {
 	if (mBuilder) mBuilder->setStringPool(mStringPool);
 }
 
-bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
-	assert(mFunction);
+bool FunctionCodeGenerator::generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc) {
+	mFunction = cbFunc->function();
+	mScope = cbFunc->scope();
+	mBasicBlocks.clear();
+	mReturnType = cbFunc->returnValue();
+	createBuilder();
 
-	if (!mBuilder) {
-		mBuilder = new Builder(mFunction->getContext());
-		mExprGen.setBuilder(mBuilder);
-		mBuilder->setStringPool(mStringPool);
-		mBuilder->setRuntime(mRuntime);
-	}
-
-	if (!mSetupBasicBlock) {
-		mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Setup", mFunction);
-	}
-	mBasicBlocks.append(mSetupBasicBlock);
-	mCurrentBasicBlock = mSetupBasicBlock;
+	llvm::BasicBlock *start = llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction);
+	mBasicBlocks.append(start);
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
-	qDebug() << "Generating basic blocks";
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	mBuilder->setInsertPoint(start);
 
-	if (mIsMainScope) mBasicBlocks.append(llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction));
+	generateLocalVariables();
+
+	if (!basicBlockGenerationPass(&func->mBlock)) return false;
+
+	mCurrentBasicBlockIt = mBasicBlocks.begin();
+	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+	mBuilder->setInsertPoint(start);
+
+	//Store parameters to variables
+	QList<CBFunction::Parameter>::ConstIterator pI = cbFunc->parameters().begin();
+	for (llvm::Function::arg_iterator argI = mFunction->arg_begin(); argI != mFunction->arg_end(); ++argI) {
+		mBuilder->store(pI->mVariableSymbol, argI);
+		pI++;
+	}
+
+	if (!generate(&func->mBlock)) return false;
+
+	if (!mCurrentBasicBlock->getTerminator()) { //No return
+		if (!generateDestructors()) return false;
+		mBuilder->returnValue(mReturnType, Value(mReturnType, mReturnType->defaultValue()));
+	}
+	return true;
+}
+
+bool FunctionCodeGenerator::generateMainScope(ast::Block *n) {
+	assert(mFunction);
+	mReturnType = 0;
+	mBasicBlocks.clear();
+	createBuilder();
+
+	qDebug() << "Generating basic blocks";
+	mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Setup", mFunction);
+	mBasicBlocks.append(mSetupBasicBlock);
+	mStringLiteralInitializationBasicBlock = mSetupBasicBlock;
+
+	mBasicBlocks.append(llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction));
+	mStringLiteralInitializationExitBasicBlock = mBasicBlocks.last();
+
 	if (!basicBlockGenerationPass(n)) return false;
 	qDebug() << mBasicBlocks.size() << " basic blocks created";
 
@@ -78,27 +109,34 @@ bool FunctionCodeGenerator::generateFunctionCode(ast::Block *n) {
 	qDebug() << "Generating local variables";
 	if (!generateLocalVariables()) return false;
 
-	if (mIsMainScope) {
-		nextBasicBlock();
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-	}
+	nextBasicBlock();
+	mBuilder->setInsertPoint(mCurrentBasicBlock);
 
 	qDebug() << "Generating code";
 	if (!generate(n)) return false;
 	qDebug() << "Generating destructors";
 	if (!generateDestructors()) return false;
 	qDebug() << "Generating finished";
-	if (mIsMainScope) mBuilder->irBuilder().CreateRetVoid();
+	mBuilder->irBuilder().CreateRetVoid();
 
 	return true;
 }
 
 void FunctionCodeGenerator::generateStringLiterals() {
 	mCurrentBasicBlockIt = mBasicBlocks.begin();
-	mBuilder->setInsertPoint(mSetupBasicBlock);
+	mBuilder->setInsertPoint(mStringLiteralInitializationBasicBlock);
 	mStringPool->generateStringLiterals(mBuilder);
 	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
+	mBuilder->branch(mStringLiteralInitializationExitBasicBlock);
+}
+
+void FunctionCodeGenerator::createBuilder() {
+	if (!mBuilder) {
+		mBuilder = new Builder(mFunction->getContext());
+		mExprGen.setBuilder(mBuilder);
+		mBuilder->setStringPool(mStringPool);
+		mBuilder->setRuntime(mRuntime);
+	}
 }
 
 bool FunctionCodeGenerator::generate(ast::Node *n) {
@@ -289,6 +327,13 @@ bool FunctionCodeGenerator::generate(ast::Exit *n) {
 }
 
 bool FunctionCodeGenerator::generate(ast::Return *n) {
+	if (mReturnType) {
+		if (!generateDestructors()) return false;
+		mBuilder->returnValue(mReturnType, mExprGen.generate(n->mValue));
+		nextBasicBlock();
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		return true;
+	}
 	assert(0); return false;
 }
 
@@ -490,10 +535,11 @@ bool FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {
 			case ast::Node::ntGosub:
 			case ast::Node::ntGoto:
 			case ast::Node::ntExit:
+			case ast::Node::ntReturn:
 				addBasicBlock(); break;
 			case ast::Node::ntSelectStatement:
 				v = basicBlockGenerationPass((ast::SelectStatement*)s); break;
-
+			default: continue;
 		}
 		if (!v) valid = false;
 	}

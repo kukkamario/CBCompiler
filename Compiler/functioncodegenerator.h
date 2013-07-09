@@ -10,10 +10,9 @@
 #include "expressioncodegenerator.h"
 #include "builder.h"
 class QFile;
+class CBFunction;
 /**
  * @brief The FunctionCodeGenerator class generates llvm-ir for a function. It expects AST and Scope to valid.
- *
- * @author Lassi Hämäläinen
  */
 class FunctionCodeGenerator: public QObject{
 		Q_OBJECT
@@ -30,7 +29,6 @@ class FunctionCodeGenerator: public QObject{
 		 * @param func The function in which generateFunctionCode generates the llvm-ir.
 		 */
 		void setFunction(llvm::Function *func);
-		void setIsMainScope(bool t);
 		void setScope(Scope *scope);
 		void setSetupBasicBlock(llvm::BasicBlock *bb);
 
@@ -40,21 +38,22 @@ class FunctionCodeGenerator: public QObject{
 		 */
 		void setStringPool(StringPool *stringPool);
 
+		bool generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc);
+
 		/**
-		 * @brief generateFunctionCode generates llvm-IR code for a AST tree.
+		 * @brief generateMainScope generates llvm-IR code for a AST tree.
 		 *
 		 * llvm::Function where llvm-IR is inserted have to be set using setFunction. The scope should be specificated with setScope.
-		 * @param n The function code block that contains AST.
+		 * @param n The block that contains AST.
 		 * @return True, if generation succeeded, otherwise false
 		 */
-		bool generateFunctionCode(ast::Block *n);
+		bool generateMainScope(ast::Block *n);
 
 		void generateStringLiterals();
-
-		bool isMainScope()const{return mIsMainScope;}
 		Scope *scope() const {return mScope;}
 		llvm::Function *function()const{return mFunction;}
 		Runtime *runtime() const {return mRuntime;}
+		void createBuilder();
 	private:
 		bool generate(ast::Node *n);
 		bool generate(ast::IfStatement *n);
@@ -100,7 +99,6 @@ class FunctionCodeGenerator: public QObject{
 		void popExit() { mExitStack.pop(); }
 		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
 
-		bool mIsMainScope;
 		Scope *mScope;
 		Builder *mBuilder;
 		llvm::Function *mFunction;
@@ -113,6 +111,9 @@ class FunctionCodeGenerator: public QObject{
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
+		ValueType *mReturnType;
+		llvm::BasicBlock *mStringLiteralInitializationBasicBlock;
+		llvm::BasicBlock *mStringLiteralInitializationExitBasicBlock;
 	public slots:
 
 	signals:
