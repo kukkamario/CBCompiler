@@ -7,10 +7,12 @@
 
 using namespace gfx;
 CBEXPORT void CBF_drawscreen() {
+	//printf("DrawScreen\n");
 	Window::instance()->drawscreen();
 }
 
 CBEXPORT void CBF_screenIII(int w, int h, int mode) {
+	//printf("Screen\n");
 	Window::WindowMode windowMode = Window::Windowed;
 	switch(mode) {
 		case 0:
@@ -30,6 +32,7 @@ CBEXPORT void CBF_screenII(int w, int h) {
 }
 
 CBEXPORT void CBF_colorIII(int r, int g, int b) {
+	//printf("Color %i, %i, %i\n", r, g, b);
 	setDrawColor(al_map_rgb(r, g, b));
 }
 
@@ -43,6 +46,7 @@ CBEXPORT void CBF_cls() {
 }
 
 CBEXPORT void CBF_clsColorIII(int r, int g, int b) {
+	//printf("ClsColor %i, %i, %i\n", r, g, b);
 	Window::instance()->setBackgroundColor(al_map_rgb(r, g, b));
 }
 
@@ -55,6 +59,7 @@ CBEXPORT void CBF_lineFFFF(float x1, float y1, float x2, float y2) {
 }
 
 CBEXPORT void CBF_circleFFF(float x, float y, float d) {
+	//printf("Circle %f, %f, %f\n", x, y, d);
 	drawCircle(x, y, d);
 }
 
