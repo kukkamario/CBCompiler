@@ -16,8 +16,10 @@
 #include "booleanvaluetype.h"
 #include "arraysymbol.h"
 #include "labelsymbol.h"
+#include "cbfunction.h"
 #include <QString>
 #include <QDebug>
+#include "constantexpressionevaluator.h"
 
 SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
@@ -390,6 +392,79 @@ bool SymbolCollectorTypeChecker::run(ast::Block *block, Scope *scope) {
 	return valid;
 }
 
+CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalScope(ast::FunctionDefinition *func, Scope *globalScope) {
+	mScope = globalScope;
+	mLine = func->mLine;
+	mFile = func->mFile;
+	Symbol *sym = mScope->find(func->mName);
+	FunctionSymbol *funcSym = 0;
+	if (sym) {
+		if (sym->type() != Symbol::stFunctionOrCommand) {
+			emit error(ErrorCodes::ecSymbolAlreadyDefinedWithDifferentType, tr("Symbol \"%1\" already defined").arg(func->mName), mLine, mFile);
+			return 0;
+		}
+		funcSym = static_cast<FunctionSymbol*>(sym);
+	}
+	else {
+		funcSym = new FunctionSymbol(func->mName);
+		globalScope->addSymbol(funcSym);
+	}
+
+	//Function local scope
+	Scope *funcScope = new Scope(func->mName, globalScope);
+
+	QList<CBFunction::Parameter> paramList;
+	bool valid = true;
+	foreach (const ast::FunctionParametreDefinition &param, func->mParams) {
+		VariableSymbol *var = declareVariable(&param.mVariable);
+
+		if (!var) valid = false;
+		CBFunction::Parameter p;
+		p.mVariableSymbol = var;
+
+		if (param.mDefaultValue) {
+			mConstEval->setCodeFile(mFile);
+			mConstEval->setCodeLine(mLine);
+			p.mDefaultValue = mConstEval->evaluate(param.mDefaultValue);
+			if (!p.mDefaultValue.isValid()) valid = false;
+		}
+		paramList.append(p);
+
+		funcScope->addSymbol(var);
+	}
+	if (!valid) return false;
+
+	//Function return type
+	ValueType *retType = mRuntime->findValueType(valueTypeFromVarType(func->mRetType));
+
+	CBFunction *function = new CBFunction(func->mName, retType, paramList, funcScope, mLine, mFile);
+
+	//Exactly same function overload already defined
+	Function *otherFunction = 0;
+	if (otherFunction = funcSym->exactMatch(function->paramTypes())) {
+		if (otherFunction->isRuntimeFunction()) {
+			emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined in the runtime").arg(func->mName), mLine, mFile);
+		}
+		else {
+			if (otherFunction->line() && otherFunction->file()) {
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined at line %2 in file \"%3\"").arg(func->mName, QString::number(otherFunction->line()), otherFunction->file()->fileName()), mLine, mFile);
+			}
+			else {
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined").arg(func->mName), mLine, mFile);
+			}
+		}
+		return 0;
+	}
+
+	//Add function overload to FunctionSymbol
+	funcSym->addFunction(function);
+	return function;
+}
+
+void SymbolCollectorTypeChecker::setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval) {
+	mConstEval = constEval;
+}
+
 ValueType *SymbolCollectorTypeChecker::typeCheckExpression(ast::Node *s) {
 	mExpressionLevel++;
 	ValueType *ret = typeCheck(s);
@@ -593,39 +668,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::VariableDefinition *s) {
 	mLine = s->mLine;
 	for (QList<ast::Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
 		ast::Variable *var = *i;
-
-		Symbol *sym = mScope->find(var->mName);
-		if (sym) {
-			//TODO: better error messages
-			if (sym->type() == Symbol::stVariable) {
-				emit error(ErrorCodes::ecVariableAlreadyDefined,
-						   tr("Variable \"%1\" already defined at line %2 in file \"%3\"").arg(
-							   var->mName, QString::number(sym->line()), sym->file()->fileName())
-						   , mLine, mFile);
-				valid = false;
-				continue;
-			}
-			else {
-				emit error(ErrorCodes::ecVariableAlreadyDefined, tr("Symbol \"%1\" already defined").arg(var->mName), mLine, mFile);
-				valid = false;
-				continue;
-			}
-		}
-		else {
-			if (var->mVarType != ast::Variable::TypePtr) {
-				VariableSymbol *varSym = new VariableSymbol(var->mName, mRuntime->findValueType(valueTypeFromVarType(var->mVarType)), mFile, mLine);
-				mScope->addSymbol(varSym);
-			}
-			else {
-				ValueType *valType = checkTypePointerType(var->mTypeName);
-				if (!valType) {
-					valid = false;
-					continue;
-				}
-				VariableSymbol *varSym = new VariableSymbol(var->mName, valType, mFile, mLine);
-				mScope->addSymbol(varSym);
-			}
-		}
+		if (!declareVariable(var)) valid = false;
 	}
 	return valid;
 }
@@ -946,6 +989,40 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::V
 		VariableSymbol *varSym = new VariableSymbol(name, vt, mFile, mLine);
 		mScope->addSymbol(varSym);
 		return vt;
+	}
+}
+
+VariableSymbol *SymbolCollectorTypeChecker::declareVariable(const ast::Variable *var) {
+	Symbol *sym = mScope->find(var->mName);
+	if (sym) {
+		//TODO: better error messages
+		if (sym->type() == Symbol::stVariable) {
+			emit error(ErrorCodes::ecVariableAlreadyDefined,
+					   tr("Variable \"%1\" already defined at line %2 in file \"%3\"").arg(
+						   var->mName, QString::number(sym->line()), sym->file()->fileName())
+					   , mLine, mFile);
+			return 0;
+		}
+		else {
+			emit error(ErrorCodes::ecVariableAlreadyDefined, tr("Symbol \"%1\" already defined").arg(var->mName), mLine, mFile);
+			return 0;
+		}
+	}
+	else {
+		if (var->mVarType != ast::Variable::TypePtr) {
+			VariableSymbol *varSym = new VariableSymbol(var->mName, mRuntime->findValueType(valueTypeFromVarType(var->mVarType)), mFile, mLine);
+			mScope->addSymbol(varSym);
+			return varSym;
+		}
+		else {
+			ValueType *valType = checkTypePointerType(var->mTypeName);
+			if (!valType) {
+				return 0;
+			}
+			VariableSymbol *varSym = new VariableSymbol(var->mName, valType, mFile, mLine);
+			mScope->addSymbol(varSym);
+			return varSym;
+		}
 	}
 }
 

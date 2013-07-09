@@ -6,7 +6,10 @@
 class Scope;
 class ValueType;
 class Runtime;
+class VariableSymbol;
 class ArraySymbol;
+class ConstantExpressionEvaluator;
+class CBFunction;
 
 class SymbolCollectorTypeChecker : public QObject {
 		Q_OBJECT
@@ -14,14 +17,15 @@ class SymbolCollectorTypeChecker : public QObject {
 		SymbolCollectorTypeChecker();
 		void setRuntime(Runtime *r) {mRuntime = r;}
 		bool run(ast::Block *block, Scope *scope);
+		CBFunction *checkFunctionDefinitionAndAddToGlobalScope(ast::FunctionDefinition *func, Scope *globalScope);
 		void setForceVariableDeclaration(bool s) {mForceVariableDeclaration = s;}
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
+		void setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval);
 	private:
 		struct CodeLineInfo {
 				CodeLineInfo() : mFile(0), mLine(0) {}
 				CodeLineInfo(int line, QFile *f) : mLine(line), mFile(f) {}
-
 				int mLine;
 				QFile *mFile;
 		};
@@ -65,7 +69,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool tryCastToBoolean(ValueType *t);
 
 		ValueType *checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName = QString());
-
+		VariableSymbol *declareVariable(const ast::Variable *var);
 		void replaceParentBlockNode(ast::Node *search, ast::Node *replace);
 
 		bool mForceVariableDeclaration;
@@ -80,6 +84,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool insideExpression() { return mExpressionLevel > 0; }
 		int mExpressionLevel;
 		ast::Block *mParentBlock;
+		ConstantExpressionEvaluator *mConstEval;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);
