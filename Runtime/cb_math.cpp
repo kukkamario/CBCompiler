@@ -8,11 +8,11 @@ CBEXPORT float CBF_sinF(float f) {
 }
 
 CBEXPORT float CBF_cosF(float f) {
-	return sin(toRad(f));
+	return cos(toRad(f));
 }
 
 CBEXPORT float CBF_tanF(float f) {
-	return sin(toRad(f));
+	return tan(toRad(f));
 }
 
 CBEXPORT float CBF_asinF(float f) {
