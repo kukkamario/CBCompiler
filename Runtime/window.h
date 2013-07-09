@@ -23,6 +23,7 @@ class Window : RenderTarget{
 		bool activate();
 		bool deactivate();
 		void drawscreen();
+		void cls();
 
 		int fps() const { return mFPS; }
 

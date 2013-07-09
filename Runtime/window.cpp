@@ -71,6 +71,7 @@ void Window::resize(int width, int height, Window::WindowMode windowMode) {
 
 	if (windowMode == mWindowMode) {
 		al_resize_display(mDisplay, width, height);
+		return;
 	}
 
 
@@ -132,9 +133,11 @@ void Window::drawscreen() {
 		mFPSCounter = 0;
 	}
 
+	cls();
+}
 
+void Window::cls() {
 	activate();
-
 	al_clear_to_color(mBackgroundColor);
 }
 
