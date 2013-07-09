@@ -1427,12 +1427,12 @@ ast::FunctionParametreDefinition Parser::expectFunctionParametreDefinition(Parse
 	expectVariableOrTypePtrDefinition(&ret.mVariable, i);
 	if (mStatus == Error) return ret;
 
+	ret.mDefaultValue = 0;
 	if (i->mType == Token::opEqual) {
 		i++;
 		ret.mDefaultValue = expectExpression(i);
 		if (mStatus == Error) return ret;
 	}
-	ret.mDefaultValue = 0;
 	return ret;
 }
 
