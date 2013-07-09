@@ -169,7 +169,6 @@ struct Unary : Node {
 };
 
 struct FunctionParametreDefinition {
-		~FunctionParametreDefinition() { if (mDefaultValue) delete mDefaultValue; }
 		Variable mVariable;
 		Node *mDefaultValue; //Null if not specified
 };
