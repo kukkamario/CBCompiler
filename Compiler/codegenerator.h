@@ -26,6 +26,8 @@ class CodeGenerator : public QObject{
 		bool calculateConstants(ast::Program *program);
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
+		bool generateFunctions();
+		bool generateMainScope(ast::Block *block);
 
 		void addPredefinedConstantSymbols();
 
@@ -40,7 +42,8 @@ class CodeGenerator : public QObject{
 		Scope mGlobalScope;
 		Scope mMainScope;
 		FunctionCodeGenerator mFuncCodeGen;
-		QList<CBFunction*> mCBFunctions;
+		QMap<ast::FunctionDefinition *, CBFunction *> mCBFunctions;
+
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

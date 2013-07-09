@@ -15,6 +15,7 @@
 #include "conversionhelper.h"
 #include "cbfunction.h"
 #include <fstream>
+#include "cbfunction.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 #ifndef M_PI
@@ -31,6 +32,7 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	mTypeChecker.setRuntime(&mRuntime);
 	mTypeChecker.setGlobalScope(&mGlobalScope);
 	mFuncCodeGen.setStringPool(&mStringPool);
+	mTypeChecker.setConstantExpressionEvaluator(&mConstEval);
 
 	connect(&mConstEval, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
 	connect(&mConstEval, SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
@@ -88,16 +90,15 @@ bool CodeGenerator::generate(ast::Program *program) {
 #endif
 	if (!(mainScopeValid && functionLocalScopesValid)) return false;
 
-	//TODO: User functions
-
-	mFuncCodeGen.setFunction(mRuntime.cbMain());
-	mFuncCodeGen.setScope(&mMainScope);
-	mFuncCodeGen.setRuntime(&mRuntime);
-
-	mFuncCodeGen.setIsMainScope(true);
 	qDebug() << "Starting code generation";
-	bool valid =  mFuncCodeGen.generateFunctionCode(&program->mMainBlock);
+	mFuncCodeGen.setRuntime(&mRuntime);
+	bool valid = true;
+	valid &= generateMainScope(&program->mMainBlock);
+	valid &= generateFunctions();
+
 	mFuncCodeGen.generateStringLiterals();
+
+
 	return valid;
 }
 
@@ -156,86 +157,14 @@ bool CodeGenerator::addRuntimeFunctions() {
 bool CodeGenerator::addFunctions(ast::Program *program) {
 	bool valid = true;
 	for (QList<ast::FunctionDefinition*>::ConstIterator i = program->mFunctions.begin(); i != program->mFunctions.end(); i++) {
-		ast::FunctionDefinition *funcDef = *i;
-		QList<CBFunction::Parametre> params;
-		bool funcValid = true;
-		for (QList<ast::FunctionParametreDefinition>::ConstIterator i = funcDef->mParams.begin(), end = funcDef->mParams.end(); i != end; ++i) {
-			const ast::FunctionParametreDefinition &paramDef = *i;
-			if (mGlobalScope.find(paramDef.mVariable.mName)) {
-				emit error(ErrorCodes::ecParametreSymbolAlreadyDefined,
-						   tr("Parametre symbol \"%1\" already defined").arg(paramDef.mVariable.mName),
-						   funcDef->mLine, funcDef->mFile);
-				funcValid = false;
-				continue;
-			}
-			CBFunction::Parametre param;
-			param.mName = paramDef.mVariable.mName;
-			if (paramDef.mDefaultValue) {
-				mConstEval.setCodeFile(funcDef->mFile);
-				mConstEval.setCodeLine(funcDef->mLine);
-				param.mDefaultValue = mConstEval.evaluate(paramDef.mDefaultValue);
-				if (!param.mDefaultValue.isValid())  {
-					funcValid = false;
-				}
-			}
 
-			if (paramDef.mVariable.mVarType != ast::Variable::TypePtr) {
-				param.mType = mRuntime.findValueType(valueTypeFromVarType(paramDef.mVariable.mVarType));
-			}
-			else {
-				TypeSymbol *ts = findTypeSymbol(paramDef.mVariable.mTypeName, funcDef->mFile, funcDef->mLine);
-				if (!ts) {
-					funcValid = false;
-					continue;
-				}
-				param.mType = ts->typePointerValueType();
-			}
-			params.append(param);
-		}
-		if (!funcValid) {
+		CBFunction *func = mTypeChecker.checkFunctionDefinitionAndAddToGlobalScope(*i, &mGlobalScope);
+		if (!func) {
 			valid = false;
 			continue;
 		}
-
-		ValueType *retT = mRuntime.findValueType(valueTypeFromVarType(funcDef->mRetType));
-
-		Symbol *sym;
-		FunctionSymbol *funcSym;
-		if (sym = mGlobalScope.find(funcDef->mName)) {
-			if (sym->type() == Symbol::stFunctionOrCommand) {
-				emit error(ErrorCodes::ecSymbolAlreadyDefined,
-						   tr("Symbol \"%1\" already defined at line %2 in file %3").arg(funcDef->mName, QString::number(sym->line()), sym->file()->fileName()),
-						   funcDef->mLine, funcDef->mFile);
-				valid = false;
-				continue;
-			}
-			funcSym = static_cast<FunctionSymbol*>(sym);
-		}
-		else {
-			funcSym = new FunctionSymbol(funcDef->mName);
-			mGlobalScope.addSymbol(funcSym);
-		}
-
-		CBFunction *cbFunc = new CBFunction(funcDef->mName, retT, params, funcDef->mLine, funcDef->mFile);
-		Function *otherFunc;
-		if ((otherFunc = funcSym->exactMatch(cbFunc->paramTypes()))) {
-			if (otherFunc->isRuntimeFunction()) {
-				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("The function \"%1\" already defined in the runtime library").arg(funcDef->mName), funcDef->mLine, funcDef->mFile);
-				valid = false;
-				continue;
-			}
-			else {
-				emit error(ErrorCodes::ecFunctionAlreadyDefined,
-						   tr("The function \"%1\" already defined at line %2 in file \"%3\"").arg(funcDef->mName, QString::number(otherFunc->line()),otherFunc->file()->fileName()),
-						   funcDef->mLine, funcDef->mFile);
-				valid = false;
-				continue;
-			}
-		}
-		cbFunc->scope()->setParent(&mGlobalScope);
-		cbFunc->setBlock(&funcDef->mBlock);
-		mCBFunctions.append(cbFunc);
-		funcSym->addFunction(cbFunc);
+		func->generateFunction(&mRuntime);
+		mCBFunctions[*i] = func;
 	}
 	return valid;
 }
@@ -246,9 +175,9 @@ bool CodeGenerator::checkMainScope(ast::Program *program) {
 
 bool CodeGenerator::checkFunctions() {
 	bool valid = true;
-	for (QList<CBFunction*>::ConstIterator i = mCBFunctions.begin(), end = mCBFunctions.end(); i != end; ++i) {
-		mTypeChecker.setReturnValueType((*i)->returnValue());
-		if (!mTypeChecker.run((*i)->block(), (*i)->scope())) valid = false;
+	for (QMap<ast::FunctionDefinition *, CBFunction *>::ConstIterator i = mCBFunctions.begin(), end = mCBFunctions.end(); i != end; ++i) {
+		mTypeChecker.setReturnValueType(i.value()->returnValue());
+		if (!mTypeChecker.run(&i.key()->mBlock, i.value()->scope())) valid = false;
 	}
 	return valid;
 }
@@ -379,6 +308,22 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 
 
 	return valid;
+}
+
+bool CodeGenerator::generateFunctions() {
+	bool valid = true;
+	for (QMap<ast::FunctionDefinition *, CBFunction *>::ConstIterator i = mCBFunctions.begin(); i != mCBFunctions.end(); ++i) {
+		mFuncCodeGen.setFunction(i.value()->function());
+		if (!mFuncCodeGen.generateCBFunction(i.key(), i.value()))
+			valid = false;
+	}
+	return valid;
+}
+
+bool CodeGenerator::generateMainScope(ast::Block *block) {
+	mFuncCodeGen.setFunction(mRuntime.cbMain());
+	mFuncCodeGen.setScope(&mMainScope);
+	return mFuncCodeGen.generateMainScope(block);
 }
 
 void CodeGenerator::addPredefinedConstantSymbols() {
