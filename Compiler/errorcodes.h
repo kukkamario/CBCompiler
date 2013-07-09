@@ -79,6 +79,7 @@ enum ErrorCode {
 	ecVariableAlreadyDefined,
 	ecParametreSymbolAlreadyDefined,
 	ecFunctionAlreadyDefined,
+	ecSymbolAlreadyDefinedWithDifferentType,
 	ecCantFindSymbol,
 	ecNotCommand,
 	ecExpectingValueAfterReturn,
