@@ -412,7 +412,7 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 
 	//Function local scope
 	Scope *funcScope = new Scope(func->mName, globalScope);
-
+	mScope = funcScope;
 	QList<CBFunction::Parameter> paramList;
 	bool valid = true;
 	foreach (const ast::FunctionParametreDefinition &param, func->mParams) {
@@ -429,8 +429,6 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 			if (!p.mDefaultValue.isValid()) valid = false;
 		}
 		paramList.append(p);
-
-		funcScope->addSymbol(var);
 	}
 	if (!valid) return false;
 
