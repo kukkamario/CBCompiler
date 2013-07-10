@@ -20,7 +20,7 @@ class CodeGenerator : public QObject{
 		bool createExecutable(const QString &path);
 	private:
 		bool addRuntimeFunctions();
-		bool addFunctions(ast::Program *program);
+		bool addFunctions(const QList<ast::FunctionDefinition*> &functions);
 		bool checkMainScope(ast::Program *program);
 		bool checkFunctions();
 		bool calculateConstants(ast::Program *program);
@@ -28,6 +28,7 @@ class CodeGenerator : public QObject{
 		bool addTypesToScope(ast::Program *program);
 		bool generateFunctions();
 		bool generateMainScope(ast::Block *block);
+		void createBuilder();
 
 		void addPredefinedConstantSymbols();
 
@@ -43,7 +44,7 @@ class CodeGenerator : public QObject{
 		Scope mMainScope;
 		FunctionCodeGenerator mFuncCodeGen;
 		QMap<ast::FunctionDefinition *, CBFunction *> mCBFunctions;
-
+		Builder *mBuilder;
 	signals:
 		void error(int code, QString msg, int line, QFile *file);
 		void warning(int code, QString msg, int line, QFile *file);

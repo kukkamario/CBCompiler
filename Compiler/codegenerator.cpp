@@ -16,6 +16,7 @@
 #include "cbfunction.h"
 #include <fstream>
 #include "cbfunction.h"
+#include "variablesymbol.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 #ifndef M_PI
@@ -26,12 +27,12 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	QObject(parent),
 	mGlobalScope("Global"),
 	mMainScope("Main", &mGlobalScope),
-	mFuncCodeGen(this)
+	mFuncCodeGen(this),
+	mBuilder(0)
 {
 	mConstEval.setGlobalScope(&mGlobalScope);
 	mTypeChecker.setRuntime(&mRuntime);
 	mTypeChecker.setGlobalScope(&mGlobalScope);
-	mFuncCodeGen.setStringPool(&mStringPool);
 	mTypeChecker.setConstantExpressionEvaluator(&mConstEval);
 
 	connect(&mConstEval, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
@@ -55,6 +56,8 @@ bool CodeGenerator::initialize(const QString &runtimeFile, const Settings &setti
 
 	mValueTypes.append(mRuntime.valueTypes());
 
+	createBuilder();
+	mFuncCodeGen.setBuilder(mBuilder);
 	return addRuntimeFunctions();
 }
 
@@ -67,7 +70,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	qDebug() << "Adding globals to scopes";
 	bool globalsValid = addGlobalsToScope(program);
 	qDebug() << "Adding functions to scopes";
-	bool functionDefinitionsValid = addFunctions(program);
+	bool functionDefinitionsValid = addFunctions(program->mFunctions);
 	if (!(constantsValid && globalsValid && typesValid && functionDefinitionsValid)) return false;
 
 	qDebug() << "Checking main scope";
@@ -97,8 +100,6 @@ bool CodeGenerator::generate(ast::Program *program) {
 	valid &= generateFunctions();
 
 	mFuncCodeGen.generateStringLiterals();
-
-
 	return valid;
 }
 
@@ -154,9 +155,9 @@ bool CodeGenerator::addRuntimeFunctions() {
 	return true;
 }
 
-bool CodeGenerator::addFunctions(ast::Program *program) {
+bool CodeGenerator::addFunctions(const QList<ast::FunctionDefinition*> &functions) {
 	bool valid = true;
-	for (QList<ast::FunctionDefinition*>::ConstIterator i = program->mFunctions.begin(); i != program->mFunctions.end(); i++) {
+	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
 
 		CBFunction *func = mTypeChecker.checkFunctionDefinitionAndAddToGlobalScope(*i, &mGlobalScope);
 		if (!func) {
@@ -231,23 +232,24 @@ bool CodeGenerator::calculateConstants(ast::Program *program) {
 
 bool CodeGenerator::addGlobalsToScope(ast::Program *program) {
 	bool valid = true;
+	mTypeChecker.setScope(&mGlobalScope);
 	for (QList<ast::GlobalDefinition*>::ConstIterator i = program->mGlobals.begin(); i != program->mGlobals.end(); i++) {
 		ast::GlobalDefinition *globalDef = *i;
 		for (QList<ast::Variable*>::ConstIterator v = globalDef->mDefinitions.begin(); v != globalDef->mDefinitions.end(); v++) {
 			ast::Variable *var = *v;
-			Symbol *sym;
-			if (sym = mGlobalScope.find(var->mName)) {
-				if (sym->file() == 0) {
-					emit error(ErrorCodes::ecSymbolAlreadyDefinedInRuntime, tr("Symbol \"%1\" already defined in runtime library").arg(var->mName), globalDef->mLine, globalDef->mFile);
-				}
-				else {
-					emit error(ErrorCodes::ecSymbolAlreadyDefined,
-							   tr("Symbol \"%1\" at line %2 in file %3 already defined").arg(
-								   var->mName, QString::number(sym->line()), sym->file()->fileName()), globalDef->mLine, globalDef->mFile);
-				}
+			VariableSymbol *varSym = mTypeChecker.declareVariable(var);
+			if (!varSym) {
 				valid = false;
 				continue;
 			}
+			varSym->setAlloca(mBuilder->createGlobalVariable(
+						varSym->valueType()->llvmType(),
+						false,
+						llvm::GlobalValue::PrivateLinkage,
+						varSym->valueType()->defaultValue(),
+						("CB_Global_" + varSym->name()).toStdString()
+						));
+
 		}
 	}
 	return valid;
@@ -324,6 +326,12 @@ bool CodeGenerator::generateMainScope(ast::Block *block) {
 	mFuncCodeGen.setFunction(mRuntime.cbMain());
 	mFuncCodeGen.setScope(&mMainScope);
 	return mFuncCodeGen.generateMainScope(block);
+}
+
+void CodeGenerator::createBuilder() {
+	mBuilder = new Builder(mRuntime.module()->getContext());
+	mBuilder->setRuntime(&mRuntime);
+	mBuilder->setStringPool(&mStringPool);
 }
 
 void CodeGenerator::addPredefinedConstantSymbols() {

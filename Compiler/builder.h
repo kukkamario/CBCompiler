@@ -19,6 +19,7 @@ class Builder {
 		Builder(llvm::LLVMContext &context);
 		void setRuntime(Runtime *r);
 		void setStringPool(StringPool *s);
+		StringPool *stringPool() const { return mStringPool; }
 		void setInsertPoint(llvm::BasicBlock *basicBlock);
 		llvm::IRBuilder<> & irBuilder() { return mIRBuilder; }
 		Value toInt(const Value &v);
@@ -138,7 +139,6 @@ class Builder {
 	private:
 		llvm::IRBuilder<> mIRBuilder;
 		QStack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
-		QList<llvm::Value*> mStringData;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
 };

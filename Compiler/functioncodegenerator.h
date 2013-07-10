@@ -31,12 +31,7 @@ class FunctionCodeGenerator: public QObject{
 		void setFunction(llvm::Function *func);
 		void setScope(Scope *scope);
 		void setSetupBasicBlock(llvm::BasicBlock *bb);
-
-		/**
-		 * @brief setStringPool sets the pointer to the global string pool.
-		 * @param stringPool
-		 */
-		void setStringPool(StringPool *stringPool);
+		void setBuilder(Builder *builder);
 
 		bool generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc);
 
@@ -53,7 +48,6 @@ class FunctionCodeGenerator: public QObject{
 		Scope *scope() const {return mScope;}
 		llvm::Function *function()const{return mFunction;}
 		Runtime *runtime() const {return mRuntime;}
-		void createBuilder();
 	private:
 		bool generate(ast::Node *n);
 		bool generate(ast::IfStatement *n);
@@ -110,7 +104,6 @@ class FunctionCodeGenerator: public QObject{
 		QStack<QVector<llvm::BasicBlock*>::ConstIterator> mExitStack;
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
-		StringPool *mStringPool;
 		ValueType *mReturnType;
 		llvm::BasicBlock *mStringLiteralInitializationBasicBlock;
 		llvm::BasicBlock *mStringLiteralInitializationExitBasicBlock;

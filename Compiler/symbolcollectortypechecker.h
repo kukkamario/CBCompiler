@@ -20,8 +20,10 @@ class SymbolCollectorTypeChecker : public QObject {
 		CBFunction *checkFunctionDefinitionAndAddToGlobalScope(ast::FunctionDefinition *func, Scope *globalScope);
 		void setForceVariableDeclaration(bool s) {mForceVariableDeclaration = s;}
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
+		void setScope(Scope *s) { mScope = s; }
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
 		void setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval);
+		VariableSymbol *declareVariable(const ast::Variable *var);
 	private:
 		struct CodeLineInfo {
 				CodeLineInfo() : mFile(0), mLine(0) {}
@@ -69,7 +71,6 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool tryCastToBoolean(ValueType *t);
 
 		ValueType *checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName = QString());
-		VariableSymbol *declareVariable(const ast::Variable *var);
 		void replaceParentBlockNode(ast::Node *search, ast::Node *replace);
 
 		bool mForceVariableDeclaration;

@@ -43,17 +43,17 @@ void FunctionCodeGenerator::setSetupBasicBlock(llvm::BasicBlock *bb) {
 	mSetupBasicBlock = bb;
 }
 
-void FunctionCodeGenerator::setStringPool(StringPool *stringPool) {
-	mStringPool = stringPool;
-	if (mBuilder) mBuilder->setStringPool(mStringPool);
+void FunctionCodeGenerator::setBuilder(Builder *builder) {
+	mBuilder = builder;
+	mExprGen.setBuilder(builder);
 }
+
 
 bool FunctionCodeGenerator::generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc) {
 	mFunction = cbFunc->function();
 	setScope(cbFunc->scope());
 	mBasicBlocks.clear();
 	mReturnType = cbFunc->returnValue();
-	createBuilder();
 
 	llvm::BasicBlock *start = llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction);
 	mBasicBlocks.append(start);
@@ -91,7 +91,6 @@ bool FunctionCodeGenerator::generateMainScope(ast::Block *n) {
 	assert(mFunction);
 	mReturnType = 0;
 	mBasicBlocks.clear();
-	createBuilder();
 
 	qDebug() << "Generating basic blocks";
 	mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Setup", mFunction);
@@ -125,20 +124,9 @@ bool FunctionCodeGenerator::generateMainScope(ast::Block *n) {
 }
 
 void FunctionCodeGenerator::generateStringLiterals() {
-	mCurrentBasicBlockIt = mBasicBlocks.begin();
 	mBuilder->setInsertPoint(mStringLiteralInitializationBasicBlock);
-	mStringPool->generateStringLiterals(mBuilder);
-	nextBasicBlock();
+	mBuilder->stringPool()->generateStringLiterals(mBuilder);
 	mBuilder->branch(mStringLiteralInitializationExitBasicBlock);
-}
-
-void FunctionCodeGenerator::createBuilder() {
-	if (!mBuilder) {
-		mBuilder = new Builder(mFunction->getContext());
-		mExprGen.setBuilder(mBuilder);
-		mBuilder->setStringPool(mStringPool);
-		mBuilder->setRuntime(mRuntime);
-	}
 }
 
 bool FunctionCodeGenerator::generate(ast::Node *n) {
@@ -650,6 +638,9 @@ bool FunctionCodeGenerator::generateDestructors() {
 
 void FunctionCodeGenerator::nextBasicBlock() {
 	++mCurrentBasicBlockIt;
+	if (mCurrentBasicBlockIt == mBasicBlocks.end()) {
+		int argh;
+	}
 	assert(mCurrentBasicBlockIt != mBasicBlocks.end());
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
 }
