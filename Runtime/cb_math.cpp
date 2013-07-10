@@ -83,10 +83,10 @@ CBEXPORT void CBF_randomizeI(int seed) {
 	randomize(seed);
 }
 
-CBEXPORT float CBF_roundUp(float f) {
+CBEXPORT float CBF_roundUpF(float f) {
 	return ceilf(f);
 }
 
-CBEXPORT float CBF_roundDown(float f) {
+CBEXPORT float CBF_roundDownF(float f) {
 	return floorf(f);
 }
