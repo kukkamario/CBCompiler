@@ -1,0 +1,12 @@
+Global globalInt, globalFloat#, globalString As String
+globalInt = 20
+globalFloat = 13.4
+globalString = "Global string value"
+
+printGlobals()
+
+Function printGlobals%()
+	Print "GlobalInt: " + globalInt
+	Print "GlobalFloat: " + globalFloat
+	Print "GlobalString: " + globalString
+EndFunction
