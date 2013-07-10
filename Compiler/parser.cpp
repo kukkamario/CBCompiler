@@ -1665,6 +1665,7 @@ ast::Node *Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment(Parser::To
 					maybeFunction = true;
 					i++;
 					if (i->mType == Token::RightParenthese) { //Function without parameters
+						i++;
 						ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
 						ret->mFile = file;
 						ret->mLine = line;
