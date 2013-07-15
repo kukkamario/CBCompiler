@@ -6,7 +6,7 @@
 class ConstantValue {
 	public:
 		ConstantValue();
-		ConstantValue(ValueType::Type t);
+		ConstantValue(ValueType::eType t);
 		ConstantValue(bool t);
 		ConstantValue(int i);
 		ConstantValue(double d);
@@ -20,7 +20,7 @@ class ConstantValue {
 		bool operator== (const ConstantValue &o);
 		bool operator!= (const ConstantValue &o);
 		bool isValid() const{return mType != ValueType::Invalid;}
-		ValueType::Type type() const {return mType;}
+		ValueType::eType type() const {return mType;}
 
 		static ConstantValue plus(const ConstantValue &a);
 		static ConstantValue minus(const ConstantValue &a);
@@ -53,7 +53,7 @@ class ConstantValue {
 		QString typeName() const;
 		QString valueInfo() const;
 	private:
-		ValueType::Type mType;
+		ValueType::eType mType;
 		union {
 				bool mBool;
 				int mInt;

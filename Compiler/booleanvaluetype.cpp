@@ -22,7 +22,7 @@ ValueType::CastCostType BooleanValueType::castingCostToOtherValueType(ValueType 
 		case ValueType::String:
 			return 5;
 		default:
-			return maxCastCost;
+			return sMaxCastCost;
 	}
 }
 

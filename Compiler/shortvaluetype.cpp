@@ -22,7 +22,7 @@ ValueType::CastCostType ShortValueType::castingCostToOtherValueType(ValueType *t
 		case ValueType::String:
 			return 10;
 		default:
-			return maxCastCost;
+			return sMaxCastCost;
 	}
 }
 

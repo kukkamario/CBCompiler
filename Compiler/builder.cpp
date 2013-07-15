@@ -246,6 +246,10 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 	return 0;
 }
 
+llvm::Value *Builder::bitcast(llvm::Type *type, llvm::Value *val) {
+	return mIRBuilder.CreateBitCast(val, type);
+}
+
 
 Value Builder::call(Function *func, QList<Value> &params) {
 	Function::ParamList paramTypes = func->paramTypes();

@@ -7,7 +7,7 @@ class StringValueType : public ValueType {
 	public:
 		StringValueType(StringPool *strPool,Runtime *r, llvm::Module *mod);
 		QString name() const {return QObject::tr("String");}
-		Type type() const{return String;}
+		eType type() const{return String;}
 		void setStringType(llvm::Type *t) {mType = t;}
 		bool setConstructFunction(llvm::Function *func);
 		bool setAssignmentFunction(llvm::Function *func);

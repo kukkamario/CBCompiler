@@ -38,7 +38,7 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 			totalCost += (*p1i)->castingCostToOtherValueType(*p2i);
 			p1i++;
 		}
-		if (totalCost >= ValueType::maxCastCost) {
+		if (totalCost >= ValueType::sMaxCastCost) {
 			if (err) *err = oseCannotFindAny;
 			return 0;
 		}
@@ -46,7 +46,7 @@ Function *FunctionSymbol::findBestOverload(const QList<ValueType *> &paramTypes,
 	}
 	bool multiples = false;
 	Function *bestFunc = 0;
-	ValueType::CastCostType bestCost = ValueType::maxCastCost;
+	ValueType::CastCostType bestCost = ValueType::sMaxCastCost;
 
 	for (QList<Function*>::ConstIterator fi = mFunctions.begin(); fi != mFunctions.end(); fi++) {
 		Function *f = *fi;

@@ -15,13 +15,7 @@ class BooleanValueType : public ValueType {
 		 * @brief The type of ValueType.
 		 * @see ValueType::Type
 		 */
-		Type type() const{return Boolean;}
-
-		/**
-		 * @brief llvm::Type of ValueType
-		 * @return llvm::Type pointer
-		 */
-		llvm::Type *llvmType() {return mType;}
+		eType type() const{return Boolean;}
 
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over or equal to maxCastCost, cast cannot be done. */
@@ -45,7 +39,6 @@ class BooleanValueType : public ValueType {
 
 		int size() const { return 1; }
 	private:
-		llvm::Type *mType;
 };
 
 #endif // BOOLEANVALUETYPE_H

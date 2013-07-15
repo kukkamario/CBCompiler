@@ -92,10 +92,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 								result = mRuntime->booleanValueType(); break;
 						}
 						break;
-					case ValueType::NULLTypePointer:
+					case ValueType::TypePointerCommon:
 						switch (second->type()) {
 							case ValueType::TypePointer:
-							case ValueType::NULLTypePointer:
+							case ValueType::TypePointerCommon:
 								result = mRuntime->booleanValueType();
 								break;
 						}
@@ -104,7 +104,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::TypePointer:
 								if (first == second) result = mRuntime->booleanValueType();
 								break;
-							case ValueType::NULLTypePointer:
+							case ValueType::TypePointerCommon:
 								result = mRuntime->booleanValueType();
 								break;
 						}
@@ -760,7 +760,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Return *s) {
 		}
 		ValueType *retVal = typeCheckExpression(s->mValue);
 		if (!retVal) return false;
-		if (retVal->castingCostToOtherValueType(mReturnValueType) >= ValueType::maxCastCost) {
+		if (retVal->castingCostToOtherValueType(mReturnValueType) >= ValueType::sMaxCastCost) {
 			emit error(ErrorCodes::ecInvalidReturn, tr("The type of the returned value doesn't match the return type of the function"), mLine, mFile);
 			return false;
 		}
@@ -924,7 +924,7 @@ ValueType *SymbolCollectorTypeChecker::checkTypePointerType(const QString &typeN
 }
 
 bool SymbolCollectorTypeChecker::tryCastToBoolean(ValueType *t) {
-	if (t->castingCostToOtherValueType(mRuntime->booleanValueType()) >= ValueType::maxCastCost) {
+	if (t->castingCostToOtherValueType(mRuntime->booleanValueType()) >= ValueType::sMaxCastCost) {
 		emit error(ErrorCodes::ecNoCastFromTypePointer, tr("Required a value which can be casted to boolean"), mLine, mFile);
 		return false;
 	}

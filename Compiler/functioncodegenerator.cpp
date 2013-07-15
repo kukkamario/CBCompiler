@@ -638,9 +638,6 @@ bool FunctionCodeGenerator::generateDestructors() {
 
 void FunctionCodeGenerator::nextBasicBlock() {
 	++mCurrentBasicBlockIt;
-	if (mCurrentBasicBlockIt == mBasicBlocks.end()) {
-		int argh;
-	}
 	assert(mCurrentBasicBlockIt != mBasicBlocks.end());
 	mCurrentBasicBlock = *mCurrentBasicBlockIt;
 }

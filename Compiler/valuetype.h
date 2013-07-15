@@ -14,7 +14,7 @@ class Builder;
 class Runtime;
 class ValueType {
 	public:
-		enum Type {
+		enum eType {
 			Invalid,
 			Integer,
 			Float,
@@ -23,17 +23,18 @@ class ValueType {
 			Byte,
 			Boolean,
 			TypePointer,
-			NULLTypePointer
+			TypePointerCommon,
+			Type
 		};
 
 		typedef unsigned int CastCostType;
-		static const CastCostType maxCastCost = 10000;
+		static const CastCostType sMaxCastCost = 10000;
 
 		ValueType(Runtime *r);
 		~ValueType() {}
 		virtual QString name() const = 0;
 		llvm::Type *llvmType() {return mType;}
-		virtual Type type() const = 0;
+		virtual eType type() const = 0;
 		virtual bool isTypePointer() const = 0;
 		virtual bool isNumber() const = 0;
 		virtual llvm::Constant *defaultValue() const = 0;
@@ -46,7 +47,7 @@ class ValueType {
 
 		bool canBeCastedToValueType(ValueType *to) const;
 		/** Calculates cost for casting this ValueType to given ValueType.
-		 *If returned cost is over or equal to maxCastCost, cast cannot be done. */
+		 *If returned cost is over or equal to sMaxCastCost, cast cannot be done. */
 		virtual CastCostType castingCostToOtherValueType(ValueType *to) const = 0;
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 		llvm::LLVMContext &context();

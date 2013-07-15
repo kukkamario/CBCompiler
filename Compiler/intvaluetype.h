@@ -11,7 +11,7 @@ class IntValueType : public ValueType {
 		/** Casts given value to this ValueType */
 		Value cast(Builder *builder, const Value &v) const;
 
-		Type type() const{return Integer;}
+		eType type() const{return Integer;}
 		llvm::Constant *constant(int v) const;
 		llvm::Constant *defaultValue() const;
 

@@ -24,7 +24,9 @@ SOURCES += \
     mathinterface.cpp \
     gfxinterface.cpp \
     systeminterface.cpp \
-    textinterface.cpp
+    textinterface.cpp \
+    cb_types.cpp \
+    types.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -36,7 +38,8 @@ HEADERS += \
     mathinterface.h \
     gfxinterface.h \
     textinterface.h \
-    systeminterface.h
+    systeminterface.h \
+    types.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll

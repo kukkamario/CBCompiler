@@ -2,6 +2,7 @@
 #include "typesymbol.h"
 #include "value.h"
 #include "runtime.h"
+#include "builder.h"
 
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
@@ -15,14 +16,20 @@ QString TypePointerValueType::name() const {
 
 ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueType *to) const {
 	if (to == this) return 0;
-	return maxCastCost;
+	if (to->type() == ValueType::TypePointerCommon) return 1;
+	return sMaxCastCost;
 }
 
 Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
-	if (v.valueType() != this) {
-		return Value();
+	if (v.valueType() == this) return v;
+
+	if (v.valueType()->isTypePointer()) {
+		if (v.isConstant()) {
+			return Value(const_cast<TypePointerValueType*>(this), defaultValue());
+		}
+		return Value(const_cast<TypePointerValueType*>(this), builder->bitcast(mType, v.value()));
 	}
-	return v;
+	return Value();
 }
 
 llvm::Constant *TypePointerValueType::defaultValue() const {
@@ -30,34 +37,33 @@ llvm::Constant *TypePointerValueType::defaultValue() const {
 }
 
 int TypePointerValueType::size() const {
-	switch (mRuntime->module()->getPointerSize()) {
-		case llvm::Module::Pointer32:
-			return 4;
-		case llvm::Module::Pointer64:
-			return 8;
-		default:
-			assert("Unknown pointer size" && 0);
-			return false;
+	return mRuntime->dataLayout().getPointerSize();
+}
+
+
+ValueType::CastCostType TypePointerCommonValueType::castingCostToOtherValueType(ValueType *to) const {
+	if (to == this) return 0;
+	if (to->isTypePointer()) return 100;
+	return sMaxCastCost;
+}
+
+Value TypePointerCommonValueType::cast(Builder *builder, const Value &v) const {
+	if (!v.valueType()->isTypePointer()) {
+		return Value();
 	}
-}
-
-
-Value NullTypePointerValueType::cast(Builder *builder, const Value &v) const {
-	return Value();
-}
-
-llvm::Constant *NullTypePointerValueType::defaultValue() const {
-	return llvm::ConstantPointerNull::get(llvm::Type::getVoidTy(mRuntime->module()->getContext())->getPointerTo());
-}
-
-int NullTypePointerValueType::size() const {
-	switch (mRuntime->module()->getPointerSize()) {
-		case llvm::Module::Pointer32:
-			return 4;
-		case llvm::Module::Pointer64:
-			return 8;
-		default:
-			assert("Unknown pointer size" && 0);
-			return false;
+	if (v.valueType()->type() == ValueType::TypePointerCommon) {
+		return v;
 	}
+	assert(v.value());
+	return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType, v.value()));
 }
+
+
+llvm::Constant *TypePointerCommonValueType::defaultValue() const {
+	return llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(mType));
+}
+
+int TypePointerCommonValueType::size() const {
+	return mRuntime->dataLayout().getPointerSize();
+}
+

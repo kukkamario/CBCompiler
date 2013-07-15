@@ -18,7 +18,7 @@ ConstantValue::ConstantValue():
 {
 }
 
-ConstantValue::ConstantValue(ValueType::Type t) :
+ConstantValue::ConstantValue(ValueType::eType t) :
 	mType(t) {
 	switch(t) {
 		case ValueType::Boolean:
@@ -259,8 +259,8 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				default:
 					return ConstantValue();
 			}
-		case ValueType::TypePointer:
-			if (b.mType == ValueType::NULLTypePointer) { // NULL = NULL
+		case ValueType::TypePointerCommon:
+			if (b.mType == ValueType::TypePointerCommon) { // NULL = NULL
 				return true;
 			}
 		default:
@@ -344,6 +344,10 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 					return *a.mData.mString != *b.mData.mString;
 				default:
 					return ConstantValue();
+			}
+		case ValueType::TypePointerCommon:
+			if (b.mType == ValueType::TypePointerCommon) {
+				return false;
 			}
 		default:
 			return ConstantValue();
@@ -1176,17 +1180,17 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 }
 
 ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
+	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
 	return a.toBool() && b.toBool();
 }
 
 ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
+	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
 	return a.toBool() || b.toBool();
 }
 
 ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b){
-	if (a.mType == ValueType::NULLTypePointer || b.mType == ValueType::NULLTypePointer) return ConstantValue();
+	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
 	return a.toBool() ^ b.toBool();
 }
 
@@ -1316,6 +1320,8 @@ QString ConstantValue::typeName() const {
 			return "Byte";
 		case ValueType::Short:
 			return "Short";
+		case ValueType::TypePointerCommon:
+			return "NULL";
 		default:
 			return "Invalid";
 	}
@@ -1335,6 +1341,8 @@ QString ConstantValue::valueInfo() const {
 			return QString::number(mData.mFloat);
 		case ValueType::String:
 			return "\"" + *mData.mString  + "\"";
+		case ValueType::TypePointerCommon:
+			return "NULL";
 		default:
 			return QString("Invalid constant value");
 	}

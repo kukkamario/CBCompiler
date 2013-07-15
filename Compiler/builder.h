@@ -22,6 +22,7 @@ class Builder {
 		StringPool *stringPool() const { return mStringPool; }
 		void setInsertPoint(llvm::BasicBlock *basicBlock);
 		llvm::IRBuilder<> & irBuilder() { return mIRBuilder; }
+
 		Value toInt(const Value &v);
 		Value toFloat(const Value &v);
 		Value toString(const Value &v);
@@ -29,6 +30,7 @@ class Builder {
 		Value toByte(const Value &v);
 		Value toBoolean(const Value &v);
 		Value toValueType(ValueType *to, const Value &v);
+
 		llvm::Value *llvmValue(const Value &v);
 		llvm::Value *llvmValue(int i);
 		llvm::Value *llvmValue(float i);
@@ -37,6 +39,9 @@ class Builder {
 		llvm::Value *llvmValue(const QString &s);
 		llvm::Value *llvmValue(bool t);
 		llvm::Value *llvmValue(const ConstantValue &v);
+
+		llvm::Value *bitcast(llvm::Type *type, llvm::Value *val);
+
 		Value call(Function *func, QList<Value> &params);
 		void branch(llvm::BasicBlock *dest);
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);

@@ -7,7 +7,7 @@ ValueType::ValueType(Runtime *r):
 }
 
 bool ValueType::canBeCastedToValueType(ValueType *to) const {
-	return castingCostToOtherValueType(to) < maxCastCost;
+	return castingCostToOtherValueType(to) < sMaxCastCost;
 }
 
 llvm::LLVMContext &ValueType::context() {

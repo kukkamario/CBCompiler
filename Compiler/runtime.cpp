@@ -7,6 +7,7 @@
 #include "bytevaluetype.h"
 #include "booleanvaluetype.h"
 #include "typepointervaluetype.h"
+#include "typevaluetype.h"
 #include "errorcodes.h"
 
 static Runtime *runtimeInstance = 0;
@@ -14,7 +15,15 @@ static Runtime *runtimeInstance = 0;
 Runtime::Runtime():
 	mModule(0),
 	mCBMain(0),
-	mValid(true) {
+	mValid(true),
+	mDataLayout(0),
+	mIntValueType(0),
+	mFloatValueType(0),
+	mStringValueType(0),
+	mShortValueType(0),
+	mByteValueType(0),
+	mBooleanValueType(0),
+	mTypePointerCommonValueType(0) {
 	assert(runtimeInstance == 0);
 	runtimeInstance = this;
 }
@@ -26,7 +35,7 @@ Runtime::~Runtime() {
 	delete mShortValueType;
 	delete mByteValueType;
 	delete mStringValueType;
-	delete mNullTypePointerValueType;
+	delete mTypePointerCommonValueType;
 	delete mFloatValueType;
 }
 
@@ -38,6 +47,8 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), 0, 0);
 		return false;
 	}
+
+	mDataLayout = new llvm::DataLayout(mModule);
 
 	if (!loadValueTypes(strPool)) return false;
 
@@ -87,6 +98,19 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_StringData\" in runtime library bitcode"), 0, 0);
 		return false;
 	}
+
+	mTypeLLVMType = mModule->getTypeByName("struct.CB_Type");
+	if (!mTypeLLVMType) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_Type\" in runtime library bitcode"), 0, 0);
+		return false;
+	}
+
+	mTypeMemberLLVMType = mModule->getTypeByName("struct.CB_TypeMember");
+	if (!mTypeMemberLLVMType) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_TypeMember\" in runtime library bitcode"), 0, 0);
+		return false;
+	}
+
 	mStringValueType->setStringType(str->getPointerTo());
 	mValueTypes.append(mStringValueType);
 
@@ -102,8 +126,11 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mBooleanValueType = new BooleanValueType(this, mModule);
 	mValueTypes.append(mBooleanValueType);
 
-	mNullTypePointerValueType = new NullTypePointerValueType(this);
-	mValueTypes.append(mNullTypePointerValueType);
+	mTypePointerCommonValueType = new TypePointerCommonValueType(this, typeMemberPointerLLVMType());
+	mValueTypes.append(mTypePointerCommonValueType);
+
+	mTypeValueType = new TypeValueType(this, typeLLVMType()->getPointerTo());
+	mValueTypes.append(mTypeValueType);
 
 	mValueTypeEnum[ValueType::Integer] = intValueType();
 	mValueTypeEnum[ValueType::Float] = floatValueType();
@@ -111,7 +138,8 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mValueTypeEnum[ValueType::Short] = shortValueType();
 	mValueTypeEnum[ValueType::Byte] = byteValueType();
 	mValueTypeEnum[ValueType::Boolean] = booleanValueType();
-	mValueTypeEnum[ValueType::NULLTypePointer] = mNullTypePointerValueType;
+	mValueTypeEnum[ValueType::TypePointerCommon] = typePointerCommonValueType();
+	mValueTypeEnum[ValueType::Type] = typeValueType();
 	return true;
 }
 
@@ -254,7 +282,7 @@ Runtime *Runtime::instance() {
 }
 
 
-ValueType *Runtime::findValueType(ValueType::Type valType) {
+ValueType *Runtime::findValueType(ValueType::eType valType) {
 	ValueType *vt = mValueTypeEnum[valType];
 	assert(vt);
 	return vt;

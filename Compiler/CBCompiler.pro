@@ -89,7 +89,8 @@ SOURCES += main.cpp \
     expressioncodegenerator.cpp \
     labelsymbol.cpp \
     builder.cpp \
-    settings.cpp
+    settings.cpp \
+    typevaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -132,4 +133,5 @@ HEADERS += \
     builder.h \
     global.h \
     warningcodes.h \
-    settings.h
+    settings.h \
+    typevaluetype.h

@@ -5,7 +5,7 @@ class TypeSymbol;
 class TypePointerValueType : public ValueType {
 	public:
 		TypePointerValueType(Runtime *r, TypeSymbol *s);
-		Type type()const{return TypePointer;}
+		eType type()const{return TypePointer;}
 		virtual QString name()const;
 		virtual CastCostType castingCostToOtherValueType(ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
@@ -18,16 +18,19 @@ class TypePointerValueType : public ValueType {
 		TypeSymbol *mTypeSymbol;
 };
 
-class NullTypePointerValueType : public ValueType {
+class TypePointerCommonValueType : public ValueType {
 	public:
-		NullTypePointerValueType(Runtime *r) :ValueType(r){}
-		Type type() const {return NULLTypePointer;}
-		QString name() const {return "NULL";}
-		CastCostType castingCostToOtherValueType(ValueType *) const {return 0;}
-		Value cast(Builder *builder, const Value &v) const;
+		TypePointerCommonValueType(Runtime *r, llvm::Type *type) : ValueType(r) { mType = type; }
+		eType type()const{return TypePointerCommon;}
+		virtual QString name() const { return "TypePointerCommon"; }
+		virtual CastCostType castingCostToOtherValueType(ValueType *to) const;
+		virtual Value cast(Builder *builder, const Value &v) const;
+		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
 		bool isNumber() const{return false;}
 		llvm::Constant *defaultValue() const;
 		int size() const;
+	private:
+		TypeSymbol *mTypeSymbol;
 };
 #endif // TYPEPOINTERVALUETYPE_H

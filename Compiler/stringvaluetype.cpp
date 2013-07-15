@@ -155,7 +155,7 @@ ValueType::CastCostType StringValueType::castingCostToOtherValueType(ValueType *
 		case Boolean:
 			return 2;
 		default:
-			return maxCastCost;
+			return sMaxCastCost;
 	}
 
 	return 0;

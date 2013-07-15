@@ -23,7 +23,7 @@ ValueType::CastCostType FloatValueType::castingCostToOtherValueType(ValueType *t
 		case Byte:
 			return 4;
 		default:
-			return maxCastCost;
+			return sMaxCastCost;
 	}
 }
 

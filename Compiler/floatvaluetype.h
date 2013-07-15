@@ -6,7 +6,7 @@ class FloatValueType : public ValueType {
 	public:
 		FloatValueType(Runtime *runtime, llvm::Module *mod);
 		QString name() const {return QObject::tr("Float");}
-		Type type()const{return Float;}
+		eType type()const{return Float;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCostType castingCostToOtherValueType(ValueType *to) const;

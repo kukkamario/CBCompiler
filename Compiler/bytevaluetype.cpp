@@ -24,7 +24,7 @@ ValueType::CastCostType ByteValueType::castingCostToOtherValueType(ValueType *to
 		case ValueType::String:
 			return 10;
 		default:
-			return maxCastCost;
+			return sMaxCastCost;
 	}
 }
 

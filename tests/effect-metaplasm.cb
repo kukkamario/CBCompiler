@@ -1,4 +1,4 @@
-Const STEPP = 1
+Const STEPP = 2
 scale# = 1.5
 pyöritys# = 1
 Dim palettiR(255)
@@ -45,5 +45,7 @@ Repeat
             Box x, y, STEPP, STEPP
         Next y
     Next x
+	Color 255,255,255
+	Text 10, 10, FPS()
     DrawScreen
 Forever

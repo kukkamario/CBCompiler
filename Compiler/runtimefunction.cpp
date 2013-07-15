@@ -6,6 +6,8 @@
 #include "intvaluetype.h"
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
+#include "typepointervaluetype.h"
+#include "typevaluetype.h"
 #include "value.h"
 #include "builder.h"
 
@@ -33,6 +35,12 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 	}
 	else if( retTy == mRuntime->byteValueType()->llvmType()) {
 		mReturnValue = mRuntime->byteValueType();
+	}
+	else if ( retTy == mRuntime->typePointerCommonValueType()->llvmType()) {
+		mReturnValue = mRuntime->typePointerCommonValueType();
+	}
+	else if ( retTy == mRuntime->typeValueType()->llvmType()) {
+		mReturnValue = mRuntime->typeValueType();
 	}
 	else if ( retTy == llvm::Type::getVoidTy(mRuntime->module()->getContext())) {
 		mReturnValue = 0;
@@ -66,6 +74,14 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		else if( *i == mRuntime->byteValueType()->llvmType()) {
 			if (paramStr.at(param) != 'b') return false;
 			mParamTypes.append(mRuntime->byteValueType());
+		}
+		else if (*i == mRuntime->typePointerCommonValueType()->llvmType()) {
+			if (paramStr.at(param) != 'm') return false;
+			mParamTypes.append(mRuntime->typePointerCommonValueType());
+		}
+		else if (*i == mRuntime->typeValueType()->llvmType()) {
+			if (paramStr.at(param) != 't') return false;
+			mParamTypes.append(mRuntime->typeValueType());
 		}
 		else {
 			return false;

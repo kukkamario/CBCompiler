@@ -3,7 +3,7 @@
 #include "abstractsyntaxtree.h"
 #include "valuetype.h"
 
-inline ValueType::Type valueTypeFromVarType(ast::Variable::VarType t) {
+inline ValueType::eType valueTypeFromVarType(ast::Variable::VarType t) {
 	switch (t) {
 		case ast::Variable::Default:
 		case ast::Variable::Integer:
