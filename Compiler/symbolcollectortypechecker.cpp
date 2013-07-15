@@ -44,8 +44,6 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Node *s) {
 			ret = typeCheck((ast::Expression*)s); break;
 		case ast::Node::ntFunctionCallOrArraySubscript:
 			ret = typeCheck((ast::FunctionCallOrArraySubscript*)s); break;
-		case ast::Node::ntNew:
-			ret = typeCheck((ast::New*)s); break;
 		case ast::Node::ntVariable:
 			ret = typeCheck((ast::Variable*)s); break;
 		case ast::Node::ntUnary:
@@ -255,19 +253,6 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Unary *s) {
 		return mRuntime->intValueType();
 	}
 	return r;
-}
-
-ValueType *SymbolCollectorTypeChecker::typeCheck(ast::New *s) {
-	Symbol *sym = mScope->find(s->mTypeName);
-	if (!sym) {
-		emit error(ErrorCodes::ecCantFindType, tr("Can't find type with name \"%1\"").arg(s->mTypeName), mLine, mFile);
-		return 0;
-	}
-	if (sym->type() != Symbol::stType) {
-		emit error(ErrorCodes::ecCantFindType, tr("\"%1\" is not a type").arg(s->mTypeName), mLine, mFile);
-		return 0;
-	}
-	return static_cast<TypeSymbol*>(sym)->typePointerValueType();
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscript *s) {

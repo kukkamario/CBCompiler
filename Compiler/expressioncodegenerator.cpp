@@ -32,8 +32,6 @@ Value ExpressionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::FunctionCallOrArraySubscript*)n);
 		case ast::Node::ntInteger:
 			return generate((ast::Integer*)n);
-		case ast::Node::ntNew:
-			return generate((ast::New*)n);
 		case ast::Node::ntString:
 			return generate((ast::String*)n);
 		case ast::Node::ntTypePtrField:
@@ -43,11 +41,6 @@ Value ExpressionCodeGenerator::generate(ast::Node *n) {
 		case ast::Node::ntVariable:
 			return generate((ast::Variable*)n);
 	}
-	assert(0);
-	return Value();
-}
-
-Value ExpressionCodeGenerator::generate(ast::New *n) {
 	assert(0);
 	return Value();
 }

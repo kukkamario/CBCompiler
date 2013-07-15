@@ -23,9 +23,6 @@ ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Node *s) {
 		case ast::Node::ntFunctionCallOrArraySubscript:
 			emit error(ErrorCodes::ecNotConstant, tr("Neither function call nor array subscript is allowed inside constant expression"), mLine, mFile);
 			return ConstantValue();
-		case ast::Node::ntNew:
-			emit error(ErrorCodes::ecNotConstant, tr("\"New\" isn't allowed in constant expression"), mLine, mFile);
-			return ConstantValue();
 		default:
 			emit error(ErrorCodes::ecWTF, tr("Unknown AST node, ConstantExpressionEvaluator::evaluate"), mLine, mFile);
 			return ConstantValue();

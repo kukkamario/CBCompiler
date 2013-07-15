@@ -22,7 +22,6 @@ class ExpressionCodeGenerator : public QObject {
 		Value generate(ast::Unary *n);
 		Value generate(ast::Variable *n);
 		Value generate(ast::TypePtrField *n);
-		Value generate(ast::New *n);
 
 		QList<Value> generateParameterList(const QList<ast::Node*> &params);
 	private:

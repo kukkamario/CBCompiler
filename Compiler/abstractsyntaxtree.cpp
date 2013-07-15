@@ -94,8 +94,6 @@ void Printer::printNode(const Node *s, int tab) {
 			printString((String*)s, tab); return;
 		case Node::ntFunctionCallOrArraySubscript:
 			printFunctionCallOrArraySubscript((FunctionCallOrArraySubscript*)s, tab); return;
-		case Node::ntNew:
-			printNew((New*)s, tab); return;
 		case Node::ntArraySubscriptAssignmentExpression:
 			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
 		case Node::ntFunctionDefinition:
@@ -378,14 +376,6 @@ void Printer::printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscri
 	}
 	tab--;
 	printLine(")", tab);
-}
-
-void Printer::printNew(const New *s, int tab) {
-	QString txt;
-	txt += "New (";
-	txt += s->mTypeName;
-	txt += ")";
-	printLine(txt, tab);
 }
 
 void Printer::printProgram(const Program *s) {

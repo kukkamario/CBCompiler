@@ -36,7 +36,6 @@ class SymbolCollectorTypeChecker : public QObject {
 		ValueType *typeCheck(ast::Node *s);
 		ValueType *typeCheck(ast::Expression *s);
 		ValueType *typeCheck(ast::Unary *s);
-		ValueType *typeCheck(ast::New *s);
 		ValueType *typeCheck(ast::FunctionCallOrArraySubscript *s);
 		ValueType *typeCheck(ast::TypePtrField *s);
 		ValueType *typeCheck(ast::Variable *s);

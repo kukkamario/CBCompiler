@@ -71,8 +71,7 @@ struct Node {
 		ntInteger,		// 13213
 		ntFloat,		// 213.02
 		ntString,		// "string"
-		ntFunctionCallOrArraySubscript,
-		ntNew			// new (type)
+		ntFunctionCallOrArraySubscript
 	};
 	virtual Type type() const = 0;
 	virtual ~Node() { }
@@ -114,11 +113,6 @@ struct Return : Node {
 		Node *mValue;
 		QFile *mFile;
 		int mLine;
-};
-
-struct New : Node {
-		Type type() const {return ntNew;}
-		QString mTypeName;
 };
 
 struct Float : Node {
@@ -449,7 +443,6 @@ class Printer : public QObject{
 		void printFloat(const Float *s, int tab = 0);
 		void printString(const String *s, int tab = 0);
 		void printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscript *s, int tab = 0);
-		void printNew(const New *s, int tab = 0);
 
 		void printProgram(const Program *s);
 
