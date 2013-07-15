@@ -10,6 +10,7 @@
 #include "typepointervaluetype.h"
 #include "intvaluetype.h"
 #include "floatvaluetype.h"
+#include "typevaluetype.h"
 #include "stringvaluetype.h"
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
@@ -923,6 +924,13 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::V
 			ConstantSymbol *constant = static_cast<ConstantSymbol*>(sym);
 			ValueType *valType = mRuntime->findValueType(constant->value().type());
 			return valType;
+		}
+		else if (sym->type() == Symbol::stType) {
+			if (type != ast::Variable::Default) {
+				emit error(ErrorCodes::ecTypeCantHaveValueType, tr("Symbol \"%1\" is a Type. Type can't have a variable type specifier").arg(name), mLine, mFile);
+				return 0;
+			}
+			return mRuntime->typeValueType();
 		}
 		else {
 			if (sym->type() != Symbol::stVariable) {

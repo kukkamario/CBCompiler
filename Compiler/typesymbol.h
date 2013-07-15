@@ -2,12 +2,15 @@
 #define TYPESYMBOL_H
 #include "symbol.h"
 #include <QMap>
-#include <QLinkedList>
+#include <QList>
+
 namespace llvm{
 	class Type;
 	class Value;
 	class Module;
+	class GlobalVariable;
 }
+class Builder;
 class TypePointerValueType;
 class ValueType;
 class Runtime;
@@ -33,16 +36,20 @@ class TypeSymbol : public Symbol {
 		bool hasField(const QString &name);
 		const TypeField &field(const QString &name) const;
 		llvm::Type *llvmMemberType() const {return mMemberType;}
-		llvm::Type *llvmType()const{return mType;}
-		bool createTypePointerValueType(Runtime *r);
+		void initializeType(Builder *b);
+		void createTypePointerValueType(Builder *b);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
+		llvm::Value *globalTypeVariable() { return mGlobalTypeVariable; }
 	private:
-		bool createLLVMType(llvm::Module *mod);
-		QLinkedList<TypeField> mFields;
-		QMap<QString, QLinkedList<TypeField>::Iterator> mFieldSearch;
-		llvm::Type *mType;
+		void createLLVMMemberType();
+		QList<TypeField> mFields;
+		QMap<QString, QList<TypeField>::Iterator> mFieldSearch;
+		Runtime *mRuntime;
 		llvm::Type *mMemberType;
+		llvm::GlobalVariable *mGlobalTypeVariable;
 		TypePointerValueType *mTypePointerValueType;
+		unsigned mFirstFieldIndex;
+		int mMemberSize;
 };
 
 #endif // TYPESYMBOL_H

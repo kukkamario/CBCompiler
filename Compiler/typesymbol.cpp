@@ -2,12 +2,15 @@
 #include "typepointervaluetype.h"
 #include "llvm.h"
 #include "runtime.h"
+#include "builder.h"
 
 
 TypeSymbol::TypeSymbol(const QString &name, QFile *file, int line):
 	Symbol(name, file, line),
-	mType(0),
-	mTypePointerValueType(0){
+	mTypePointerValueType(0),
+	mGlobalTypeVariable(0),
+	mFirstFieldIndex(0),
+	mMemberSize(0) {
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
@@ -24,27 +27,13 @@ bool TypeSymbol::hasField(const QString &name) {
 }
 
 const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, QLinkedList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
+	QMap<QString, QList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
 	assert(i != mFieldSearch.end());
 	return *i.value();
 }
 
-bool TypeSymbol::createLLVMType(llvm::Module *mod) {
-
-	std::vector<llvm::Type*> members;
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //Pointer to type
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //last
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //next
-	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
-		const TypeField &field = *i;
-		members.push_back(field.valueType()->llvmType());
-	}
-	mMemberType = llvm::StructType::create(mod->getContext(), members,("CBType_" + mName).toStdString());
-	if (!mMemberType) return false;
-
-	//TODO TYPE
-
-	return true;
+void TypeSymbol::initializeType(Builder *b) {
+	assert("TODO: Call CBF_CB_ConstructType" && 0);
 }
 
 
@@ -60,17 +49,34 @@ QString TypeField::info() const {
 }
 
 
-bool TypeSymbol::createTypePointerValueType(Runtime *r) {
-	if (!createLLVMType(r->module())) return false;
-	mTypePointerValueType = new TypePointerValueType(r, this);
-	return true;
+void TypeSymbol::createTypePointerValueType(Builder *b) {
+	mRuntime = b->runtime();
+	createLLVMMemberType();
+	mGlobalTypeVariable = b->createGlobalVariable(mRuntime->typeLLVMType(), false, llvm::GlobalValue::PrivateLinkage, 0);
+}
+
+void TypeSymbol::createLLVMMemberType() {
+	std::vector<llvm::Type*> elements;
+
+	//Copy header
+	unsigned i;
+	for (i = 0; i < mRuntime->typeMemberLLVMType()->getStructNumElements(); i++) {
+		elements.push_back(mRuntime->typeMemberLLVMType()->getStructElementType(i));
+	}
+	mFirstFieldIndex = i;
+	foreach(const TypeField &field, mFields) {
+		elements.push_back(field.valueType()->llvmType());
+	}
+
+	mMemberType = llvm::StructType::get(mRuntime->module()->getContext(), elements);
+	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
 }
 
 
 QString TypeSymbol::info() const {
 	QString str("Type %1\n");
 	str = str.arg(mName);
-	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
+	for (QList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
 		str += "    " + i->info() + '\n';
 	}
 	return str;

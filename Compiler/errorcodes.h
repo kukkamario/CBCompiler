@@ -93,6 +93,7 @@ enum ErrorCode {
 	ecArrayDimensionCountDoesntMatch,
 	ecExpectingNumberValue,
 	ecDangerousFloatToIntCast,
+	ecTypeCantHaveValueType,
 
 	ecCantWriteBitcodeFile,
 

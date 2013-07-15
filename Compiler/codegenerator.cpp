@@ -274,10 +274,7 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 		}
 		TypeSymbol *type = new TypeSymbol(def->mName, def->mFile, def->mLine);
 		mGlobalScope.addSymbol(type);
-		if (!type->createTypePointerValueType(&mRuntime)) {
-			emit error(ErrorCodes::ecCantCreateTypePointerLLVMStructType, tr("Can't create llvm StructType for %1. Bug?!!!").arg(def->mName), def->mLine, def->mFile);
-			return false;
-		}
+		type->createTypePointerValueType(mBuilder);
 	}
 	if (!valid) return false;
 
