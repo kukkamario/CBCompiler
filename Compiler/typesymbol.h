@@ -5,6 +5,7 @@
 #include <QList>
 
 namespace llvm{
+	class StructType;
 	class Type;
 	class Value;
 	class Module;
@@ -35,8 +36,10 @@ class TypeSymbol : public Symbol {
 		bool addField(const TypeField &field);
 		bool hasField(const QString &name);
 		const TypeField &field(const QString &name) const;
-		llvm::Type *llvmMemberType() const {return mMemberType;}
+		llvm::StructType *llvmMemberType() const {return mMemberType;}
+
 		void initializeType(Builder *b);
+		void createOpaqueTypes(Builder *b);
 		void createTypePointerValueType(Builder *b);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
 		llvm::Value *globalTypeVariable() { return mGlobalTypeVariable; }
@@ -45,7 +48,7 @@ class TypeSymbol : public Symbol {
 		QList<TypeField> mFields;
 		QMap<QString, QList<TypeField>::Iterator> mFieldSearch;
 		Runtime *mRuntime;
-		llvm::Type *mMemberType;
+		llvm::StructType *mMemberType;
 		llvm::GlobalVariable *mGlobalTypeVariable;
 		TypePointerValueType *mTypePointerValueType;
 		unsigned mFirstFieldIndex;

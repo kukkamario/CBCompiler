@@ -36,6 +36,10 @@ void TypeSymbol::initializeType(Builder *b) {
 	assert("TODO: Call CBF_CB_ConstructType" && 0);
 }
 
+void TypeSymbol::createOpaqueTypes(Builder *b) {
+	mMemberType = llvm::StructType::create(b->context());
+}
+
 
 TypeField::TypeField(const QString &name, ValueType *valueType, QFile *file, int line) :
 	mName(name),
@@ -56,6 +60,8 @@ void TypeSymbol::createTypePointerValueType(Builder *b) {
 }
 
 void TypeSymbol::createLLVMMemberType() {
+	assert(mMemberType);
+
 	std::vector<llvm::Type*> elements;
 
 	//Copy header
@@ -68,14 +74,16 @@ void TypeSymbol::createLLVMMemberType() {
 		elements.push_back(field.valueType()->llvmType());
 	}
 
-	mMemberType = llvm::StructType::get(mRuntime->module()->getContext(), elements);
+	mMemberType->setBody(elements);
 	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
+
+	mTypePointerValueType = new TypePointerValueType(mRuntime, this);
 }
 
 
 QString TypeSymbol::info() const {
-	QString str("Type %1\n");
-	str = str.arg(mName);
+	QString str("Type %1   |   Size: %2 bytes\n");
+	str = str.arg(mName, QString::number(mMemberSize));
 	for (QList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
 		str += "    " + i->info() + '\n';
 	}

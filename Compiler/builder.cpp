@@ -351,6 +351,10 @@ void Builder::destruct(const Value &a) {
 	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
 }
 
+Value Builder::nullTypePointer() {
+	return Value(ConstantValue(ValueType::TypePointerCommon), mRuntime);
+}
+
 void Builder::initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 
@@ -1260,7 +1264,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 					return Value(mRuntime->booleanValueType(), ret);
 				}
 			}
-		case ValueType::String:
+		case ValueType::String: {
 			if (b.valueType()->type() == ValueType::String) {
 				llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), ret);
@@ -1270,9 +1274,16 @@ Value Builder::equal(const Value &a, const Value &b) {
 			destruct(bs);
 			destruct(a);
 			return Value(mRuntime->booleanValueType(), ret);
+		}
+		case ValueType::TypePointer:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toValueType(a.valueType(), b))));
+		case ValueType::TypePointerCommon:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toValueType(b.valueType(), a)), llvmValue(b)));
 	}
 
-	assert(0); return Value();
+	assert("Invalid equality operation" && 0); return Value();
 }
 
 Value Builder::notEqual(const Value &a, const Value &b) {
@@ -1372,7 +1383,7 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
 				}
 			}
-		case ValueType::String:
+		case ValueType::String: {
 			if (b.valueType()->type() == ValueType::String) {
 				llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
@@ -1382,6 +1393,13 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 			destruct(bs);
 			destruct(a);
 			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
+		}
+		case ValueType::TypePointer:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(llvmValue(a), llvmValue(toValueType(a.valueType(), b))));
+		case ValueType::TypePointerCommon:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(llvmValue(toValueType(b.valueType(), a)), llvmValue(b)));
 	}
 
 	assert(0); return Value();

@@ -273,8 +273,10 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 			continue;
 		}
 		TypeSymbol *type = new TypeSymbol(def->mName, def->mFile, def->mLine);
+
+		//Create an opaque member type so type pointers can be used in fields.
+		type->createOpaqueTypes(mBuilder);
 		mGlobalScope.addSymbol(type);
-		type->createTypePointerValueType(mBuilder);
 	}
 	if (!valid) return false;
 
@@ -303,6 +305,8 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 				}
 			}
 		}
+
+		type->createTypePointerValueType(mBuilder);
 	}
 
 
@@ -342,6 +346,7 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("false", ConstantValue(false), 0, 0);
 	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("null", ConstantValue(ValueType::TypePointerCommon), 0, 0);
 }
 
 

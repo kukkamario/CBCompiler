@@ -58,6 +58,8 @@ class Builder {
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
+		Value nullTypePointer();
+
 		void initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayElementCount(const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes);
