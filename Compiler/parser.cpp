@@ -1324,33 +1324,7 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 				return 0;
 			}
 		}
-		case Token::kNew: {
-			i++;
-			if (i->mType != Token::LeftParenthese) {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after ´\"New\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
-			i++;
-			if (i->mType != Token::Identifier) {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting name of a type, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
-			QString typeName = i->toString();
-			i++;
-			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
-			i++;
-			ast::New *n = new ast::New;
-			n->mTypeName = typeName;
-			return n;
-		}
 	}
-	Token tok = *i;
 	emit error(ErrorCodes::ecExpectingPrimaryExpression, tr("Expecting primary expression, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	mStatus = Error;
 	return 0;

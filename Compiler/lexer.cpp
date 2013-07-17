@@ -29,7 +29,6 @@ Lexer::Lexer()
 	mKeywords["type"] = Token::kType;
 	mKeywords["field"] = Token::kField;
 	mKeywords["endtype"] = Token::kEndType;
-	mKeywords["new"] = Token::kNew;
 	mKeywords["while"] = Token::kWhile;
 	mKeywords["wend"] = Token::kWend;
 	mKeywords["repeat"] = Token::kRepeat;

@@ -66,7 +66,6 @@ struct Token
 			kType,
 			kField,
 			kEndType,
-			kNew,
 			kWhile,
 			kWend,
 			kRepeat,
