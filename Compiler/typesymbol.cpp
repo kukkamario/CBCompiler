@@ -33,6 +33,12 @@ const TypeField &TypeSymbol::field(const QString &name) const{
 	return *i.value();
 }
 
+int TypeSymbol::fieldIndex(const QString &name) const {
+	QMap<QString, QList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
+	int fieldI = (QList<TypeField>::ConstIterator(i.value()) - mFields.begin());
+	return mFirstFieldIndex + fieldI;
+}
+
 void TypeSymbol::initializeType(Builder *b) {
 	b->irBuilder().CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
 }
@@ -58,6 +64,10 @@ void TypeSymbol::createTypePointerValueType(Builder *b) {
 	mRuntime = b->runtime();
 	createLLVMMemberType();
 	mGlobalTypeVariable = b->createGlobalVariable(mRuntime->typeLLVMType(), false, llvm::GlobalValue::PrivateLinkage, 0);
+}
+
+Value TypeSymbol::typeValue() {
+	return Value(mRuntime->typeValueType(), mGlobalTypeVariable);
 }
 
 void TypeSymbol::createLLVMMemberType() {

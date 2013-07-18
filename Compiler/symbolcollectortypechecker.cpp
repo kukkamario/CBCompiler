@@ -544,9 +544,9 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::AssignmentExpression *s) {
 	ValueType *value = typeCheckExpression(s->mExpression);
 	mExpressionLevel--;
 	bool valid = var && value;
-	if (var && value) {
+	if (!value->canBeCastedToValueType(var)) {
 		if (var->isTypePointer() && !value->isTypePointer()) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't %1 value to type pointer").arg(value->name()), mLine, mFile);
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign %1 value to type pointer").arg(value->name()), mLine, mFile);
 			valid = false;
 		}
 		else if(!var->isTypePointer() && value->isTypePointer()) {

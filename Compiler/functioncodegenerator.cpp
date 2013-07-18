@@ -9,6 +9,7 @@
 #include "warningcodes.h"
 #include "stringpool.h"
 #include "cbfunction.h"
+#include "typepointervaluetype.h"
 
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
@@ -226,7 +227,14 @@ bool FunctionCodeGenerator::generate(ast::AssignmentExpression *n) {
 		return true;
 	}
 	else if (n->mVariable->type() == ast::Node::ntTypePtrField) {
-		assert(0);
+		ast::TypePtrField *typeField = static_cast<ast::TypePtrField *>(n->mVariable);
+
+		Symbol *sym = mScope->find(typeField->mTypePtrVar);
+		assert(sym && sym->type() == Symbol::stVariable);
+		VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
+
+		mBuilder->store(varSym, typeField->mFieldName, val);
+		return true;
 	}
 	else {
 		assert(0); //Should never happen

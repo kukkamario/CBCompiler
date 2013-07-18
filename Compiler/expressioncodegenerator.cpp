@@ -6,6 +6,7 @@
 #include "functionsymbol.h"
 #include "arraysymbol.h"
 #include "variablesymbol.h"
+#include "typesymbol.h"
 
 ExpressionCodeGenerator::ExpressionCodeGenerator(QObject *parent):
 	QObject(parent),
@@ -76,20 +77,25 @@ Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 
 Value ExpressionCodeGenerator::generate(ast::Variable *n) {
 	Symbol *sym = mScope->find(n->mName);
-	assert(sym->type() == Symbol::stVariable || sym->type() == Symbol::stConstant);
+	assert(sym->type() == Symbol::stVariable || sym->type() == Symbol::stConstant || sym->type() == Symbol::stType);
 	if (sym->type() == Symbol::stConstant) {
 		ConstantSymbol *c = static_cast<ConstantSymbol*>(sym);
 		return Value(c->value(), mBuilder->runtime());
 	}
-	else {
+	else if (sym->type() == Symbol::stVariable) {
 		VariableSymbol *var = static_cast<VariableSymbol*>(sym);
 		return mBuilder->load(var);
+	}
+	else {
+		return static_cast<TypeSymbol*>(sym)->typeValue();
 	}
 }
 
 Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {
-	assert(0);
-	return Value();
+	Symbol *sym = mScope->find(n->mTypePtrVar);
+	assert(sym && sym->type() == Symbol::stVariable);
+	VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
+	return mBuilder->load(varSym, n->mFieldName);
 }
 
 Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {

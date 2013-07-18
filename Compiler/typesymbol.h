@@ -3,6 +3,7 @@
 #include "symbol.h"
 #include <QMap>
 #include <QList>
+#include "value.h"
 
 namespace llvm{
 	class StructType;
@@ -36,6 +37,7 @@ class TypeSymbol : public Symbol {
 		bool addField(const TypeField &field);
 		bool hasField(const QString &name);
 		const TypeField &field(const QString &name) const;
+		int fieldIndex(const QString &name) const;
 		llvm::StructType *llvmMemberType() const {return mMemberType;}
 
 		void initializeType(Builder *b);
@@ -43,6 +45,8 @@ class TypeSymbol : public Symbol {
 		void createTypePointerValueType(Builder *b);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
 		llvm::GlobalVariable *globalTypeVariable() { return mGlobalTypeVariable; }
+
+		Value typeValue();
 	private:
 		void createLLVMMemberType();
 		QList<TypeField> mFields;

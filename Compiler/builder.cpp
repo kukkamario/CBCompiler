@@ -9,6 +9,7 @@
 #include "booleanvaluetype.h"
 #include "variablesymbol.h"
 #include "arraysymbol.h"
+#include "typesymbol.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
@@ -371,8 +372,30 @@ void Builder::store(ArraySymbol *array, const QList<Value> &dims, const Value &v
 	store(arrayElementPointer(array, dims), array->valueType()->cast(this, val));
 }
 
+void Builder::store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	store(fieldPointer, fieldValueType->cast(this, v));
+}
+
 Value Builder::load(ArraySymbol *array, const QList<Value> &dims) {
 	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
+}
+
+Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	return Value(fieldValueType, mIRBuilder.CreateLoad(fieldPointer));
 }
 
 llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
@@ -436,6 +459,16 @@ void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Valu
 		}
 	}
 
+}
+
+llvm::Value *Builder::typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+	int fieldIndex = typeSymbol->fieldIndex(fieldName);
+
+	return mIRBuilder.CreateStructGEP(mIRBuilder.CreateLoad(typePtrVar->alloca_()), fieldIndex);
 }
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {

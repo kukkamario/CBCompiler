@@ -9,7 +9,7 @@
 #include "runtime.h"
 class ArraySymbol;
 class VariableSymbol;
-
+class TypeSymbol;
 /**
  * @brief The Builder class. Helper class for llvm-IR generation.
  */
@@ -53,8 +53,10 @@ class Builder {
 		void store(VariableSymbol *var, const Value &v);
 		void store(VariableSymbol *var, llvm::Value *val);
 		void store(ArraySymbol *array, const QList<Value> &dims, const Value &val);
+		void store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v);
 		Value load(const VariableSymbol *var);
 		Value load(ArraySymbol *array, const QList<Value> &dims);
+		Value load(VariableSymbol *typePtrVar, const QString &fieldName);
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
@@ -72,6 +74,8 @@ class Builder {
 		llvm::Value *arrayElementPointer(ArraySymbol *array, const QList<Value> &index);
 		llvm::Value *arrayIndexMultiplier(ArraySymbol *array, int index);
 		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);
+
+		llvm::Value *typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName);
 
 		llvm::GlobalVariable *createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
 		llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
