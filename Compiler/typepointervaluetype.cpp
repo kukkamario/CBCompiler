@@ -23,7 +23,7 @@ ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueT
 Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
 	if (v.valueType() == this) return v;
 
-	if (v.valueType()->isTypePointer()) {
+	if (v.valueType()->type() == ValueType::TypePointerCommon) {
 		if (v.isConstant()) {
 			return Value(const_cast<TypePointerValueType*>(this), defaultValue());
 		}

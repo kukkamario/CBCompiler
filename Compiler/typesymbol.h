@@ -42,7 +42,7 @@ class TypeSymbol : public Symbol {
 		void createOpaqueTypes(Builder *b);
 		void createTypePointerValueType(Builder *b);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
-		llvm::Value *globalTypeVariable() { return mGlobalTypeVariable; }
+		llvm::GlobalVariable *globalTypeVariable() { return mGlobalTypeVariable; }
 	private:
 		void createLLVMMemberType();
 		QList<TypeField> mFields;

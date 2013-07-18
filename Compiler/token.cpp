@@ -3,7 +3,7 @@
 #include <iostream>
 #include <QFile>
 #include <QDebug>
-static char *tokenNames[] = {
+static const char *const tokenNames[] = {
 	"EndOfTokens",
 	"EOL",
 	"Integer",
