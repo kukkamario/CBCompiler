@@ -29,7 +29,6 @@ Lexer::Lexer()
 	mKeywords["type"] = Token::kType;
 	mKeywords["field"] = Token::kField;
 	mKeywords["endtype"] = Token::kEndType;
-	mKeywords["new"] = Token::kNew;
 	mKeywords["while"] = Token::kWhile;
 	mKeywords["wend"] = Token::kWend;
 	mKeywords["repeat"] = Token::kRepeat;
@@ -50,7 +49,6 @@ Lexer::Lexer()
 	mKeywords["data"] = Token::kData;
 	mKeywords["read"] = Token::kRead;
 	mKeywords["restore"] = Token::kRestore;
-	mKeywords["end"] = Token::kEnd;
 	mKeywords["integer"] = Token::kInteger;
 	mKeywords["float"] = Token::kFloat;
 	mKeywords["string"] = Token::kString;
@@ -58,6 +56,13 @@ Lexer::Lexer()
 	mKeywords["byte"] = Token::kByte;
 	mKeywords["as"] = Token::kAs;
 	mKeywords["exit"] = Token::kExit;
+	mKeywords["end"] = Token::kEnd;
+
+	mKeywords["new"] = Token::kNew;
+	mKeywords["first"] = Token::kFirst;
+	mKeywords["last"] = Token::kLast;
+	mKeywords["before"] = Token::kBefore;
+	mKeywords["after"] = Token::kAfter;
 
 	mKeywords["include"] = Token::kInclude;
 }

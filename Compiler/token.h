@@ -66,7 +66,6 @@ struct Token
 			kType,
 			kField,
 			kEndType,
-			kNew,
 			kWhile,
 			kWend,
 			kRepeat,
@@ -87,7 +86,6 @@ struct Token
 			kData,
 			kRead,
 			kRestore,
-			kEnd,
 			kInteger,
 			kFloat,
 			kString,
@@ -96,6 +94,14 @@ struct Token
 			kAs,
 			kInclude,
 			kExit,
+			kEnd,
+
+			kNew,
+			kFirst,
+			kLast,
+			kBefore,
+			kAfter,
+
 			KeywordsEnd,
 			TypeCount
 		};

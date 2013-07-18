@@ -64,6 +64,7 @@ struct Node {
 		ntReturn,
 		ntExit,
 		ntSelectStatement,
+		ntSpecialFunctionCall, //New, First, Last, Before, After
 
 		//Operands
 		ntTypePtrField,	// typePtr\field
@@ -71,8 +72,7 @@ struct Node {
 		ntInteger,		// 13213
 		ntFloat,		// 213.02
 		ntString,		// "string"
-		ntFunctionCallOrArraySubscript,
-		ntNew			// new (type)
+		ntFunctionCallOrArraySubscript
 	};
 	virtual Type type() const = 0;
 	virtual ~Node() { }
@@ -114,11 +114,6 @@ struct Return : Node {
 		Node *mValue;
 		QFile *mFile;
 		int mLine;
-};
-
-struct New : Node {
-		Type type() const {return ntNew;}
-		QString mTypeName;
 };
 
 struct Float : Node {
@@ -201,6 +196,22 @@ struct FunctionCallOrArraySubscript : Node {
 		Type type() const {return ntFunctionCallOrArraySubscript;}
 		QString mName;
 		QList<Node*> mParams;
+		int mLine;
+		QFile *mFile;
+};
+
+struct SpecialFunctionCall : Node {
+		enum SpecialFunction {
+			New,
+			First,
+			Last,
+			Before,
+			After
+		};
+
+		Type type() const { return ntSpecialFunctionCall; }
+		SpecialFunction mSpecialFunction;
+		Node *mParam;
 		int mLine;
 		QFile *mFile;
 };
@@ -441,6 +452,7 @@ class Printer : public QObject{
 		void printUnary(const Unary *s, int tab = 0);
 		void printReturn(const Return *s, int tab = 0);
 		void printExit(const Exit *s, int tab = 0);
+		void printSpecialFunctionCall(const SpecialFunctionCall *s, int tab = 0);
 
 
 		void printTypePtrField(const TypePtrField *s, int tab = 0);
@@ -449,7 +461,6 @@ class Printer : public QObject{
 		void printFloat(const Float *s, int tab = 0);
 		void printString(const String *s, int tab = 0);
 		void printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscript *s, int tab = 0);
-		void printNew(const New *s, int tab = 0);
 
 		void printProgram(const Program *s);
 

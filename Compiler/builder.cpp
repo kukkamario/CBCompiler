@@ -9,6 +9,8 @@
 #include "booleanvaluetype.h"
 #include "variablesymbol.h"
 #include "arraysymbol.h"
+#include "typesymbol.h"
+#include "typevaluetype.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
@@ -240,6 +242,8 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 			return llvmValue(v.toBool());
 		case ValueType::String: {
 			return llvmValue(v.toString());
+		case ValueType::TypePointerCommon:
+			return mRuntime->typePointerCommonValueType()->defaultValue();
 		}
 	}
 	assert(0);
@@ -351,6 +355,10 @@ void Builder::destruct(const Value &a) {
 	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
 }
 
+Value Builder::nullTypePointer() {
+	return Value(ConstantValue(ValueType::TypePointerCommon), mRuntime);
+}
+
 void Builder::initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 
@@ -367,8 +375,30 @@ void Builder::store(ArraySymbol *array, const QList<Value> &dims, const Value &v
 	store(arrayElementPointer(array, dims), array->valueType()->cast(this, val));
 }
 
+void Builder::store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	store(fieldPointer, fieldValueType->cast(this, v));
+}
+
 Value Builder::load(ArraySymbol *array, const QList<Value> &dims) {
 	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
+}
+
+Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	return Value(fieldValueType, mIRBuilder.CreateLoad(fieldPointer));
 }
 
 llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
@@ -432,6 +462,50 @@ void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Valu
 		}
 	}
 
+}
+
+llvm::Value *Builder::typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+	int fieldIndex = typeSymbol->fieldIndex(fieldName);
+
+	return mIRBuilder.CreateStructGEP(mIRBuilder.CreateLoad(typePtrVar->alloca_()), fieldIndex);
+}
+
+Value Builder::newTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->newFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::firstTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->firstFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::lastTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->lastFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::afterTypeMember(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	llvm::Value *param = bitcast(mRuntime->typePointerCommonValueType()->llvmType(), llvmValue(ptr));
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->afterFunction(), param);
+	return Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr));
+}
+
+Value Builder::beforeTypeMember(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	llvm::Value *param = bitcast(mRuntime->typePointerCommonValueType()->llvmType(), llvmValue(ptr));
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->beforeFunction(), param);
+	return Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr));
+}
+
+Value Builder::typePointerNotNull(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(ptr)));
 }
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {
@@ -1260,7 +1334,7 @@ Value Builder::equal(const Value &a, const Value &b) {
 					return Value(mRuntime->booleanValueType(), ret);
 				}
 			}
-		case ValueType::String:
+		case ValueType::String: {
 			if (b.valueType()->type() == ValueType::String) {
 				llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), ret);
@@ -1270,9 +1344,16 @@ Value Builder::equal(const Value &a, const Value &b) {
 			destruct(bs);
 			destruct(a);
 			return Value(mRuntime->booleanValueType(), ret);
+		}
+		case ValueType::TypePointer:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toValueType(a.valueType(), b))));
+		case ValueType::TypePointerCommon:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toValueType(b.valueType(), a)), llvmValue(b)));
 	}
 
-	assert(0); return Value();
+	assert("Invalid equality operation" && 0); return Value();
 }
 
 Value Builder::notEqual(const Value &a, const Value &b) {
@@ -1372,7 +1453,7 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
 				}
 			}
-		case ValueType::String:
+		case ValueType::String: {
 			if (b.valueType()->type() == ValueType::String) {
 				llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
@@ -1382,6 +1463,13 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 			destruct(bs);
 			destruct(a);
 			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
+		}
+		case ValueType::TypePointer:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(llvmValue(a), llvmValue(toValueType(a.valueType(), b))));
+		case ValueType::TypePointerCommon:
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpNE(llvmValue(toValueType(b.valueType(), a)), llvmValue(b)));
 	}
 
 	assert(0); return Value();

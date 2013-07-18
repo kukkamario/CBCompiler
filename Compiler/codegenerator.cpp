@@ -51,6 +51,7 @@ bool CodeGenerator::initialize(const QString &runtimeFile, const Settings &setti
 	mSettings = settings;
 	mTypeChecker.setForceVariableDeclaration(settings.forceVariableDeclaration());
 	if (!mRuntime.load(&mStringPool, runtimeFile)) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), 0, 0);
 		return false;
 	}
 
@@ -95,12 +96,11 @@ bool CodeGenerator::generate(ast::Program *program) {
 
 	qDebug() << "Starting code generation";
 	mFuncCodeGen.setRuntime(&mRuntime);
-	bool valid = true;
-	valid &= generateMainScope(&program->mMainBlock);
-	valid &= generateFunctions();
+	generateMainScope(&program->mMainBlock);
+	generateFunctions();
 
-	mFuncCodeGen.generateStringLiterals();
-	return valid;
+	generateInitializers();
+	return true;
 }
 
 bool CodeGenerator::createExecutable(const QString &path) {
@@ -272,12 +272,11 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 			valid = false;
 			continue;
 		}
-		TypeSymbol *type = new TypeSymbol(def->mName, def->mFile, def->mLine);
+		TypeSymbol *type = new TypeSymbol(def->mName, &mRuntime, def->mFile, def->mLine);
+
+		//Create an opaque member type so type pointers can be used in fields.
+		type->createOpaqueTypes(mBuilder);
 		mGlobalScope.addSymbol(type);
-		if (!type->createTypePointerValueType(&mRuntime)) {
-			emit error(ErrorCodes::ecCantCreateTypePointerLLVMStructType, tr("Can't create llvm StructType for %1. Bug?!!!").arg(def->mName), def->mLine, def->mFile);
-			return false;
-		}
 	}
 	if (!valid) return false;
 
@@ -306,26 +305,45 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 				}
 			}
 		}
+
+		type->createTypePointerValueType(mBuilder);
+		mTypes.append(type);
 	}
 
 
 	return valid;
 }
 
-bool CodeGenerator::generateFunctions() {
-	bool valid = true;
+void CodeGenerator::generateFunctions() {
 	for (QMap<ast::FunctionDefinition *, CBFunction *>::ConstIterator i = mCBFunctions.begin(); i != mCBFunctions.end(); ++i) {
 		mFuncCodeGen.setFunction(i.value()->function());
-		if (!mFuncCodeGen.generateCBFunction(i.key(), i.value()))
-			valid = false;
+		mFuncCodeGen.generateCBFunction(i.key(), i.value());
 	}
-	return valid;
 }
 
-bool CodeGenerator::generateMainScope(ast::Block *block) {
+void CodeGenerator::generateMainScope(ast::Block *block) {
 	mFuncCodeGen.setFunction(mRuntime.cbMain());
 	mFuncCodeGen.setScope(&mMainScope);
-	return mFuncCodeGen.generateMainScope(block);
+	mFuncCodeGen.generateMainScope(block);
+}
+
+void CodeGenerator::generateInitializers() {
+	mInitializationBlock = llvm::BasicBlock::Create(mBuilder->context(), "Initialize", mRuntime.cbInitialize());
+	generateStringLiterals();
+	generateTypeInitializers();
+	mBuilder->setInsertPoint(mInitializationBlock);
+	mBuilder->irBuilder().CreateRetVoid();
+}
+
+void CodeGenerator::generateStringLiterals() {
+	mBuilder->setInsertPoint(mInitializationBlock);
+	mBuilder->stringPool()->generateStringLiterals(mBuilder);
+}
+
+void CodeGenerator::generateTypeInitializers() {
+	foreach(TypeSymbol *type, mTypes) {
+		type->initializeType(mBuilder);
+	}
 }
 
 void CodeGenerator::createBuilder() {
@@ -344,6 +362,8 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	sym = new ConstantSymbol("true", ConstantValue(true), 0, 0);
 	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("false", ConstantValue(false), 0, 0);
+	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("null", ConstantValue(ValueType::TypePointerCommon), 0, 0);
 	mGlobalScope.addSymbol(sym);
 }
 

@@ -94,14 +94,14 @@ void Printer::printNode(const Node *s, int tab) {
 			printString((String*)s, tab); return;
 		case Node::ntFunctionCallOrArraySubscript:
 			printFunctionCallOrArraySubscript((FunctionCallOrArraySubscript*)s, tab); return;
-		case Node::ntNew:
-			printNew((New*)s, tab); return;
 		case Node::ntArraySubscriptAssignmentExpression:
 			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
 		case Node::ntFunctionDefinition:
 			printFunctionDefinition((FunctionDefinition*)s, tab); return;
 		case Node::ntCommandCallOrArraySubscriptAssignmentExpression:
 			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
+		case Node::ntSpecialFunctionCall:
+			printSpecialFunctionCall((SpecialFunctionCall*)s, tab); return;
 		default:
 			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
@@ -328,6 +328,23 @@ void Printer::printExit(const Exit *s, int tab) {
 	printLine("Exit", tab);
 }
 
+void Printer::printSpecialFunctionCall(const SpecialFunctionCall *s, int tab) {
+	switch(s->mSpecialFunction) {
+		case SpecialFunctionCall::New:
+			printLine("New (", tab); break;
+		case SpecialFunctionCall::First:
+			printLine("First (", tab); break;
+		case SpecialFunctionCall::Last:
+			printLine("Last (", tab); break;
+		case SpecialFunctionCall::Before:
+			printLine("Before (", tab); break;
+		case SpecialFunctionCall::After:
+			printLine("After (", tab); break;
+	}
+	printNode(s->mParam, tab + 1);
+	printLine(")", tab);
+}
+
 void Printer::printTypePtrField(const TypePtrField *s, int tab) {
 	printLine(s->mTypePtrVar + "\\" + s->mFieldName + " as " + varTypeToString(s->mFieldType), tab);
 }
@@ -378,14 +395,6 @@ void Printer::printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscri
 	}
 	tab--;
 	printLine(")", tab);
-}
-
-void Printer::printNew(const New *s, int tab) {
-	QString txt;
-	txt += "New (";
-	txt += s->mTypeName;
-	txt += ")";
-	printLine(txt, tab);
 }
 
 void Printer::printProgram(const Program *s) {

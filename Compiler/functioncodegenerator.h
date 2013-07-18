@@ -33,58 +33,56 @@ class FunctionCodeGenerator: public QObject{
 		void setSetupBasicBlock(llvm::BasicBlock *bb);
 		void setBuilder(Builder *builder);
 
-		bool generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc);
+		void generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc);
 
 		/**
 		 * @brief generateMainScope generates llvm-IR code for a AST tree.
 		 *
 		 * llvm::Function where llvm-IR is inserted have to be set using setFunction. The scope should be specificated with setScope.
 		 * @param n The block that contains AST.
-		 * @return True, if generation succeeded, otherwise false
 		 */
-		bool generateMainScope(ast::Block *n);
-
-		void generateStringLiterals();
+		void generateMainScope(ast::Block *n);
 		Scope *scope() const {return mScope;}
 		llvm::Function *function()const{return mFunction;}
 		Runtime *runtime() const {return mRuntime;}
 	private:
-		bool generate(ast::Node *n);
-		bool generate(ast::IfStatement *n);
-		bool generate(ast::AssignmentExpression *n);
-		bool generate(ast::CommandCall *n);
-		bool generate(ast::RepeatForeverStatement *n);
-		bool generate(ast::FunctionCallOrArraySubscript *n);
-		bool generate(ast::Exit *n);
-		bool generate(ast::Return *n);
-		bool generate(ast::Block *n);
-		bool generate(ast::ArrayDefinition *n);
-		bool generate(ast::ArraySubscriptAssignmentExpression *n);
-		bool generate(ast::SelectStatement *n);
-		bool generate(ast::ForEachStatement *n);
-		bool generate(ast::ForToStatement *n);
-		bool generate(ast::Goto *n);
-		bool generate(ast::Gosub *n);
-		bool generate(ast::RepeatUntilStatement *n);
-		bool generate(ast::WhileStatement *n);
-		bool generate(ast::VariableDefinition *n);
-		bool generate(ast::Redim *n);
-		bool generate(ast::Label *n);
+		void generate(ast::Node *n);
+		void generate(ast::IfStatement *n);
+		void generate(ast::AssignmentExpression *n);
+		void generate(ast::CommandCall *n);
+		void generate(ast::RepeatForeverStatement *n);
+		void generate(ast::FunctionCallOrArraySubscript *n);
+		void generate(ast::Exit *n);
+		void generate(ast::Return *n);
+		void generate(ast::Block *n);
+		void generate(ast::ArrayDefinition *n);
+		void generate(ast::ArraySubscriptAssignmentExpression *n);
+		void generate(ast::SelectStatement *n);
+		void generate(ast::ForEachStatement *n);
+		void generate(ast::ForToStatement *n);
+		void generate(ast::Goto *n);
+		void generate(ast::Gosub *n);
+		void generate(ast::RepeatUntilStatement *n);
+		void generate(ast::WhileStatement *n);
+		void generate(ast::VariableDefinition *n);
+		void generate(ast::Redim *n);
+		void generate(ast::Label *n);
+		void generate(ast::SpecialFunctionCall *n);
 
-		bool basicBlockGenerationPass(ast::Block *n);
-		bool basicBlockGenerationPass(ast::IfStatement *n);
-		bool basicBlockGenerationPass(ast::ForToStatement *n);
-		bool basicBlockGenerationPass(ast::ForEachStatement *n);
-		bool basicBlockGenerationPass(ast::RepeatUntilStatement *n);
-		bool basicBlockGenerationPass(ast::RepeatForeverStatement *n);
-		bool basicBlockGenerationPass(ast::Label *n);
-		bool basicBlockGenerationPass(ast::WhileStatement *n);
-		bool basicBlockGenerationPass(ast::SelectStatement *n);
+		void basicBlockGenerationPass(ast::Block *n);
+		void basicBlockGenerationPass(ast::IfStatement *n);
+		void basicBlockGenerationPass(ast::ForToStatement *n);
+		void basicBlockGenerationPass(ast::ForEachStatement *n);
+		void basicBlockGenerationPass(ast::RepeatUntilStatement *n);
+		void basicBlockGenerationPass(ast::RepeatForeverStatement *n);
+		void basicBlockGenerationPass(ast::Label *n);
+		void basicBlockGenerationPass(ast::WhileStatement *n);
+		void basicBlockGenerationPass(ast::SelectStatement *n);
 
 		void addBasicBlock();
 
-		bool generateLocalVariables();
-		bool generateDestructors();
+		void generateLocalVariables();
+		void generateDestructors();
 
 		bool isCurrentBBEmpty() const { return mCurrentBasicBlock->getInstList().empty(); }
 		void nextBasicBlock();
@@ -105,8 +103,6 @@ class FunctionCodeGenerator: public QObject{
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
 		ValueType *mReturnType;
-		llvm::BasicBlock *mStringLiteralInitializationBasicBlock;
-		llvm::BasicBlock *mStringLiteralInitializationExitBasicBlock;
 	public slots:
 
 	signals:

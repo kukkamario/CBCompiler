@@ -2,12 +2,17 @@
 #define TYPESYMBOL_H
 #include "symbol.h"
 #include <QMap>
-#include <QLinkedList>
+#include <QList>
+#include "value.h"
+
 namespace llvm{
+	class StructType;
 	class Type;
 	class Value;
 	class Module;
+	class GlobalVariable;
 }
+class Builder;
 class TypePointerValueType;
 class ValueType;
 class Runtime;
@@ -26,23 +31,32 @@ class TypeField {
 
 class TypeSymbol : public Symbol {
 	public:
-		TypeSymbol(const QString &name, QFile *file, int line);
+		TypeSymbol(const QString &name, Runtime *r, QFile *file, int line);
 		Type type()const{return stType;}
 		QString info() const;
 		bool addField(const TypeField &field);
 		bool hasField(const QString &name);
 		const TypeField &field(const QString &name) const;
-		llvm::Type *llvmMemberType() const {return mMemberType;}
-		llvm::Type *llvmType()const{return mType;}
-		bool createTypePointerValueType(Runtime *r);
+		int fieldIndex(const QString &name) const;
+		llvm::StructType *llvmMemberType() const {return mMemberType;}
+
+		void initializeType(Builder *b);
+		void createOpaqueTypes(Builder *b);
+		void createTypePointerValueType(Builder *b);
 		TypePointerValueType *typePointerValueType()const{return mTypePointerValueType;}
+		llvm::GlobalVariable *globalTypeVariable() { return mGlobalTypeVariable; }
+
+		Value typeValue();
 	private:
-		bool createLLVMType(llvm::Module *mod);
-		QLinkedList<TypeField> mFields;
-		QMap<QString, QLinkedList<TypeField>::Iterator> mFieldSearch;
-		llvm::Type *mType;
-		llvm::Type *mMemberType;
+		void createLLVMMemberType();
+		QList<TypeField> mFields;
+		QMap<QString, QList<TypeField>::Iterator> mFieldSearch;
+		Runtime *mRuntime;
+		llvm::StructType *mMemberType;
+		llvm::GlobalVariable *mGlobalTypeVariable;
 		TypePointerValueType *mTypePointerValueType;
+		unsigned mFirstFieldIndex;
+		int mMemberSize;
 };
 
 #endif // TYPESYMBOL_H

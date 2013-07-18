@@ -887,17 +887,21 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Integer:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt == 0 && "FIXME: Proper error reporting");
 					return a.mData.mInt / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mInt / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort == 0 && "FIXME: Proper error reporting");
 					return a.mData.mInt / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte == 0 && "FIXME: Proper error reporting");
 					return a.mData.mInt / b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
 		case ValueType::Float:
+			//TODO: Warnings if result is NaN or INF
 			switch (b.mType) {
 				case ValueType::Integer:
 					return a.mData.mFloat / b.mData.mInt;
@@ -913,12 +917,15 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Short:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt == 0 && "FIXME: Proper error reporting");
 					return a.mData.mShort / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mShort / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort == 0 && "FIXME: Proper error reporting");
 					return a.mData.mShort / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte == 0 && "FIXME: Proper error reporting");
 					return a.mData.mShort / b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -926,12 +933,15 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Byte:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt == 0 && "FIXME: Proper error reporting");
 					return a.mData.mByte / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mByte / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort == 0 && "FIXME: Proper error reporting");
 					return a.mData.mByte / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte == 0 && "FIXME: Proper error reporting");
 					return a.mData.mByte / b.mData.mByte;
 				default:
 					return ConstantValue();

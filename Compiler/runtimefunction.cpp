@@ -13,7 +13,7 @@
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
 	Function(QString(), 0,0),
-	mRuntime(r) {
+	mRuntime(r){
 
 }
 
@@ -35,9 +35,6 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 	}
 	else if( retTy == mRuntime->byteValueType()->llvmType()) {
 		mReturnValue = mRuntime->byteValueType();
-	}
-	else if ( retTy == mRuntime->typePointerCommonValueType()->llvmType()) {
-		mReturnValue = mRuntime->typePointerCommonValueType();
 	}
 	else if ( retTy == mRuntime->typeValueType()->llvmType()) {
 		mReturnValue = mRuntime->typeValueType();

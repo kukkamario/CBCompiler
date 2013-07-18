@@ -1324,33 +1324,43 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 				return 0;
 			}
 		}
-		case Token::kNew: {
+		case Token::kNew:
+		case Token::kFirst:
+		case Token::kLast:
+		case Token::kBefore:
+		case Token::kAfter: {
+			ast::SpecialFunctionCall *ret = new ast::SpecialFunctionCall;
+			ret->mLine = i->mLine;
+			ret->mFile = i->mFile;
+			switch (i->mType) {
+				case Token::kNew:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::New; break;
+				case Token::kFirst:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::First; break;
+				case Token::kLast:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::Last; break;
+				case Token::kBefore:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::Before; break;
+				case Token::kAfter:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::After; break;
+			}
 			i++;
+
 			if (i->mType != Token::LeftParenthese) {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after ´\"New\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after \"%1\"").arg((i - 1)->toString()), i->mLine, i->mFile);
 				return 0;
 			}
 			i++;
-			if (i->mType != Token::Identifier) {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting name of a type, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
-			QString typeName = i->toString();
-			i++;
+			ret->mParam = expectExpression(i);
+			if (mStatus == Error) return 0;
 			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
+				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese"), i->mLine, i->mFile);
 				return 0;
 			}
 			i++;
-			ast::New *n = new ast::New;
-			n->mTypeName = typeName;
-			return n;
+			return ret;
 		}
 	}
-	Token tok = *i;
 	emit error(ErrorCodes::ecExpectingPrimaryExpression, tr("Expecting primary expression, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 	mStatus = Error;
 	return 0;
@@ -1649,12 +1659,50 @@ ast::Node *Parser::tryFunctionOrCommandCallOrArraySubscriptAssignment(Parser::To
 		}
 		case Token::kEnd: {
 			ast::CommandCall *ret = new ast::CommandCall;
+			ret->mName = i->toString();
 			ret->mLine = i->mLine;
 			ret->mFile = i->mFile;
-			ret->mName = i->toString();
+			i++;
+			return ret;
+
+		}
+		case Token::kNew:
+		case Token::kFirst:
+		case Token::kLast:
+		case Token::kBefore:
+		case Token::kAfter: {
+			ast::SpecialFunctionCall *ret = new ast::SpecialFunctionCall;
+			ret->mLine = i->mLine;
+			ret->mFile = i->mFile;
+			switch (i->mType) {
+				case Token::kNew:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::New; break;
+				case Token::kFirst:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::First; break;
+				case Token::kLast:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::Last; break;
+				case Token::kBefore:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::Before; break;
+				case Token::kAfter:
+					ret->mSpecialFunction = ast::SpecialFunctionCall::After; break;
+			}
+			i++;
+
+			if (i->mType != Token::LeftParenthese) {
+				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese after \"%1\"").arg((i - 1)->toString()), i->mLine, i->mFile);
+				return 0;
+			}
+			i++;
+			ret->mParam = expectExpression(i);
+			if (mStatus == Error) return 0;
+			if (i->mType != Token::RightParenthese) {
+				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese"), i->mLine, i->mFile);
+				return 0;
+			}
 			i++;
 			return ret;
 		}
+
 		case Token::Identifier: {
 				QFile *file = i->mFile;
 				int line = i->mLine;
