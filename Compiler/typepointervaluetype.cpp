@@ -43,19 +43,14 @@ int TypePointerValueType::size() const {
 
 ValueType::CastCostType TypePointerCommonValueType::castingCostToOtherValueType(ValueType *to) const {
 	if (to == this) return 0;
-	if (to->isTypePointer()) return 100;
 	return sMaxCastCost;
 }
 
-Value TypePointerCommonValueType::cast(Builder *builder, const Value &v) const {
-	if (!v.valueType()->isTypePointer()) {
-		return Value();
-	}
+Value TypePointerCommonValueType::cast(Builder *, const Value &v) const {
 	if (v.valueType()->type() == ValueType::TypePointerCommon) {
 		return v;
 	}
-	assert(v.value());
-	return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType, v.value()));
+	return Value();
 }
 
 
