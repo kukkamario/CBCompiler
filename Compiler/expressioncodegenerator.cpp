@@ -41,6 +41,8 @@ Value ExpressionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::Unary*)n);
 		case ast::Node::ntVariable:
 			return generate((ast::Variable*)n);
+		case ast::Node::ntSpecialFunctionCall:
+			return generate((ast::SpecialFunctionCall*)n);
 	}
 	assert(0);
 	return Value();
@@ -96,6 +98,22 @@ Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {
 	assert(sym && sym->type() == Symbol::stVariable);
 	VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
 	return mBuilder->load(varSym, n->mFieldName);
+}
+
+Value ExpressionCodeGenerator::generate(ast::SpecialFunctionCall *n) {
+	Value param = generate(n->mParam);
+	switch (n->mSpecialFunction) {
+		case ast::SpecialFunctionCall::New:
+			return mBuilder->newTypeMember(static_cast<TypeSymbol*>(mScope->find(static_cast<ast::Variable*>(n->mParam)->mName)));
+		case ast::SpecialFunctionCall::First:
+			return mBuilder->firstTypeMember(static_cast<TypeSymbol*>(mScope->find(static_cast<ast::Variable*>(n->mParam)->mName)));
+		case ast::SpecialFunctionCall::Last:
+			return mBuilder->lastTypeMember(static_cast<TypeSymbol*>(mScope->find(static_cast<ast::Variable*>(n->mParam)->mName)));
+		case ast::SpecialFunctionCall::Before:
+			return mBuilder->beforeTypeMember(param);
+		case ast::SpecialFunctionCall::After:
+			return mBuilder->afterTypeMember(param);
+	}
 }
 
 Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {

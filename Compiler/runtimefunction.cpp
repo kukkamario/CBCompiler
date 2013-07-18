@@ -13,7 +13,7 @@
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
 	Function(QString(), 0,0),
-	mRuntime(r) {
+	mRuntime(r){
 
 }
 

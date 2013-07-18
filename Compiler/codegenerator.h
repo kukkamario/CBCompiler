@@ -26,8 +26,8 @@ class CodeGenerator : public QObject{
 		bool calculateConstants(ast::Program *program);
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
-		bool generateFunctions();
-		bool generateMainScope(ast::Block *block);
+		void generateFunctions();
+		void generateMainScope(ast::Block *block);
 		void generateInitializers();
 		void generateStringLiterals();
 		void generateTypeInitializers();

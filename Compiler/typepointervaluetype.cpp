@@ -7,7 +7,7 @@
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
 	mTypeSymbol(s){
-	mType = s->llvmMemberType()->getPointerTo();
+	mType = 0;
 }
 
 QString TypePointerValueType::name() const {

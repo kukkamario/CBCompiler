@@ -30,11 +30,14 @@ struct CB_TypeMember {
  * @brief The CB_Type struct is the base of the linked list.
  */
 struct CB_Type {
-		friend void CBF_CB_ConstructType(CB_Type *, unsigned int);
+		//friend void CBF_CB_ConstructType(CB_Type *, unsigned int);
 	public:
 		CB_TypeMember *createMemberToEnd();
 		CB_TypeMember *firstMember() { return mFirst; }
 		CB_TypeMember *lastMember() { return mLast; }
+		void setFirstMember(CB_TypeMember *m) { mFirst = m; }
+		void setLastMember(CB_TypeMember *m) { mLast = m; }
+		void setSizeOfMember(unsigned int s) { mSizeOfMember = s; }
 		unsigned int sizeOfMember() { return mSizeOfMember; }
 		unsigned int sizeOfMemberData() { return mSizeOfMember - offsetof(CB_TypeMember, mData); }
 	private:
@@ -42,7 +45,6 @@ struct CB_Type {
 		CB_TypeMember *mFirst;
 		CB_TypeMember *mLast;
 		unsigned int mSizeOfMember;
-		int mId;
 };
 
 typedef CB_Type Type;

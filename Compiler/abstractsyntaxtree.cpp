@@ -100,6 +100,8 @@ void Printer::printNode(const Node *s, int tab) {
 			printFunctionDefinition((FunctionDefinition*)s, tab); return;
 		case Node::ntCommandCallOrArraySubscriptAssignmentExpression:
 			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
+		case Node::ntSpecialFunctionCall:
+			printSpecialFunctionCall((SpecialFunctionCall*)s, tab); return;
 		default:
 			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
@@ -324,6 +326,23 @@ void Printer::printReturn(const Return *s, int tab) {
 
 void Printer::printExit(const Exit *s, int tab) {
 	printLine("Exit", tab);
+}
+
+void Printer::printSpecialFunctionCall(const SpecialFunctionCall *s, int tab) {
+	switch(s->mSpecialFunction) {
+		case SpecialFunctionCall::New:
+			printLine("New (", tab); break;
+		case SpecialFunctionCall::First:
+			printLine("First (", tab); break;
+		case SpecialFunctionCall::Last:
+			printLine("Last (", tab); break;
+		case SpecialFunctionCall::Before:
+			printLine("Before (", tab); break;
+		case SpecialFunctionCall::After:
+			printLine("After (", tab); break;
+	}
+	printNode(s->mParam, tab + 1);
+	printLine(")", tab);
 }
 
 void Printer::printTypePtrField(const TypePtrField *s, int tab) {

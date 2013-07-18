@@ -1,19 +1,27 @@
 #include "common.h"
 #include "types.h"
 #include "error.h"
-static int sTypeIdCounter = 1;
-CBEXPORT void CBF_CB_ConstructType(Type *type, unsigned int size) {
-	type->mFirst = 0;
-	type->mLast = 0;
-	type->mId = sTypeIdCounter++;
-	type->mSizeOfMember = size;
+
+
+extern "C" void CBF_CB_ConstructType(CB_Type *type, unsigned int size) {
+	type->setFirstMember(0);
+	type->setLastMember(0);
+	type->setSizeOfMember(size);
 }
 
-CBEXPORT TypeMember *CBF_newT(Type *type) {
+CBEXPORT TypeMember *CBF_CB_New(Type *type) {
 	return type->createMemberToEnd();
 }
 
-CBEXPORT TypeMember *CBF_afterM(TypeMember *member) {
+CBEXPORT TypeMember *CBF_CB_First(Type *type) {
+	return type->firstMember();
+}
+
+CBEXPORT TypeMember *CBF_CB_Last(Type *type) {
+	return type->lastMember();
+}
+
+CBEXPORT TypeMember *CBF_CB_After(TypeMember *member) {
 	if (member == 0) {
 		error(U"CBF_CB_TypeMemberAfter: Invalid TypeMember");
 		return 0;
@@ -21,19 +29,11 @@ CBEXPORT TypeMember *CBF_afterM(TypeMember *member) {
 	return member->after();
 }
 
-CBEXPORT TypeMember *CBF_beforeM(TypeMember *member) {
+CBEXPORT TypeMember *CBF_CB_Before(TypeMember *member) {
 	if (member == 0) {
 		error(U"CBF_CB_TypeMemberBefore: Invalid TypeMember");
 		return 0;
 	}
 	return member->before();
-}
-
-CBEXPORT TypeMember *CBF_firstT(Type *type) {
-	return type->firstMember();
-}
-
-CBEXPORT TypeMember *CBF_lastT(Type *type) {
-	return type->lastMember();
 }
 

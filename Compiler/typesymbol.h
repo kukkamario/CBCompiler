@@ -31,7 +31,7 @@ class TypeField {
 
 class TypeSymbol : public Symbol {
 	public:
-		TypeSymbol(const QString &name, QFile *file, int line);
+		TypeSymbol(const QString &name, Runtime *r, QFile *file, int line);
 		Type type()const{return stType;}
 		QString info() const;
 		bool addField(const TypeField &field);

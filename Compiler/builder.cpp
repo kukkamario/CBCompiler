@@ -10,6 +10,7 @@
 #include "variablesymbol.h"
 #include "arraysymbol.h"
 #include "typesymbol.h"
+#include "typevaluetype.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
@@ -241,6 +242,8 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 			return llvmValue(v.toBool());
 		case ValueType::String: {
 			return llvmValue(v.toString());
+		case ValueType::TypePointerCommon:
+			return mRuntime->typePointerCommonValueType()->defaultValue();
 		}
 	}
 	assert(0);
@@ -469,6 +472,40 @@ llvm::Value *Builder::typePointerFieldPointer(VariableSymbol *typePtrVar, const 
 	int fieldIndex = typeSymbol->fieldIndex(fieldName);
 
 	return mIRBuilder.CreateStructGEP(mIRBuilder.CreateLoad(typePtrVar->alloca_()), fieldIndex);
+}
+
+Value Builder::newTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->newFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::firstTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->firstFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::lastTypeMember(TypeSymbol *type) {
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->lastFunction(), type->globalTypeVariable());
+	return Value(type->typePointerValueType(), bitcast(type->typePointerValueType()->llvmType(), typePtr));
+}
+
+Value Builder::afterTypeMember(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	llvm::Value *param = bitcast(mRuntime->typePointerCommonValueType()->llvmType(), llvmValue(ptr));
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->afterFunction(), param);
+	return Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr));
+}
+
+Value Builder::beforeTypeMember(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	llvm::Value *param = bitcast(mRuntime->typePointerCommonValueType()->llvmType(), llvmValue(ptr));
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->beforeFunction(), param);
+	return Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr));
+}
+
+Value Builder::typePointerNotNull(const Value &ptr) {
+	assert(ptr.valueType()->isTypePointer());
+	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(ptr)));
 }
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {

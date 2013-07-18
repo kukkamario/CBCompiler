@@ -37,6 +37,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		ValueType *typeCheck(ast::Expression *s);
 		ValueType *typeCheck(ast::Unary *s);
 		ValueType *typeCheck(ast::FunctionCallOrArraySubscript *s);
+		ValueType *typeCheck(ast::SpecialFunctionCall *s);
 		ValueType *typeCheck(ast::TypePtrField *s);
 		ValueType *typeCheck(ast::Variable *s);
 
@@ -55,6 +56,7 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::RepeatUntilStatement *s);
 		bool checkStatement(ast::CommandCall *s);
 		bool checkStatement(ast::FunctionCallOrArraySubscript *s);
+		bool checkStatement(ast::SpecialFunctionCall *s);
 		bool checkStatement(ast::Return *s);
 		bool checkStatement(ast::Label *s);
 		bool checkStatement(ast::Goto *s);

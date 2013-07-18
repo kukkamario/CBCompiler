@@ -76,6 +76,12 @@ class Builder {
 		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);
 
 		llvm::Value *typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName);
+		Value newTypeMember(TypeSymbol *type);
+		Value firstTypeMember(TypeSymbol *type);
+		Value lastTypeMember(TypeSymbol *type);
+		Value afterTypeMember(const Value &ptr);
+		Value beforeTypeMember(const Value &ptr);
+		Value typePointerNotNull(const Value &ptr);
 
 		llvm::GlobalVariable *createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
 		llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());

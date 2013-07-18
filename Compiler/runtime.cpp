@@ -78,11 +78,11 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 			}
 		}
 		if (!runtimeFunc || funcName.isEmpty()) continue;
-
+		qDebug() << "Adding runtime function " << funcName;
 		addRuntimeFunction(func, funcName);
 	}
 	if (!(mStringValueType && mByteValueType && mShortValueType && mIntValueType && mFloatValueType)) return false;
-	if (!mStringValueType->isValid()) return false;
+	if (!(mStringValueType->isValid() && mTypeValueType->isValid())) return false;
 	if (!(mCBMain && mCBInitialize)) return false;
 	return mValid;
 }
@@ -278,6 +278,50 @@ void Runtime::addDefaultRuntimeFunction(llvm::Function *func, const QString &nam
 		}
 		return;
 	}
+
+	if (name == "CB_ConstructType") {
+		if (!mTypeValueType->setConstructTypeFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_ConstructType"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+	if (name == "CB_New") {
+		if (!mTypeValueType->setNewFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_New"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+	if (name == "CB_First") {
+		if (!mTypeValueType->setFirstFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_First"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+	if (name == "CB_Last") {
+		if (!mTypeValueType->setLastFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_Last"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+	if (name == "CB_Before") {
+		if (!mTypeValueType->setBeforeFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_Before"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+	if (name == "CB_After") {
+		if (!mTypeValueType->setAfterFunction(func)) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CBF_CB_After"), 0, 0);
+			mValid = false;
+		}
+		return;
+	}
+
 
 	emit warning(ErrorCodes::ecPrefixReserved, tr("Prefix \"CB_\" is reserved for default runtime functions. Function \"%1\" is ignored.").arg("CBF_" + name), 0, 0);
 }

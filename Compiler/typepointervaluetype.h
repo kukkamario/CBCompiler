@@ -14,6 +14,7 @@ class TypePointerValueType : public ValueType {
 		bool isNumber() const{return false;}
 		llvm::Constant *defaultValue() const;
 		int size() const;
+		void setLLVMType(llvm::Type *type) { mType = type; }
 	private:
 		TypeSymbol *mTypeSymbol;
 };

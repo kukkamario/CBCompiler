@@ -94,6 +94,7 @@ enum ErrorCode {
 	ecExpectingNumberValue,
 	ecDangerousFloatToIntCast,
 	ecTypeCantHaveValueType,
+	ecExpectingType,
 
 	ecCantWriteBitcodeFile,
 

@@ -6,9 +6,9 @@
 #include "typevaluetype.h"
 
 
-TypeSymbol::TypeSymbol(const QString &name, QFile *file, int line):
+TypeSymbol::TypeSymbol(const QString &name, Runtime *r, QFile *file, int line):
 	Symbol(name, file, line),
-	mTypePointerValueType(0),
+	mTypePointerValueType(new TypePointerValueType(r, this)),
 	mGlobalTypeVariable(0),
 	mFirstFieldIndex(0),
 	mMemberSize(0) {
@@ -63,7 +63,7 @@ QString TypeField::info() const {
 void TypeSymbol::createTypePointerValueType(Builder *b) {
 	mRuntime = b->runtime();
 	createLLVMMemberType();
-	mGlobalTypeVariable = b->createGlobalVariable(mRuntime->typeLLVMType(), false, llvm::GlobalValue::PrivateLinkage, 0);
+	mGlobalTypeVariable = b->createGlobalVariable(mRuntime->typeLLVMType(), false, llvm::GlobalValue::InternalLinkage, llvm::Constant::getNullValue(mRuntime->typeLLVMType()));
 }
 
 Value TypeSymbol::typeValue() {
@@ -88,7 +88,7 @@ void TypeSymbol::createLLVMMemberType() {
 	mMemberType->setBody(elements);
 	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
 
-	mTypePointerValueType = new TypePointerValueType(mRuntime, this);
+	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 

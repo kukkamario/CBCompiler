@@ -13,6 +13,8 @@ CB_TypeMember *CB_Type::createMemberToEnd() {
 void CB_Type::insertLast(CB_TypeMember *member) {
 	if (mLast) {
 		mLast->mAfter = member;
+	} else if (!mFirst) {
+		mFirst = member;
 	}
 	member->mBefore = mLast;
 	member->mAfter = 0;
