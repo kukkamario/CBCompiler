@@ -26,3 +26,16 @@ int TypeValueType::size() const {
 	return mRuntime->dataLayout().getPointerSize();
 }
 
+bool TypeValueType::setConstructTypeFunction(llvm::Function *func) {
+	if (func->arg_size() != 2) return false;
+	llvm::Function::arg_iterator i = func->arg_begin();
+	if (i->getType() != mRuntime->typeLLVMType()->getPointerTo()) return false;
+	i++;
+	if (i->getType() != llvm::Type::getInt32Ty(mRuntime->module()->getContext())) return false;
+
+	if (func->getReturnType() != llvm::Type::getVoidTy(mRuntime->module()->getContext())) return false;
+
+	mConstructTypeFunction = func;
+	return true;
+}
+

@@ -35,6 +35,7 @@ class Runtime : public QObject {
 		QList<RuntimeFunction*> functions() {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
 		llvm::Function *cbMain() {return mCBMain;}
+		llvm::Function *cbInitialize() { return mCBInitialize; }
 
 		StringValueType *stringValueType() {return mStringValueType;}
 		IntValueType *intValueType() {return mIntValueType;}
@@ -68,6 +69,8 @@ class Runtime : public QObject {
 		QList<RuntimeFunction*> mFunctions;
 		QList<ValueType*> mValueTypes;
 		llvm::Function *mCBMain;
+		llvm::Function *mCBInitialize;
+
 		IntValueType *mIntValueType;
 		FloatValueType *mFloatValueType;
 		StringValueType *mStringValueType;

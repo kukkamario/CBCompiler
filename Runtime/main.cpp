@@ -8,8 +8,13 @@
 #include "textinterface.h"
 
 extern "C" void CBF_CB_main();
+extern "C" void CBF_CB_initialize();
+
 
 int main(int argc, char **argv) {
+
+	info(U"Initializing types and strings");
+	CBF_CB_initialize();
 
 	info(U"Initializing allegro");
 	if (!al_init()) {

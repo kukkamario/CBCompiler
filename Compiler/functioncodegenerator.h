@@ -43,8 +43,6 @@ class FunctionCodeGenerator: public QObject{
 		 * @return True, if generation succeeded, otherwise false
 		 */
 		bool generateMainScope(ast::Block *n);
-
-		void generateStringLiterals();
 		Scope *scope() const {return mScope;}
 		llvm::Function *function()const{return mFunction;}
 		Runtime *runtime() const {return mRuntime;}
@@ -105,8 +103,6 @@ class FunctionCodeGenerator: public QObject{
 		ExpressionCodeGenerator mExprGen;
 		Runtime *mRuntime;
 		ValueType *mReturnType;
-		llvm::BasicBlock *mStringLiteralInitializationBasicBlock;
-		llvm::BasicBlock *mStringLiteralInitializationExitBasicBlock;
 	public slots:
 
 	signals:

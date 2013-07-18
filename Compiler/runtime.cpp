@@ -15,6 +15,7 @@ static Runtime *runtimeInstance = 0;
 Runtime::Runtime():
 	mModule(0),
 	mCBMain(0),
+	mCBInitialize(0),
 	mValid(true),
 	mDataLayout(0),
 	mIntValueType(0),
@@ -82,6 +83,7 @@ bool Runtime::load(StringPool *strPool, const QString &file) {
 	}
 	if (!(mStringValueType && mByteValueType && mShortValueType && mIntValueType && mFloatValueType)) return false;
 	if (!mStringValueType->isValid()) return false;
+	if (!(mCBMain && mCBInitialize)) return false;
 	return mValid;
 }
 
@@ -179,6 +181,10 @@ void Runtime::addRuntimeFunction(llvm::Function *func, const QString &name) {
 void Runtime::addDefaultRuntimeFunction(llvm::Function *func, const QString &name) {
 	if (name == "CB_main") {
 		mCBMain = func;
+		return;
+	}
+	if (name == "CB_initialize") {
+		mCBInitialize = func;
 		return;
 	}
 	if (name == "CB_StringConstruct") {

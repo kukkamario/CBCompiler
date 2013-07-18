@@ -3,6 +3,7 @@
 #include "llvm.h"
 #include "runtime.h"
 #include "builder.h"
+#include "typevaluetype.h"
 
 
 TypeSymbol::TypeSymbol(const QString &name, QFile *file, int line):
@@ -33,7 +34,7 @@ const TypeField &TypeSymbol::field(const QString &name) const{
 }
 
 void TypeSymbol::initializeType(Builder *b) {
-	assert("TODO: Call CBF_CB_ConstructType" && 0);
+	b->irBuilder().CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
 }
 
 void TypeSymbol::createOpaqueTypes(Builder *b) {

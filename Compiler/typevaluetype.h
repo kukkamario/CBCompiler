@@ -13,10 +13,13 @@ class TypeValueType : public ValueType {
 		CastCostType castingCostToOtherValueType(ValueType *to) const;
 		Value cast(Builder *, const Value &v) const;
 		llvm::Constant *defaultValue() const;
-
+		bool setConstructTypeFunction(llvm::Function * func);
+		llvm::Function *constructTypeFunction() const { return mConstructTypeFunction; }
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return false;}
 		int size() const;
+	private:
+	llvm::Function *mConstructTypeFunction;
 };
 
 #endif // TYPEVALUETYPE_H

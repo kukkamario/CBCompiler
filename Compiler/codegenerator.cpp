@@ -99,7 +99,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	valid &= generateMainScope(&program->mMainBlock);
 	valid &= generateFunctions();
 
-	mFuncCodeGen.generateStringLiterals();
+	generateInitializers();
 	return valid;
 }
 
@@ -307,6 +307,7 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 		}
 
 		type->createTypePointerValueType(mBuilder);
+		mTypes.append(type);
 	}
 
 
@@ -327,6 +328,25 @@ bool CodeGenerator::generateMainScope(ast::Block *block) {
 	mFuncCodeGen.setFunction(mRuntime.cbMain());
 	mFuncCodeGen.setScope(&mMainScope);
 	return mFuncCodeGen.generateMainScope(block);
+}
+
+void CodeGenerator::generateInitializers() {
+	mInitializationBlock = llvm::BasicBlock::Create(mBuilder->context(), "Initialize", mRuntime.cbInitialize());
+	generateStringLiterals();
+	generateTypeInitializers();
+	mBuilder->setInsertPoint(mInitializationBlock);
+	mBuilder->irBuilder().CreateRetVoid();
+}
+
+void CodeGenerator::generateStringLiterals() {
+	mBuilder->setInsertPoint(mInitializationBlock);
+	mBuilder->stringPool()->generateStringLiterals(mBuilder);
+}
+
+void CodeGenerator::generateTypeInitializers() {
+	foreach(TypeSymbol *type, mTypes) {
+		type->initializeType(mBuilder);
+	}
 }
 
 void CodeGenerator::createBuilder() {
