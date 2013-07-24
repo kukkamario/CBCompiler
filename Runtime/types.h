@@ -10,6 +10,8 @@ struct CB_Type;
  */
 struct CB_TypeMember {
 		friend struct CB_Type;
+		void deleteThis();
+
 		CB_TypeMember *after() const { return mAfter; }
 		CB_TypeMember *before() const { return mBefore; }
 		CB_Type *type() const { return mType; }
@@ -35,6 +37,7 @@ struct CB_Type {
 		CB_TypeMember *createMemberToEnd();
 		CB_TypeMember *firstMember() { return mFirst; }
 		CB_TypeMember *lastMember() { return mLast; }
+		void deleteMember(CB_TypeMember *m);
 		void setFirstMember(CB_TypeMember *m) { mFirst = m; }
 		void setLastMember(CB_TypeMember *m) { mLast = m; }
 		void setSizeOfMember(unsigned int s) { mSizeOfMember = s; }

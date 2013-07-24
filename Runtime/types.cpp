@@ -9,6 +9,32 @@ CB_TypeMember *CB_Type::createMemberToEnd() {
 	return member;
 }
 
+void CB_Type::deleteMember(CB_TypeMember *m) {
+	assert(m->type() == this);
+	if (m->after()) {
+		m->after()->mBefore = m->before();
+		if (m->before()) {
+			m->before()->mAfter = m->after();
+		}
+		else { //m is the first member
+			mFirst = m->after();
+		}
+	}
+	else { //m is the last member
+		if (!m->before()) {
+			m->before()->mAfter = 0;
+			mLast = m->before();
+
+		}
+		else { //m is the only member
+			mFirst = 0;
+			mLast = 0;
+		}
+	}
+
+	delete [] reinterpret_cast<char*>(m);
+}
+
 
 void CB_Type::insertLast(CB_TypeMember *member) {
 	if (mLast) {
@@ -19,4 +45,9 @@ void CB_Type::insertLast(CB_TypeMember *member) {
 	member->mBefore = mLast;
 	member->mAfter = 0;
 	mLast = member;
+}
+
+
+void CB_TypeMember::deleteThis() {
+	mType->deleteMember(this);
 }

@@ -44,6 +44,8 @@ class ConstantValue {
 		static ConstantValue or_(const ConstantValue &a, const ConstantValue &b);
 		static ConstantValue xor_(const ConstantValue &a, const ConstantValue &b);
 
+		static int cbIntPower(int a, int b);
+
 		QString toString() const;
 		quint16 toShort() const;
 		quint8 toByte() const;

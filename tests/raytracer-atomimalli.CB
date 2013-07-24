@@ -1,0 +1,141 @@
+//http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
+
+Const screenw% = 500 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fiksata.
+Const screenh% = 500
+fov=35
+maxiters=10
+
+SCREEN screenw, screenh
+
+Type sphere
+	Field x#
+	Field y#
+	Field z#
+	Field w#
+	Field r#
+	Field g#
+	Field b#
+EndType
+
+Type transmitter
+	Field r#
+	Field g#
+	Field b#
+EndType
+
+Type light
+	Field x#
+	Field y#
+	Field z#
+EndType
+
+s.sphere = New(sphere)
+s\x# = -1: s\y# = -1: s\z# = 7: s\w# = 1.5: s\r# = 255: s\g#= 0: s\b# = 0
+
+s.sphere = New(sphere)
+s\x# = 2: s\y# = 1: s\z# = 6: s\w# = 1: s\r# = 5: s\g# = 0: s\b# = 255
+
+s.sphere = New(sphere)
+s\x# = 0: s\y# = 1.5: s\z# = 7: s\w# = 1: s\r# = 5: s\g# = 255: s\b# = 0 
+
+l.light = New(light)
+l\x = -3: l\y = 0: l\z = 0
+
+Repeat
+    Tim=Timer()
+    xfov#=Tan(fov/2)/Cos(fov/2)'kalansilmän poistoa varten.(sama kulma joka resolla)
+    yfov#=xfov'*screenh/screenw'pitänee fiksata vielä :P
+    For x#=0 To screenw-1
+        For y#=0 To screenh-1
+            a.transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
+            Color  Min(255,a\r), Min(255,a\g), Min(255,a\b)
+			Dot x,y
+        Next y#
+    Next x#
+    DrawScreen
+    Print (Timer()-Tim)
+Forever
+
+Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
+    col=0
+    For obj.sphere=Each sphere 
+            'remstart
+            Q# = Sqrt(vx#^2 + vy#^2 + vz#^2)
+            dx = dx / Q: dy = dy / Q: dz = dz / Q
+           
+            a# = vx#^2 + vy#^2 + vz#^2
+            b# = 2*vx#*(x#-obj\x#) + 2*vy#*(y#-obj\y) + 2*vz#*(z#-obj\z#)
+            c# = obj\x#^2 + obj\y#^2 + obj\z#^2 + x^2 + y^2 + z^2 -2*(obj\x# * x# + obj\y# * y# + obj\z#*z#) - obj\w#^2
+            d# = b#^2 - 4*a#*c#
+            'remend
+            'd#=Sqrt((x-obj\x)^2+(y-obj\y)^2+(y-obj\y)^2)
+       
+        If d>0 Then
+            tt# = (-b#-Sqrt(d#))/(2*a#)',(-b#+Sqrt(d#))/(2*a#))
+            'If tt<=0 Then tt# = (-b#-Sqrt(d#))/(2*a#)
+            'SetWindow str(tt#)
+            If (col=0 Or dist#>tt) And tt>0.0001
+                dist#=tt
+                nearest.sphere=obj
+                col=1
+            EndIf
+        EndIf
+    Next obj
+    
+    If col Then
+        obj.sphere=nearest
+        //valaistus
+        'remstart
+        For valo.light=Each light
+            pvx#=obj\x-x-vx*dist
+            vvx#=valo\x-x-vx*dist
+            pvy#=obj\y-y-vy*dist
+            vvy#=valo\y-y-vy*dist
+            pvz#=obj\z-z-vz*dist
+            vvz#=valo\z-z-vz*dist
+            pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
+            vvl#=Sqrt(vvx^2+vvy^2+vvz^2)
+            pvx#=pvx/pvl
+            vvx#=-vvx/vvl
+            pvy#=pvy/pvl
+            vvy#=-vvy/vvl
+            pvz#=pvz/pvl
+            vvz#=-vvz/vvl
+            dp#=pvx*vvx+pvy*vvy+pvz*vvz
+            lightness#=lightness+Max(0,dp)
+            specular#=specular+Max(0,dp)^5/3
+            dp#=pvx*vx+pvy*vy+pvz*vz
+            svx#=(2*dp*pvx-vx)
+            svy#=(2*dp*pvy-vy)
+            svz#=(2*dp*pvz-vz)
+            specular#=min(255,Max(0,((vvx*svx+vvy*svy+vvz*svz))))^2/2+specular
+        Next valo
+        'remend
+        //heijastukset
+        If iters>0 Then 
+            pvx#=obj\x-x-vx*dist
+            pvy#=obj\y-y-vy*dist
+            pvz#=obj\z-z-vz*dist
+            pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
+            pvx#=pvx/pvl
+            pvy#=pvy/pvl
+            pvz#=pvz/pvl
+            dp#=pvx*vx+pvy*vy+pvz*vz
+            svx#=-(2*dp*pvx-vx)
+            svy#=-(2*dp*pvy-vy)
+            svz#=-(2*dp*pvz-vz)
+            ref.transmitter=trace(x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
+            'SetWindow ""+dotp
+        Else
+            ref.transmitter=new(transmitter)
+        EndIf
+        t.transmitter= New(transmitter)
+        t\r=(obj\r*lightness+ref\r)/2+specular*255+20'*dotp
+        t\g=(obj\g*lightness+ref\g)/2+specular*255+20'*dotp
+        t\b=(obj\b*lightness+ref\b)/2+specular*255+20'*dotp
+        Delete ref
+    Else
+        t.transmitter= New(transmitter)    
+    EndIf
+    Return t
+EndFunction

@@ -19,7 +19,7 @@ bool TypeSymbol::addField(const TypeField &field) {
 		return false;
 	}
 	mFields.append(field);
-	mFieldSearch.insert(field.name(), --mFields.end());
+	mFieldSearch.insert(field.name(), mFields.size() - 1);
 	return true;
 }
 
@@ -28,14 +28,14 @@ bool TypeSymbol::hasField(const QString &name) {
 }
 
 const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, QList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
 	assert(i != mFieldSearch.end());
-	return *i.value();
+	return mFields.at(i.value());
 }
 
 int TypeSymbol::fieldIndex(const QString &name) const {
-	QMap<QString, QList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
-	int fieldI = (QList<TypeField>::ConstIterator(i.value()) - mFields.begin());
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
+	int fieldI = i.value();
 	return mFirstFieldIndex + fieldI;
 }
 

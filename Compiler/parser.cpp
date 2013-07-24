@@ -854,7 +854,15 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 		if (mStatus == Error) return 0;
 
 		ast::Variable::VarType retType = tryVarTypeSymbol(i);
+		QString typeName;
 		if (mStatus == Error) return 0;
+
+		if (i->mType == Token::opTypePtrType) {// .
+			i++;
+			typeName = expectIdentifier(i);
+			if (mStatus == Error) return 0;
+			retType = ast::Variable::TypePtr;
+		}
 
 		if (i->mType != Token::LeftParenthese) {
 			emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting '(' after a function name, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
@@ -909,6 +917,7 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 		ast::FunctionDefinition *func = new ast::FunctionDefinition;
 		func->mBlock = block;
 		func->mName = functionName;
+		func->mTypeName = typeName;
 		func->mParams = params;
 		func->mRetType = retType;
 		func->mLine = line;

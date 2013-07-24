@@ -21,6 +21,18 @@ Builder::Builder(llvm::LLVMContext &context) :
 
 void Builder::setRuntime(Runtime *r) {
 	mRuntime = r;
+
+	//double    @llvm.pow.f64(double %Val, double %Power)
+	llvm::Type *params[2] = {mIRBuilder.getDoubleTy(), mIRBuilder.getDoubleTy()};
+	llvm::FunctionType *funcTy = llvm::FunctionType::get(mIRBuilder.getDoubleTy(), params, false);
+	mPowFF = llvm::cast<llvm::Function>(r->module()->getOrInsertFunction("llvm.pow.f64", funcTy));
+
+	//double    @llvm.powi.f64(double %Val, i32 %power)
+	params[1] = mIRBuilder.getInt32Ty();
+	funcTy = llvm::FunctionType::get(mIRBuilder.getDoubleTy(), params, false);
+	mPowFI = llvm::cast<llvm::Function>(r->module()->getOrInsertFunction("llvm.powi.f64", funcTy));
+
+	assert(mPowFF && mPowFI);
 }
 
 void Builder::setStringPool(StringPool *s) {
@@ -197,7 +209,9 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 		return llvmValue(v.constant());
 	}
 
-	assert(v.value());
+	if (!v.value()) {
+		assert("CAVEMAN assert" && 0);
+	}
 	return v.value();
 }
 
@@ -999,7 +1013,25 @@ Value Builder::xor_(const Value &a, const Value &b) {
 }
 
 Value Builder::power(const Value &a, const Value &b) {
-	assert(0); return Value();
+	if (a.isConstant() && b.isConstant()) {
+		return Value(ConstantValue::power(a.constant(), b.constant()), mRuntime);
+	}
+	if (a.valueType()->type() == ValueType::Float || b.valueType()->type() == ValueType::Float) {
+		llvm::Value *af = llvmValue(toFloat(a));
+		llvm::Value *bf = llvmValue(toFloat(b));
+		llvm::Value *ad = mIRBuilder.CreateFPExt(af, mIRBuilder.getDoubleTy());
+		llvm::Value *bd = mIRBuilder.CreateFPExt(bf, mIRBuilder.getDoubleTy());
+		llvm::Value *retD = mIRBuilder.CreateCall2(mPowFF, ad, bd);
+		return Value(mRuntime->floatValueType(), mIRBuilder.CreateFPTrunc(retD, mIRBuilder.getFloatTy()));
+	}
+	llvm::Value *af = llvmValue(toFloat(a));
+	llvm::Value *ad = mIRBuilder.CreateFPExt(af, mIRBuilder.getDoubleTy());
+	llvm::Value *retD = mIRBuilder.CreateCall2(mPowFI, ad, llvmValue(toInt(b)));
+	llvm::Value *greaterCond = mIRBuilder.CreateFCmpOGT(retD, llvm::ConstantFP::get( mIRBuilder.getDoubleTy(), (double)INT_MAX));
+	llvm::Value *lessCond = mIRBuilder.CreateFCmpOLT(retD, llvm::ConstantFP::get( mIRBuilder.getDoubleTy(), (double)-INT_MAX));
+	llvm::Value *cond = mIRBuilder.CreateOr(greaterCond, lessCond);
+	llvm::Value *ret = mIRBuilder.CreateSelect(cond, llvmValue(-INT_MAX), mIRBuilder.CreateFPToSI(retD, mIRBuilder.getInt32Ty()));
+	return Value(mRuntime->intValueType(), ret);
 }
 
 Value Builder::less(const Value &a, const Value &b) {

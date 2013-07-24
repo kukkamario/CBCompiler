@@ -477,10 +477,17 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 		}
 		paramList.append(p);
 	}
-	if (!valid) return false;
+	if (!valid) return 0;
 
 	//Function return type
-	ValueType *retType = mRuntime->findValueType(valueTypeFromVarType(func->mRetType));
+	ValueType *retType = 0;
+	if (func->mRetType == ast::Variable::TypePtr) {
+		retType = checkTypePointerType(func->mTypeName);
+		if (!retType) return 0;
+	}
+	else {
+		retType = mRuntime->findValueType(valueTypeFromVarType(func->mRetType));
+	}
 
 	CBFunction *function = new CBFunction(func->mName, retType, paramList, funcScope, mLine, mFile);
 

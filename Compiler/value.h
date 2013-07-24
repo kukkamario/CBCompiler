@@ -16,7 +16,7 @@ class Value {
 
 		ValueType *valueType() const {return mValueType;}
 		bool isConstant()const{return mConstant.isValid();}
-		bool isValid() const{return mValueType != 0;}
+		bool isValid() const{return mValueType != 0 && (isConstant() ? true : mValue != 0);}
 		llvm::Value *value() const {return mValue;}
 		const ConstantValue &constant() const {return mConstant;}
 		void toLLVMValue(Builder *builder);

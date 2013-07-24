@@ -178,6 +178,7 @@ struct FunctionDefinition : Node{
 		Type type() const {return ntFunctionDefinition;}
 		Variable::VarType mRetType;
 		QString mName;
+		QString mTypeName;
 		QList<FunctionParametreDefinition> mParams;
 		Block mBlock;
 		int mLine;

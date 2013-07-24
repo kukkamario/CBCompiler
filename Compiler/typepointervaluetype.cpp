@@ -22,18 +22,12 @@ ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueT
 
 Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
 	if (v.valueType() == this) return v;
-
-	if (v.valueType()->type() == ValueType::TypePointerCommon) {
-		if (v.isConstant()) {
-			return Value(const_cast<TypePointerValueType*>(this), defaultValue());
-		}
-		return Value(const_cast<TypePointerValueType*>(this), builder->bitcast(mType, v.value()));
-	}
+	assert("Invalid cast" && 0);
 	return Value();
 }
 
 llvm::Constant *TypePointerValueType::defaultValue() const {
-	return llvm::ConstantPointerNull::get(mType->getPointerTo());
+	return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(mType));
 }
 
 int TypePointerValueType::size() const {
@@ -46,10 +40,17 @@ ValueType::CastCostType TypePointerCommonValueType::castingCostToOtherValueType(
 	return sMaxCastCost;
 }
 
-Value TypePointerCommonValueType::cast(Builder *, const Value &v) const {
+Value TypePointerCommonValueType::cast(Builder *builder, const Value &v) const {
 	if (v.valueType()->type() == ValueType::TypePointerCommon) {
 		return v;
 	}
+	if (v.valueType()->type() == ValueType::TypePointer) {
+		if (v.isConstant()) {
+			return Value(const_cast<TypePointerCommonValueType*>(this), defaultValue());
+		}
+		return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType, v.value()));
+	}
+	assert("Invalid cast" && 0);
 	return Value();
 }
 

@@ -4,8 +4,8 @@
 VariableSymbol::VariableSymbol(const QString &name, ValueType *t, QFile *f, int line):
 	Symbol(name, f, line),
 	mValueType(t),
-	mAlloca(0)
-{
+	mAlloca(0) {
+	assert(t);
 }
 
 QString VariableSymbol::info() const {

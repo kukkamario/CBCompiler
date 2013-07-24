@@ -50,7 +50,7 @@ class TypeSymbol : public Symbol {
 	private:
 		void createLLVMMemberType();
 		QList<TypeField> mFields;
-		QMap<QString, QList<TypeField>::Iterator> mFieldSearch;
+		QMap<QString, int> mFieldSearch;
 		Runtime *mRuntime;
 		llvm::StructType *mMemberType;
 		llvm::GlobalVariable *mGlobalTypeVariable;

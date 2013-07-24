@@ -80,17 +80,20 @@ Value ExpressionCodeGenerator::generate(ast::Unary *n) {
 Value ExpressionCodeGenerator::generate(ast::Variable *n) {
 	Symbol *sym = mScope->find(n->mName);
 	assert(sym->type() == Symbol::stVariable || sym->type() == Symbol::stConstant || sym->type() == Symbol::stType);
+	Value ret;
 	if (sym->type() == Symbol::stConstant) {
 		ConstantSymbol *c = static_cast<ConstantSymbol*>(sym);
-		return Value(c->value(), mBuilder->runtime());
+		ret =  Value(c->value(), mBuilder->runtime());
 	}
 	else if (sym->type() == Symbol::stVariable) {
 		VariableSymbol *var = static_cast<VariableSymbol*>(sym);
-		return mBuilder->load(var);
+		ret = mBuilder->load(var);
 	}
 	else {
-		return static_cast<TypeSymbol*>(sym)->typeValue();
+		ret = static_cast<TypeSymbol*>(sym)->typeValue();
 	}
+	assert(ret.isValid());
+	return ret;
 }
 
 Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {

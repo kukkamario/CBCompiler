@@ -317,8 +317,9 @@ void FunctionCodeGenerator::generate(ast::Return *n) {
 		mBuilder->returnValue(mReturnType, mExprGen.generate(n->mValue));
 		nextBasicBlock();
 		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		return;
 	}
-	assert(0);
+	assert("TODO: Implement gosub-return" && 0);
 }
 
 void FunctionCodeGenerator::generate(ast::Block *n) {

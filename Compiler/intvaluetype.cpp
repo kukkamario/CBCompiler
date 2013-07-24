@@ -23,7 +23,7 @@ ValueType::CastCostType IntValueType::castingCostToOtherValueType(ValueType *to)
 		case ValueType::Byte:
 			return 4;
 		case ValueType::String:
-			return 10;
+			return 100;
 		default:
 			return sMaxCastCost;
 	}

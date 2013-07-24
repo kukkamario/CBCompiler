@@ -158,6 +158,9 @@ class Builder {
 		QStack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
+
+		llvm::Function *mPowFF;
+		llvm::Function *mPowFI;
 };
 
 #endif // BUILDER_H
