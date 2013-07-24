@@ -209,9 +209,7 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 		return llvmValue(v.constant());
 	}
 
-	if (!v.value()) {
-		assert("CAVEMAN assert" && 0);
-	}
+	assert(v.value());
 	return v.value();
 }
 
