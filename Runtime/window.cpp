@@ -118,6 +118,14 @@ bool Window::deactivate() {
 	return true;
 }
 
+void Window::lock(int flags) {
+	al_lock_bitmap(al_get_backbuffer(mDisplay), ALLEGRO_PIXEL_FORMAT_ANY, flags);
+}
+
+void Window::unlock() {
+	al_unlock_bitmap(al_get_backbuffer(mDisplay));
+}
+
 void Window::drawscreen() {
 	ALLEGRO_EVENT e;
 	while (al_get_next_event(mEventQueue, &e)) {

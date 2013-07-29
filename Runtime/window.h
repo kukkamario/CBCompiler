@@ -22,6 +22,8 @@ class Window : RenderTarget{
 		bool isValid() const;
 		bool activate();
 		bool deactivate();
+		void lock(int flags);
+		void unlock();
 		void drawscreen();
 		void cls();
 

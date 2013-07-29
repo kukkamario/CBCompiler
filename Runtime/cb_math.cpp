@@ -90,3 +90,15 @@ CBEXPORT float CBF_roundUpF(float f) {
 CBEXPORT float CBF_roundDownF(float f) {
 	return floorf(f);
 }
+
+CBEXPORT float CBF_getAngleFFFF(float x1, float y1, float x2, float y2) {
+	return getAngle(x1, y1, x2, y2);
+}
+
+CBEXPORT float CBF_logF(float v) {
+	return logf(v);
+}
+
+CBEXPORT float CBF_log10F(float v) {
+	return log10f(v);
+}

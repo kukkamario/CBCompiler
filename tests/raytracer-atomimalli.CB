@@ -3,7 +3,7 @@
 Const screenw% = 500 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fiksata.
 Const screenh% = 500
 fov=35
-maxiters=10
+maxiters=20
 
 SCREEN screenw, screenh
 

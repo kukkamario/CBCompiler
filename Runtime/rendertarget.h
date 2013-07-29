@@ -7,6 +7,8 @@ class RenderTarget {
 		virtual bool activate() = 0;
 		virtual bool deactivate() = 0;
 		virtual bool isValid() const = 0;
+		virtual void lock(int flags) = 0;
+		virtual void unlock() = 0;
 		bool paintingActive() const { return sCurrentTarget == this; }
 
 		int width() const {return mWidth; }
