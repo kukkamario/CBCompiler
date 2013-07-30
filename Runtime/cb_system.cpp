@@ -15,11 +15,11 @@ extern "C" void CBF_CB_Free(char *mem) {
 	delete [] mem;
 }
 
-extern "C" inline int CBF_intF(float f) {
+extern "C" int CBF_intF(float f) {
 	return int(f + 0.5f);
 }
 
-extern "C" inline int CBF_floatI(int i) {
+extern "C" int CBF_floatI(int i) {
 	return float(i);
 }
 
