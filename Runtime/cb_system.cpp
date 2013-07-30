@@ -32,7 +32,7 @@ extern "C" void CBF_printF(float f) {
 }
 
 extern "C" void CBF_printS(CBString s) {
-#ifdef _WIN //sizeof(wchar_t) == 2
+#ifdef _WIN32 //sizeof(wchar_t) == 2
 	std::wcout << LString(s).toWString() << std::endl;
 #else //wchar_t == char32_t
 	std::cout << LString(s).toUtf8() << std::endl;

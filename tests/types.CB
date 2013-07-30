@@ -1,33 +1,33 @@
 Type TestType
 	Field field1
-	Field field2 as String
+	Field field2 As String
 EndType
 
 
 
-typePtr.TestType = new (TestType)
+typePtr.TestType = New (TestType)
 typePtr\field1 = 10
 typePtr\field2 = "Hello world"
 
-typePtr2.TestType = new (TestType)
+typePtr2.TestType = New (TestType)
 typePtr2\field1 = 16
 typePtr2\field2 = "Whohoo"
 
-for ptr.TestType = Each TestType
+For ptr.TestType = Each TestType
 	Print ptr\field1
 	Print ptr\field2
-next ptr
+Next ptr
 
 ptr = First(TestType)
 ptr\field1 = 1
 ptr = Last(TestType)
 ptr\field2 = 2
 
-if After(ptr) = NULL then Print "No third type member"
+If After(ptr) = NULL Then Print "No third type member"
 
 
-for ptr.TestType = Each TestType
+For ptr.TestType = Each TestType
 	Print ptr\field1
 	Print ptr\field2
-next ptr
+Next ptr
 

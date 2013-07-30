@@ -5,7 +5,7 @@
 #include <QDebug>
 static const char *const tokenNames[] = {
 	"EndOfTokens",
-	"EOL",
+	"<EOL>",
 	"Integer",
 	"IntegerHex",
 	"Float",
@@ -16,14 +16,14 @@ static const char *const tokenNames[] = {
 	"Colon", // :
 	"Comma",
 
-	"IntTypeMark", //%
+	"IntegerTypeMark", //%
 	"StringTypeMark", //$
 	"FloatTypeMark", //#
 
 	"LeftParenthese",
 	"RightParenthese",
-
 	//Operators
+
 	"OperatorsBegin",
 	"opEqual",
 	"opNotEqual",
@@ -48,7 +48,6 @@ static const char *const tokenNames[] = {
 	"opTypePtrType",  //   Dot
 	"OperatorsEnd",
 
-
 	//Keywords
 	"KeywordsBegin",
 	"kIf",
@@ -66,7 +65,6 @@ static const char *const tokenNames[] = {
 	"kType",
 	"kField",
 	"kEndType",
-	"kNew",
 	"kWhile",
 	"kWend",
 	"kRepeat",
@@ -87,7 +85,6 @@ static const char *const tokenNames[] = {
 	"kData",
 	"kRead",
 	"kRestore",
-	"kEnd",
 	"kInteger",
 	"kFloat",
 	"kString",
@@ -96,6 +93,14 @@ static const char *const tokenNames[] = {
 	"kAs",
 	"kInclude",
 	"kExit",
+	"kEnd",
+
+	"kNew",
+	"kFirst",
+	"kLast",
+	"kBefore",
+	"kAfter",
+
 	"KeywordsEnd",
 	"TypeCount"
 };

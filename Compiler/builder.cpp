@@ -410,7 +410,11 @@ Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
 
 	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
 	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
-	return Value(fieldValueType, mIRBuilder.CreateLoad(fieldPointer));
+	llvm::Value *val = mIRBuilder.CreateLoad(fieldPointer);
+	if (fieldValueType->type() == ValueType::String) {
+		mRuntime->stringValueType()->refString(&mIRBuilder, val);
+	}
+	return Value(fieldValueType, val);
 }
 
 llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
@@ -1377,14 +1381,14 @@ Value Builder::equal(const Value &a, const Value &b) {
 		}
 		case ValueType::TypePointer:
 			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon) {
-				llvm::Value *ap = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(a));
-				llvm::Value *bp = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(b));
+				llvm::Value *ap = bitcast(llvm::Type::getInt8PtrTy(context()), llvmValue(a));
+				llvm::Value *bp = bitcast(llvm::Type::getInt8PtrTy(context()), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(ap, bp));
 			}
 		case ValueType::TypePointerCommon:
 			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon) {
-				llvm::Value *ap = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(a));
-				llvm::Value *bp = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(b));
+				llvm::Value *ap = bitcast(llvm::Type::getInt8PtrTy(context()), llvmValue(a));
+				llvm::Value *bp = bitcast(llvm::Type::getInt8PtrTy(context()), llvmValue(b));
 				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(ap, bp));
 			}
 	}
