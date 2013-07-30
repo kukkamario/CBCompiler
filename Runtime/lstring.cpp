@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <locale>
 
+
 std::string LString::sNullStdString;
 
 
@@ -123,8 +124,62 @@ LString::LString(CBString cbString) : mData(cbString) {
 
 LString::LString(LStringData *data) : mData(data) { }
 
+size_t LString::nextSize() const {
+	//TODO: Improve
+	return this->size() * 2;
+}
+
 LString::~LString() {
 	// ~LSharedStringDataPointer will destroy everything
+}
+
+LString LString::fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
+	assert(stringLength < bufferSize);
+	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize));
+}
+
+LString LString::fromBuffer(LChar *buffer) {
+	return LString(LStringData::createFromBuffer(buffer));
+}
+
+LString LString::number(int i) {
+	if (i == 0) return LString(U"0");
+	LStringData *data = LStringData::create(12);
+	LChar *str = data->mData;
+	if (i < 0) {
+		*str = U'-';
+		i = -i;
+		str++;
+	}
+	LChar *begin = str;
+	while (i) {
+		*str = U'0' + i % 10;
+		i /= 10;
+		str++;
+	}
+	std::reverse(begin, str);
+	*str = 0;
+	data->mLength = str - data->mData;
+	return LString(data);
+}
+
+LString LString::number(float f) {
+	const size_t bufferSize = 12;
+	LStringData *data = LStringData::create(bufferSize);
+
+#ifndef _WIN32
+	assert(sizeof(wchar_t) == sizeof(char32_t));
+	data->mLength = swprintf(reinterpret_cast<wchar_t*>(data->mData), bufferSize, L"%g", f);
+	return LString(data);
+#else
+	char charBuf[bufferSize];
+	data->mLength = snprintf(charBuf, bufferSize, "%g", f);
+	for (size_t i = 0; i < data->mLength; ++i) {
+		data->mData[i] = static_cast<char32_t>(charBuf[i]);
+	}
+	data->mData[data->mLength] = 0;
+	return LString(data);
+#endif
 }
 
 LString &LString::operator =(const LString &o) {
@@ -213,10 +268,28 @@ LString &LString::operator +=(const LString &o) {
 		*this = o;
 		return *this;
 	}
-	this->reserve(this->length() + o.length());
+	if (this->length() + o.length() > this->size()) {
+		size_t next = nextSize();
+		if (next < this->length() + o.length()) {
+			reserve(this->length() + o.length());
+		}
+		else {
+			reserve(next);
+		}
+	}
 	memcpy(this->mData->mData + this->length(), o.mData->mData, o.length());
 
 	this->mData->mData[this->length() + o.length()] = 0;
+	return *this;
+}
+
+LString &LString::operator +=(LChar c) {
+	if (this->length() + 1 > this->size()) {
+		reserve(nextSize());
+	}
+	this->mData->mData[this->mData->mLength] = c;
+	this->mData->mData[this->mData->mLength + 1] = 0;
+	++this->mData->mLength;
 	return *this;
 }
 
@@ -244,54 +317,121 @@ LString LString::substr(int start, int len) const {
 	return LString(b, e);
 }
 
-LString LString::fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
-	assert(stringLength < bufferSize);
-	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize));
+LString LString::left(int chars) const {
+	assert(chars <= (int)length() && chars > 0);
+	return LString(begin(), chars);
 }
 
-LString LString::fromBuffer(LChar *buffer) {
-	return LString(LStringData::createFromBuffer(buffer));
+LString LString::right(int chars) const {
+	assert(chars <= (int)length() && chars > 0);
+	return LString(begin() + (length() - chars), (length() - chars));
 }
 
-LString LString::number(int i) {
-	if (i == 0) return LString(U"0");
-	LStringData *data = LStringData::create(12);
-	LChar *str = data->mData;
-	if (i < 0) {
-		*str = U'-';
-		i = -i;
-		str++;
+LString::Iterator LString::find(LChar c) {
+	return find(c, begin());
+}
+
+
+LString::Iterator LString::find(LChar c, LString::Iterator start) {
+	for (Iterator i = start; i != end(); i++) {
+		if (*i == c) {
+			return i;
+		}
 	}
-	LChar *begin = str;
-	while (i) {
-		*str = U'0' + i % 10;
-		i /= 10;
-		str++;
-	}
-	std::reverse(begin, str);
-	*str = 0;
-	data->mLength = str - data->mData;
-	return LString(data);
+	return end();
 }
 
-LString LString::number(float f) {
-	const size_t bufferSize = 12;
-	LStringData *data = LStringData::create(bufferSize);
-
-#ifndef _WIN32
-	assert(sizeof(wchar_t) == sizeof(char32_t));
-	data->mLength = swprintf(reinterpret_cast<wchar_t*>(data->mData), bufferSize, L"%g", f);
-	return LString(data);
-#else
-	char charBuf[bufferSize];
-	data->mLength = snprintf(charBuf, bufferSize, "%g", f);
-	for (size_t i = 0; i < data->mLength; ++i) {
-		data->mData[i] = static_cast<char32_t>(charBuf[i]);
-	}
-	data->mData[data->mLength] = 0;
-	return LString(data);
-#endif
+LString::ConstIterator LString::find(LChar c) const {
+	return find(c, cbegin());
 }
+
+LString::ConstIterator LString::find(LChar c, LString::ConstIterator start) const {
+	for (ConstIterator i = start; i != cend(); i++) {
+		if (*i == c) {
+			return i;
+		}
+	}
+	return cend();
+}
+
+LString::ConstIterator LString::find(const LString &str) const {
+	return find(str, cbegin());
+}
+
+LString::Iterator LString::find(const LString &str) {
+	return find(str, begin());
+}
+
+LString::ConstIterator LString::find(const LString &str, LString::ConstIterator start) const {
+	ConstIterator si = str.cbegin();
+	ConstIterator index;
+	for (ConstIterator i = start; i != cend(); i++) {
+		if (*si == *i) {
+			if (si == str.cbegin()) {
+				index = i;
+			}
+			si++;
+			if (si == str.cend()) {
+				return index;
+			}
+			continue;
+		}
+
+		si = str.cbegin();
+	}
+	return cend();
+}
+
+LString::Iterator LString::find(const LString &str, LString::Iterator start) {
+	ConstIterator si = str.cbegin();
+	Iterator index;
+	for (Iterator i = start; i != cend(); i++) {
+		if (*si == *i) {
+			if (si == str.cbegin()) {
+				index = i;
+			}
+			si++;
+			if (si == str.cend()) {
+				return index;
+			}
+			continue;
+		}
+
+		si = str.cbegin();
+	}
+	return end();
+}
+
+int LString::indexOf(LChar c) const {
+	int index = 0;
+	for (ConstIterator i = cbegin(); i != cend(); ++i, index++) {
+		if (*i == c) return index;
+	}
+	return -1;
+}
+
+int LString::indexOf(const LString &str) const {
+	ConstIterator si = str.cbegin();
+	int indexCounter = 0;
+	int index = 0;
+	for (ConstIterator i = cbegin(); i != cend(); i++, indexCounter++) {
+		if (*si == *i) {
+			if (si == str.cbegin()) {
+				index = indexCounter;
+			}
+			si++;
+			if (si == str.cend()) {
+				return index;
+			}
+			continue;
+		}
+
+		si = str.cbegin();
+	}
+	return -1;
+}
+
+
 
 int LString::toInt(bool *success) const {
 	if (isEmpty()) {
@@ -460,8 +600,75 @@ bool LString::ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&
 	return true;
 }
 
+int LString::indexOfIterator(LString::ConstIterator i) const {
+	return i - cbegin();
+}
+
 bool LString::isValidIterator(LString::ConstIterator i) const {
 	return cbegin() <= i && cend() <= i;
+}
+
+LString LString::arg(const LString &v1) {
+	LString str;
+	str.reserve(this->length() + v1.length());
+	for (ConstIterator i = cbegin(); i != cend(); i++) {
+		if (*i == U'%') {
+			i++;
+			if (*i == U'1') {
+				i++;
+				str += v1;
+				continue;
+			}
+		}
+		str += *i;
+	}
+	return str;
+}
+
+LString LString::arg(const LString &v1, const LString &v2) {
+	LString str;
+	str.reserve(this->length() + v1.length() + v2.length());
+	for (ConstIterator i = cbegin(); i != cend(); i++) {
+		if (*i == U'%') {
+			i++;
+			if (*i == U'1') {
+				i++;
+				str += v1;
+				continue;
+			} else if (*i == U'2') {
+				i++;
+				str += v2;
+				continue;
+			}
+		}
+		str += *i;
+	}
+	return str;
+}
+
+LString LString::arg(const LString &v1, const LString &v2, const LString &v3) {
+	LString str;
+	str.reserve(this->length() + v1.length() + v2.length() + v3.length());
+	for (ConstIterator i = cbegin(); i != cend(); i++) {
+		if (*i == U'%') {
+			i++;
+			if (*i == U'1') {
+				i++;
+				str += v1;
+				continue;
+			} else if (*i == U'2') {
+				i++;
+				str += v1;
+				continue;
+			} else if (*i == U'3') {
+				i++;
+				str += v3;
+				continue;
+			}
+		}
+		str += *i;
+	}
+	return str;
 }
 
 
@@ -563,3 +770,4 @@ int atomicLoad(AtomicInt &i) {
 }
 
 #endif
+

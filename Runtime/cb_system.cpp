@@ -19,9 +19,18 @@ extern "C" int CBF_intF(float f) {
 	return int(f + 0.5f);
 }
 
-extern "C" int CBF_floatI(int i) {
+extern "C" int CBF_intS(CBString s) {
+	return LString(s).toInt();
+}
+
+extern "C" float CBF_floatI(int i) {
 	return float(i);
 }
+
+extern "C" float CBF_floatS(CBString s) {
+	return LString(s).toFloat();
+}
+
 
 extern "C" void CBF_printI(int i) {
 	printf("%i\n", i);

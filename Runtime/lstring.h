@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <cstdint>
 #include <allegro5/allegro.h>
+#include "common.h"
 
 #ifdef USE_BOOST_ATOMIC
 	#include <boost/atomic.hpp>
@@ -63,6 +64,11 @@ class LString {
 		LString(CBString cbString);
 		~LString();
 
+		static LString fromBuffer(LChar *buffer);
+		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
+		static LString number(int i);
+		static LString number(float f);
+
 		LString & operator=(const LString &o);
 		bool operator == (const LString &o) const;
 		bool operator != (const LString &o) const;
@@ -72,16 +78,27 @@ class LString {
 		bool operator <= (const LString &o) const;
 		LString operator + (const LString &o) const;
 		LString & operator += (const LString &o);
+		LString & operator += (LChar c);
 		LChar &operator[] (size_t i);
 		LChar operator[] (size_t i) const;
 		operator CBString() const;
 
 		LString substr(int start, int len) const;
+		LString left(int chars) const;
+		LString right(int chars) const;
 
-		static LString fromBuffer(LChar *buffer);
-		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
-		static LString number(int i);
-		static LString number(float f);
+		Iterator find(LChar c);
+		Iterator find(LChar c, Iterator start);
+		ConstIterator find(LChar c) const;
+		ConstIterator find(LChar c, ConstIterator start) const;
+
+		ConstIterator find(const LString &str) const;
+		Iterator find(const LString &str);
+		ConstIterator find(const LString &str, ConstIterator start) const;
+		Iterator find(const LString &str, Iterator start);
+
+		int indexOf(LChar c) const;
+		int indexOf(const LString &str) const;
 
 		int toInt(bool *success = 0) const;
 		int toFloat(bool *success = 0) const;
@@ -107,7 +124,12 @@ class LString {
 
 		static bool ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&fromNext, uint8_t *to, uint8_t *toEnd, uint8_t *&toNext);
 
+		int indexOfIterator(ConstIterator i) const;
 		bool isValidIterator(ConstIterator i) const;
+
+		LString arg(const LString &v1);
+		LString arg(const LString &v1, const LString &v2);
+		LString arg(const LString &v1, const LString &v2, const LString &v3);
 	private:
 		LString(LStringData *data);
 		class LSharedStringDataPointer {
@@ -129,6 +151,7 @@ class LString {
 				bool decrease(LStringData *d);
 				LStringData *mPointer;
 		};
+		size_t nextSize() const;
 		LSharedStringDataPointer mData;
 		static std::string sNullStdString;
 };
