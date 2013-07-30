@@ -1376,11 +1376,17 @@ Value Builder::equal(const Value &a, const Value &b) {
 			return Value(mRuntime->booleanValueType(), ret);
 		}
 		case ValueType::TypePointer:
-			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
-				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(a), llvmValue(toValueType(a.valueType(), b))));
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon) {
+				llvm::Value *ap = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(a));
+				llvm::Value *bp = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(b));
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(ap, bp));
+			}
 		case ValueType::TypePointerCommon:
-			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon)
-				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(llvmValue(toValueType(b.valueType(), a)), llvmValue(b)));
+			if (b.valueType()->type() == ValueType::TypePointer || b.valueType()->type() == ValueType::TypePointerCommon) {
+				llvm::Value *ap = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(a));
+				llvm::Value *bp = bitcast(llvm::Type::getVoidTy(context())->getPointerTo(), llvmValue(b));
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateICmpEQ(ap, bp));
+			}
 	}
 
 	assert("Invalid equality operation" && 0); return Value();

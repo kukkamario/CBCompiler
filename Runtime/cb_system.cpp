@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <time.h>
-#include "cbstring.h"
 #include <iostream>
 #include <locale>
 #include <stdint.h>
@@ -34,9 +33,9 @@ extern "C" void CBF_printF(float f) {
 
 extern "C" void CBF_printS(CBString s) {
 #ifdef _WIN //sizeof(wchar_t) == 2
-	std::cout << "Fix printS\n";
+	std::wcout << LString(s).toWString() << std::endl;
 #else //wchar_t == char32_t
-	std::cout << String(s).toUtf8() << "\n";
+	std::cout << LString(s).toUtf8() << std::endl;
 #endif
 }
 

@@ -20,13 +20,13 @@ SOURCES += \
     cb_gfx.cpp \
     cb_math.cpp \
     cb_system.cpp \
-    cbstring.cpp \
     mathinterface.cpp \
     gfxinterface.cpp \
     systeminterface.cpp \
     textinterface.cpp \
     cb_types.cpp \
-    types.cpp
+    types.cpp \
+    lstring.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -34,12 +34,12 @@ HEADERS += \
     error.h \
     window.h \
     rendertarget.h \
-    cbstring.h \
     mathinterface.h \
     gfxinterface.h \
     textinterface.h \
     systeminterface.h \
-    types.h
+    types.h \
+    lstring.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll

@@ -1,4 +1,4 @@
-#include "cbstring.h"
+#include "lstring.h"
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_primitives.h>
 #include "error.h"

@@ -42,9 +42,9 @@ void gfx::drawCircle(float x, float y, float d, bool fill) {
 }
 
 
-void gfx::drawText(const String &str, float x, float y) {
+void gfx::drawText(const LString &str, float x, float y) {
 	assert(RenderTarget::activated());
-	ALLEGRO_USTR *ustr = str.toALLEGRO_USTR();
+	ALLEGRO_USTR *ustr = str.toAllegroUStr();
 	if (ustr) {
 		al_draw_ustr(text::currentFont(), sCurrentColor, x, y, 0, ustr);
 		al_ustr_free(ustr);

@@ -1,7 +1,7 @@
 #ifndef ERROR_H
 #define ERROR_H
-#include "cbstring.h"
-void error(const String &string);
-void info(const String &string);
+#include "lstring.h"
+void error(const LString &string);
+void info(const LString &string);
 
 #endif // ERROR_H

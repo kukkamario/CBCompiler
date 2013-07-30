@@ -81,6 +81,10 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 			mParamTypes.append(mRuntime->typeValueType());
 		}
 		else {
+			qDebug("Dumping: ");
+			funcTy->dump(); qDebug("");
+			mRuntime->stringValueType()->llvmType()->dump();
+			qDebug("\n-------\n");
 			return false;
 		}
 		param++;
