@@ -1,7 +1,8 @@
 //http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
 
-Const screenw% = 500 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fiksata.
-Const screenh% = 500
+Const screenw% = 300 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fiksata.
+Const screenh% = 300
+
 fov=35
 maxiters=20
 
@@ -11,6 +12,9 @@ Type sphere
 	Field x#
 	Field y#
 	Field z#
+	Field ox#
+	Field oy#
+	Field oz#
 	Field w#
 	Field r#
 	Field g#
@@ -30,13 +34,14 @@ Type light
 EndType
 
 s.sphere = New(sphere)
-s\x# = -1: s\y# = -1: s\z# = 7: s\w# = 1.5: s\r# = 255: s\g#= 0: s\b# = 0
+s\ox# = -1: s\oy# = -1: s\oz# = 7: s\w# = 1.5: s\r# = 255: s\g#= 0: s\b# = 0 
 
 s.sphere = New(sphere)
-s\x# = 2: s\y# = 1: s\z# = 6: s\w# = 1: s\r# = 5: s\g# = 0: s\b# = 255
+s\ox# = 2: s\oy# = 1: s\oz# = 6: s\w# = 1: s\r# = 5: s\g# = 0: s\b# = 255
 
 s.sphere = New(sphere)
-s\x# = 0: s\y# = 1.5: s\z# = 7: s\w# = 1: s\r# = 5: s\g# = 255: s\b# = 0 
+s\ox# = 0: s\oy# = 1.5: s\oz# = 7: s\w# = 1: s\r# = 5: s\g# = 255: s\b# = 0
+
 
 l.light = New(light)
 l\x = -3: l\y = 0: l\z = 0
@@ -45,11 +50,23 @@ Repeat
     Tim=Timer()
     xfov#=Tan(fov/2)/Cos(fov/2)'kalansilmän poistoa varten.(sama kulma joka resolla)
     yfov#=xfov'*screenh/screenw'pitänee fiksata vielä :P
+
+	t# = t# + (Timer() - lastUpdate) / 100.0
+	lastUpdate = Timer()
+	t2# = t#
+	For s.sphere = Each sphere
+		s\x# = s\ox# + Sin(t2# * 2.0) * 0.7
+		s\y# = s\oy# + Sin(t2# * 1.4 +124124) * 0.3
+		s\z# = s\oz# + Sin(t2# + 343) * 0.6
+		t2# = t2# + t#
+	Next s
+
     For x#=0 To screenw-1
         For y#=0 To screenh-1
             a.transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
             Color  Min(255,a\r), Min(255,a\g), Min(255,a\b)
 			Dot x,y
+			Delete a
         Next y#
     Next x#
     DrawScreen
@@ -127,12 +144,12 @@ Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
             ref.transmitter=trace(x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
             'SetWindow ""+dotp
         Else
-            ref.transmitter=new(transmitter)
+            ref.transmitter=New(transmitter)
         EndIf
         t.transmitter= New(transmitter)
-        t\r=(obj\r*lightness+ref\r)/2+specular*255+20'*dotp
-        t\g=(obj\g*lightness+ref\g)/2+specular*255+20'*dotp
-        t\b=(obj\b*lightness+ref\b)/2+specular*255+20'*dotp
+        t\r=(obj\r*lightness+ref\r)/2+specular*255 //+20'*dotp
+        t\g=(obj\g*lightness+ref\g)/2+specular*255 //+20'*dotp
+        t\b=(obj\b*lightness+ref\b)/2+specular*255 //+20'*dotp
         Delete ref
     Else
         t.transmitter= New(transmitter)    

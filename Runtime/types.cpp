@@ -1,4 +1,6 @@
 #include "types.h"
+#include "error.h"
+#include <cstdio>
 
 CB_TypeMember *CB_Type::createMemberToEnd() {
 	char *memberData = new char[mSizeOfMember];
@@ -21,7 +23,7 @@ void CB_Type::deleteMember(CB_TypeMember *m) {
 		}
 	}
 	else { //m is the last member
-		if (!m->before()) {
+		if (m->before()) {
 			m->before()->mAfter = 0;
 			mLast = m->before();
 

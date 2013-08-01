@@ -31,13 +31,17 @@ CBEXPORT TypeMember *CBF_CB_After(TypeMember *member) {
 
 CBEXPORT TypeMember *CBF_CB_Before(TypeMember *member) {
 	if (member == 0) {
-		error(U"CBF_CB_TypeMemberBefore: Invalid TypeMember");
+		error(U"CBF_CB_TypeMemberBefore: NULL TypeMember");
 		return 0;
 	}
 	return member->before();
 }
 
 CBEXPORT void CBF_deleteM(TypeMember *member) {
+	if (member == 0) {
+		error(U"CBF_deleteM: NULL TypeMember");
+		return;
+	}
 	member->deleteThis();
 }
 

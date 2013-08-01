@@ -16,7 +16,7 @@ CBEXPORT CBString CBF_leftSI(CBString cbstr, int chars) {
 		return 0;
 	}
 	LString str(cbstr);
-	if (chars > str.length()) {
+	if (chars > (int)str.length()) {
 		error(U"Left: Parameter must be less than the length of the string");
 		return 0;
 	}
@@ -30,7 +30,7 @@ CBEXPORT CBString CBF_rightSI(CBString cbstr, int chars) {
 		return 0;
 	}
 	LString str(cbstr);
-	if (chars > str.length()) {
+	if (chars > (int)str.length()) {
 		error(U"Right: Parameter must be less than the length of the string");
 		return 0;
 	}
@@ -38,6 +38,23 @@ CBEXPORT CBString CBF_rightSI(CBString cbstr, int chars) {
 	return str.right(chars);
 }
 
+CBEXPORT int CBF_inStrSS(CBString cbstr, CBString find) {
+	int index = LString(cbstr).indexOf(find);
+	if (index == -1) return -1;
+	return ++index;
+}
+
+CBEXPORT int CBF_inStrSSI(CBString cbstr, CBString find, int start) {
+	int index = LString(cbstr).indexOf(find, start - 1);
+	if (index == -1) return -1;
+	return ++index;
+}
+
+CBEXPORT CBString CBF_strRemoveSII(CBString cbstr, int begin, int len) {
+	LString str(cbstr);
+	str.remove(begin - 1, len);
+	return str;
+}
 
 CBEXPORT CBString CBF_CB_StringConstruct (char32_t *txt) {
 	if (txt) {

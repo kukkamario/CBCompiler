@@ -79,8 +79,8 @@ class LString {
 		LString operator + (const LString &o) const;
 		LString & operator += (const LString &o);
 		LString & operator += (LChar c);
-		LChar &operator[] (size_t i);
-		LChar operator[] (size_t i) const;
+		LChar &operator[] (int i);
+		const LChar &operator[] (int i) const;
 		operator CBString() const;
 
 		LString substr(int start, int len) const;
@@ -98,7 +98,13 @@ class LString {
 		Iterator find(const LString &str, Iterator start);
 
 		int indexOf(LChar c) const;
+		int indexOf(LChar c, int start) const;
 		int indexOf(const LString &str) const;
+		int indexOf(const LString &str, int start) const;
+
+		void clear();
+
+		void remove(int start, int len);
 
 		int toInt(bool *success = 0) const;
 		int toFloat(bool *success = 0) const;
@@ -109,6 +115,10 @@ class LString {
 		Iterator end();
 		ConstIterator cend() const;
 		ConstIterator end() const { return cend(); }
+
+		Iterator at(int i);
+		ConstIterator at(int i) const;
+
 
 		bool isNull() const;
 		bool isEmpty() const;
@@ -130,6 +140,8 @@ class LString {
 		LString arg(const LString &v1);
 		LString arg(const LString &v1, const LString &v2);
 		LString arg(const LString &v1, const LString &v2, const LString &v3);
+
+		void detach();
 	private:
 		LString(LStringData *data);
 		class LSharedStringDataPointer {

@@ -293,13 +293,13 @@ LString &LString::operator +=(LChar c) {
 	return *this;
 }
 
-LChar &LString::operator [](size_t i) {
-	assert(i < length());
+LChar &LString::operator [](int i) {
+	assert(i < (int)length());
 	return this->mData->mData[i];
 }
 
-LChar LString::operator [](size_t i) const {
-	assert(i < length());
+const LChar &LString::operator [](int i) const {
+	assert(i < (int)length());
 	return this->mData->mData[i];
 }
 
@@ -410,7 +410,18 @@ int LString::indexOf(LChar c) const {
 	return -1;
 }
 
+int LString::indexOf(LChar c, int start) const {
+	int index = start;
+	for (ConstIterator i = at(start); i != cend(); ++i, index++) {
+		if (*i == c) return index;
+	}
+	return -1;
+}
+
 int LString::indexOf(const LString &str) const {
+	if (str.length() > this->length()) return -1;
+	if (str.length() == 1) return indexOf(str[0]);
+
 	ConstIterator si = str.cbegin();
 	int indexCounter = 0;
 	int index = 0;
@@ -429,6 +440,48 @@ int LString::indexOf(const LString &str) const {
 		si = str.cbegin();
 	}
 	return -1;
+}
+
+int LString::indexOf(const LString &str, int start) const {
+	if (str.length() > this->length()) return -1;
+	if (str.length() == 1) return indexOf(str[0], start);
+
+	ConstIterator si = str.cbegin();
+	int indexCounter = start;
+	int index = 0;
+	for (ConstIterator i = at(start); i != cend(); i++, indexCounter++) {
+		if (*si == *i) {
+			if (si == str.cbegin()) {
+				index = indexCounter;
+			}
+			si++;
+			if (si == str.cend()) {
+				return index;
+			}
+			continue;
+		}
+
+		si = str.cbegin();
+	}
+	return -1;
+}
+
+void LString::clear() {
+	mData = 0;
+}
+
+void LString::remove(int start, int len) {
+	assert(start >= 0 && len > 0 && start + len <= (int)length());
+	detach();
+	if (start + len == (int)length()) {
+		mData.unsafePointer()->mLength -= len;
+		mData.unsafePointer()->mData[start + len] = 0;
+	}
+	else {
+		memmove(mData.unsafePointer()->mData + start + len, mData.unsafePointer()->mData + start, length() - (start + len));
+		mData.unsafePointer()->mLength -= len;
+		mData.unsafePointer()->mData[start + len] = 0;
+	}
 }
 
 
@@ -497,6 +550,16 @@ LString::Iterator LString::end() {
 
 LString::ConstIterator LString::cend() const {
 	return isNull() ? 0 : mData->mData + mData->mLength;
+}
+
+LString::Iterator LString::at(int i) {
+	assert(i >= 0 && i < (int)length());
+	return mData->mData + i;
+}
+
+LString::ConstIterator LString::at(int i) const {
+	assert(i >= 0 && i < (int)length());
+	return mData->mData + i;
 }
 
 bool LString::isNull() const {
@@ -669,6 +732,10 @@ LString LString::arg(const LString &v1, const LString &v2, const LString &v3) {
 		str += *i;
 	}
 	return str;
+}
+
+void LString::detach() {
+	mData.detach();
 }
 
 
