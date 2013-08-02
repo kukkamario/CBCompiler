@@ -11,6 +11,8 @@ void text::initText() {
 	mDefaultFont = al_load_font((getenv("WINDIR") + std::string("\\Fonts\\cour.ttf")).c_str(), 12, ALLEGRO_TTF_MONOCHROME);
 #elif __MACH__
 	mDefaultFont = al_load_font("/Library/Fonts/Courier New.ttf", 12, ALLEGRO_TTF_MONOCHROME);
+#else
+	mDefaultFont = al_load_font("/usr/share/fonts/truetype/msttcorefonts/cour.ttf", 12, ALLEGRO_TTF_MONOCHROME);
 #endif
 	mCurrentFont = mDefaultFont;
 

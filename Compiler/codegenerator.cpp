@@ -235,6 +235,8 @@ bool CodeGenerator::addGlobalsToScope(ast::Program *program) {
 	mTypeChecker.setScope(&mGlobalScope);
 	for (QList<ast::GlobalDefinition*>::ConstIterator i = program->mGlobals.begin(); i != program->mGlobals.end(); i++) {
 		ast::GlobalDefinition *globalDef = *i;
+		mTypeChecker.setFile(globalDef->mFile);
+		mTypeChecker.setLine(globalDef->mLine);
 		for (QList<ast::Variable*>::ConstIterator v = globalDef->mDefinitions.begin(); v != globalDef->mDefinitions.end(); v++) {
 			ast::Variable *var = *v;
 			VariableSymbol *varSym = mTypeChecker.declareVariable(var);

@@ -22,6 +22,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setScope(Scope *s) { mScope = s; }
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
+		void setFile(QFile *file) { mFile = file; }
+		void setLine(int line) { mLine = line; }
 		void setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval);
 		VariableSymbol *declareVariable(const ast::Variable *var);
 	private:
