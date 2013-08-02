@@ -3,7 +3,7 @@
 #include <QString>
 #include <QLinkedList>
 #include <QMap>
-#include <llvm/IRBuilder.h>
+#include "llvm.h"
 #include "value.h"
 
 

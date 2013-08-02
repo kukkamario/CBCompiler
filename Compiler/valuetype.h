@@ -2,7 +2,7 @@
 #define VALUETYPE_H
 #include <QString>
 #include <QObject>
-#include <llvm/IRBuilder.h>
+#include "llvm.h"
 class Value;
 namespace llvm {
 	class Value;
