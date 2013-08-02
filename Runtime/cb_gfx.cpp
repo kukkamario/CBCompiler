@@ -83,5 +83,31 @@ CBEXPORT void CBF_dotFF(float x, float y) {
 	drawDot(x, y);
 }
 
+CBEXPORT int CBF_screen() {
+	return 0;
+}
+
+CBEXPORT void CBF_lock() {
+	RenderTarget::activated()->lock(ALLEGRO_LOCK_READWRITE);
+}
+
+CBEXPORT void CBF_lock2I(int state) {
+	int flags = 0;
+	switch (state) {
+		case 1:
+			flags = ALLEGRO_LOCK_READONLY; break;
+		case 2:
+			flags = ALLEGRO_LOCK_WRITEONLY; break;
+		default:
+			flags = ALLEGRO_LOCK_READWRITE; break;
+	}
+
+	RenderTarget::activated()->lock(flags);
+}
+
+CBEXPORT void CBF_unlock() {
+	RenderTarget::activated()->unlock();
+}
+
 
 

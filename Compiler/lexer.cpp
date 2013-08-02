@@ -85,7 +85,7 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &sett
 Lexer::ReturnState Lexer::tokenize(const QString &file) {
 	QFile *curFile = new QFile(file);
 	if (!curFile->open(QFile::ReadOnly | QFile::Text)) {
-		delete curFile;
+		mFiles.append(QPair<QFile*, QString>(curFile, ""));
 		emit error(ErrorCodes::ecCantOpenFile, tr("Cannot open file %1").arg(file), 0, 0);
 		return Error;
 	}

@@ -1,13 +1,18 @@
 #include "rendertarget.h"
 RenderTarget *RenderTarget::sCurrentTarget = 0;
 
-RenderTarget::RenderTarget() {
+RenderTarget::RenderTarget() :
+	mBlender(gfx::defaultBlender()) {
 }
 
 RenderTarget::~RenderTarget() {
 	if (sCurrentTarget == this) {
 		resetTarget();
 	}
+}
+
+void RenderTarget::setBlender(const gfx::Blender &blender) {
+	mBlender = blender;
 }
 
 
@@ -25,4 +30,8 @@ void RenderTarget::resetTarget() {
 
 RenderTarget *RenderTarget::activated() {
 	return sCurrentTarget;
+}
+
+void RenderTarget::setupDrawingState() {
+	gfx::setBlender(mBlender);
 }

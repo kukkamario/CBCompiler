@@ -26,7 +26,11 @@ SOURCES += \
     textinterface.cpp \
     cb_types.cpp \
     types.cpp \
-    lstring.cpp
+    lstring.cpp \
+    image.cpp \
+    cb_image.cpp \
+    inputinterface.cpp \
+    cb_input.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -39,7 +43,10 @@ HEADERS += \
     textinterface.h \
     systeminterface.h \
     types.h \
-    lstring.h
+    lstring.h \
+    image.h \
+    idmap.h \
+    inputinterface.h
 
 win32 {
     LLVM_FILES += atomic_operations_mingw.ll

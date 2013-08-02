@@ -2,13 +2,16 @@
 #include "error.h"
 #include "rendertarget.h"
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
 #include "textinterface.h"
 
 static ALLEGRO_COLOR sCurrentColor;
+static gfx::Blender sDefaultBlender(ALLEGRO_ADD, ALLEGRO_ALPHA, ALLEGRO_INVERSE_ALPHA);
 
 void gfx::initGfx() {
 	al_init_primitives_addon();
+	al_init_image_addon();
 	sCurrentColor = al_map_rgb(255, 255, 255);
 }
 
@@ -66,4 +69,14 @@ void gfx::drawBox(float x, float y, float w, float h, bool fill) {
 void gfx::drawDot(float x, float y) {
 	assert(RenderTarget::activated());
 	al_draw_pixel(x, y, sCurrentColor);
+}
+
+
+void gfx::setBlender(const gfx::Blender &blender) {
+	al_set_blender(blender.mOp, blender.mSrc, blender.mDest);
+}
+
+
+const gfx::Blender &gfx::defaultBlender() {
+	return sDefaultBlender;
 }

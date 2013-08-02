@@ -27,6 +27,8 @@ class Window : RenderTarget{
 		void drawscreen();
 		void cls();
 
+		ALLEGRO_EVENT_QUEUE *eventQueue() const { return mEventQueue; }
+
 		int fps() const { return mFPS; }
 
 		void handleEvent(const ALLEGRO_EVENT &event);

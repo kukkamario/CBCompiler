@@ -6,6 +6,7 @@
 #include "systeminterface.h"
 #include "gfxinterface.h"
 #include "textinterface.h"
+#include "inputinterface.h"
 
 extern "C" void CBF_CB_main();
 extern "C" void CBF_CB_initialize();
@@ -21,16 +22,16 @@ int main(int argc, char **argv) {
 		error(U"Allegro initialization failed");
 		return 1;
 	}
-	gfx::initGfx();
-	text::initText();
 
 	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
 
-	info(U"Initilizing gfx");
 
-
+	info(U"Initializing interfaces");
+	gfx::initGfx();
+	text::initText();
+	input::initInput();
 
 	//Begin execution
 	info(U"Beginning execution");
