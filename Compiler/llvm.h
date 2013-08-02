@@ -31,7 +31,7 @@
 	#include <llvm/Instructions.h>
 	#include <llvm/InlineAsm.h>
 	#include <llvm/Support/IRReader.h>
-	#if LLVM_VERSION == 2
+	#if LLVM_VERSION_MINOR == 2
 		#include <llvm/IRBuilder.h>
 	#else
 		#include <llvm/Support/IRBuilder.h>

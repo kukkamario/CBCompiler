@@ -17,6 +17,7 @@ class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
 		Function(const QString &name, QFile *f, int line);
+		virtual ~Function() { }
 		QString name() const{return mName;}
 
 		/**
