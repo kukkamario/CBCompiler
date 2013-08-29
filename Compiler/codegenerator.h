@@ -32,10 +32,13 @@ class CodeGenerator : public QObject{
 		void generateStringLiterals();
 		void generateTypeInitializers();
 		void createBuilder();
+		void addValueTypesToGlobalScope();
 
 		void addPredefinedConstantSymbols();
 
-		TypeSymbol *findTypeSymbol(const QString &typeName, QFile *f, int line);
+		ValueType *findValueType(const QString &valueTypeName, int line = 0, QString file = QString());
+
+		TypeSymbol *findTypeSymbol(const QString &typeName, const QString &f, int line);
 
 		Settings mSettings;
 		Runtime mRuntime;
@@ -52,8 +55,8 @@ class CodeGenerator : public QObject{
 
 		llvm::BasicBlock *mInitializationBlock;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // CODEGENERATOR_H

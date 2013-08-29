@@ -82,7 +82,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		}
 		else {
 			qDebug("Dumping: ");
-			funcTy->dump(); qDebug("");
+			funcTy->dump(); qDebug("\n");
 			mRuntime->stringValueType()->llvmType()->dump();
 			qDebug("\n-------\n");
 			return false;

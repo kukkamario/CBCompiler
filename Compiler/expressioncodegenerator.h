@@ -29,8 +29,8 @@ class ExpressionCodeGenerator : public QObject {
 		Builder *mBuilder;
 		Scope *mScope;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // EXPRESSIONGENERATOR_H

@@ -43,6 +43,7 @@ Value ExpressionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::Variable*)n);
 		case ast::Node::ntSpecialFunctionCall:
 			return generate((ast::SpecialFunctionCall*)n);
+		default: break;
 	}
 	assert(0);
 	return Value();
@@ -97,7 +98,7 @@ Value ExpressionCodeGenerator::generate(ast::Variable *n) {
 }
 
 Value ExpressionCodeGenerator::generate(ast::TypePtrField *n) {
-	Symbol *sym = mScope->find(n->mTypePtrVar);
+	Symbol *sym = mScope->find(n->mVariableName);
 	assert(sym && sym->type() == Symbol::stVariable);
 	VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
 	return mBuilder->load(varSym, n->mFieldName);
@@ -116,13 +117,15 @@ Value ExpressionCodeGenerator::generate(ast::SpecialFunctionCall *n) {
 			return mBuilder->beforeTypeMember(param);
 		case ast::SpecialFunctionCall::After:
 			return mBuilder->afterTypeMember(param);
+		default:
+			assert("Invalid ast::SpecialFunctionCall" && 0);
 	}
 }
 
 Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
 	Symbol *sym = mScope->find(n->mName);
 	assert(sym);
-	assert(sym->type() == Symbol::stFunctionOrCommand || sym->type() == Symbol::stArray);
+	assert(sym->type() == Symbol::stFunctionOrCommand || sym->type() == Symbol::stArray || sym->isValueTypeSymbol());
 
 	QList<ValueType*> paramTypes;
 	QList<Value> params;
@@ -144,6 +147,12 @@ Value ExpressionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) {
 		ArraySymbol *array = static_cast<ArraySymbol*>(sym);
 		QList<Value> dims = generateParameterList(n->mParams);
 		return mBuilder->load(array, dims);
+	}
+	if (sym->isValueTypeSymbol()) {
+		assert(n->mParams.size() == 1);
+		ValueTypeSymbol *valTySym = static_cast<ValueTypeSymbol*>(sym);
+		Value val = generate(n->mParams.first());
+		return valTySym->valueType()->cast(mBuilder, val);
 	}
 
 	assert(0);

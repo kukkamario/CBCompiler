@@ -18,7 +18,7 @@ class CBFunction : public Function {
 				ConstantValue mDefaultValue;
 		};
 
-		CBFunction(const QString & name, ValueType *retValue, const QList<Parameter> &params, Scope *scope, int line, QFile *file);
+		CBFunction(const QString & name, ValueType *retValue, const QList<Parameter> &params, Scope *scope, int line, const QString &file);
 		void generateFunction(Runtime *runtime);
 		void setScope(Scope *scope);
 		Scope *scope() const {return mScope;}

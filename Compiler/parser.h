@@ -30,17 +30,17 @@ class Parser : public QObject
 
 		ast::ConstDefinition *tryConstDefinition(TokIterator &i);
 		ast::GlobalDefinition *tryGlobalDefinition(TokIterator &i);
-		ast::Variable::VarType tryVarAsType(TokIterator &i);
-		ast::Variable::VarType tryVarType(TokIterator &i);
-		ast::Variable::VarType tryVarTypeSymbol(TokIterator &i);
+		QString tryVariableTypeDefinition(TokIterator &i);
+		QString tryVariableTypeMark(TokIterator &i);
+		QString tryVariableAsType(TokIterator &i);
 		ast::Node *tryReturn(TokIterator &i);
 		ast::TypeDefinition *tryTypeDefinition(TokIterator &i);
-		ast::Variable *expectVariableOrTypePtrDefinition(TokIterator &i);
-		ast::Variable *tryVariableOrTypePtrDefinition(TokIterator &i);
+		ast::Variable *expectVariable(TokIterator &i);
+		ast::Variable *tryVariable(TokIterator &i);
 		ast::Node *trySelectStatement(TokIterator &i);
 		ast::Node *tryGotoGosubAndLabel(TokIterator &i);
 		ast::Node *tryRedim(TokIterator &i);
-		void expectVariableOrTypePtrDefinition(ast::Variable *var, TokIterator &i);
+		void expectVariable(ast::Variable *var, TokIterator &i);
 		ast::Node *tryDim(TokIterator &i);
 		ast::Node *tryIfStatement(TokIterator &i);
 		ast::Node *expectElseIfStatement(TokIterator &i);
@@ -67,6 +67,7 @@ class Parser : public QObject
 		ast::Node *expectPrimaryExpression(TokIterator &i);
 		ast::Node *tryAssignmentExpression(TokIterator &i);
 		QString expectIdentifier(TokIterator &i);
+		QString expectIdentifierAfter(TokIterator &i, const QString &after);
 		void expectEndOfStatement(TokIterator &i);
 	private:
 		enum Status {
@@ -78,9 +79,12 @@ class Parser : public QObject
 		Status mStatus;
 		Settings mSettings;
 
+		QString mStringValueTypeName;
+		QString mFloatValueTypeName;
+		QString mIntegerValueTypeName;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, QString file);
+		void warning(int code, QString msg, int line, QString file);
 };
 
 #endif // PARSER_H

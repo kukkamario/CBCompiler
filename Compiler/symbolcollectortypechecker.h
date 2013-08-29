@@ -22,16 +22,16 @@ class SymbolCollectorTypeChecker : public QObject {
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setScope(Scope *s) { mScope = s; }
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
-		void setFile(QFile *file) { mFile = file; }
+		void setFile(const QString &file) { mFile = file; }
 		void setLine(int line) { mLine = line; }
 		void setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval);
 		VariableSymbol *declareVariable(const ast::Variable *var);
 	private:
 		struct CodeLineInfo {
-				CodeLineInfo() : mFile(0), mLine(0) {}
-				CodeLineInfo(int line, QFile *f) : mLine(line), mFile(f) {}
+				CodeLineInfo() : mLine(0) {}
+				CodeLineInfo(int line, const QString &f) : mLine(line), mFile(f) {}
 				int mLine;
-				QFile *mFile;
+				QString mFile;
 		};
 
 		ValueType *typeCheckExpression(ast::Node *s);
@@ -67,19 +67,20 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s);
 
 		ArraySymbol *findAndValidateArraySymbol(const QString &name);
+		ValueType *findValueType(const QString &name, int line, const QString &file);
 		bool validateArrayIndex(ArraySymbol *array, const QList<ast::Node*> &index);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 
 		bool tryCastToBoolean(ValueType *t);
 
-		ValueType *checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName = QString());
+		ValueType *checkVariable(const QString &name, const QString &type);
 		void replaceParentBlockNode(ast::Node *search, ast::Node *replace);
 
 		bool mForceVariableDeclaration;
 		Runtime *mRuntime;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 		Scope *mScope;
 		Scope *mGlobalScope;
 		ValueType *mReturnValueType;
@@ -90,8 +91,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		ast::Block *mParentBlock;
 		ConstantExpressionEvaluator *mConstEval;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // SYMBOLCOLLECTORTYPECHECKER_H

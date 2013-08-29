@@ -2,7 +2,8 @@
 #define WARNINGCODES_H
 namespace WarningCodes {
 	enum WarningCode {
-		wcUselessLineIgnored
+		wcUselessLineIgnored,
+		wcFunctionReturnTypeDefinedTwice
 	};
 
 }

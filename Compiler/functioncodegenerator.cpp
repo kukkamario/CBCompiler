@@ -21,8 +21,8 @@ FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	mBuilder(0),
 	mSetupBasicBlock(0),
 	mReturnType(0) {
-	connect(&mExprGen, SIGNAL(error(int,QString,int,QFile*)), this, SIGNAL(error(int,QString,int,QFile*)));
-	connect(&mExprGen,SIGNAL(warning(int,QString,int,QFile*)), this, SIGNAL(warning(int,QString,int,QFile*)));
+	connect(&mExprGen, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
+	connect(&mExprGen,SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
 }
 
 void FunctionCodeGenerator::setRuntime(Runtime *r) {
@@ -228,7 +228,7 @@ void FunctionCodeGenerator::generate(ast::AssignmentExpression *n) {
 	else if (n->mVariable->type() == ast::Node::ntTypePtrField) {
 		ast::TypePtrField *typeField = static_cast<ast::TypePtrField *>(n->mVariable);
 
-		Symbol *sym = mScope->find(typeField->mTypePtrVar);
+		Symbol *sym = mScope->find(typeField->mVariableName);
 		assert(sym && sym->type() == Symbol::stVariable);
 		VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
 
@@ -358,43 +358,49 @@ void FunctionCodeGenerator::generate(ast::SelectStatement *n) {
 
 void FunctionCodeGenerator::generate(ast::ForEachStatement *n) {
 	pushExit(n);
-	Symbol *sym = mScope->find(n->mTypeName);
-	assert(sym && sym->type() == Symbol::stType);
-	TypeSymbol *typeSymbol = static_cast<TypeSymbol*>(sym);
+	Symbol *containerSym = mScope->find(n->mContainer);
+	assert(containerSym);
+	if (containerSym->type() == Symbol::stType) {
+		TypeSymbol *typeSymbol = static_cast<TypeSymbol*>(containerSym);
 
-	sym = mScope->find(n->mVarName);
-	assert(sym && sym->type() == Symbol::stVariable);
-	VariableSymbol *variableSymbol = static_cast<VariableSymbol*>(sym);
+		Symbol *sym = mScope->find(n->mVarName);
+		assert(sym && sym->type() == Symbol::stVariable);
+		VariableSymbol *variableSymbol = static_cast<VariableSymbol*>(sym);
 
-	Value firstTypeMember = mBuilder->firstTypeMember(typeSymbol);
-	mBuilder->store(variableSymbol, firstTypeMember);
+		Value firstTypeMember = mBuilder->firstTypeMember(typeSymbol);
+		mBuilder->store(variableSymbol, firstTypeMember);
 
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("For-Each condition");
+		nextBasicBlock();
+		mBuilder->branch(mCurrentBasicBlock);
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		mCurrentBasicBlock->setName("For-Each condition");
 
-	llvm::BasicBlock *conditionBlock = mCurrentBasicBlock;
+		llvm::BasicBlock *conditionBlock = mCurrentBasicBlock;
 
-	nextBasicBlock();
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	llvm::BasicBlock *block = mCurrentBasicBlock;
+		nextBasicBlock();
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		llvm::BasicBlock *block = mCurrentBasicBlock;
 
-	generate(&n->mBlock);
+		generate(&n->mBlock);
 
-	//Next
-	mBuilder->store(variableSymbol, mBuilder->afterTypeMember(mBuilder->load(variableSymbol)));
-	mBuilder->branch(conditionBlock);
+		//Next
+		mBuilder->store(variableSymbol, mBuilder->afterTypeMember(mBuilder->load(variableSymbol)));
+		mBuilder->branch(conditionBlock);
 
-	nextBasicBlock();
-	mCurrentBasicBlock->setName("After For-Each Next");
+		nextBasicBlock();
+		mCurrentBasicBlock->setName("After For-Each Next");
 
-	//Create condition
-	mBuilder->setInsertPoint(conditionBlock);
-	Value cond = mBuilder->typePointerNotNull(mBuilder->load(variableSymbol));
-	mBuilder->branch(cond, block, mCurrentBasicBlock);
+		//Create condition
+		mBuilder->setInsertPoint(conditionBlock);
+		Value cond = mBuilder->typePointerNotNull(mBuilder->load(variableSymbol));
+		mBuilder->branch(cond, block, mCurrentBasicBlock);
 
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+	}
+	else if (containerSym->type() == Symbol::stArray) {
+		assert("STUB" && 0);
+		ArraySymbol *array = static_cast<ArraySymbol*>(containerSym);
+	}
 	popExit();
 }
 

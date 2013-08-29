@@ -1,7 +1,7 @@
 #include "variablesymbol.h"
 #include "valuetype.h"
 
-VariableSymbol::VariableSymbol(const QString &name, ValueType *t, QFile *f, int line):
+VariableSymbol::VariableSymbol(const QString &name, ValueType *t, const QString &f, int line):
 	Symbol(name, f, line),
 	mValueType(t),
 	mAlloca(0) {

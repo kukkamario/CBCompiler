@@ -23,13 +23,13 @@ extern "C" int CBF_intS(CBString s) {
 	return LString(s).toInt();
 }
 
-extern "C" float CBF_floatI(int i) {
-	return float(i);
-}
+//extern "C" float CBF_floatI(int i) {
+//	return float(i);
+//}
 
-extern "C" float CBF_floatS(CBString s) {
-	return LString(s).toFloat();
-}
+//extern "C" float CBF_floatS(CBString s) {
+//	return LString(s).toFloat();
+//}
 
 
 extern "C" void CBF_printI(int i) {

@@ -16,7 +16,7 @@ namespace llvm {
 class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
-		Function(const QString &name, QFile *f, int line);
+		Function(const QString &name, const QString &f, int line);
 		virtual ~Function() { }
 		QString name() const{return mName;}
 
@@ -42,7 +42,7 @@ class Function {
 		/**
 		 * @return Pointer to file where Function is defined or null.
 		 */
-		QFile *file() const { return mFile; }
+		const QString &file() const { return mFile; }
 		/**
 		 * @return Line number where Function is defined or 0.
 		 */
@@ -73,7 +73,7 @@ class Function {
 		ParamList mParamTypes;
 		int mRequiredParams;
 		llvm::Function *mFunction;
-		QFile *mFile;
+		const QString &mFile;
 		int mLine;
 };
 

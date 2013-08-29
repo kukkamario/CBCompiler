@@ -55,6 +55,7 @@ enum ErrorCode {
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,
+	ecOnlyBasicValueTypeCanBeConstant,
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
@@ -64,6 +65,7 @@ enum ErrorCode {
 	ecSymbolAlreadyDefined,
 	ecCantFindType,
 	ecCantFindTypeField,
+	ecForEachInvalidContainer,
 	ecForcingType,
 	ecNotArrayOrFunction,
 	ecInvalidArraySubscript,
@@ -81,6 +83,7 @@ enum ErrorCode {
 	ecFunctionAlreadyDefined,
 	ecSymbolAlreadyDefinedWithDifferentType,
 	ecCantFindSymbol,
+	ecForVariableContainerTypeMismatch,
 	ecNotCommand,
 	ecExpectingValueAfterReturn,
 	ecInvalidReturn,
@@ -95,6 +98,8 @@ enum ErrorCode {
 	ecDangerousFloatToIntCast,
 	ecTypeCantHaveValueType,
 	ecExpectingType,
+	ecCastFunctionRequiresOneParameter,
+	ecCantCastValue,
 
 	ecCantWriteBitcodeFile,
 

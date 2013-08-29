@@ -8,8 +8,8 @@ class ErrorHandler : public QObject{
 	public:
 		ErrorHandler();
 	public slots:
-		void warning(int code, QString msg, int line, QFile *file);
-		void error(int code, QString msg, int line, QFile *file);
+		void warning(int code, QString msg, int line, QString file);
+		void error(int code, QString msg, int line, QString file);
 };
 
 #endif // ERRORHANDLER_H

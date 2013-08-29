@@ -1334,6 +1334,8 @@ QString ConstantValue::typeName() const {
 			return "Byte";
 		case ValueType::Short:
 			return "Short";
+		case ValueType::Boolean:
+			return "Boolean";
 		case ValueType::TypePointerCommon:
 			return "NULL";
 		default:

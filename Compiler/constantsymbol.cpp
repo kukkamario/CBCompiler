@@ -1,6 +1,6 @@
 #include "constantsymbol.h"
 
-ConstantSymbol::ConstantSymbol(const QString &symbolName, const ConstantValue &val, QFile *f, int line):
+ConstantSymbol::ConstantSymbol(const QString &symbolName, const ConstantValue &val, const QString &f, int line):
 	Symbol(symbolName, f, line),
 	mValue(val) {
 }

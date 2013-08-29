@@ -33,18 +33,18 @@ Type light
 	Field z#
 EndType
 
-s.sphere = New(sphere)
-s\ox# = -1: s\oy# = -1: s\oz# = 7: s\w# = 1.5: s\r# = 255: s\g#= 0: s\b# = 0 
+s As sphere = New(sphere)
+s.ox# = -1: s.oy# = -1: s.oz# = 7: s.w# = 1.5: s.r# = 255: s.g#= 0: s.b# = 0 
 
-s.sphere = New(sphere)
-s\ox# = 2: s\oy# = 1: s\oz# = 6: s\w# = 1: s\r# = 5: s\g# = 0: s\b# = 255
+s as sphere = New(sphere)
+s.ox# = 2: s.oy# = 1: s.oz# = 6: s.w# = 1: s.r# = 5: s.g# = 0: s.b# = 255
 
-s.sphere = New(sphere)
-s\ox# = 0: s\oy# = 1.5: s\oz# = 7: s\w# = 1: s\r# = 5: s\g# = 255: s\b# = 0
+s as sphere = New(sphere)
+s.ox# = 0: s.oy# = 1.5: s.oz# = 7: s.w# = 1: s.r# = 5: s.g# = 255: s.b# = 0
 
 
-l.light = New(light)
-l\x = -3: l\y = 0: l\z = 0
+l As light = New(light)
+l.x = -3: l.y = 0: l.z = 0
 
 Repeat
     Tim=Timer()
@@ -54,17 +54,17 @@ Repeat
 	t# = t# + (Timer() - lastUpdate) / 100.0
 	lastUpdate = Timer()
 	t2# = t#
-	For s.sphere = Each sphere
-		s\x# = s\ox# + Sin(t2# * 2.0) * 0.7
-		s\y# = s\oy# + Sin(t2# * 1.4 +124124) * 0.3
-		s\z# = s\oz# + Sin(t2# + 343) * 0.6
+	For s As sphere = Each sphere
+		s.x# = s.ox# + Sin(t2# * 2.0) * 0.7
+		s.y# = s.oy# + Sin(t2# * 1.4 +124124) * 0.3
+		s.z# = s.oz# + Sin(t2# + 343) * 0.6
 		t2# = t2# + t#
 	Next s
 
     For x#=0 To screenw-1
         For y#=0 To screenh-1
-            a.transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
-            Color  Min(255,a\r), Min(255,a\g), Min(255,a\b)
+            a as transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
+            Color  Min(255,a.r), Min(255,a.g), Min(255,a.b)
 			Dot x,y
 			Delete a
         Next y#
@@ -73,19 +73,19 @@ Repeat
     Print (Timer()-Tim)
 Forever
 
-Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
+Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
     col=0
-    For obj.sphere=Each sphere 
+    For obj as sphere=Each sphere 
             'remstart
             Q# = Sqrt(vx#^2 + vy#^2 + vz#^2)
             dx = dx / Q: dy = dy / Q: dz = dz / Q
            
             a# = vx#^2 + vy#^2 + vz#^2
-            b# = 2*vx#*(x#-obj\x#) + 2*vy#*(y#-obj\y) + 2*vz#*(z#-obj\z#)
-            c# = obj\x#^2 + obj\y#^2 + obj\z#^2 + x^2 + y^2 + z^2 -2*(obj\x# * x# + obj\y# * y# + obj\z#*z#) - obj\w#^2
+            b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
+            c# = obj.x#^2 + obj.y#^2 + obj.z#^2 + x^2 + y^2 + z^2 -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#^2
             d# = b#^2 - 4*a#*c#
             'remend
-            'd#=Sqrt((x-obj\x)^2+(y-obj\y)^2+(y-obj\y)^2)
+            'd#=Sqrt((x-obj.x)^2+(y-obj.y)^2+(y-obj.y)^2)
        
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/(2*a#)',(-b#+Sqrt(d#))/(2*a#))
@@ -93,23 +93,23 @@ Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
             'SetWindow str(tt#)
             If (col=0 Or dist#>tt) And tt>0.0001
                 dist#=tt
-                nearest.sphere=obj
+                nearest As sphere=obj
                 col=1
             EndIf
         EndIf
     Next obj
     
     If col Then
-        obj.sphere=nearest
+        obj as sphere=nearest
         //valaistus
         'remstart
-        For valo.light=Each light
-            pvx#=obj\x-x-vx*dist
-            vvx#=valo\x-x-vx*dist
-            pvy#=obj\y-y-vy*dist
-            vvy#=valo\y-y-vy*dist
-            pvz#=obj\z-z-vz*dist
-            vvz#=valo\z-z-vz*dist
+        For valo as light=Each light
+            pvx#=obj.x-x-vx*dist
+            vvx#=valo.x-x-vx*dist
+            pvy#=obj.y-y-vy*dist
+            vvy#=valo.y-y-vy*dist
+            pvz#=obj.z-z-vz*dist
+            vvz#=valo.z-z-vz*dist
             pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
             vvl#=Sqrt(vvx^2+vvy^2+vvz^2)
             pvx#=pvx/pvl
@@ -130,9 +130,9 @@ Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
         'remend
         //heijastukset
         If iters>0 Then 
-            pvx#=obj\x-x-vx*dist
-            pvy#=obj\y-y-vy*dist
-            pvz#=obj\z-z-vz*dist
+            pvx#=obj.x-x-vx*dist
+            pvy#=obj.y-y-vy*dist
+            pvz#=obj.z-z-vz*dist
             pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
             pvx#=pvx/pvl
             pvy#=pvy/pvl
@@ -141,18 +141,18 @@ Function trace.transmitter(x#,y#,z#,vx#,vy#,vz#,iters)
             svx#=-(2*dp*pvx-vx)
             svy#=-(2*dp*pvy-vy)
             svz#=-(2*dp*pvz-vz)
-            ref.transmitter=trace(x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
+            ref as transmitter=trace(x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
             'SetWindow ""+dotp
         Else
-            ref.transmitter=New(transmitter)
+            ref as transmitter=New(transmitter)
         EndIf
-        t.transmitter= New(transmitter)
-        t\r=(obj\r*lightness+ref\r)/2+specular*255 //+20'*dotp
-        t\g=(obj\g*lightness+ref\g)/2+specular*255 //+20'*dotp
-        t\b=(obj\b*lightness+ref\b)/2+specular*255 //+20'*dotp
+        t as transmitter= New(transmitter)
+        t.r=(obj.r*lightness+ref.r)/2+specular*255 //+20'*dotp
+        t.g=(obj.g*lightness+ref.g)/2+specular*255 //+20'*dotp
+        t.b=(obj.b*lightness+ref.b)/2+specular*255 //+20'*dotp
         Delete ref
     Else
-        t.transmitter= New(transmitter)    
+        t As transmitter= New(transmitter)    
     EndIf
     Return t
 EndFunction

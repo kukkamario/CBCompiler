@@ -8,7 +8,7 @@ namespace llvm {
 }
 class VariableSymbol : public Symbol{
 	public:
-		VariableSymbol(const QString &name, ValueType *t, QFile *f, int line);
+		VariableSymbol(const QString &name, ValueType *t, const QString &f, int line);
 		Type type()const {return stVariable;}
 		QString info() const;
 		void setAlloca(llvm::Value *alloc) {mAlloca = alloc;}

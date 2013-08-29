@@ -14,6 +14,7 @@ class BooleanValueType;
 class StringPool;
 class TypePointerCommonValueType;
 class TypeValueType;
+class Scope;
 
 /**
  * @brief The Runtime class Loads LLVM-IR runtime from a bitcode file and creates the basic ValueTypes.
@@ -32,19 +33,19 @@ class Runtime : public QObject {
 		 */
 		bool load(StringPool *strPool, const QString &file);
 		llvm::Module *module() {return mModule;}
-		QList<RuntimeFunction*> functions() {return mFunctions;}
+		QList<RuntimeFunction*> functions() const {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
-		llvm::Function *cbMain() {return mCBMain;}
-		llvm::Function *cbInitialize() { return mCBInitialize; }
+		llvm::Function *cbMain() const {return mCBMain;}
+		llvm::Function *cbInitialize() const { return mCBInitialize; }
 
-		StringValueType *stringValueType() {return mStringValueType;}
-		IntValueType *intValueType() {return mIntValueType;}
-		FloatValueType *floatValueType() {return mFloatValueType;}
-		ShortValueType *shortValueType() {return mShortValueType;}
-		ByteValueType *byteValueType() {return mByteValueType;}
-		BooleanValueType *booleanValueType() {return mBooleanValueType;}
-		TypePointerCommonValueType *typePointerCommonValueType() {return mTypePointerCommonValueType;}
-		TypeValueType *typeValueType() { return mTypeValueType; }
+		StringValueType *stringValueType() const {return mStringValueType;}
+		IntValueType *intValueType() const {return mIntValueType;}
+		FloatValueType *floatValueType() const {return mFloatValueType;}
+		ShortValueType *shortValueType() const {return mShortValueType;}
+		ByteValueType *byteValueType() const {return mByteValueType;}
+		BooleanValueType *booleanValueType() const {return mBooleanValueType;}
+		TypePointerCommonValueType *typePointerCommonValueType() const {return mTypePointerCommonValueType;}
+		TypeValueType *typeValueType() const { return mTypeValueType; }
 
 		ValueType *findValueType(ValueType::eType valType);
 
@@ -55,7 +56,6 @@ class Runtime : public QObject {
 		llvm::Type *typeLLVMType() const { return mTypeLLVMType; }
 		llvm::Type *typeMemberLLVMType() const { return mTypeMemberLLVMType; }
 		llvm::PointerType *typeMemberPointerLLVMType() const { return mTypeMemberLLVMType->getPointerTo(); }
-
 
 	private:
 		void addRuntimeFunction(llvm::Function *func, const QString &name);
@@ -89,8 +89,8 @@ class Runtime : public QObject {
 		llvm::Type *mTypeLLVMType;
 		llvm::Type *mTypeMemberLLVMType;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // RUNTIME_H

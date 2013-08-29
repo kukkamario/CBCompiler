@@ -90,7 +90,8 @@ SOURCES += main.cpp \
     labelsymbol.cpp \
     builder.cpp \
     settings.cpp \
-    typevaluetype.cpp
+    typevaluetype.cpp \
+    valuetypesymbol.cpp
 
 HEADERS += \
     lexer.h \
@@ -124,7 +125,6 @@ HEADERS += \
     typesymbol.h \
     typepointervaluetype.h \
     symbolcollectortypechecker.h \
-    conversionhelper.h \
     arraysymbol.h \
     cbfunction.h \
     functioncodegenerator.h \
@@ -134,4 +134,5 @@ HEADERS += \
     global.h \
     warningcodes.h \
     settings.h \
-    typevaluetype.h
+    typevaluetype.h \
+    valuetypesymbol.h

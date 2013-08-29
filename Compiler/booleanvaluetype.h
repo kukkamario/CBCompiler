@@ -10,7 +10,7 @@
 class BooleanValueType : public ValueType {
 	public:
 		BooleanValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return QObject::tr("Boolean");}
+		QString name() const {return "boolean";}
 		/**
 		 * @brief The type of ValueType.
 		 * @see ValueType::Type
@@ -36,6 +36,8 @@ class BooleanValueType : public ValueType {
 		 * @return true
 		 */
 		bool isNumber() const{return true;}
+
+		bool valueCanBeConstant() const { return true; }
 
 		int size() const { return 1; }
 	private:

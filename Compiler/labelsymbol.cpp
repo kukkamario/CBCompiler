@@ -1,6 +1,6 @@
 #include "labelsymbol.h"
 
-LabelSymbol::LabelSymbol(const QString &name, QFile *file, int line):
+LabelSymbol::LabelSymbol(const QString &name, const QString &file, int line):
 	Symbol(name, file, line),
 	mBasicBlock(0)
 {

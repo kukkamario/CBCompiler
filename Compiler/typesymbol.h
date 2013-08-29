@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QList>
 #include "value.h"
+#include "valuetypesymbol.h"
 
 namespace llvm{
 	class StructType;
@@ -18,20 +19,22 @@ class ValueType;
 class Runtime;
 class TypeField {
 	public:
-		TypeField(const QString &name, ValueType *valueType, QFile *file, int line);
+		TypeField(const QString &name, ValueType *valueType, const QString &file, int line);
 		QString name()const{return mName;}
 		ValueType *valueType()const{return mValueType;}
 		QString info() const;
+		int line() const { return mLine; }
+		QString file() const { return mFile; }
 	private:
 		QString mName;
 		ValueType *mValueType;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
-class TypeSymbol : public Symbol {
+class TypeSymbol : public ValueTypeSymbol {
 	public:
-		TypeSymbol(const QString &name, Runtime *r, QFile *file, int line);
+		TypeSymbol(const QString &name, Runtime *r, const QString &file, int line);
 		Type type()const{return stType;}
 		QString info() const;
 		bool addField(const TypeField &field);
@@ -39,6 +42,7 @@ class TypeSymbol : public Symbol {
 		const TypeField &field(const QString &name) const;
 		int fieldIndex(const QString &name) const;
 		llvm::StructType *llvmMemberType() const {return mMemberType;}
+		ValueType *valueType() const;
 
 		void initializeType(Builder *b);
 		void createOpaqueTypes(Builder *b);

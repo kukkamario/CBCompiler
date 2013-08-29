@@ -6,12 +6,12 @@
 #include "typevaluetype.h"
 
 
-TypeSymbol::TypeSymbol(const QString &name, Runtime *r, QFile *file, int line):
-	Symbol(name, file, line),
-	mTypePointerValueType(new TypePointerValueType(r, this)),
+TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const QString &file, int line):
+	ValueTypeSymbol(name, file, line),
 	mGlobalTypeVariable(0),
 	mFirstFieldIndex(0),
-	mMemberSize(0) {
+	mMemberSize(0),
+	mTypePointerValueType(new TypePointerValueType(r, this)) {
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
@@ -39,6 +39,10 @@ int TypeSymbol::fieldIndex(const QString &name) const {
 	return mFirstFieldIndex + fieldI;
 }
 
+ValueType *TypeSymbol::valueType() const {
+	return typePointerValueType();
+}
+
 void TypeSymbol::initializeType(Builder *b) {
 	b->irBuilder().CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
 }
@@ -48,7 +52,7 @@ void TypeSymbol::createOpaqueTypes(Builder *b) {
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType, QFile *file, int line) :
+TypeField::TypeField(const QString &name, ValueType *valueType, const QString &file, int line) :
 	mName(name),
 	mValueType(valueType),
 	mLine(line),

@@ -106,8 +106,8 @@ class FunctionCodeGenerator: public QObject{
 	public slots:
 
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // FUNCTIONCODEGENERATOR_H

@@ -130,7 +130,7 @@ QString Token::typeToString() const {
 
 QString Token::info() const
 {
-	QString ret(mFile->fileName());
+	QString ret(mFile);
 	ret += " [";
 	ret += QString::number(mLine);
 	ret += "]  ";

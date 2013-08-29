@@ -19,17 +19,20 @@ class ConstantExpressionEvaluator : public QObject {
 		ConstantValue evaluate(const ast::Integer *s);
 		ConstantValue evaluate(const ast::Float *s);
 		ConstantValue evaluate(const ast::Variable *s);
+
+		void setRuntime(Runtime *runtime);
 		void setGlobalScope(Scope *globalScope);
-		void setCodeFile(QFile *f);
+		void setCodeFile(const QString &f);
 		void setCodeLine(int l);
 	private:
+		Runtime *mRuntime;
 		Scope* mGlobalScope;
-		QFile *mFile;
+		QString mFile;
 		int mLine;
 		void errorConstantAlreadyDefinedWithAnotherType(const QString &name);
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // CONSTANTEXPRESSIONEVALUATOR_H
