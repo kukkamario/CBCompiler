@@ -6,8 +6,8 @@
 Parser::Parser():
 	mStatus(Ok),
 	mStringValueTypeName("string"),
-	mIntegerValueTypeName("integer"),
-	mFloatValueTypeName("float") {
+	mFloatValueTypeName("float"),
+	mIntegerValueTypeName("integer") {
 }
 
 typedef ast::Node *(Parser::*BlockParserFunction)(Parser::TokIterator &);
@@ -1133,7 +1133,16 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 
 		case Token::Float: {
 			bool success;
-			float val = i->toString().toFloat(&success);
+			float val;
+			if (*i->mBegin == '.') { //leading dot .13123
+				val = ('0' + i->toString()).toFloat(&success);
+			}
+			else if (*(i->mEnd - 1) == '.') { //Ending dot 1231.
+				val = (i->toString() + '0').toFloat(&success);
+			}
+			else {
+				val = i->toString().toFloat(&success);
+			}
 			if (!success) {
 				emit error(ErrorCodes::ecCantParseFloat, tr("Cannot parse float \"%1\"").arg(i->toString()), i->mLine, i->mFile);
 				mStatus = Error;
@@ -1206,32 +1215,6 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 			var->mName = name;
 			var->mTypeName = varTy;
 			return var;
-		}
-			//String & Float conversion functions
-		case Token::kFloat:
-		case Token::kString: {
-			QString name = i->toString();
-			i++;
-			if (i->mType == Token::LeftParenthese) { //Function call or array subscript
-				i++;
-				ast::Node *first = expectExpression(i);
-				if (mStatus == Error) return 0;
-				if (i->mType != Token::RightParenthese) {
-					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-					mStatus = Error;
-					return 0;
-				}
-				ast::FunctionCallOrArraySubscript *ret = new ast::FunctionCallOrArraySubscript;
-				ret->mName = name;
-				ret->mParams.append(first);
-				i++;
-				return ret;
-			}
-			else {
-				emit error(ErrorCodes::ecExpectingLeftParenthese, tr("Expecting left parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
 		}
 		case Token::kNew:
 		case Token::kFirst:

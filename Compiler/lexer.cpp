@@ -49,11 +49,6 @@ Lexer::Lexer()
 	mKeywords["data"] = Token::kData;
 	mKeywords["read"] = Token::kRead;
 	mKeywords["restore"] = Token::kRestore;
-	mKeywords["integer"] = Token::kInteger;
-	mKeywords["float"] = Token::kFloat;
-	mKeywords["string"] = Token::kString;
-	mKeywords["short"] = Token::kShort;
-	mKeywords["byte"] = Token::kByte;
 	mKeywords["as"] = Token::kAs;
 	mKeywords["exit"] = Token::kExit;
 	mKeywords["end"] = Token::kEnd;
@@ -237,6 +232,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			i++;
 			if (i != code.end()) {
 				if (i->isNumber()) { //Float
+					i--;
 					readFloatDot(i, code.end(), line, curFilePath);
 					continue;
 				}
@@ -310,6 +306,7 @@ Lexer::ReturnState Lexer::readToRemEnd(QString::iterator &i, const QString::iter
 
 Lexer::ReturnState Lexer::readFloatDot(QString::iterator &i, const QString::iterator &end, int line, const QString &file) {
 	QString::iterator begin = i;
+	i++;
 	while (i != end) {
 		if (!(i->isDigit())) { //Not a number
 			break;
@@ -328,7 +325,7 @@ Lexer::ReturnState Lexer::readFloatDot(QString::iterator &i, const QString::iter
 			i++;
 		}
 	}
-	addToken(Token(Token::FloatLeadingDot, begin, i, line, file));
+	addToken(Token(Token::Float, begin, i, line, file));
 	return Success;
 }
 
