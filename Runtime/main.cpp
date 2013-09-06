@@ -8,14 +8,14 @@
 #include "textinterface.h"
 #include "inputinterface.h"
 
-extern "C" void CBF_CB_main();
-extern "C" void CBF_CB_initialize();
+extern "C" void CB_main();
+extern "C" void CB_initialize();
 
 
 int main(int argc, char **argv) {
 
 	info(U"Initializing types and strings");
-	CBF_CB_initialize();
+	CB_initialize();
 
 	info(U"Initializing allegro");
 	if (!al_init()) {
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
 	//Begin execution
 	info(U"Beginning execution");
-	CBF_CB_main();
+	CB_main();
 
 	sys::closeProgram();
 

@@ -256,6 +256,7 @@ struct ArrayDefinition : Node {
 		QString mFile;
 };
 
+
 struct Operation {
 		Operation(Operator opp, Node *opr) : mOperator(opp), mOperand(opr) {}
 		//~Operation() { delete mOperand; }

@@ -48,10 +48,10 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	addPredefinedConstantSymbols();
 }
 
-bool CodeGenerator::initialize(const QString &runtimeFile, const Settings &settings) {
+bool CodeGenerator::initialize(const QString &runtimeFile, const QString &functionMappingFile, const Settings &settings) {
 	mSettings = settings;
 	mTypeChecker.setForceVariableDeclaration(settings.forceVariableDeclaration());
-	if (!mRuntime.load(&mStringPool, runtimeFile)) {
+	if (!mRuntime.load(&mStringPool, runtimeFile, functionMappingFile)) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), 0, 0);
 		return false;
 	}

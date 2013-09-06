@@ -46,38 +46,26 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		return false;
 	}
 	mName = name.toLower();
-	int paramNum = funcTy->getFunctionNumParams();
-	if (mName.length() - paramNum < 1) return false;
-	QString paramStr = mName.right(paramNum).toLower();
-	mName.chop(paramNum);
-	int param = 0;
 	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
 		if (*i == mRuntime->stringValueType()->llvmType()) {
-			if (paramStr.at(param) != 's') return false;
 			mParamTypes.append(mRuntime->stringValueType());
 		}
 		else if (*i == mRuntime->intValueType()->llvmType()) {
-			if (paramStr.at(param) != 'i') return false;
 			mParamTypes.append(mRuntime->intValueType());
 		}
 		else if (*i == mRuntime->floatValueType()->llvmType()) {
-			if (paramStr.at(param) != 'f') return false;
 			mParamTypes.append(mRuntime->floatValueType());
 		}
 		else if (*i == mRuntime->shortValueType()->llvmType()) {
-			if (paramStr.at(param) != 'w') return false;
 			mParamTypes.append(mRuntime->shortValueType());
 		}
 		else if( *i == mRuntime->byteValueType()->llvmType()) {
-			if (paramStr.at(param) != 'b') return false;
 			mParamTypes.append(mRuntime->byteValueType());
 		}
 		else if (*i == mRuntime->typePointerCommonValueType()->llvmType()) {
-			if (paramStr.at(param) != 'm') return false;
 			mParamTypes.append(mRuntime->typePointerCommonValueType());
 		}
 		else if (*i == mRuntime->typeValueType()->llvmType()) {
-			if (paramStr.at(param) != 't') return false;
 			mParamTypes.append(mRuntime->typeValueType());
 		}
 		else {
@@ -87,7 +75,6 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 			qDebug("\n-------\n");
 			return false;
 		}
-		param++;
 	}
 	mRequiredParams = mParamTypes.size();
 	return true;

@@ -5,6 +5,7 @@
 #include "llvm.h"
 #include "valuetype.h"
 #include <QMap>
+#include <QMultiMap>
 class IntValueType;
 class StringValueType;
 class FloatValueType;
@@ -31,7 +32,7 @@ class Runtime : public QObject {
 		 * @param file Path to the runtime bitcode file
 		 * @return True, if loading succeeded, false otherwise
 		 */
-		bool load(StringPool *strPool, const QString &file);
+		bool load(StringPool *strPool, const QString &runtimeFile, const QString &functionMappingFile);
 		llvm::Module *module() {return mModule;}
 		QList<RuntimeFunction*> functions() const {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
@@ -58,11 +59,12 @@ class Runtime : public QObject {
 		llvm::PointerType *typeMemberPointerLLVMType() const { return mTypeMemberLLVMType->getPointerTo(); }
 
 	private:
-		void addRuntimeFunction(llvm::Function *func, const QString &name);
-		void addDefaultRuntimeFunction(llvm::Function *func, const QString &name);
+		bool loadRuntimeFunctions();
+		bool loadDefaultRuntimeFunctions();
 		bool loadValueTypes(StringPool *strPool);
 		bool isAllocatorFunctionValid();
 		bool isFreeFuntionValid();
+		bool loadFunctionMapping(const QString &functionMapping);
 
 		bool mValid;
 		llvm::Module *mModule;
@@ -88,6 +90,8 @@ class Runtime : public QObject {
 
 		llvm::Type *mTypeLLVMType;
 		llvm::Type *mTypeMemberLLVMType;
+
+		QMultiMap<QString, QString> mFunctionMapping;
 	signals:
 		void error(int code, QString msg, int line, const QString &file);
 		void warning(int code, QString msg, int line, const QString &file);

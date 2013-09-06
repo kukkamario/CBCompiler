@@ -48,15 +48,15 @@ HEADERS += \
     idmap.h \
     inputinterface.h
 
-win32 {
-    LLVM_FILES += atomic_operations_mingw.ll
-}
-linux-g++-32 {
-	LLVM_FILES += atomic_operations_gcc-32.ll
-}
-linux-g++-64 {
-	LLVM_FILES += atomic_operations_gcc-64.ll
-}
+#win32 {
+#    LLVM_FILES += atomic_operations_mingw.ll
+#}
+#linux-g++-32 {
+#	LLVM_FILES += atomic_operations_gcc-32.ll
+#}
+#linux-g++-64 {
+#	LLVM_FILES += atomic_operations_gcc-64.ll
+#}
 
 QMAKE_CC = clang
 QMAKE_CXX = clang++
@@ -81,10 +81,10 @@ QMAKE_EXT_RES           = _res.bc
 #QMAKE_PREFIX_STATICLIB  = lib
 QMAKE_EXTENSION_STATICLIB = bc
 
-llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
-llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
-llvm_compiler.input = LLVM_FILES
-QMAKE_EXTRA_COMPILERS += llvm_compiler
+#llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
+#llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
+#llvm_compiler.input = LLVM_FILES
+#QMAKE_EXTRA_COMPILERS += llvm_compiler
 
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
@@ -99,6 +99,8 @@ win32 {
 }
 
 DESTDIR = $$PWD/../bin/runtime
+
+QMAKE_POST_LINK = "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(TARGET)"
 
 DEFINES += ALLEGRO_STATIC
 

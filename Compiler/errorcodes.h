@@ -52,6 +52,9 @@ enum ErrorCode {
 	ecCantLoadRuntime,
 	ecInvalidRuntime,
 	ecPrefixReserved,
+	ecCantLoadFunctionMapping,
+	ecInvalidFunctionMappingFile,
+	ecCantFindRuntimeFunction,
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,

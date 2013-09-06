@@ -3,102 +3,102 @@
 
 using namespace math;
 
-CBEXPORT float CBF_sinF(float f) {
+float CBF_sin(float f) {
 	return sin(toRad(f));
 }
 
-CBEXPORT float CBF_cosF(float f) {
+float CBF_cos(float f) {
 	return cos(toRad(f));
 }
 
-CBEXPORT float CBF_tanF(float f) {
+float CBF_tan(float f) {
 	return tan(toRad(f));
 }
 
-CBEXPORT float CBF_asinF(float f) {
+float CBF_asin(float f) {
 	return toDeg(asin(f));
 }
 
-CBEXPORT float CBF_acosF(float f) {
+float CBF_acos(float f) {
 	return toDeg(acos(f));
 }
 
-CBEXPORT float CBF_atanF(float f) {
+float CBF_atan(float f) {
 	return toDeg(atan(f));
 }
 
-CBEXPORT float CBF_absF(float f) {
+float CBF_abs(float f) {
 	return fabs(f);
 }
 
-CBEXPORT int CBF_absI(int i) {
+int CBF_abs(int i) {
 	return abs(i);
 }
 
-CBEXPORT float CBF_sqrtF(float f) {
+float CBF_sqrt(float f) {
 	return sqrtf(f);
 }
 
-CBEXPORT float CBF_distanceFFFF(float x1, float y1, float x2, float y2) {
+float CBF_distance(float x1, float y1, float x2, float y2) {
 	return distance(x1, y1, x2, y2);
 }
 
-CBEXPORT float CBF_maxFF(float a, float b) {
+float CBF_max(float a, float b) {
 	return max(a, b);
 }
 
-CBEXPORT int CBF_maxII(int a, int b) {
+int CBF_max(int a, int b) {
 	return max(a, b);
 }
 
-CBEXPORT float CBF_minFF(float a, float b) {
+float CBF_min(float a, float b) {
 	return min(a, b);
 }
 
-CBEXPORT int CBF_minII(int a, int b) {
+int CBF_min(int a, int b) {
 	return min(a, b);
 }
 
-CBEXPORT float CBF_wrapAngleF(float a) {
+float CBF_wrapAngle(float a) {
 	return wrapAngle(a);
 }
 
-CBEXPORT float CBF_rndF(float max) {
+float CBF_rnd(float max) {
 	return rnd(max);
 }
 
-CBEXPORT float CBF_rndFF(float min, float max) {
+float CBF_rnd(float min, float max) {
 	return rnd(min, max);
 }
 
-CBEXPORT int CBF_randI(int max) {
+int CBF_rand(int max) {
 	return rand(max);
 }
 
-CBEXPORT int CBF_randII(int min, int max) {
+int CBF_rand(int min, int max) {
 	return rand(min, max);
 }
 
-CBEXPORT void CBF_randomizeI(int seed) {
+void CBF_randomize(int seed) {
 	randomize(seed);
 }
 
-CBEXPORT float CBF_roundUpF(float f) {
+float CBF_roundUp(float f) {
 	return ceilf(f);
 }
 
-CBEXPORT float CBF_roundDownF(float f) {
+float CBF_roundDown(float f) {
 	return floorf(f);
 }
 
-CBEXPORT float CBF_getAngleFFFF(float x1, float y1, float x2, float y2) {
+float CBF_getAngle(float x1, float y1, float x2, float y2) {
 	return getAngle(x1, y1, x2, y2);
 }
 
-CBEXPORT float CBF_logF(float v) {
+float CBF_log(float v) {
 	return logf(v);
 }
 
-CBEXPORT float CBF_log10F(float v) {
+float CBF_log10(float v) {
 	return log10f(v);
 }
