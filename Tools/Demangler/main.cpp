@@ -1,12 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <llvm/Module.h>
+#include <llvm/Config/llvm-config.h>
 #if LLVM_VERSION_MINOR < 3
 	#include <llvm/LLVMContext.h>
 	#include <llvm/Support/IRReader.h>
 	#include <llvm/Function.h>
+	#include <llvm/Module.h>
 #else
+	#include <llvm/IR/Module.h>
 	#include <llvm/IR/LLVMContext.h>
 	#include <llvm/IRReader/IRReader.h>
 	#include <llvm/IR/Function.h>
@@ -173,7 +175,7 @@ int main(int argc, char *argv[]) {
 	llvm::SMDiagnostic diagnostic;
 	llvm::Module *module = llvm::ParseIRFile(input, diagnostic, llvm::getGlobalContext());
 	if (!module) {
-		cerr << diagnostic.getMessage() << endl;
+		cerr << diagnostic.getMessage().data() << endl;
 		return 2;
 	}
 

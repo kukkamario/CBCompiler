@@ -119,6 +119,7 @@ Value ExpressionCodeGenerator::generate(ast::SpecialFunctionCall *n) {
 			return mBuilder->afterTypeMember(param);
 		default:
 			assert("Invalid ast::SpecialFunctionCall" && 0);
+			return Value();
 	}
 }
 

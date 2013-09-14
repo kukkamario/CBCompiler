@@ -94,13 +94,13 @@ win32 {
 	#and creates warning... :/
 	#TODO: better solution?
 	win_link.target = $(DESTDIR_TARGET)
-	win_link.commands = llvm-link -o $(DESTDIR_TARGET) $(OBJECTS)
+	win_link.commands = llvm-link -o $(DESTDIR_TARGET) $(OBJECTS) & "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(DESTDIR_TARGET)"
 	QMAKE_EXTRA_TARGETS += win_link
 }
 
 DESTDIR = $$PWD/../bin/runtime
 
-QMAKE_POST_LINK = "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(TARGET)"
+!win32: QMAKE_POST_LINK = "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(TARGET)"
 
 DEFINES += ALLEGRO_STATIC
 

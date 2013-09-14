@@ -362,7 +362,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 			return 0;
 		}
 		if (!params.first()->canBeCastedToValueType(valueType)) {
-			emit error(ErrorCodes::ecCantCastValue, tr("Can't cast the value to \"\%1\"").arg(sym->name()), mLine, mFile);
+			emit error(ErrorCodes::ecCantCastValue, tr("Can't cast the value to \"%1\"").arg(sym->name()), mLine, mFile);
 			return 0;
 		}
 		return valueType;

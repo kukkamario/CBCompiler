@@ -37,7 +37,7 @@ CBEXPORT TypeMember *CB_Before(TypeMember *member) {
 	return member->before();
 }
 
-CBEXPORT void CBF_delete(TypeMember *member) {
+void CBF_delete(TypeMember *member) {
 	if (member == 0) {
 		error(U"CBF_deleteM: NULL TypeMember");
 		return;
