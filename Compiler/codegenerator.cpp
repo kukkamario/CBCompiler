@@ -81,8 +81,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	qDebug() << "Checking local scopes of the functions";
 	bool functionLocalScopesValid = checkFunctions();
 
-
-#ifdef _DEBUG
+#ifdef DEBUG_OUTPUT
 	QFile file("scopes.txt");
 	if (file.open(QFile::WriteOnly)) {
 		QTextStream s(&file);
