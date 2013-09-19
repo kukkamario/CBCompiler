@@ -53,11 +53,11 @@ class Lexer: public QObject
 		QList<Token> tokens() const {return mTokens;}
 
 
-		QList<QPair<QFile*, QString> > files() const {return mFiles; }
+		QList<QPair<QString, QString> > files() const {return mFiles; }
 	private:
 
 		ReturnState tokenize(const QString &file);
-		QList<QPair<QFile*, QString> > mFiles; //File and code
+		QList<QPair<QString, QString> > mFiles; //File and code
 		QList<Token> mTokens;
 		QMap<QString, Token::Type> mKeywords;
 		Settings mSettings;
@@ -68,15 +68,15 @@ class Lexer: public QObject
 		void combineTokens();
 
 		ReturnState readToEOL(QString::iterator &i, const QString::iterator &end);
-		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, int &line, QFile *file);
-		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
-		ReturnState readNum(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
-		ReturnState readHex(QString::iterator &i, const QString::iterator &end, int line, QFile * file);
-		ReturnState readString(QString::iterator &i, const QString::iterator &end, int &line, QFile * file);
-		ReturnState readIdentifier(QString::iterator &i, const QString::iterator &end, int &line, QFile * file);
+		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
+		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
+		ReturnState readNum(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
+		ReturnState readHex(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
+		ReturnState readString(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
+		ReturnState readIdentifier(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
 	signals:
-		void warning(int code, QString msg, int line, QFile *file);
-		void error(int code, QString msg, int line, QFile *file);
+		void warning(int code, QString msg, int line, QString file);
+		void error(int code, QString msg, int line, QString file);
 };
 
 #endif // LEXER_H

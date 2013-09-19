@@ -10,7 +10,7 @@ class Builder;
  */
 class ArraySymbol : public Symbol {
 	public:
-		ArraySymbol(const QString &name, ValueType *valType, int dim, QFile *file, int line);
+		ArraySymbol(const QString &name, ValueType *valType, int dim, const QString &file, int line);
 
 		/**
 		 * @brief Symbol type

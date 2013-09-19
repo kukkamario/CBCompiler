@@ -6,22 +6,6 @@
 #endif
 
 namespace math {
-	inline float toRad(float f) {
-		return f * M_PI / 180.0;
-	}
-
-	inline double toRad(double f) {
-		return f * M_PI / 180.0;
-	}
-
-	inline float toDeg(float f) {
-		return f * 180.0 / M_PI;
-	}
-
-	inline double toDeg(double f) {
-		return f * 180.0 / M_PI;
-	}
-
 	int rand(int max);
 	int rand(int min, int max);
 	double rnd();
@@ -30,6 +14,17 @@ namespace math {
 	void randomize(int seed);
 	double wrapAngle(double a);
 	double distance(double x1, double y1, double x2, double y2);
+	double getAngle(double x1, double y1, double x2, double y2);
+
+	template <typename T>
+	T toRad(T v) {
+		return v * M_PI / 180.0;
+	}
+
+	template <typename T>
+	T toDeg(T v) {
+		return v * 180.0 / M_PI;
+	}
 
 	template <typename T>
 	T square(T a) {

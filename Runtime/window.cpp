@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "error.h"
 #include "systeminterface.h"
+#include "inputinterface.h"
 
 static Window *sInstance = 0;
 
@@ -110,19 +111,29 @@ bool Window::isValid() const {
 bool Window::activate() {
 	al_set_target_backbuffer(mDisplay);
 	sCurrentTarget = this;
+	setupDrawingState();
 	return true;
 }
 
 bool Window::deactivate() {
-	sCurrentTarget = 0;
 	return true;
+}
+
+void Window::lock(int flags) {
+	al_lock_bitmap(al_get_backbuffer(mDisplay), ALLEGRO_PIXEL_FORMAT_ANY, flags);
+}
+
+void Window::unlock() {
+	al_unlock_bitmap(al_get_backbuffer(mDisplay));
 }
 
 void Window::drawscreen() {
 	ALLEGRO_EVENT e;
+	input::eventLoopBegin();
 	while (al_get_next_event(mEventQueue, &e)) {
 		handleEvent(e);
 	}
+	input::eventLoopEnd();
 	al_flip_display();
 
 	mFPSCounter++;
@@ -148,11 +159,8 @@ void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {
 void Window::handleEvent(const ALLEGRO_EVENT &event) {
 	switch (event.type) {
 		case ALLEGRO_EVENT_KEY_DOWN:
-			//Safe exit
-			if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
-				sys::closeProgram();
-			}
-			break;
+		case ALLEGRO_EVENT_KEY_UP:
+			input::handleKeyEvent(event); break;
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
 			sys::closeProgram(); break;
 	}

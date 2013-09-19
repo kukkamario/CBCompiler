@@ -15,7 +15,7 @@ class CodeGenerator : public QObject{
 		Q_OBJECT
 	public:
 		CodeGenerator(QObject *parent = 0);
-		bool initialize(const QString &runtimeFile, const Settings &settings);
+		bool initialize(const QString &runtimeFile, const QString &functionMappingFile, const Settings &settings);
 		bool generate(ast::Program *program);
 		bool createExecutable(const QString &path);
 	private:
@@ -26,13 +26,19 @@ class CodeGenerator : public QObject{
 		bool calculateConstants(ast::Program *program);
 		bool addGlobalsToScope(ast::Program *program);
 		bool addTypesToScope(ast::Program *program);
-		bool generateFunctions();
-		bool generateMainScope(ast::Block *block);
+		void generateFunctions();
+		void generateMainScope(ast::Block *block);
+		void generateInitializers();
+		void generateStringLiterals();
+		void generateTypeInitializers();
 		void createBuilder();
+		void addValueTypesToGlobalScope();
 
 		void addPredefinedConstantSymbols();
 
-		TypeSymbol *findTypeSymbol(const QString &typeName, QFile *f, int line);
+		ValueType *findValueType(const QString &valueTypeName, int line = 0, QString file = QString());
+
+		TypeSymbol *findTypeSymbol(const QString &typeName, const QString &f, int line);
 
 		Settings mSettings;
 		Runtime mRuntime;
@@ -45,9 +51,12 @@ class CodeGenerator : public QObject{
 		FunctionCodeGenerator mFuncCodeGen;
 		QMap<ast::FunctionDefinition *, CBFunction *> mCBFunctions;
 		Builder *mBuilder;
+		QList<TypeSymbol*> mTypes;
+
+		llvm::BasicBlock *mInitializationBlock;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // CODEGENERATOR_H

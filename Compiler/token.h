@@ -10,7 +10,6 @@ struct Token
 			Integer,
 			IntegerHex,
 			Float,
-			FloatLeadingDot,
 			String,
 			Identifier,
 			Label,
@@ -46,7 +45,7 @@ struct Token
 			opXor,
 			opNot,
 			opTypePtrField,
-			opTypePtrType,  //   Dot
+			opDot,  //   Dot
 			OperatorsEnd,
 
 			//Keywords
@@ -66,7 +65,6 @@ struct Token
 			kType,
 			kField,
 			kEndType,
-			kNew,
 			kWhile,
 			kWend,
 			kRepeat,
@@ -87,20 +85,22 @@ struct Token
 			kData,
 			kRead,
 			kRestore,
-			kEnd,
-			kInteger,
-			kFloat,
-			kString,
-			kShort,
-			kByte,
 			kAs,
 			kInclude,
 			kExit,
+			kEnd,
+
+			kNew,
+			kFirst,
+			kLast,
+			kBefore,
+			kAfter,
+
 			KeywordsEnd,
 			TypeCount
 		};
 
-		Token(Type t, QString::ConstIterator begin, QString::ConstIterator end, int line, QFile *f) : mType(t), mBegin(begin), mEnd(end), mLine(line), mFile(f) {}
+		Token(Type t, QString::ConstIterator begin, QString::ConstIterator end, int line, const QString &f) : mType(t), mBegin(begin), mEnd(end), mLine(line), mFile(f) {}
 		QString toString() const;
 		QString typeToString() const;
 		QString info() const;
@@ -113,7 +113,7 @@ struct Token
 		QString::ConstIterator mBegin;
 		QString::ConstIterator mEnd;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 #endif // TOKEN_H

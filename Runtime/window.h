@@ -22,8 +22,12 @@ class Window : RenderTarget{
 		bool isValid() const;
 		bool activate();
 		bool deactivate();
+		void lock(int flags);
+		void unlock();
 		void drawscreen();
 		void cls();
+
+		ALLEGRO_EVENT_QUEUE *eventQueue() const { return mEventQueue; }
 
 		int fps() const { return mFPS; }
 

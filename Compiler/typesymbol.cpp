@@ -2,12 +2,16 @@
 #include "typepointervaluetype.h"
 #include "llvm.h"
 #include "runtime.h"
+#include "builder.h"
+#include "typevaluetype.h"
 
 
-TypeSymbol::TypeSymbol(const QString &name, QFile *file, int line):
-	Symbol(name, file, line),
-	mType(0),
-	mTypePointerValueType(0){
+TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const QString &file, int line):
+	ValueTypeSymbol(name, file, line),
+	mGlobalTypeVariable(0),
+	mFirstFieldIndex(0),
+	mMemberSize(0),
+	mTypePointerValueType(new TypePointerValueType(r, this)) {
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
@@ -15,7 +19,7 @@ bool TypeSymbol::addField(const TypeField &field) {
 		return false;
 	}
 	mFields.append(field);
-	mFieldSearch.insert(field.name(), --mFields.end());
+	mFieldSearch.insert(field.name(), mFields.size() - 1);
 	return true;
 }
 
@@ -24,31 +28,31 @@ bool TypeSymbol::hasField(const QString &name) {
 }
 
 const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, QLinkedList<TypeField>::Iterator>::ConstIterator i = mFieldSearch.find(name);
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
 	assert(i != mFieldSearch.end());
-	return *i.value();
+	return mFields.at(i.value());
 }
 
-bool TypeSymbol::createLLVMType(llvm::Module *mod) {
+int TypeSymbol::fieldIndex(const QString &name) const {
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
+	int fieldI = i.value();
+	return mFirstFieldIndex + fieldI;
+}
 
-	std::vector<llvm::Type*> members;
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //Pointer to type
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //last
-	members.push_back(llvm::Type::getInt32Ty(mod->getContext())->getPointerTo()); //next
-	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
-		const TypeField &field = *i;
-		members.push_back(field.valueType()->llvmType());
-	}
-	mMemberType = llvm::StructType::create(mod->getContext(), members,("CBType_" + mName).toStdString());
-	if (!mMemberType) return false;
+ValueType *TypeSymbol::valueType() const {
+	return typePointerValueType();
+}
 
-	//TODO TYPE
+void TypeSymbol::initializeType(Builder *b) {
+	b->irBuilder().CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
+}
 
-	return true;
+void TypeSymbol::createOpaqueTypes(Builder *b) {
+	mMemberType = llvm::StructType::create(b->context());
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType, QFile *file, int line) :
+TypeField::TypeField(const QString &name, ValueType *valueType, const QString &file, int line) :
 	mName(name),
 	mValueType(valueType),
 	mLine(line),
@@ -60,17 +64,42 @@ QString TypeField::info() const {
 }
 
 
-bool TypeSymbol::createTypePointerValueType(Runtime *r) {
-	if (!createLLVMType(r->module())) return false;
-	mTypePointerValueType = new TypePointerValueType(r, this);
-	return true;
+void TypeSymbol::createTypePointerValueType(Builder *b) {
+	mRuntime = b->runtime();
+	createLLVMMemberType();
+	mGlobalTypeVariable = b->createGlobalVariable(mRuntime->typeLLVMType(), false, llvm::GlobalValue::InternalLinkage, llvm::Constant::getNullValue(mRuntime->typeLLVMType()));
+}
+
+Value TypeSymbol::typeValue() {
+	return Value(mRuntime->typeValueType(), mGlobalTypeVariable);
+}
+
+void TypeSymbol::createLLVMMemberType() {
+	assert(mMemberType);
+
+	std::vector<llvm::Type*> elements;
+
+	//Copy header
+	unsigned i;
+	for (i = 0; i < mRuntime->typeMemberLLVMType()->getStructNumElements(); i++) {
+		elements.push_back(mRuntime->typeMemberLLVMType()->getStructElementType(i));
+	}
+	mFirstFieldIndex = i;
+	foreach(const TypeField &field, mFields) {
+		elements.push_back(field.valueType()->llvmType());
+	}
+
+	mMemberType->setBody(elements);
+	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
+
+	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 
 QString TypeSymbol::info() const {
-	QString str("Type %1\n");
-	str = str.arg(mName);
-	for (QLinkedList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
+	QString str("Type %1   |   Size: %2 bytes\n");
+	str = str.arg(mName, QString::number(mMemberSize));
+	for (QList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
 		str += "    " + i->info() + '\n';
 	}
 	return str;

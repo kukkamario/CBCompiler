@@ -5,6 +5,7 @@
 #include "llvm.h"
 #include "valuetype.h"
 #include <QMap>
+#include <QMultiMap>
 class IntValueType;
 class StringValueType;
 class FloatValueType;
@@ -14,6 +15,7 @@ class BooleanValueType;
 class StringPool;
 class TypePointerCommonValueType;
 class TypeValueType;
+class Scope;
 
 /**
  * @brief The Runtime class Loads LLVM-IR runtime from a bitcode file and creates the basic ValueTypes.
@@ -30,20 +32,21 @@ class Runtime : public QObject {
 		 * @param file Path to the runtime bitcode file
 		 * @return True, if loading succeeded, false otherwise
 		 */
-		bool load(StringPool *strPool, const QString &file);
+		bool load(StringPool *strPool, const QString &runtimeFile, const QString &functionMappingFile);
 		llvm::Module *module() {return mModule;}
-		QList<RuntimeFunction*> functions() {return mFunctions;}
+		QList<RuntimeFunction*> functions() const {return mFunctions;}
 		QList<ValueType*> valueTypes() const {return mValueTypes;}
-		llvm::Function *cbMain() {return mCBMain;}
+		llvm::Function *cbMain() const {return mCBMain;}
+		llvm::Function *cbInitialize() const { return mCBInitialize; }
 
-		StringValueType *stringValueType() {return mStringValueType;}
-		IntValueType *intValueType() {return mIntValueType;}
-		FloatValueType *floatValueType() {return mFloatValueType;}
-		ShortValueType *shortValueType() {return mShortValueType;}
-		ByteValueType *byteValueType() {return mByteValueType;}
-		BooleanValueType *booleanValueType() {return mBooleanValueType;}
-		TypePointerCommonValueType *typePointerCommonValueType() {return mTypePointerCommonValueType;}
-		TypeValueType *typeValueType() { return mTypeValueType; }
+		StringValueType *stringValueType() const {return mStringValueType;}
+		IntValueType *intValueType() const {return mIntValueType;}
+		FloatValueType *floatValueType() const {return mFloatValueType;}
+		ShortValueType *shortValueType() const {return mShortValueType;}
+		ByteValueType *byteValueType() const {return mByteValueType;}
+		BooleanValueType *booleanValueType() const {return mBooleanValueType;}
+		TypePointerCommonValueType *typePointerCommonValueType() const {return mTypePointerCommonValueType;}
+		TypeValueType *typeValueType() const { return mTypeValueType; }
 
 		ValueType *findValueType(ValueType::eType valType);
 
@@ -55,19 +58,21 @@ class Runtime : public QObject {
 		llvm::Type *typeMemberLLVMType() const { return mTypeMemberLLVMType; }
 		llvm::PointerType *typeMemberPointerLLVMType() const { return mTypeMemberLLVMType->getPointerTo(); }
 
-
 	private:
-		void addRuntimeFunction(llvm::Function *func, const QString &name);
-		void addDefaultRuntimeFunction(llvm::Function *func, const QString &name);
+		bool loadRuntimeFunctions();
+		bool loadDefaultRuntimeFunctions();
 		bool loadValueTypes(StringPool *strPool);
 		bool isAllocatorFunctionValid();
 		bool isFreeFuntionValid();
+		bool loadFunctionMapping(const QString &functionMapping);
 
 		bool mValid;
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;
 		QList<ValueType*> mValueTypes;
 		llvm::Function *mCBMain;
+		llvm::Function *mCBInitialize;
+
 		IntValueType *mIntValueType;
 		FloatValueType *mFloatValueType;
 		StringValueType *mStringValueType;
@@ -85,9 +90,11 @@ class Runtime : public QObject {
 
 		llvm::Type *mTypeLLVMType;
 		llvm::Type *mTypeMemberLLVMType;
+
+		QMultiMap<QString, QString> mFunctionMapping;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // RUNTIME_H

@@ -94,14 +94,16 @@ void Printer::printNode(const Node *s, int tab) {
 			printString((String*)s, tab); return;
 		case Node::ntFunctionCallOrArraySubscript:
 			printFunctionCallOrArraySubscript((FunctionCallOrArraySubscript*)s, tab); return;
-		case Node::ntNew:
-			printNew((New*)s, tab); return;
 		case Node::ntArraySubscriptAssignmentExpression:
 			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
 		case Node::ntFunctionDefinition:
 			printFunctionDefinition((FunctionDefinition*)s, tab); return;
 		case Node::ntCommandCallOrArraySubscriptAssignmentExpression:
 			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
+		case Node::ntSpecialFunctionCall:
+			printSpecialFunctionCall((SpecialFunctionCall*)s, tab); return;
+		case Node::ntDim:
+			printDim((Dim*)s, tab); return;
 		default:
 			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
@@ -141,7 +143,7 @@ void Printer::printWhileStatement(const WhileStatement *s, int tab) {
 }
 
 void Printer::printForToStatement(const ForToStatement *s, int tab) {
-	printLine("For " + s->mVarName + " as " + varTypeToString(s->mVarType) + " = ", tab);
+	printLine("For " + s->mVarName + " as " + s->mVarType+ " = ", tab);
 	printNode(s->mFrom, tab + 1);
 	printLine("To", tab);
 	printNode(s->mTo, tab + 1);
@@ -154,7 +156,7 @@ void Printer::printForToStatement(const ForToStatement *s, int tab) {
 }
 
 void Printer::printForEachStatement(const ForEachStatement *s, int tab) {
-	printLine("For " + s->mVarName + "\\" + s->mTypeName + " = Each " + s->mTypeName, tab);
+	printLine("For " + s->mVarName + " as " + s->mVarType + " = Each " + s->mContainer, tab);
 	printBlock(&s->mBlock, tab + 1);
 	printLine("Next " + s->mVarName);
 }
@@ -227,7 +229,7 @@ void Printer::printFunctionDefinition(const FunctionDefinition *s, int tab) {
 			i++;
 		}
 	}
-	printLine(") as " + varTypeToString(s->mRetType), tab);
+	printLine(") as " + s->mRetType, tab);
 	printBlock(&s->mBlock, tab + 1);
 	printLine("EndFunction", tab);
 }
@@ -241,7 +243,7 @@ void Printer::printCommandCall(const CommandCall *s, int tab) {
 }
 
 void Printer::printArrayDefinition(const ArrayDefinition *s, int tab) {
-	printLine("Dim " + s->mName + " as " + varTypeToString(s->mType) + "(", tab);
+	printLine("Dim " + s->mName + " as " + s->mType + "(", tab);
 	tab++;
 	QList<Node*>::ConstIterator i = s->mDimensions.begin();
 	printNode(*i, tab);
@@ -255,15 +257,12 @@ void Printer::printArrayDefinition(const ArrayDefinition *s, int tab) {
 }
 
 void Printer::printVariableDefinition(const VariableDefinition *s, int tab) {
-	printLine("Dim", tab);
-	tab++;
-	for (QList<Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
-		printVariable(*i, tab);
-	}
+	printVariable(&s->mVariable, tab);
+	if (s->mValue) printNode(s->mValue, tab + 1);
 }
 
 void Printer::printConstDefinition(const ConstDefinition *s, int tab) {
-	printLine("Const " + s->mName + " " + varTypeToString(s->mVarType) + "=", tab);
+	printLine("Const " + s->mName + " " + s->mVarType + "=", tab);
 	tab++;
 	printNode(s->mValue, tab);
 }
@@ -324,32 +323,33 @@ void Printer::printReturn(const Return *s, int tab) {
 	}
 }
 
-void Printer::printExit(const Exit *s, int tab) {
+void Printer::printExit(const Exit *, int tab) {
 	printLine("Exit", tab);
 }
 
+void Printer::printSpecialFunctionCall(const SpecialFunctionCall *s, int tab) {
+	switch(s->mSpecialFunction) {
+		case SpecialFunctionCall::New:
+			printLine("New (", tab); break;
+		case SpecialFunctionCall::First:
+			printLine("First (", tab); break;
+		case SpecialFunctionCall::Last:
+			printLine("Last (", tab); break;
+		case SpecialFunctionCall::Before:
+			printLine("Before (", tab); break;
+		case SpecialFunctionCall::After:
+			printLine("After (", tab); break;
+	}
+	printNode(s->mParam, tab + 1);
+	printLine(")", tab);
+}
+
 void Printer::printTypePtrField(const TypePtrField *s, int tab) {
-	printLine(s->mTypePtrVar + "\\" + s->mFieldName + " as " + varTypeToString(s->mFieldType), tab);
+	printLine(s->mVariableName + "\\" + s->mFieldName + " as " + s->mFieldType, tab);
 }
 
 void Printer::printVariable(const Variable *s, int tab) {
-	QString txt;
-	txt.reserve(s->mName.size() + s->mTypeName.size() + 10);
-	txt += s->mName;
-	switch (s->mVarType) {
-		case Variable::Integer:
-			txt += " As Integer"; break;
-		case Variable::Float:
-			txt += " As Float"; break;
-		case Variable::String:
-			txt += " As String"; break;
-		case Variable::Short:
-			txt += " As Short"; break;
-		case Variable::Byte:
-			txt += " As Byte"; break;
-		case Variable::TypePtr:
-			txt += '.'; txt += s->mTypeName; break;
-	}
+	QString txt(s->mName + " As " + s->mTypeName);
 	printLine(txt, tab);
 }
 
@@ -380,12 +380,9 @@ void Printer::printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscri
 	printLine(")", tab);
 }
 
-void Printer::printNew(const New *s, int tab) {
-	QString txt;
-	txt += "New (";
-	txt += s->mTypeName;
-	txt += ")";
-	printLine(txt, tab);
+void Printer::printDim(const Dim *s, int tab) {
+	printLine("Dim", tab);
+	foreach(Node *n, s->mDefinitions) printNode(n, tab + 1);
 }
 
 void Printer::printProgram(const Program *s) {
@@ -427,26 +424,6 @@ bool Printer::printToFile(const QString &file) {
 	return true;
 }
 
-QString Printer::varTypeToString(const Variable::VarType t) {
-	switch (t) {
-		case Variable::Default:
-			return "Default";
-		case Variable::Integer:
-			return "Integer";
-		case Variable::Float:
-			return "Float";
-		case Variable::String:
-			return "String";
-		case Variable::Short:
-			return "Short";
-		case Variable::Byte:
-			return "Byte";
-		case Variable::TypePtr:
-			return "Type pointer";
-		default:
-			return "Unknown var type";
-	}
-}
 
 void Printer::printLine(const QString &txt, int tab) {
 	if (mDestFile) {

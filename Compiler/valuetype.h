@@ -2,7 +2,7 @@
 #define VALUETYPE_H
 #include <QString>
 #include <QObject>
-#include <llvm/IRBuilder.h>
+#include "llvm.h"
 class Value;
 namespace llvm {
 	class Value;
@@ -31,7 +31,7 @@ class ValueType {
 		static const CastCostType sMaxCastCost = 10000;
 
 		ValueType(Runtime *r);
-		~ValueType() {}
+		virtual ~ValueType() {}
 		virtual QString name() const = 0;
 		llvm::Type *llvmType() {return mType;}
 		virtual eType type() const = 0;
@@ -49,6 +49,7 @@ class ValueType {
 		/** Calculates cost for casting this ValueType to given ValueType.
 		 *If returned cost is over or equal to sMaxCastCost, cast cannot be done. */
 		virtual CastCostType castingCostToOtherValueType(ValueType *to) const = 0;
+
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 		llvm::LLVMContext &context();
 	protected:

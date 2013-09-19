@@ -1,0 +1,33 @@
+Type TestType
+	Field field1
+	Field field2 As String
+EndType
+
+
+
+typePtr.TestType = New (TestType)
+typePtr\field1 = 10
+typePtr\field2 = "Hello world"
+
+typePtr2.TestType = New (TestType)
+typePtr2\field1 = 16
+typePtr2\field2 = "Whohoo"
+
+For ptr.TestType = Each TestType
+	Print ptr\field1
+	Print ptr\field2
+Next ptr
+
+ptr = First(TestType)
+ptr\field1 = 1
+ptr = Last(TestType)
+ptr\field2 = 2
+
+If After(ptr) = NULL Then Print "No third type member"
+
+
+For ptr.TestType = Each TestType
+	Print ptr\field1
+	Print ptr\field2
+Next ptr
+

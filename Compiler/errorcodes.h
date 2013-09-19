@@ -45,6 +45,7 @@ enum ErrorCode {
 	ecFunctionReturnTypeRequired,
 
 	ecVarAlreadyDefinedWithAnotherType,
+	ecVariableTypeDefinedTwice,
 
 	ecParsingFailed,
 
@@ -52,9 +53,13 @@ enum ErrorCode {
 	ecCantLoadRuntime,
 	ecInvalidRuntime,
 	ecPrefixReserved,
+	ecCantLoadFunctionMapping,
+	ecInvalidFunctionMappingFile,
+	ecCantFindRuntimeFunction,
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,
+	ecOnlyBasicValueTypeCanBeConstant,
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
@@ -64,6 +69,7 @@ enum ErrorCode {
 	ecSymbolAlreadyDefined,
 	ecCantFindType,
 	ecCantFindTypeField,
+	ecForEachInvalidContainer,
 	ecForcingType,
 	ecNotArrayOrFunction,
 	ecInvalidArraySubscript,
@@ -81,6 +87,7 @@ enum ErrorCode {
 	ecFunctionAlreadyDefined,
 	ecSymbolAlreadyDefinedWithDifferentType,
 	ecCantFindSymbol,
+	ecForVariableContainerTypeMismatch,
 	ecNotCommand,
 	ecExpectingValueAfterReturn,
 	ecInvalidReturn,
@@ -93,6 +100,10 @@ enum ErrorCode {
 	ecArrayDimensionCountDoesntMatch,
 	ecExpectingNumberValue,
 	ecDangerousFloatToIntCast,
+	ecTypeCantHaveValueType,
+	ecExpectingType,
+	ecCastFunctionRequiresOneParameter,
+	ecCantCastValue,
 
 	ecCantWriteBitcodeFile,
 

@@ -47,6 +47,8 @@ struct Node {
 		ntRepeatUntilStatement,
 		ntGoto,
 		ntGosub,
+
+		ntDim,
 		ntRedim,
 
 
@@ -64,6 +66,7 @@ struct Node {
 		ntReturn,
 		ntExit,
 		ntSelectStatement,
+		ntSpecialFunctionCall, //New, First, Last, Before, After
 
 		//Operands
 		ntTypePtrField,	// typePtr\field
@@ -71,8 +74,7 @@ struct Node {
 		ntInteger,		// 13213
 		ntFloat,		// 213.02
 		ntString,		// "string"
-		ntFunctionCallOrArraySubscript,
-		ntNew			// new (type)
+		ntFunctionCallOrArraySubscript
 	};
 	virtual Type type() const = 0;
 	virtual ~Node() { }
@@ -84,24 +86,9 @@ struct Block : public QList<Node*> {
 };
 
 struct Variable : Node {
-		enum VarType {
-			Invalid,
-			Default,
-			Integer,
-			Float,
-			String,
-			Short,
-			Byte,
-			TypePtr
-		};
-
 		Type type() const {return ntVariable;}
-		VarType varType() const { return mVarType;}
-
-		VarType mVarType;
 		QString mName;
-
-		QString mTypeName; //If VarType == TypePtr
+		QString mTypeName;
 };
 
 struct Integer : Node {
@@ -112,13 +99,8 @@ struct Integer : Node {
 struct Return : Node {
 		Type type() const {return ntReturn; }
 		Node *mValue;
-		QFile *mFile;
+		QString mFile;
 		int mLine;
-};
-
-struct New : Node {
-		Type type() const {return ntNew;}
-		QString mTypeName;
 };
 
 struct Float : Node {
@@ -126,12 +108,27 @@ struct Float : Node {
 		float mValue;
 };
 
+struct Dim : Node {
+		Type type() const { return ntDim; }
+		QList<Node *> mDefinitions;
+		int mLine;
+		QString mFile;
+};
+
 struct VariableDefinition : Node {
 		Type type() const {return ntVariableDefinition;}
-		~VariableDefinition() { qDeleteAll(mDefinitions);}
-		QList<Variable*> mDefinitions;
-		int mLine;
-		QFile *mFile;
+		~VariableDefinition() { if (mValue) delete mValue; }
+		Variable mVariable;
+		Node *mValue;
+};
+
+
+struct ArrayDefinition : Node {
+		~ArrayDefinition() { qDeleteAll(mDimensions); }
+		Type type() const{ return ntArrayDefinition;}
+		QString mName;
+		QString mType;
+		QList<Node*> mDimensions;
 };
 
 struct TypeDefinition : Node {
@@ -140,7 +137,7 @@ struct TypeDefinition : Node {
 		QString mName;
 		QList<QPair<int, Variable*> > mFields;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct String : Node {
@@ -152,13 +149,13 @@ struct Goto : Node {
 		Type type() const {return ntGoto;}
 		QString mLabel;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 struct Gosub : Node {
 		Type type() const {return ntGosub;}
 		QString mLabel;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct Unary : Node {
@@ -176,24 +173,24 @@ struct FunctionParametreDefinition {
 struct Exit : Node {
 		Type type()const{return ntExit;}
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct FunctionDefinition : Node{
 		Type type() const {return ntFunctionDefinition;}
-		Variable::VarType mRetType;
+		QString mRetType;
 		QString mName;
 		QList<FunctionParametreDefinition> mParams;
 		Block mBlock;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct TypePtrField : Node {
-		Type type() const { return ntTypePtrField;}
-		QString mTypePtrVar;
+		Type type() const { return ntTypePtrField; }
+		QString mVariableName;
 		QString mFieldName;
-		Variable::VarType mFieldType;
+		QString mFieldType;
 };
 
 struct FunctionCallOrArraySubscript : Node {
@@ -202,7 +199,23 @@ struct FunctionCallOrArraySubscript : Node {
 		QString mName;
 		QList<Node*> mParams;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
+};
+
+struct SpecialFunctionCall : Node {
+		enum SpecialFunction {
+			New,
+			First,
+			Last,
+			Before,
+			After
+		};
+
+		Type type() const { return ntSpecialFunctionCall; }
+		SpecialFunction mSpecialFunction;
+		Node *mParam;
+		int mLine;
+		QString mFile;
 };
 
 struct CommandCallOrArraySubscriptAssignmentExpression : Node {
@@ -212,7 +225,7 @@ struct CommandCallOrArraySubscriptAssignmentExpression : Node {
 		Node *mIndexOrExpressionInParentheses;
 		Node *mEqualTo;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct CommandCall: Node {
@@ -221,24 +234,24 @@ struct CommandCall: Node {
 		QString mName;
 		QList<Node*> mParams;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct ConstDefinition: Node {
 		~ConstDefinition() { delete mValue; }
 		Type type() const{return ntConstDefinition;}
 		QString mName;
-		Variable::VarType mVarType;
+		QString mVarType;
 		ast::Node *mValue;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct Label: Node {
 		Type type() const{return ntLabel;}
 		QString mName;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 
@@ -247,18 +260,10 @@ struct GlobalDefinition : Node {
 		Type type() const {return ntGlobalDefinition;}
 		QList<Variable*> mDefinitions;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
-struct ArrayDefinition : Node {
-		~ArrayDefinition() { qDeleteAll(mDimensions); }
-		Type type() const{ return ntArrayDefinition;}
-		QString mName;
-		Variable::VarType mType;
-		QList<Node*> mDimensions;
-		int mLine;
-		QFile *mFile;
-};
+
 
 struct Operation {
 		Operation(Operator opp, Node *opr) : mOperator(opp), mOperand(opr) {}
@@ -281,7 +286,7 @@ struct AssignmentExpression : Node{
 		Node *mVariable;
 		Node *mExpression;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct ArraySubscriptAssignmentExpression : Node {
@@ -291,7 +296,7 @@ struct ArraySubscriptAssignmentExpression : Node {
 		QList<Node*> mSubscripts;
 		Node * mValue;
 
-		QFile *mFile;
+		QString mFile;
 		int mLine;
 };
 
@@ -303,7 +308,7 @@ struct IfStatement : Node {
 		Block mIfTrue;
 		Block mElse; //Null if not defined
 
-		QFile *mFile;
+		QString mFile;
 		int mLine;
 };
 
@@ -312,7 +317,7 @@ struct Case {
 		Node *mCase;
 		Block mBlock;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 struct SelectStatement : Node {
@@ -321,23 +326,23 @@ struct SelectStatement : Node {
 		Variable *mVariable;
 		QList<Case> mCases;
 		Block mDefault;
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
 
 struct ForToStatement : Node {
-		ForToStatement() : mFrom(0), mTo(0), mStep(0), mFile(0){}
+		ForToStatement() : mFrom(0), mTo(0), mStep(0) {}
 		~ForToStatement() { delete mFrom; delete mTo; if(mStep) delete mStep; }
 		Type type() const{return ntForToStatement;}
 		QString mVarName;
-		Variable::VarType mVarType;
+		QString mVarType;
 		Node *mFrom;
 		Node *mTo;
 		Node *mStep;
 		Block mBlock;
 
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
@@ -345,10 +350,11 @@ struct ForToStatement : Node {
 struct ForEachStatement : Node {
 		Type type() const{return ntForEachStatement;}
 		QString mVarName; //TypePtr
-		QString mTypeName;
+		QString mVarType;
+		QString mContainer;
 		Block mBlock;
 
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
@@ -360,14 +366,14 @@ struct WhileStatement : Node {
 		Node *mCondition;
 		Block mBlock;
 
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
 struct RepeatForeverStatement : Node {
 		Type type() const {return ntRepeatForeverStatement;}
 		Block mBlock;
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
@@ -378,7 +384,7 @@ struct RepeatUntilStatement : Node {
 		Type type()const {return ntRepeatUntilStatement;}
 		Block mBlock;
 		Node *mCondition;
-		QFile *mFile;
+		QString mFile;
 		int mStartLine;
 		int mEndLine;
 };
@@ -387,10 +393,10 @@ struct Redim : Node {
 		~Redim() { qDeleteAll(mDimensions); }
 		Type type() const{return ntRedim;}
 		QString mName;
-		Variable::VarType mType;
+		QString mType;
 		QList<Node*> mDimensions;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 };
 
 
@@ -440,7 +446,8 @@ class Printer : public QObject{
 		void printCommandCallOrArraySubscriptAssignmentExpression(const CommandCallOrArraySubscriptAssignmentExpression *s, int tab = 0);
 		void printUnary(const Unary *s, int tab = 0);
 		void printReturn(const Return *s, int tab = 0);
-		void printExit(const Exit *s, int tab = 0);
+		void printExit(const Exit *, int tab = 0);
+		void printSpecialFunctionCall(const SpecialFunctionCall *s, int tab = 0);
 
 
 		void printTypePtrField(const TypePtrField *s, int tab = 0);
@@ -449,13 +456,13 @@ class Printer : public QObject{
 		void printFloat(const Float *s, int tab = 0);
 		void printString(const String *s, int tab = 0);
 		void printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscript *s, int tab = 0);
-		void printNew(const New *s, int tab = 0);
+
+		void printDim(const Dim *s, int tab = 0);
 
 		void printProgram(const Program *s);
 
 		bool printToFile(const QString &file);
 
-		QString varTypeToString(const Variable::VarType t);
 	private:
 		QFile *mDestFile;
 

@@ -2,7 +2,7 @@
 #include "valuetype.h"
 #include "builder.h"
 
-ArraySymbol::ArraySymbol(const QString &name, ValueType *valType, int dim, QFile *file, int line):
+ArraySymbol::ArraySymbol(const QString &name, ValueType *valType, int dim, const QString &file, int line):
 	Symbol(name, file, line),
 	mValueType(valType),
 	mDimensions(dim),

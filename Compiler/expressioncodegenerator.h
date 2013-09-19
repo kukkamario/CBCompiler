@@ -22,15 +22,15 @@ class ExpressionCodeGenerator : public QObject {
 		Value generate(ast::Unary *n);
 		Value generate(ast::Variable *n);
 		Value generate(ast::TypePtrField *n);
-		Value generate(ast::New *n);
+		Value generate(ast::SpecialFunctionCall *n);
 
 		QList<Value> generateParameterList(const QList<ast::Node*> &params);
 	private:
 		Builder *mBuilder;
 		Scope *mScope;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // EXPRESSIONGENERATOR_H

@@ -1,9 +1,9 @@
 #include "constantvalue.h"
 #include <math.h>
 
-int cbpow(int a, int b) {
+int cbPow(int a, int b) {
 	double ret = pow(double(a), double(b));
-	if (ret > 0x7FFFFFFF) {
+	if (ret > INT_MAX || ret < INT_MIN) {
 		return 0xFFFFFFFF;
 	}
 	return ret;
@@ -887,17 +887,21 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Integer:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mInt / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
 		case ValueType::Float:
+			//TODO: Warnings if result is NaN or INF
 			switch (b.mType) {
 				case ValueType::Integer:
 					return a.mData.mFloat / b.mData.mInt;
@@ -913,12 +917,15 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Short:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mShort / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -926,12 +933,15 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case ValueType::Byte:
 			switch (b.mType) {
 				case ValueType::Integer:
+					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mInt;
 				case ValueType::Float:
 					return a.mData.mByte / b.mData.mFloat;
 				case ValueType::Short:
+					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mShort;
 				case ValueType::Byte:
+					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -946,13 +956,13 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 		case ValueType::Integer:
 			switch (b.mType) {
 				case ValueType::Integer:
-					return cbpow(a.mData.mInt, b.mData.mInt);
+					return cbPow(a.mData.mInt, b.mData.mInt);
 				case ValueType::Float:
 					return pow(a.mData.mInt, b.mData.mFloat);
 				case ValueType::Short:
-					return cbpow(a.mData.mInt, b.mData.mShort);
+					return cbPow(a.mData.mInt, b.mData.mShort);
 				case ValueType::Byte:
-					return cbpow(a.mData.mInt, b.mData.mByte);
+					return cbPow(a.mData.mInt, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
@@ -972,26 +982,26 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 		case ValueType::Short:
 			switch (b.mType) {
 				case ValueType::Integer:
-					return cbpow(a.mData.mShort, b.mData.mInt);
+					return cbPow(a.mData.mShort, b.mData.mInt);
 				case ValueType::Float:
 					return pow(a.mData.mShort, b.mData.mFloat);
 				case ValueType::Short:
-					return cbpow(a.mData.mShort, b.mData.mShort);
+					return cbPow(a.mData.mShort, b.mData.mShort);
 				case ValueType::Byte:
-					return cbpow(a.mData.mShort, b.mData.mByte);
+					return cbPow(a.mData.mShort, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
 		case ValueType::Byte:
 			switch (b.mType) {
 				case ValueType::Integer:
-					return cbpow(a.mData.mByte, b.mData.mInt);
+					return cbPow(a.mData.mByte, b.mData.mInt);
 				case ValueType::Float:
 					return pow(a.mData.mByte, b.mData.mFloat);
 				case ValueType::Short:
-					return cbpow(a.mData.mByte, b.mData.mShort);
+					return cbPow(a.mData.mByte, b.mData.mShort);
 				case ValueType::Byte:
-					return cbpow(a.mData.mByte, b.mData.mByte);
+					return cbPow(a.mData.mByte, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
@@ -1194,6 +1204,10 @@ ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b
 	return a.toBool() ^ b.toBool();
 }
 
+int ConstantValue::cbIntPower(int a, int b) {
+	return cbPow(a, b);
+}
+
 QString ConstantValue::toString() const{
 	switch(this->mType) {
 		case ValueType::Boolean:
@@ -1320,6 +1334,8 @@ QString ConstantValue::typeName() const {
 			return "Byte";
 		case ValueType::Short:
 			return "Short";
+		case ValueType::Boolean:
+			return "Boolean";
 		case ValueType::TypePointerCommon:
 			return "NULL";
 		default:

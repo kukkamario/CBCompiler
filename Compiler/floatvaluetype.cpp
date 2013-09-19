@@ -15,13 +15,13 @@ ValueType::CastCostType FloatValueType::castingCostToOtherValueType(ValueType *t
 		case Boolean:
 			return 1;
 		case Integer:
-			return 2;
+			return 5;
 		case String:
-			return 10;
+			return 100;
 		case Short:
-			return 3;
+			return 10;
 		case Byte:
-			return 4;
+			return 10;
 		default:
 			return sMaxCastCost;
 	}

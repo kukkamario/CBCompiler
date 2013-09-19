@@ -5,7 +5,7 @@
 #include "runtime.h"
 #include "builder.h"
 
-CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parameter> &params, Scope *scope, int line, QFile *file):
+CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parameter> &params, Scope *scope, int line, const QString &file):
 	Function(name, file, line),
 	mParams(params),
 	mScope(scope) {

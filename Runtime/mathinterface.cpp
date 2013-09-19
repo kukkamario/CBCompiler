@@ -40,3 +40,8 @@ double math::rnd(double min, double max) {
 double math::distance(double x1, double y1, double x2, double y2) {
 	return sqrt(square(x1 - x2) + square(y1 - y2));
 }
+
+
+double math::getAngle(double x1, double y1, double x2, double y2) {
+	return toDeg(M_PI - atan2(y1 - y2, x1 - x2));
+}

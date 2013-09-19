@@ -1,4 +1,4 @@
-#include "cbstring.h"
+#include "lstring.h"
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_primitives.h>
 #include "error.h"
@@ -6,30 +6,36 @@
 #include "systeminterface.h"
 #include "gfxinterface.h"
 #include "textinterface.h"
+#include "inputinterface.h"
 
-extern "C" void CBF_CB_main();
+extern "C" void CB_main();
+extern "C" void CB_initialize();
+
 
 int main(int argc, char **argv) {
+
+	info(U"Initializing types and strings");
+	CB_initialize();
 
 	info(U"Initializing allegro");
 	if (!al_init()) {
 		error(U"Allegro initialization failed");
 		return 1;
 	}
-	gfx::initGfx();
-	text::initText();
 
 	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
 
-	info(U"Initilizing gfx");
 
-
+	info(U"Initializing interfaces");
+	gfx::initGfx();
+	text::initText();
+	input::initInput();
 
 	//Begin execution
 	info(U"Beginning execution");
-	CBF_CB_main();
+	CB_main();
 
 	sys::closeProgram();
 

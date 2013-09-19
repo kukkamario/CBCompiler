@@ -21,12 +21,12 @@ DEPENDPATH += "./"
 
 
 CONFIG(debug, debug|release) {
-	DEFINES += _DEBUG
+	DEFINES += _DEBUG DEBUG_OUTPUT
 }
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
 	LIBS +=  -L"$$(LLVM_LIB)"
-	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
+	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMIRReader -lLLVMObjCARCOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
 	LIBS += -lAdvapi32 -lShell32
 	win32-msvc { #msvc
 		QMAKE_CXXFLAGS += /Zc:wchar_t
@@ -44,7 +44,7 @@ linux {
 #        INCLUDEPATH += "$$(LLVM_INCLUDE)"
 #    }
 #	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
-	LIBS += -lLLVM-3.2
+	LIBS += -L`llvm-config --libdir` `llvm-config --libs all`
 	LIBS += -ldl
 }
 
@@ -90,7 +90,8 @@ SOURCES += main.cpp \
     labelsymbol.cpp \
     builder.cpp \
     settings.cpp \
-    typevaluetype.cpp
+    typevaluetype.cpp \
+    valuetypesymbol.cpp
 
 HEADERS += \
     lexer.h \
@@ -124,7 +125,6 @@ HEADERS += \
     typesymbol.h \
     typepointervaluetype.h \
     symbolcollectortypechecker.h \
-    conversionhelper.h \
     arraysymbol.h \
     cbfunction.h \
     functioncodegenerator.h \
@@ -134,4 +134,5 @@ HEADERS += \
     global.h \
     warningcodes.h \
     settings.h \
-    typevaluetype.h
+    typevaluetype.h \
+    valuetypesymbol.h

@@ -22,22 +22,24 @@ class SymbolCollectorTypeChecker : public QObject {
 		void setGlobalScope(Scope *s) {mGlobalScope = s;}
 		void setScope(Scope *s) { mScope = s; }
 		void setReturnValueType(ValueType *s) {mReturnValueType = s;}
+		void setFile(const QString &file) { mFile = file; }
+		void setLine(int line) { mLine = line; }
 		void setConstantExpressionEvaluator(ConstantExpressionEvaluator *constEval);
 		VariableSymbol *declareVariable(const ast::Variable *var);
 	private:
 		struct CodeLineInfo {
-				CodeLineInfo() : mFile(0), mLine(0) {}
-				CodeLineInfo(int line, QFile *f) : mLine(line), mFile(f) {}
+				CodeLineInfo() : mLine(0) {}
+				CodeLineInfo(int line, const QString &f) : mLine(line), mFile(f) {}
 				int mLine;
-				QFile *mFile;
+				QString mFile;
 		};
 
 		ValueType *typeCheckExpression(ast::Node *s);
 		ValueType *typeCheck(ast::Node *s);
 		ValueType *typeCheck(ast::Expression *s);
 		ValueType *typeCheck(ast::Unary *s);
-		ValueType *typeCheck(ast::New *s);
 		ValueType *typeCheck(ast::FunctionCallOrArraySubscript *s);
+		ValueType *typeCheck(ast::SpecialFunctionCall *s);
 		ValueType *typeCheck(ast::TypePtrField *s);
 		ValueType *typeCheck(ast::Variable *s);
 
@@ -56,27 +58,31 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::RepeatUntilStatement *s);
 		bool checkStatement(ast::CommandCall *s);
 		bool checkStatement(ast::FunctionCallOrArraySubscript *s);
+		bool checkStatement(ast::SpecialFunctionCall *s);
 		bool checkStatement(ast::Return *s);
 		bool checkStatement(ast::Label *s);
 		bool checkStatement(ast::Goto *s);
 		bool checkStatement(ast::Gosub *s);
 		bool checkStatement(ast::Exit *s);
+		bool checkStatement(ast::Dim *s);
 		bool checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s);
+		bool requireAssignmentToType(ValueType *value, ValueType *castToThis);
 
 		ArraySymbol *findAndValidateArraySymbol(const QString &name);
+		ValueType *findValueType(const QString &name, int line, const QString &file);
 		bool validateArrayIndex(ArraySymbol *array, const QList<ast::Node*> &index);
 
 		ValueType *checkTypePointerType(const QString &typeName);
 
 		bool tryCastToBoolean(ValueType *t);
 
-		ValueType *checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName = QString());
+		ValueType *checkVariable(const QString &name, const QString &type);
 		void replaceParentBlockNode(ast::Node *search, ast::Node *replace);
 
 		bool mForceVariableDeclaration;
 		Runtime *mRuntime;
 		int mLine;
-		QFile *mFile;
+		QString mFile;
 		Scope *mScope;
 		Scope *mGlobalScope;
 		ValueType *mReturnValueType;
@@ -87,8 +93,8 @@ class SymbolCollectorTypeChecker : public QObject {
 		ast::Block *mParentBlock;
 		ConstantExpressionEvaluator *mConstEval;
 	signals:
-		void error(int code, QString msg, int line, QFile *file);
-		void warning(int code, QString msg, int line, QFile *file);
+		void error(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, int line, const QString &file);
 };
 
 #endif // SYMBOLCOLLECTORTYPECHECKER_H

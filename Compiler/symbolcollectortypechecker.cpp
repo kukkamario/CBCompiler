@@ -6,10 +6,10 @@
 #include "constantsymbol.h"
 #include "typesymbol.h"
 #include "functionsymbol.h"
-#include "conversionhelper.h"
 #include "typepointervaluetype.h"
 #include "intvaluetype.h"
 #include "floatvaluetype.h"
+#include "typevaluetype.h"
 #include "stringvaluetype.h"
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
@@ -20,6 +20,7 @@
 #include <QString>
 #include <QDebug>
 #include "constantexpressionevaluator.h"
+#include "warningcodes.h"
 
 SymbolCollectorTypeChecker::SymbolCollectorTypeChecker():
 	mForceVariableDeclaration(false),
@@ -44,14 +45,14 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Node *s) {
 			ret = typeCheck((ast::Expression*)s); break;
 		case ast::Node::ntFunctionCallOrArraySubscript:
 			ret = typeCheck((ast::FunctionCallOrArraySubscript*)s); break;
-		case ast::Node::ntNew:
-			ret = typeCheck((ast::New*)s); break;
 		case ast::Node::ntVariable:
 			ret = typeCheck((ast::Variable*)s); break;
 		case ast::Node::ntUnary:
 			ret = typeCheck((ast::Unary*)s); break;
 		case ast::Node::ntTypePtrField:
 			ret = typeCheck((ast::TypePtrField*)s); break;
+		case ast::Node::ntSpecialFunctionCall:
+			ret = typeCheck((ast::SpecialFunctionCall*)s); break;
 		default:
 			assert(0);
 	}
@@ -90,6 +91,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Boolean:
 							case ValueType::String:
 								result = mRuntime->booleanValueType(); break;
+							default: break;
 						}
 						break;
 					case ValueType::TypePointerCommon:
@@ -98,6 +100,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::TypePointerCommon:
 								result = mRuntime->booleanValueType();
 								break;
+							default: break;
 						}
 					case ValueType::TypePointer:
 						switch (second->type()) {
@@ -107,7 +110,9 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::TypePointerCommon:
 								result = mRuntime->booleanValueType();
 								break;
+							default: break;
 						}
+					default: break;
 				}
 			case ast::opGreater:
 			case ast::opLess:
@@ -128,8 +133,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Boolean:
 							case ValueType::String:
 								result = mRuntime->booleanValueType(); break;
+							default: break;
 						}
 						break;
+					default: break;
 				}
 			case ast::opPlus:
 				switch (first->type()) {
@@ -143,6 +150,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 								result = mRuntime->floatValueType(); break;
 							case ValueType::String:
 								result = mRuntime->stringValueType(); break;
+							default: break;
 						}
 						break;
 					case ValueType::Integer:
@@ -159,6 +167,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 								result = mRuntime->intValueType(); break;
 							case ValueType::String:
 								result = mRuntime->stringValueType(); break;
+							default: break;
 						}
 						break;
 					case ValueType::String:
@@ -169,8 +178,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Short:
 							case ValueType::String:
 								result = mRuntime->stringValueType(); break;
+							default: break;
 						}
 						break;
+					default: break;
 				}
 				break;
 			case ast::opMinus:
@@ -186,6 +197,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Byte:
 							case ValueType::Short:
 								result = mRuntime->floatValueType(); break;
+							default: break;
 						}
 						break;
 					case ValueType::Integer:
@@ -199,8 +211,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Byte:
 							case ValueType::Short:
 								result = mRuntime->intValueType(); break;
+							default: break;
 						}
 						break;
+					default: break;
 				}
 				break;
 			case ast::opShl:
@@ -217,8 +231,10 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Expression *s) {
 							case ValueType::Short:
 							case ValueType::Boolean:
 								result = mRuntime->intValueType(); break;
+							default: break;
 						}
 						break;
+					default: break;
 				}
 				break;
 			case ast::opAnd:
@@ -255,19 +271,6 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Unary *s) {
 		return mRuntime->intValueType();
 	}
 	return r;
-}
-
-ValueType *SymbolCollectorTypeChecker::typeCheck(ast::New *s) {
-	Symbol *sym = mScope->find(s->mTypeName);
-	if (!sym) {
-		emit error(ErrorCodes::ecCantFindType, tr("Can't find type with name \"%1\"").arg(s->mTypeName), mLine, mFile);
-		return 0;
-	}
-	if (sym->type() != Symbol::stType) {
-		emit error(ErrorCodes::ecCantFindType, tr("\"%1\" is not a type").arg(s->mTypeName), mLine, mFile);
-		return 0;
-	}
-	return static_cast<TypeSymbol*>(sym)->typePointerValueType();
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscript *s) {
@@ -338,6 +341,33 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 		}
 		return func->returnValue();
 	}
+	else if (sym->isValueTypeSymbol()) { //Cast function
+		ValueTypeSymbol *valTySym = static_cast<ValueTypeSymbol*>(sym);
+		ValueType *valueType = valTySym->valueType();
+
+		QList<ValueType*> params;
+		bool err = false;
+		for (QList<ast::Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
+			ValueType *p = typeCheck(*i);
+			if (p) {
+				params.append(p);
+			}
+			else {
+				err = true;
+			}
+		}
+		if (err) return 0;
+		if (params.size() != 1) {
+			emit error(ErrorCodes::ecCastFunctionRequiresOneParameter, tr("Cast function \"%1\" takes one parameter").arg(sym->name()), mLine, mFile);
+			return 0;
+		}
+		if (!params.first()->canBeCastedToValueType(valueType)) {
+			emit error(ErrorCodes::ecCantCastValue, tr("Can't cast the value to \"%1\"").arg(sym->name()), mLine, mFile);
+			return 0;
+		}
+		return valueType;
+
+	}
 	else {
 		emit error(ErrorCodes::ecNotArrayOrFunction, tr("Symbol \"%1\" is not a function or an array").arg(s->mName), mLine, mFile);
 		return 0;
@@ -345,16 +375,75 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscri
 	}
 }
 
+ValueType *SymbolCollectorTypeChecker::typeCheck(ast::SpecialFunctionCall *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	ValueType *paramTy = typeCheck(s->mParam);
+	if (!paramTy) {
+		return 0;
+	}
+
+	switch (s->mSpecialFunction) {
+		case ast::SpecialFunctionCall::New: {
+			if (paramTy->type() != ValueType::Type) {
+				emit error(ErrorCodes::ecExpectingType, tr("\"New\" takes a type name as its parameter"), mLine, mFile);
+				return 0;
+			}
+			assert(s->mParam->type() == ast::Node::ntVariable);
+			Symbol *sym = mScope->find(static_cast<ast::Variable*>(s->mParam)->mName);
+			assert(sym && sym->type() == Symbol::stType);
+			return static_cast<TypeSymbol*>(sym)->typePointerValueType();
+		}
+		case ast::SpecialFunctionCall::First: {
+			if (paramTy->type() != ValueType::Type) {
+				emit error(ErrorCodes::ecExpectingType, tr("\"First\" takes a type name as its parameter"), mLine, mFile);
+				return 0;
+			}
+			assert(s->mParam->type() == ast::Node::ntVariable);
+			Symbol *sym = mScope->find(static_cast<ast::Variable*>(s->mParam)->mName);
+			assert(sym && sym->type() == Symbol::stType);
+			return static_cast<TypeSymbol*>(sym)->typePointerValueType();
+		}
+		case ast::SpecialFunctionCall::Last: {
+			if (paramTy->type() != ValueType::Type) {
+				emit error(ErrorCodes::ecExpectingType, tr("\"Last\" takes a type name as its parameter"), mLine, mFile);
+				return 0;
+			}
+			assert(s->mParam->type() == ast::Node::ntVariable);
+			Symbol *sym = mScope->find(static_cast<ast::Variable*>(s->mParam)->mName);
+			assert(sym && sym->type() == Symbol::stType);
+			return static_cast<TypeSymbol*>(sym)->typePointerValueType();
+		}
+		case ast::SpecialFunctionCall::After: {
+			if (!paramTy->isTypePointer()) {
+				emit error(ErrorCodes::ecExpectingTypePtr, tr("\"After\" takes a type pointer as its parameter"), mLine, mFile);
+				return 0;
+			}
+			return paramTy;
+		}
+		case ast::SpecialFunctionCall::Before: {
+			if (!paramTy->isTypePointer()) {
+				emit error(ErrorCodes::ecExpectingTypePtr, tr("\"Before\" takes a type pointer as its parameter"), mLine, mFile);
+				return 0;
+			}
+			return paramTy;
+		}
+
+	}
+	assert("WTF" && 0);
+	return 0;
+}
+
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::TypePtrField *s) {
-	Symbol *sym = mScope->find(s->mTypePtrVar);
+	Symbol *sym = mScope->find(s->mVariableName);
 	if (!sym || sym->type() != Symbol::stVariable) {
-		emit error(ErrorCodes::ecNotVariable, tr("\"%1\" is not a variable").arg(s->mTypePtrVar), mLine, mFile);
+		emit error(ErrorCodes::ecNotVariable, tr("\"%1\" is not a variable").arg(s->mVariableName), mLine, mFile);
 		return 0;
 	}
 
 	VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
 	if (varSym->valueType()->type() != ValueType::TypePointer) {
-		emit error(ErrorCodes::ecNotTypePointer, tr("\"%1\" is not a type pointer").arg(s->mTypePtrVar), mLine, mFile);
+		emit error(ErrorCodes::ecNotTypePointer, tr("\"%1\" is not a type pointer").arg(s->mVariableName), mLine, mFile);
 		return 0;
 	}
 	TypePointerValueType *typePtrVt = static_cast<TypePointerValueType*>(varSym->valueType());
@@ -364,8 +453,8 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::TypePtrField *s) {
 	}
 
 	const TypeField &field = typePtrVt->typeSymbol()->field(s->mFieldName);
-	if (s->mFieldType != ast::Variable::Default && field.valueType()->type() != valueTypeFromVarType(s->mFieldType)) {
-		emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Type field \"%1\" is defined with another type").arg(s->mFieldName), mLine, mFile);
+	if (!s->mFieldType.isEmpty() && field.valueType()->name() != s->mFieldType) {
+		emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Type field \"%1\" is defined with another type at line %2").arg(s->mFieldName, QString::number(field.line())), mLine, mFile);
 		return 0;
 	}
 
@@ -373,7 +462,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::TypePtrField *s) {
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Variable *s) {
-	return checkVariable(s->mName, s->mVarType, s->mTypeName);
+	return checkVariable(s->mName, s->mTypeName);
 }
 
 bool SymbolCollectorTypeChecker::run(ast::Block *block, Scope *scope) {
@@ -430,22 +519,23 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 		}
 		paramList.append(p);
 	}
-	if (!valid) return false;
+	if (!valid) return 0;
 
 	//Function return type
-	ValueType *retType = mRuntime->findValueType(valueTypeFromVarType(func->mRetType));
+	ValueType *retType = findValueType(func->mRetType, mLine, mFile);
+	if (!retType) return 0;
 
 	CBFunction *function = new CBFunction(func->mName, retType, paramList, funcScope, mLine, mFile);
 
 	//Exactly same function overload already defined
 	Function *otherFunction = 0;
-	if (otherFunction = funcSym->exactMatch(function->paramTypes())) {
+	if ((otherFunction = funcSym->exactMatch(function->paramTypes()))) {
 		if (otherFunction->isRuntimeFunction()) {
 			emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined in the runtime").arg(func->mName), mLine, mFile);
 		}
 		else {
-			if (otherFunction->line() && otherFunction->file()) {
-				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined at line %2 in file \"%3\"").arg(func->mName, QString::number(otherFunction->line()), otherFunction->file()->fileName()), mLine, mFile);
+			if (otherFunction->line() && !otherFunction->file().isEmpty()) {
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined at line %2 in file \"%3\"").arg(func->mName, QString::number(otherFunction->line()), otherFunction->file()), mLine, mFile);
 			}
 			else {
 				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined").arg(func->mName), mLine, mFile);
@@ -521,6 +611,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 			return checkStatement((ast::Exit*)s);
 		case ast::Node::ntCommandCallOrArraySubscriptAssignmentExpression:
 			return checkStatement((ast::CommandCallOrArraySubscriptAssignmentExpression*)s);
+		case ast::Node::ntDim:
+			return checkStatement((ast::Dim*)s);
 		default:
 			assert(0);
 	}
@@ -557,21 +649,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::AssignmentExpression *s) {
 	mExpressionLevel++;
 	ValueType *value = typeCheckExpression(s->mExpression);
 	mExpressionLevel--;
-	bool valid = var && value;
-	if (var && value) {
-		if (var->isTypePointer() && !value->isTypePointer()) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't %1 value to type pointer").arg(value->name()), mLine, mFile);
-			valid = false;
-		}
-		else if(!var->isTypePointer() && value->isTypePointer()) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign type pointer to %1 variable").arg(var->name()), mLine, mFile);
-			valid = false;
-		}
-		else if (var->isTypePointer() && value->isTypePointer() && var != value) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Type pointer of type \"%1\" can not be assigned to a type pointer variable of type \"%2\"").arg(value->name(), var->name()), mLine, mFile);
-			valid = false;
-		}
-	}
+	bool valid = var && value && requireAssignmentToType(value, var);
 
 	return valid;
 }
@@ -584,11 +662,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ArraySubscriptAssignmentExp
 	if (!validateArrayIndex(array, s->mSubscripts)) return false;
 	ValueType *valTy = typeCheckExpression(s->mValue);
 	if (!valTy) return false;
-	if (!valTy->canBeCastedToValueType(array->valueType())) {
-		emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. No valid conversion from %1 to %2.").arg(valTy->name(), array->valueType()->name()), mLine, mFile);
-		return false;
-	}
-	return true;
+
+	return requireAssignmentToType(valTy, array->valueType());
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
@@ -636,9 +711,43 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ForEachStatement *s) {
-	ValueType *var = checkVariable(s->mVarName, ast::Variable::TypePtr, s->mTypeName);
+	mFile = s->mFile;
+	mLine = s->mStartLine;
+
+	ValueType *var = checkVariable(s->mVarName, s->mVarType);
+	bool success = var != 0;
+
+	Symbol *sym = mScope->find(s->mContainer);
+	if (sym) {
+		switch (sym->type()) {
+			case Symbol::stArray: {
+				ArraySymbol *array = static_cast<ArraySymbol*>(sym);
+				if (array->valueType() != var) {
+					emit error(ErrorCodes::ecForVariableContainerTypeMismatch, tr("The variable \"%1\" and the array \"%1\" have different value types").arg(s->mVarName, s->mContainer), mLine, mFile);
+					success = false;
+				}
+				break;
+			}
+			case Symbol::stType: {
+				TypeSymbol *type = static_cast<TypeSymbol*>(sym);
+				if (type->typePointerValueType() != var) {
+					emit error(ErrorCodes::ecForVariableContainerTypeMismatch, tr("The variable \"%1\" is not a type pointer of \"%2\"").arg(s->mVarName, s->mContainer), mLine, mFile);
+					success = false;
+				}
+				break;
+			}
+			default:
+				emit error(ErrorCodes::ecForEachInvalidContainer, tr("\"%1\" is not a type or an array").arg(s->mContainer), mLine, mFile);
+				success = false;
+		}
+	}
+	else {
+		emit error(ErrorCodes::ecCantFindSymbol, tr("\"%1\" is not a symbol").arg(s->mContainer), mLine, mFile);
+		success = false;
+	}
+
 	mExitLevel++;
-	bool success = var != 0 && checkBlock(&s->mBlock);
+	success &= checkBlock(&s->mBlock);
 	mExitLevel--;
 	return success;
 }
@@ -654,21 +763,24 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ArrayDefinition *s) {
 		for (QList<ast::Node*>::ConstIterator i = s->mDimensions.begin(); i != s->mDimensions.end(); i++) {
 			if (!typeCheck(*i)) valid = false;
 		}
-		ArraySymbol *sym = new ArraySymbol(s->mName, mRuntime->findValueType(valueTypeFromVarType(s->mType)), s->mDimensions.size(), mFile, mLine);
+		ValueType *valTy = 0;
+		if (s->mType.isEmpty()) valTy = mRuntime->intValueType();
+		else valTy = findValueType(s->mType, mLine, mFile);
+
+		ArraySymbol *sym = new ArraySymbol(s->mName, valTy, s->mDimensions.size(), mFile, mLine);
 		mGlobalScope->addSymbol(sym);
 		return valid;
 	}
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::VariableDefinition *s) {
-	bool valid = true;
-	mFile = s->mFile;
-	mLine = s->mLine;
-	for (QList<ast::Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
-		ast::Variable *var = *i;
-		if (!declareVariable(var)) valid = false;
+	VariableSymbol *varSym = 0;
+	if ((varSym = declareVariable(&s->mVariable)) == 0) return false;
+	if (s->mValue) {
+		ValueType *value = typeCheckExpression(s->mValue);
+		return requireAssignmentToType(value, varSym->valueType());
 	}
-	return valid;
+	return true;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::SelectStatement *s) {
@@ -750,6 +862,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::FunctionCallOrArraySubscrip
 	return typeCheck(s) != 0;
 }
 
+bool SymbolCollectorTypeChecker::checkStatement(ast::SpecialFunctionCall *s) {
+	return typeCheck(s) != 0;
+}
+
 bool SymbolCollectorTypeChecker::checkStatement(ast::Return *s) {
 	mFile = s->mFile;
 	mLine = s->mLine;
@@ -785,10 +901,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Label *s) {
 		return true;
 	}
 	if (sym->type() == Symbol::stLabel) {
-		emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()->fileName()), mLine, mFile);
+		emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
 	}
 	else {
-		emit error(ErrorCodes::ecSymbolAlreadyDefined, tr("Symbol already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()->fileName()), mLine, mFile);
+		emit error(ErrorCodes::ecSymbolAlreadyDefined, tr("Symbol already defined at line %1 in file %2").arg(QString::number(sym->line()), sym->file()), mLine, mFile);
 	}
 
 	return false;
@@ -816,6 +932,16 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Exit *s) {
 		return false;
 	}
 	return true;
+}
+
+bool SymbolCollectorTypeChecker::checkStatement(ast::Dim *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	bool valid = true;
+	foreach (ast::Node *n, s->mDefinitions) {
+		valid |= checkStatement(n);
+	}
+	return valid;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s) {
@@ -870,6 +996,28 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscript
 	return 0;
 }
 
+bool SymbolCollectorTypeChecker::requireAssignmentToType(ValueType *value, ValueType *castToThis) {
+	if (!value->canBeCastedToValueType(castToThis)) {
+		if (castToThis->isTypePointer() && !value->isTypePointer()) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign %1 value to type pointer").arg(value->name()), mLine, mFile);
+			return false;
+		}
+		else if(!castToThis->isTypePointer() && value->isTypePointer()) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign type pointer to %1 variable").arg(castToThis->name()), mLine, mFile);
+			return false;
+		}
+		else if (castToThis->isTypePointer() && value->isTypePointer() && castToThis != value) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Type pointer of type \"%1\" can not be assigned to a type pointer variable of type \"%2\"").arg(value->name(), castToThis->name()), mLine, mFile);
+			return false;
+		}
+		else {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Cannot assign \"%1\" value to \"%2\" variable").arg(value->name(), castToThis->name()), mLine, mFile);
+			return false;
+		}
+	}
+	return true;
+}
+
 ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QString &name) {
 	Symbol *sym = mScope->find(name);
 	if (!sym) {
@@ -882,6 +1030,19 @@ ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QStrin
 	}
 	return static_cast<ArraySymbol*>(sym);
 
+}
+
+ValueType *SymbolCollectorTypeChecker::findValueType(const QString &name, int line, const QString &file) {
+	Symbol *sym = mGlobalScope->find(name);
+	if (!sym) {
+		emit error(ErrorCodes::ecExpectingVarType, tr("\"%1\" is not a value type").arg(name), line, file);
+		return 0;
+	}
+	if (!sym->isValueTypeSymbol()) {
+		emit error(ErrorCodes::ecExpectingVarType, tr("\"%1\" is not a value type").arg(name), line, file);
+		return 0;
+	}
+	return static_cast<ValueTypeSymbol*>(sym)->valueType();
 }
 
 bool SymbolCollectorTypeChecker::validateArrayIndex(ArraySymbol *array, const QList<ast::Node *> &index) {
@@ -931,7 +1092,7 @@ bool SymbolCollectorTypeChecker::tryCastToBoolean(ValueType *t) {
 	return true;
 }
 
-ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::Variable::VarType type, const QString &typeName) {
+ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, const QString &type) {
 	Symbol *sym = mScope->find(name);
 	if (sym) {
 		if (sym->type() == Symbol::stConstant) {
@@ -939,22 +1100,24 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::V
 			ValueType *valType = mRuntime->findValueType(constant->value().type());
 			return valType;
 		}
+		else if (sym->type() == Symbol::stType) {
+			if (!type.isEmpty()) {
+				emit error(ErrorCodes::ecTypeCantHaveValueType, tr("Symbol \"%1\" is a Type. Type can't have a variable type specifier").arg(name), mLine, mFile);
+				return 0;
+			}
+			return mRuntime->typeValueType();
+		}
 		else {
 			if (sym->type() != Symbol::stVariable) {
 				emit error(ErrorCodes::ecNotVariable, tr("\"%1\" is not a variable").arg(name), mLine, mFile);
 				return 0;
 			}
 			VariableSymbol *var = static_cast<VariableSymbol*>(sym);
-			if (type != ast::Variable::TypePtr) {
-				if (type != ast::Variable::Default && valueTypeFromVarType(type) != var->valueType()->type()) {
-					emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Variable already defined with another type"), mLine, mFile);
-					return 0;
-				}
-			}
-			else {
-				ValueType *typePtr = checkTypePointerType(typeName);
-				if (!typePtr) return 0;
-				if (typePtr != var->valueType()) {
+			if (!type.isEmpty()) {
+				ValueType *valTy = findValueType(type, mLine, mFile);
+				if (!valTy) return 0;
+
+				if (var->valueType() != valTy) {
 					emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Variable already defined with another type"), mLine, mFile);
 					return 0;
 				}
@@ -967,21 +1130,13 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, ast::V
 			emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" is not defined").arg(name), mLine, mFile);
 			return 0;
 		}
-		ValueType *vt;
-		if(type == ast::Variable::TypePtr) { //Type pointer
-			Symbol *typeSym = mScope->find(typeName);
-			if (!typeSym) {
-				emit error(ErrorCodes::ecCantFindType, tr("Can't find type with name \"%1\"").arg(typeName), mLine, mFile);
-				return 0;
-			}
-			if (typeSym->type() != Symbol::stType) {
-				emit error(ErrorCodes::ecCantFindType, tr("\"%1\" is not a type").arg(typeName), mLine, mFile);
-				return 0;
-			}
-			vt = static_cast<TypeSymbol*>(typeSym)->typePointerValueType();
+		ValueType *vt = 0;
+		if (type.isEmpty()) {
+			vt = mRuntime->intValueType();
 		}
 		else {
-			vt = mRuntime->findValueType(valueTypeFromVarType(type));
+			vt = findValueType(type, mLine, mFile);
+			if (!vt) return 0;
 		}
 
 		VariableSymbol *varSym = new VariableSymbol(name, vt, mFile, mLine);
@@ -997,7 +1152,7 @@ VariableSymbol *SymbolCollectorTypeChecker::declareVariable(const ast::Variable 
 		if (sym->type() == Symbol::stVariable) {
 			emit error(ErrorCodes::ecVariableAlreadyDefined,
 					   tr("Variable \"%1\" already defined at line %2 in file \"%3\"").arg(
-						   var->mName, QString::number(sym->line()), sym->file()->fileName())
+						   var->mName, QString::number(sym->line()), sym->file())
 					   , mLine, mFile);
 			return 0;
 		}
@@ -1007,20 +1162,18 @@ VariableSymbol *SymbolCollectorTypeChecker::declareVariable(const ast::Variable 
 		}
 	}
 	else {
-		if (var->mVarType != ast::Variable::TypePtr) {
-			VariableSymbol *varSym = new VariableSymbol(var->mName, mRuntime->findValueType(valueTypeFromVarType(var->mVarType)), mFile, mLine);
-			mScope->addSymbol(varSym);
-			return varSym;
+		ValueType *valTy = 0;
+		if (var->mTypeName.isEmpty()) {// Default int
+			valTy = mRuntime->intValueType();
 		}
 		else {
-			ValueType *valType = checkTypePointerType(var->mTypeName);
-			if (!valType) {
-				return 0;
-			}
-			VariableSymbol *varSym = new VariableSymbol(var->mName, valType, mFile, mLine);
-			mScope->addSymbol(varSym);
-			return varSym;
+			valTy = findValueType(var->mTypeName, mLine, mFile);
+			if (!valTy) return 0;
 		}
+
+		VariableSymbol *varSym = new VariableSymbol(var->mName, valTy, mFile, mLine);
+		mScope->addSymbol(varSym);
+		return varSym;
 	}
 }
 

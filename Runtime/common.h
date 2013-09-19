@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <stdlib.h>
-#include "cbstring.h"
+#include "lstring.h"
 
 
 #define CBEXPORT extern "C"

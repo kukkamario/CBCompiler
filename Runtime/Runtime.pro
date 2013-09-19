@@ -20,13 +20,17 @@ SOURCES += \
     cb_gfx.cpp \
     cb_math.cpp \
     cb_system.cpp \
-    cbstring.cpp \
     mathinterface.cpp \
     gfxinterface.cpp \
     systeminterface.cpp \
     textinterface.cpp \
     cb_types.cpp \
-    types.cpp
+    types.cpp \
+    lstring.cpp \
+    image.cpp \
+    cb_image.cpp \
+    inputinterface.cpp \
+    cb_input.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -34,22 +38,25 @@ HEADERS += \
     error.h \
     window.h \
     rendertarget.h \
-    cbstring.h \
     mathinterface.h \
     gfxinterface.h \
     textinterface.h \
     systeminterface.h \
-    types.h
+    types.h \
+    lstring.h \
+    image.h \
+    idmap.h \
+    inputinterface.h
 
-win32 {
-    LLVM_FILES += atomic_operations_mingw.ll
-}
-linux-g++-32 {
-	LLVM_FILES += atomic_operations_gcc-32.ll
-}
-linux-g++-64 {
-	LLVM_FILES += atomic_operations_gcc-64.ll
-}
+#win32 {
+#    LLVM_FILES += atomic_operations_mingw.ll
+#}
+#linux-g++-32 {
+#	LLVM_FILES += atomic_operations_gcc-32.ll
+#}
+#linux-g++-64 {
+#	LLVM_FILES += atomic_operations_gcc-64.ll
+#}
 
 QMAKE_CC = clang
 QMAKE_CXX = clang++
@@ -74,10 +81,10 @@ QMAKE_EXT_RES           = _res.bc
 #QMAKE_PREFIX_STATICLIB  = lib
 QMAKE_EXTENSION_STATICLIB = bc
 
-llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
-llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
-llvm_compiler.input = LLVM_FILES
-QMAKE_EXTRA_COMPILERS += llvm_compiler
+#llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
+#llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
+#llvm_compiler.input = LLVM_FILES
+#QMAKE_EXTRA_COMPILERS += llvm_compiler
 
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
@@ -87,11 +94,13 @@ win32 {
 	#and creates warning... :/
 	#TODO: better solution?
 	win_link.target = $(DESTDIR_TARGET)
-	win_link.commands = llvm-link -o $(DESTDIR_TARGET) $(OBJECTS)
+	win_link.commands = llvm-link -o $(DESTDIR_TARGET) $(OBJECTS) & "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(DESTDIR_TARGET)"
 	QMAKE_EXTRA_TARGETS += win_link
 }
 
 DESTDIR = $$PWD/../bin/runtime
+
+!win32: QMAKE_POST_LINK = "$$PWD/../bin/demangler" -o "$$PWD/../bin/runtime/functionmapping.map" -s CBF_  -p "$(TARGET)"
 
 DEFINES += ALLEGRO_STATIC
 

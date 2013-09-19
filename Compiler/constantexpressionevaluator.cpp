@@ -1,7 +1,17 @@
 #include "constantexpressionevaluator.h"
 #include "errorcodes.h"
+#include "runtime.h"
+#include "valuetype.h"
+#include "intvaluetype.h"
+#include "floatvaluetype.h"
+#include "stringvaluetype.h"
+#include "bytevaluetype.h"
+#include "shortvaluetype.h"
+
+
 ConstantExpressionEvaluator::ConstantExpressionEvaluator() :
-	mGlobalScope(0) {
+	mGlobalScope(0),
+	mRuntime(0) {
 }
 
 ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Node *s) {
@@ -22,9 +32,6 @@ ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Node *s) {
 		//Errors
 		case ast::Node::ntFunctionCallOrArraySubscript:
 			emit error(ErrorCodes::ecNotConstant, tr("Neither function call nor array subscript is allowed inside constant expression"), mLine, mFile);
-			return ConstantValue();
-		case ast::Node::ntNew:
-			emit error(ErrorCodes::ecNotConstant, tr("\"New\" isn't allowed in constant expression"), mLine, mFile);
 			return ConstantValue();
 		default:
 			emit error(ErrorCodes::ecWTF, tr("Unknown AST node, ConstantExpressionEvaluator::evaluate"), mLine, mFile);
@@ -127,44 +134,47 @@ ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Variable *s) {
 		return ConstantValue();
 	}
 	const ConstantValue &v = static_cast<ConstantSymbol*>(sym)->value();
-	if (s->mVarType != ast::Variable::Default) {
-		switch (s->mVarType) {
-			case ast::Variable::Integer:
-				if (v.type() != ValueType::Integer) {
+	if (!s->mTypeName.isEmpty()) {
+		switch(v.type()) {
+			case ValueType::Integer:
+				if (s->mTypeName != mRuntime->intValueType()->name()) {
 					errorConstantAlreadyDefinedWithAnotherType(s->mName);
 					return ConstantValue();
 				}
 				break;
-			case ast::Variable::Float:
-				if (v.type() != ValueType::Float) {
+			case ValueType::Float:
+				if (s->mTypeName != mRuntime->floatValueType()->name()) {
 					errorConstantAlreadyDefinedWithAnotherType(s->mName);
 					return ConstantValue();
 				}
 				break;
-			case ast::Variable::Short:
-				if (v.type() != ValueType::Short) {
+			case ValueType::Short:
+				if (s->mTypeName != mRuntime->shortValueType()->name()) {
 					errorConstantAlreadyDefinedWithAnotherType(s->mName);
 					return ConstantValue();
 				}
 				break;
-			case ast::Variable::Byte:
-				if (v.type() != ValueType::Byte) {
+			case ValueType::Byte:
+				if (s->mTypeName != mRuntime->byteValueType()->name()) {
 					errorConstantAlreadyDefinedWithAnotherType(s->mName);
 					return ConstantValue();
 				}
 				break;
-			case ast::Variable::String:
-				if (v.type() != ValueType::Byte) {
+			case ValueType::String:
+				if (s->mTypeName != mRuntime->stringValueType()->name()) {
 					errorConstantAlreadyDefinedWithAnotherType(s->mName);
 					return ConstantValue();
 				}
 				break;
-			case ast::Variable::TypePtr:
-				emit error(ErrorCodes::ecNotConstant, tr("Type pointer can't be constant"), mLine, mFile);
-				return ConstantValue();
+			default:
+				assert("Invalid constant value");
 		}
 	}
 	return v;
+}
+
+void ConstantExpressionEvaluator::setRuntime(Runtime *runtime) {
+	mRuntime = runtime;
 }
 
 void ConstantExpressionEvaluator::setGlobalScope(Scope *globalScope) {
@@ -172,7 +182,7 @@ void ConstantExpressionEvaluator::setGlobalScope(Scope *globalScope) {
 }
 
 
-void ConstantExpressionEvaluator::setCodeFile(QFile *f) {
+void ConstantExpressionEvaluator::setCodeFile(const QString &f) {
 	mFile = f;
 }
 

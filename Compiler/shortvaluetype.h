@@ -5,7 +5,7 @@ class ShortValueType : public ValueType
 {
 	public:
 		ShortValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return QObject::tr("Short");}
+		QString name() const {return "short";}
 		eType type() const{return Short;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */

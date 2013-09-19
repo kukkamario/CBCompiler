@@ -41,19 +41,19 @@ int main(int argc, char *argv[]) {
 	bool success = false;
 	success = settings.loadDefaults();
 	if (!success) {
-		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), 0, 0);
+		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), 0, QString());
 		return ErrorCodes::ecSettingsLoadingFailed;
 	}
 
 
 	Lexer lexer;
-	errHandler.connect(&lexer, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
-	errHandler.connect(&lexer, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
+	errHandler.connect(&lexer, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
+	errHandler.connect(&lexer, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
 	QTime timer;
 	timer.start();
 	if (lexer.tokenizeFile(params[1], settings) == Lexer::Success) {
 		qDebug() << "Lexical analysing took " << timer.elapsed() << "ms";
-#ifdef _DEBUG
+#ifdef DEBUG_OUTPUT
 		lexer.writeTokensToFile("tokens.txt");
 #endif
 	}
@@ -63,34 +63,38 @@ int main(int argc, char *argv[]) {
 	}
 
 	Parser parser;
-	errHandler.connect(&parser, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
-	errHandler.connect(&parser, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
+	errHandler.connect(&parser, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
+	errHandler.connect(&parser, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
 
 	timer.start();
 	ast::Program *program = parser.parse(lexer.tokens(), settings);
 	qDebug() << "Parsing took " << timer.elapsed() << "ms";
-	ast::Printer printer;
-	printer.printToFile("ast.txt");
+
+#ifdef DEBUG_OUTPUT
 	if (program) {
-#ifdef _DEBUG
+		ast::Printer printer;
+		printer.printToFile("ast.txt");
 		printer.printProgram(program);
-#endif
+
 	}
+#endif
+
 	if (!parser.success()) {
-		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), 0, 0);
+		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), 0, QString());
 		return ErrorCodes::ecParsingFailed;
 	}
 
 	CodeGenerator codeGenerator;
 	//QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
 	//QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
-	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QFile*)), SLOT(error(int,QString,int,QFile*)));
-	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QFile*)), SLOT(warning(int,QString,int,QFile*)));
+	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
+	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
 
 	const QString runtimePath(QCoreApplication::applicationDirPath() + "/runtime/libRuntime.bc");
+	const QString functionMappingPath(QCoreApplication::applicationDirPath() + "/runtime/functionmapping.map");
 
 	timer.start();
-	if (!codeGenerator.initialize(runtimePath, settings)) {
+	if (!codeGenerator.initialize(runtimePath, functionMappingPath, settings)) {
 		return ErrorCodes::ecCodeGeneratorInitializationFailed;
 	}
 
@@ -98,7 +102,7 @@ int main(int argc, char *argv[]) {
 	qDebug() << "Code generator initialization took " << timer.elapsed() << "ms";
 	timer.start();
 	if (!codeGenerator.generate(program)) {
-		errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), 0, 0);
+		errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), 0, QString());
 		return ErrorCodes::ecCodeGenerationFailed;
 	}
 

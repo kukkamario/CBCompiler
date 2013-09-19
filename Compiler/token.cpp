@@ -3,9 +3,9 @@
 #include <iostream>
 #include <QFile>
 #include <QDebug>
-static char *tokenNames[] = {
+static const char *const tokenNames[] = {
 	"EndOfTokens",
-	"EOL",
+	"<EOL>",
 	"Integer",
 	"IntegerHex",
 	"Float",
@@ -16,14 +16,14 @@ static char *tokenNames[] = {
 	"Colon", // :
 	"Comma",
 
-	"IntTypeMark", //%
+	"IntegerTypeMark", //%
 	"StringTypeMark", //$
 	"FloatTypeMark", //#
 
 	"LeftParenthese",
 	"RightParenthese",
-
 	//Operators
+
 	"OperatorsBegin",
 	"opEqual",
 	"opNotEqual",
@@ -48,7 +48,6 @@ static char *tokenNames[] = {
 	"opTypePtrType",  //   Dot
 	"OperatorsEnd",
 
-
 	//Keywords
 	"KeywordsBegin",
 	"kIf",
@@ -66,7 +65,6 @@ static char *tokenNames[] = {
 	"kType",
 	"kField",
 	"kEndType",
-	"kNew",
 	"kWhile",
 	"kWend",
 	"kRepeat",
@@ -87,7 +85,6 @@ static char *tokenNames[] = {
 	"kData",
 	"kRead",
 	"kRestore",
-	"kEnd",
 	"kInteger",
 	"kFloat",
 	"kString",
@@ -96,6 +93,14 @@ static char *tokenNames[] = {
 	"kAs",
 	"kInclude",
 	"kExit",
+	"kEnd",
+
+	"kNew",
+	"kFirst",
+	"kLast",
+	"kBefore",
+	"kAfter",
+
 	"KeywordsEnd",
 	"TypeCount"
 };
@@ -125,7 +130,7 @@ QString Token::typeToString() const {
 
 QString Token::info() const
 {
-	QString ret(mFile->fileName());
+	QString ret(mFile);
 	ret += " [";
 	ret += QString::number(mLine);
 	ret += "]  ";
