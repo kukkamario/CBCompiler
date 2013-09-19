@@ -1,9 +1,6 @@
 Const STEPP = 2
-scale# = 1.5
-pyöritys# = 1
-Dim palettiR(255)
-Dim palettiG(255)
-Dim palettiB(255)
+Dim scale# = 1.5, pyÃ¶ritys# = 1
+Dim palettiR(255), palettiG(255), palettiB(255)
 For i=0 To 255
     r# = (i / 16.0)
     r# = r * r
@@ -16,7 +13,7 @@ For i=0 To 255
     palettiB(i) = b
 Next i
 Repeat
-    pyöritys = pyöritys + 2.5
+    pyÃ¶ritys = pyÃ¶ritys + 2.5
     aika = aika+1
     vesiaika = vesiaika + 35
     level# = 1000 / (scale * scale * scale)
@@ -24,9 +21,9 @@ Repeat
     If level# = 0 Then level# = 240
     For x=0 To 400 Step STEPP
         For y=0 To 300 Step STEPP
-            //pyöritys:
+            //pyÃ¶ritys:
             d# = Distance(200, 150, x, y)
-            k# = WrapAngle(ATan((y - 150.5) / (x - 200.5)) + pyöritys)
+            k# = WrapAngle(ATan((y - 150.5) / (x - 200.5)) + pyÃ¶ritys)
             If x > 200 Then k = k - 180
             x2 = Sin(k) * d * scale + 200
             y2 = Cos(k) * d * scale + 150

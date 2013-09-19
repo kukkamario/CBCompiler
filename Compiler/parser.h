@@ -68,6 +68,10 @@ class Parser : public QObject
 		ast::Node *tryAssignmentExpression(TokIterator &i);
 		QString expectIdentifier(TokIterator &i);
 		QString expectIdentifierAfter(TokIterator &i, const QString &after);
+
+		ast::Node *expectDefinitionOfVariableOrArray(TokIterator &i);
+
+
 		void expectEndOfStatement(TokIterator &i);
 	private:
 		enum Status {

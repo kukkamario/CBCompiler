@@ -164,8 +164,10 @@ void FunctionCodeGenerator::generate(ast::Node *n) {
 			return generate((ast::Label*)n);
 		case ast::Node::ntSpecialFunctionCall:
 			return generate((ast::SpecialFunctionCall*)n);
+		case ast::Node::ntDim:
+			return generate((ast::Dim*)n);
 		default:
-			assert(0);
+			assert(0 && "Invalid node");
 	}
 }
 
@@ -516,7 +518,13 @@ void FunctionCodeGenerator::generate(ast::WhileStatement *n) {
 }
 
 void FunctionCodeGenerator::generate(ast::VariableDefinition *n) {
-	//Empty?
+	if (n->mValue) {
+		Symbol *sym = mScope->find(n->mVariable.mName);
+		assert(sym);
+		assert(sym->type() == Symbol::stVariable);
+		VariableSymbol *var = (VariableSymbol*)sym;
+		mBuilder->store(var, mExprGen.generate(n->mValue));
+	}
 	return;
 }
 
@@ -530,6 +538,10 @@ void FunctionCodeGenerator::generate(ast::Label *n) {
 	mCurrentBasicBlock->setName(("LABEL " + n->mName).toStdString());
 	mBuilder->setInsertPoint(mCurrentBasicBlock);
 	return;
+}
+
+void FunctionCodeGenerator::generate(ast::Dim *n) {
+	foreach (ast::Node *node, n->mDefinitions) generate(node);
 }
 
 void FunctionCodeGenerator::generate(ast::SpecialFunctionCall *n) {

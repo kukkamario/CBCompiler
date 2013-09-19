@@ -64,7 +64,9 @@ class SymbolCollectorTypeChecker : public QObject {
 		bool checkStatement(ast::Goto *s);
 		bool checkStatement(ast::Gosub *s);
 		bool checkStatement(ast::Exit *s);
+		bool checkStatement(ast::Dim *s);
 		bool checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s);
+		bool requireAssignmentToType(ValueType *value, ValueType *castToThis);
 
 		ArraySymbol *findAndValidateArraySymbol(const QString &name);
 		ValueType *findValueType(const QString &name, int line, const QString &file);

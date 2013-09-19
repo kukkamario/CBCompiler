@@ -50,7 +50,7 @@
 	return ++index;
 }
 
- CBString CBF_strRemove(CBString cbstr, int begin, int len) {
+CBString CBF_strRemove(CBString cbstr, int begin, int len) {
 	LString str(cbstr);
 	str.remove(begin - 1, len);
 	return str;

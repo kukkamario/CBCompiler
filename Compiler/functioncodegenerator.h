@@ -67,6 +67,7 @@ class FunctionCodeGenerator: public QObject{
 		void generate(ast::VariableDefinition *n);
 		void generate(ast::Redim *n);
 		void generate(ast::Label *n);
+		void generate(ast::Dim *n);
 		void generate(ast::SpecialFunctionCall *n);
 
 		void basicBlockGenerationPass(ast::Block *n);

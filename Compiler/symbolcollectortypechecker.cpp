@@ -610,6 +610,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Node *s) {
 			return checkStatement((ast::Exit*)s);
 		case ast::Node::ntCommandCallOrArraySubscriptAssignmentExpression:
 			return checkStatement((ast::CommandCallOrArraySubscriptAssignmentExpression*)s);
+		case ast::Node::ntDim:
+			return checkStatement((ast::Dim*)s);
 		default:
 			assert(0);
 	}
@@ -646,21 +648,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::AssignmentExpression *s) {
 	mExpressionLevel++;
 	ValueType *value = typeCheckExpression(s->mExpression);
 	mExpressionLevel--;
-	bool valid = var && value;
-	if (valid && !value->canBeCastedToValueType(var)) {
-		if (var->isTypePointer() && !value->isTypePointer()) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign %1 value to type pointer").arg(value->name()), mLine, mFile);
-			valid = false;
-		}
-		else if(!var->isTypePointer() && value->isTypePointer()) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign type pointer to %1 variable").arg(var->name()), mLine, mFile);
-			valid = false;
-		}
-		else if (var->isTypePointer() && value->isTypePointer() && var != value) {
-			emit error(ErrorCodes::ecInvalidAssignment, tr("Type pointer of type \"%1\" can not be assigned to a type pointer variable of type \"%2\"").arg(value->name(), var->name()), mLine, mFile);
-			valid = false;
-		}
-	}
+	bool valid = var && value && requireAssignmentToType(value, var);
 
 	return valid;
 }
@@ -673,11 +661,8 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ArraySubscriptAssignmentExp
 	if (!validateArrayIndex(array, s->mSubscripts)) return false;
 	ValueType *valTy = typeCheckExpression(s->mValue);
 	if (!valTy) return false;
-	if (!valTy->canBeCastedToValueType(array->valueType())) {
-		emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. No valid conversion from %1 to %2.").arg(valTy->name(), array->valueType()->name()), mLine, mFile);
-		return false;
-	}
-	return true;
+
+	return requireAssignmentToType(valTy, array->valueType());
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ForToStatement *s) {
@@ -767,8 +752,6 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForEachStatement *s) {
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::ArrayDefinition *s) {
-	mLine = s->mLine;
-	mFile = s->mFile;
 	Symbol *sym = mScope->find(s->mName);
 	if (sym) {
 		emit error(ErrorCodes::ecVariableAlreadyDefined, tr("Symbol \"%1\" already defined").arg(s->mName), mLine, mFile);
@@ -779,7 +762,10 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ArrayDefinition *s) {
 		for (QList<ast::Node*>::ConstIterator i = s->mDimensions.begin(); i != s->mDimensions.end(); i++) {
 			if (!typeCheck(*i)) valid = false;
 		}
-		ValueType *valTy = findValueType(s->mType, mLine, mFile);
+		ValueType *valTy = 0;
+		if (s->mType.isEmpty()) valTy = mRuntime->intValueType();
+		else valTy = findValueType(s->mType, mLine, mFile);
+
 		ArraySymbol *sym = new ArraySymbol(s->mName, valTy, s->mDimensions.size(), mFile, mLine);
 		mGlobalScope->addSymbol(sym);
 		return valid;
@@ -787,14 +773,13 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ArrayDefinition *s) {
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::VariableDefinition *s) {
-	bool valid = true;
-	mFile = s->mFile;
-	mLine = s->mLine;
-	for (QList<ast::Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
-		ast::Variable *var = *i;
-		if (!declareVariable(var)) valid = false;
+	VariableSymbol *varSym = 0;
+	if ((varSym = declareVariable(&s->mVariable)) == 0) return false;
+	if (s->mValue) {
+		ValueType *value = typeCheckExpression(s->mValue);
+		return requireAssignmentToType(value, varSym->valueType());
 	}
-	return valid;
+	return true;
 }
 
 bool SymbolCollectorTypeChecker::checkStatement(ast::SelectStatement *s) {
@@ -948,6 +933,16 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Exit *s) {
 	return true;
 }
 
+bool SymbolCollectorTypeChecker::checkStatement(ast::Dim *s) {
+	mLine = s->mLine;
+	mFile = s->mFile;
+	bool valid = true;
+	foreach (ast::Node *n, s->mDefinitions) {
+		valid |= checkStatement(n);
+	}
+	return valid;
+}
+
 bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscriptAssignmentExpression *s) {
 	mFile = s->mFile;
 	mLine = s->mLine;
@@ -998,6 +993,28 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::CommandCallOrArraySubscript
 	}
 	emit error(ErrorCodes::ecSymbolNotArrayOrCommand, tr("Symbol \"%1\" is not an array or a command").arg(s->mName), mLine, mFile);
 	return 0;
+}
+
+bool SymbolCollectorTypeChecker::requireAssignmentToType(ValueType *value, ValueType *castToThis) {
+	if (!value->canBeCastedToValueType(castToThis)) {
+		if (castToThis->isTypePointer() && !value->isTypePointer()) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign %1 value to type pointer").arg(value->name()), mLine, mFile);
+			return false;
+		}
+		else if(!castToThis->isTypePointer() && value->isTypePointer()) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Can't assign type pointer to %1 variable").arg(castToThis->name()), mLine, mFile);
+			return false;
+		}
+		else if (castToThis->isTypePointer() && value->isTypePointer() && castToThis != value) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Type pointer of type \"%1\" can not be assigned to a type pointer variable of type \"%2\"").arg(value->name(), castToThis->name()), mLine, mFile);
+			return false;
+		}
+		else {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("Invalid assignment. Cannot assign \"%1\" value to \"%2\" variable").arg(value->name(), castToThis->name()), mLine, mFile);
+			return false;
+		}
+	}
+	return true;
 }
 
 ArraySymbol *SymbolCollectorTypeChecker::findAndValidateArraySymbol(const QString &name) {

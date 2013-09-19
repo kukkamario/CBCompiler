@@ -102,6 +102,8 @@ void Printer::printNode(const Node *s, int tab) {
 			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
 		case Node::ntSpecialFunctionCall:
 			printSpecialFunctionCall((SpecialFunctionCall*)s, tab); return;
+		case Node::ntDim:
+			printDim((Dim*)s, tab); return;
 		default:
 			printLine("Unknown AST node " + QString::number(s->type())); return;
 	}
@@ -255,11 +257,8 @@ void Printer::printArrayDefinition(const ArrayDefinition *s, int tab) {
 }
 
 void Printer::printVariableDefinition(const VariableDefinition *s, int tab) {
-	printLine("Dim", tab);
-	tab++;
-	for (QList<Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
-		printVariable(*i, tab);
-	}
+	printVariable(&s->mVariable, tab);
+	if (s->mValue) printNode(s->mValue, tab + 1);
 }
 
 void Printer::printConstDefinition(const ConstDefinition *s, int tab) {
@@ -379,6 +378,11 @@ void Printer::printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscri
 	}
 	tab--;
 	printLine(")", tab);
+}
+
+void Printer::printDim(const Dim *s, int tab) {
+	printLine("Dim", tab);
+	foreach(Node *n, s->mDefinitions) printNode(n, tab + 1);
 }
 
 void Printer::printProgram(const Program *s) {

@@ -341,6 +341,70 @@ QString Parser::expectIdentifierAfter(Parser::TokIterator &i, const QString &aft
 	return QString();
 }
 
+ast::Node *Parser::expectDefinitionOfVariableOrArray(Parser::TokIterator &i) {
+	if (i->mType != Token::Identifier) {
+		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable name after \"Dim\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+		mStatus = Error;
+		return 0;
+	}
+	QString name = i->toString();
+	i++;
+	QString varType = tryVariableTypeDefinition(i);
+	if (mStatus == Error) return 0;
+	if (i->mType == Token::LeftParenthese) { //Array
+		i++;
+
+		QList<ast::Node*> dimensions;
+		dimensions.append(expectExpression(i));
+		if (mStatus == Error) return 0;
+		while (i->mType == Token::Comma) {
+			i++;
+			dimensions.append(expectExpression(i));
+			if (mStatus == Error) return 0;
+		}
+
+		if (i->mType != Token::RightParenthese) {
+			emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
+			mStatus = Error;
+			return 0;
+		}
+		i++;
+		QString varType2 = tryVariableAsType(i);
+		if (!varType.isEmpty()) {
+			if (!varType2.isEmpty()) {
+				if (varType != varType2) {
+					emit error(ErrorCodes::ecVariableTypeDefinedTwice, tr("Variable \"%1\" type defined twice"), i->mLine, i->mFile);
+					mStatus = ErrorButContinue;
+				}
+				else {
+					emit warning(WarningCodes::wcVariableTypeDefinedTwice, tr("Variable \"%1\" type defined twice"), i->mLine, i->mFile);
+				}
+			}
+		}
+		else {
+			varType = varType2;
+		}
+		ast::ArrayDefinition *arr = new ast::ArrayDefinition;
+		arr->mName = name;
+		arr->mType = varType;
+		arr->mDimensions = dimensions;
+		return arr;
+	}
+	else {
+		ast::Node *value = 0;
+		if (i->mType == Token::opEqual) {
+			i++;
+			value = expectExpression(i);
+			if (mStatus == Error) return 0;
+		}
+		ast::VariableDefinition *ret = new ast::VariableDefinition;
+		ret->mValue = value;
+		ret->mVariable.mName = name;
+		ret->mVariable.mTypeName = varType;
+		return ret;
+	}
+}
+
 void Parser::expectEndOfStatement(Parser::TokIterator &i) {
 	if (i->isEndOfStatement()) {
 		i++;
@@ -522,46 +586,22 @@ ast::Node *Parser::tryDim(Parser::TokIterator &i) {
 		QString file = i->mFile;
 		int line = i->mLine;
 		i++;
-		if (i->mType != Token::Identifier) {
-			emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable name after \"Dim\", got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-			mStatus = Error;
-			return 0;
-		}
-		QString name = i->toString();
-		i++;
-		QString varType = tryVariableTypeDefinition(i);
-		if (mStatus == Error) return 0;
-		if (i->mType == Token::LeftParenthese) { //Array
-			i++;
-
-			QList<ast::Node*> dimensions;
-			dimensions.append(expectExpression(i));
+		QList<ast::Node*> definitions;
+		while (true) {
+			ast::Node *def = expectDefinitionOfVariableOrArray(i);
 			if (mStatus == Error) return 0;
-			while (i->mType == Token::Comma) {
-				i++;
-				dimensions.append(expectExpression(i));
-				if (mStatus == Error) return 0;
-			}
 
-			if (i->mType != Token::RightParenthese) {
-				emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting right parenthese, got \"%1\"").arg(i->toString()), i->mLine, i->mFile);
-				mStatus = Error;
-				return 0;
-			}
+			definitions.append(def);
+
+			if (i->mType != Token::Comma) break;
 			i++;
-
-			if (varType.isEmpty()) {
-				varType = tryVariableAsType(i);
-				if (mStatus == Error) return 0;
-			}
-			ast::ArrayDefinition *arr = new ast::ArrayDefinition;
-			arr->mLine = line;
-			arr->mFile = file;
-			arr->mName = name;
-			arr->mType = varType;
-			arr->mDimensions = dimensions;
-			return arr;
 		}
+
+		ast::Dim *dim = new ast::Dim;
+		dim->mDefinitions = definitions;
+		dim->mLine = line;
+		dim->mFile = file;
+		return dim;
 	}
 	return 0;
 }

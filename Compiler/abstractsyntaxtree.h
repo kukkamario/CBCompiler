@@ -47,6 +47,8 @@ struct Node {
 		ntRepeatUntilStatement,
 		ntGoto,
 		ntGosub,
+
+		ntDim,
 		ntRedim,
 
 
@@ -106,12 +108,27 @@ struct Float : Node {
 		float mValue;
 };
 
-struct VariableDefinition : Node {
-		Type type() const {return ntVariableDefinition;}
-		~VariableDefinition() { qDeleteAll(mDefinitions);}
-		QList<Variable*> mDefinitions;
+struct Dim : Node {
+		Type type() const { return ntDim; }
+		QList<Node *> mDefinitions;
 		int mLine;
 		QString mFile;
+};
+
+struct VariableDefinition : Node {
+		Type type() const {return ntVariableDefinition;}
+		~VariableDefinition() { if (mValue) delete mValue; }
+		Variable mVariable;
+		Node *mValue;
+};
+
+
+struct ArrayDefinition : Node {
+		~ArrayDefinition() { qDeleteAll(mDimensions); }
+		Type type() const{ return ntArrayDefinition;}
+		QString mName;
+		QString mType;
+		QList<Node*> mDimensions;
 };
 
 struct TypeDefinition : Node {
@@ -246,15 +263,6 @@ struct GlobalDefinition : Node {
 		QString mFile;
 };
 
-struct ArrayDefinition : Node {
-		~ArrayDefinition() { qDeleteAll(mDimensions); }
-		Type type() const{ return ntArrayDefinition;}
-		QString mName;
-		QString mType;
-		QList<Node*> mDimensions;
-		int mLine;
-		QString mFile;
-};
 
 
 struct Operation {
@@ -448,6 +456,8 @@ class Printer : public QObject{
 		void printFloat(const Float *s, int tab = 0);
 		void printString(const String *s, int tab = 0);
 		void printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscript *s, int tab = 0);
+
+		void printDim(const Dim *s, int tab = 0);
 
 		void printProgram(const Program *s);
 
