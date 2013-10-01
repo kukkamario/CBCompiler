@@ -1,9 +1,6 @@
 #include "image.h"
 
-IdMap<Image> Image::sIdMap;
-
 Image::Image(int w, int h) {
-	mId = sIdMap.add(this);
 	mBitmap = al_create_bitmap(w, h);
 	mWidth = w;
 	mHeight = h;
@@ -13,7 +10,6 @@ Image::Image(ALLEGRO_BITMAP *bitmap) :
 	mBitmap(bitmap) {
 	mWidth = al_get_bitmap_width(bitmap);
 	mHeight = al_get_bitmap_height(bitmap);
-	mId = sIdMap.add(this);
 }
 
 
@@ -37,10 +33,6 @@ bool Image::activate() {
 
 bool Image::deactivate() {
 	return true;
-}
-
-Image *Image::get(int id) {
-	return sIdMap.get(id);
 }
 
 

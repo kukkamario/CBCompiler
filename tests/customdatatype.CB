@@ -1,2 +1,1 @@
-Dim val As Image
-
+Dim val As Image = MakeImage(400, 300)

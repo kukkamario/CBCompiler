@@ -45,7 +45,6 @@ HEADERS += \
     types.h \
     lstring.h \
     image.h \
-    idmap.h \
     inputinterface.h
 
 #win32 {

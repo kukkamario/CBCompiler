@@ -187,12 +187,14 @@ bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
 			pointerLevel++;
 		}
 
-		llvm::StructType *type = mModule->getTypeByName(dtName.toStdString());
+		llvm::Type *type = mModule->getTypeByName(dtName.toStdString());
 		if (!type) {
 			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), 0, customDataTypes);
 			valid = false;
 			continue;
 		}
+
+		while (pointerLevel--) { type = type->getPointerTo(); }
 
 		CustomValueType *valTy = new CustomValueType(dt.mName.toLower(), type, this);
 		mCustomValueTypes.append(valTy);
@@ -240,7 +242,11 @@ bool Runtime::loadRuntimeFunctions() {
 			valid = false;
 			continue;
 		}
-		rtFunc->construct(func, i.key());
+		if(!rtFunc->construct(func, i.key())) {
+			emit error(ErrorCodes::ecInvalidRuntime, tr("Invalid runtime function \"%1\" \"%2\"").arg(i.key(), i.value()), 0, QString());
+			valid = false;
+			continue;
+		}
 		mFunctions.append(rtFunc);
 	}
 	return valid;
