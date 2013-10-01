@@ -87,11 +87,8 @@ int main(int argc, char *argv[]) {
 	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
 	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
 
-	const QString runtimePath(QCoreApplication::applicationDirPath() + "/runtime/libRuntime.bc");
-	const QString functionMappingPath(QCoreApplication::applicationDirPath() + "/runtime/functionmapping.map");
-
 	timer.start();
-	if (!codeGenerator.initialize(runtimePath, functionMappingPath, settings)) {
+	if (!codeGenerator.initialize(settings)) {
 		return ErrorCodes::ecCodeGeneratorInitializationFailed;
 	}
 

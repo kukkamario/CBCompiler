@@ -938,7 +938,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::Dim *s) {
 	mFile = s->mFile;
 	bool valid = true;
 	foreach (ast::Node *n, s->mDefinitions) {
-		valid |= checkStatement(n);
+		valid &= checkStatement(n);
 	}
 	return valid;
 }

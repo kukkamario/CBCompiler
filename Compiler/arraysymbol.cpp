@@ -35,4 +35,5 @@ void ArraySymbol::createGlobalVariables(Builder *builder) {
 					zeroArr,
 					(name() + "_dimension_multipliers").toStdString());
 	}
+
 }

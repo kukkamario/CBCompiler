@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <QFileInfo>
 
 Settings::Settings() :
 	mFVD(false) {
@@ -27,6 +28,18 @@ bool Settings::loadDefaults() {
 	var = settings.value("compiler/default-output-file");
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
 	mDefaultOutput = var.toString();
+
+	var = settings.value("compiler/runtime-library");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mRuntimeLibrary = var.toString();
+
+	var = settings.value("compiler/function-mapping");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mFunctionMapping = var.toString();
+
+	var = settings.value("compiler/data-types");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mDataTypes= var.toString();
 
 	var = settings.value("opt/call");
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
@@ -52,6 +65,15 @@ bool Settings::loadDefaults() {
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
 	mLinkerFlags = var.toString();
 
+	QFileInfo fi;
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mDataTypes);
+	mDataTypes = fi.absoluteFilePath();
+
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mRuntimeLibrary);
+	mRuntimeLibrary = fi.absoluteFilePath();
+
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mFunctionMapping);
+	mFunctionMapping = fi.absoluteFilePath();
 	return true;
 }
 

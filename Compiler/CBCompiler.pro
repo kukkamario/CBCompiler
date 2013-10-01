@@ -91,7 +91,9 @@ SOURCES += main.cpp \
     builder.cpp \
     settings.cpp \
     typevaluetype.cpp \
-    valuetypesymbol.cpp
+    valuetypesymbol.cpp \
+    customdatatypedefinitions.cpp \
+    customvaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -135,4 +137,6 @@ HEADERS += \
     warningcodes.h \
     settings.h \
     typevaluetype.h \
-    valuetypesymbol.h
+    valuetypesymbol.h \
+    customdatatypedefinitions.h \
+    customvaluetype.h

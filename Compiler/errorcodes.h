@@ -5,6 +5,8 @@ namespace ErrorCodes {
 enum ErrorCode {
 	//Settings
 	ecSettingsLoadingFailed = 11,
+	ecCantParseCustomDataTypeDefinitionFile,
+	ecInvalidCustomDataTypeDefinitionFileFormat,
 
 	//Lexer
 	ecLexicalAnalysingFailed,
@@ -56,6 +58,8 @@ enum ErrorCode {
 	ecCantLoadFunctionMapping,
 	ecInvalidFunctionMappingFile,
 	ecCantFindRuntimeFunction,
+	ecCantFindCustomDataType,
+	ecValueTypeDefinedMultipleTimes,
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,

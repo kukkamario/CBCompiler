@@ -6,6 +6,11 @@ ValueType::ValueType(Runtime *r):
 {
 }
 
+ValueType::ValueType(Runtime *r, llvm::Type *type) :
+	mType(type),
+	mRuntime(r) {
+}
+
 bool ValueType::canBeCastedToValueType(ValueType *to) const {
 	return castingCostToOtherValueType(to) < sMaxCastCost;
 }

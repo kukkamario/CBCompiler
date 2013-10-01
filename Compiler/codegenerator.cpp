@@ -17,6 +17,7 @@
 #include "cbfunction.h"
 #include "variablesymbol.h"
 #include "valuetypesymbol.h"
+#include "customvaluetype.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 #ifndef M_PI
@@ -48,10 +49,10 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	addPredefinedConstantSymbols();
 }
 
-bool CodeGenerator::initialize(const QString &runtimeFile, const QString &functionMappingFile, const Settings &settings) {
+bool CodeGenerator::initialize(const Settings &settings) {
 	mSettings = settings;
 	mTypeChecker.setForceVariableDeclaration(settings.forceVariableDeclaration());
-	if (!mRuntime.load(&mStringPool, runtimeFile, functionMappingFile)) {
+	if (!mRuntime.load(&mStringPool, settings)) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), 0, 0);
 		return false;
 	}
@@ -362,6 +363,10 @@ void CodeGenerator::addValueTypesToGlobalScope() {
 	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.shortValueType()));
 	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.stringValueType()));
 	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.byteValueType()));
+
+	foreach(CustomValueType* valTy, mRuntime.customValueTypes()) {
+		mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valTy));
+	}
 }
 
 void CodeGenerator::addPredefinedConstantSymbols() {

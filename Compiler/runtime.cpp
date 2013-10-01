@@ -9,6 +9,9 @@
 #include "typepointervaluetype.h"
 #include "typevaluetype.h"
 #include "errorcodes.h"
+#include "settings.h"
+#include "customdatatypedefinitions.h"
+#include "customvaluetype.h"
 #include <QStringList>
 #include <QTextStream>
 
@@ -19,14 +22,14 @@ Runtime::Runtime():
 	mModule(0),
 	mCBMain(0),
 	mCBInitialize(0),
-	mDataLayout(0),
 	mIntValueType(0),
 	mFloatValueType(0),
 	mStringValueType(0),
 	mShortValueType(0),
 	mByteValueType(0),
 	mBooleanValueType(0),
-	mTypePointerCommonValueType(0) {
+	mTypePointerCommonValueType(0),
+	mDataLayout(0) {
 	assert(runtimeInstance == 0);
 	runtimeInstance = this;
 }
@@ -42,20 +45,24 @@ Runtime::~Runtime() {
 	delete mFloatValueType;
 }
 
-bool Runtime::load(StringPool *strPool, const QString &runtimeFile, const QString &functionMappingFile) {
+bool Runtime::load(StringPool *strPool, const Settings &settings) {
 	llvm::InitializeNativeTarget();
 	llvm::SMDiagnostic diagnostic;
-	mModule = llvm::ParseIRFile(runtimeFile.toStdString(), diagnostic, llvm::getGlobalContext());
+	mModule = llvm::ParseIRFile(settings.runtimeLibraryPath().toStdString(), diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
 		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), 0, QString());
 		return false;
 	}
 
-	if (!loadFunctionMapping(functionMappingFile)) return false;
+	if (!loadFunctionMapping(settings.functionMappingFile())) return false;
 
 	mDataLayout = new llvm::DataLayout(mModule);
 
 	if (!loadValueTypes(strPool)) return false;
+
+	if (!loadCustomDataTypes(settings.dataTypesFile())) return false;
+
+	if (!generateLLVMValueTypeMapping()) return false;
 
 	if (!loadRuntimeFunctions()) return false;
 
@@ -164,6 +171,49 @@ bool Runtime::loadFunctionMapping(const QString &functionMapping) {
 	return true;
 }
 
+bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
+	CustomDataTypeDefinitions defs;
+	connect(&defs, &CustomDataTypeDefinitions::error, this, &Runtime::error);
+	connect(&defs, &CustomDataTypeDefinitions::error, this, &Runtime::error);
+
+	if (!defs.parse(customDataTypes)) return false;
+
+	bool valid = true;
+	foreach (const CustomDataTypeDefinitions::CustomDataType &dt, defs.dataTypes()) {
+		int pointerLevel = 0;
+		QString dtName = dt.mDataType;
+		while (dtName.endsWith('*')) {
+			dtName.chop(1);
+			pointerLevel++;
+		}
+
+		llvm::StructType *type = mModule->getTypeByName(dtName.toStdString());
+		if (!type) {
+			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), 0, customDataTypes);
+			valid = false;
+			continue;
+		}
+
+		CustomValueType *valTy = new CustomValueType(dt.mName.toLower(), type, this);
+		mCustomValueTypes.append(valTy);
+		mValueTypes.append(valTy);
+	}
+	return valid;
+}
+
+bool Runtime::generateLLVMValueTypeMapping() {
+	bool valid = true;
+	foreach( ValueType *valTy, mValueTypes) {
+		if (mLLVMValueTypeMapping.contains(valTy->llvmType())) {
+			emit error(ErrorCodes::ecValueTypeDefinedMultipleTimes, tr("Value type mapping \"%1\": There is already a value type \"%2\" with same llvm::Type. ").arg(valTy->name(), mLLVMValueTypeMapping[valTy->llvmType()]->name()), 0, QString());
+			valid = false;
+			continue;
+		}
+		mLLVMValueTypeMapping[valTy->llvmType()] = valTy;
+	}
+	return valid;
+}
+
 
 Runtime *Runtime::instance() {
 	return runtimeInstance;
@@ -174,6 +224,10 @@ ValueType *Runtime::findValueType(ValueType::eType valType) {
 	ValueType *vt = mValueTypeEnum[valType];
 	assert(vt);
 	return vt;
+}
+
+ValueType *Runtime::findValueType(llvm::Type *llvmType) {
+	return mLLVMValueTypeMapping.value(llvmType);
 }
 
 bool Runtime::loadRuntimeFunctions() {

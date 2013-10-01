@@ -14,9 +14,9 @@
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
-	mRuntime(0),
 	mIRBuilder(context),
-	mStringPool(0){
+	mRuntime(0),
+	mStringPool(0) {
 }
 
 void Builder::setRuntime(Runtime *r) {
@@ -308,23 +308,7 @@ void Builder::returnValue(ValueType *retType, const Value &v) {
 void Builder::construct(VariableSymbol *var) {
 	llvm::Value *allocaInst = mIRBuilder.CreateAlloca(var->valueType()->llvmType());
 	var->setAlloca(allocaInst);
-	switch(var->valueType()->type()) {
-		case ValueType::Integer:
-			mIRBuilder.CreateStore(llvmValue(0), allocaInst); break;
-		case ValueType::Float:
-			mIRBuilder.CreateStore(llvmValue(0.0f), allocaInst); break;
-		case ValueType::Short:
-			mIRBuilder.CreateStore(llvmValue((uint16_t)0), allocaInst); break;
-		case ValueType::Byte:
-			mIRBuilder.CreateStore(llvmValue((uint8_t)0), allocaInst); break;
-		case ValueType::String:
-			mIRBuilder.CreateStore(llvmValue(QString()), allocaInst); break;
-		case ValueType::TypePointer:
-			mIRBuilder.CreateStore(var->valueType()->defaultValue(), allocaInst); break;
-		default:
-			assert("Invalid variable" && 0);
-	}
-
+	mIRBuilder.CreateStore(var->valueType()->defaultValue(), allocaInst);
 }
 
 void Builder::store(llvm::Value *ptr, llvm::Value *val) {

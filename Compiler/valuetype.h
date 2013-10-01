@@ -24,13 +24,15 @@ class ValueType {
 			Boolean,
 			TypePointer,
 			TypePointerCommon,
-			Type
+			Type,
+			Custom
 		};
 
 		typedef unsigned int CastCostType;
 		static const CastCostType sMaxCastCost = 10000;
 
 		ValueType(Runtime *r);
+		ValueType(Runtime *r, llvm::Type *type);
 		virtual ~ValueType() {}
 		virtual QString name() const = 0;
 		llvm::Type *llvmType() {return mType;}

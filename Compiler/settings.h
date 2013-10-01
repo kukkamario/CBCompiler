@@ -11,6 +11,9 @@ class Settings {
 		bool forceVariableDeclaration() const { return mFVD; }
 		QString defaultOutputFile() const { return mDefaultOutput; }
 		QString loadPath() const { return mLoadPath; }
+		QString runtimeLibraryPath() const { return mRuntimeLibrary; }
+		QString dataTypesFile() const { return mDataTypes; }
+		QString functionMappingFile() const { return mFunctionMapping; }
 	private:
 		QString mLoadPath;
 
@@ -23,7 +26,9 @@ class Settings {
 
 		bool mFVD;
 		QString mDefaultOutput;
-
+		QString mRuntimeLibrary;
+		QString mFunctionMapping;
+		QString mDataTypes;
 };
 
 #endif // SETTINGS_H

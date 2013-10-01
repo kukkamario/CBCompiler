@@ -17,8 +17,7 @@ class Symbol {
 			stArray,
 			stType,
 			stLabel,
-			stDefaultValueType,
-			stCustomValueType
+			stValueType
 		};
 
 		Symbol(const QString &name,const QString &f, int line);
