@@ -21,7 +21,7 @@ DEPENDPATH += "./"
 
 
 CONFIG(debug, debug|release) {
-	DEFINES += _DEBUG
+	DEFINES += _DEBUG DEBUG_OUTPUT
 }
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"

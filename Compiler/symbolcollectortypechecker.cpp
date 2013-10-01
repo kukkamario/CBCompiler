@@ -431,6 +431,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::SpecialFunctionCall *s) {
 
 	}
 	assert("WTF" && 0);
+	return 0;
 }
 
 ValueType *SymbolCollectorTypeChecker::typeCheck(ast::TypePtrField *s) {

@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 	timer.start();
 	if (lexer.tokenizeFile(params[1], settings) == Lexer::Success) {
 		qDebug() << "Lexical analysing took " << timer.elapsed() << "ms";
-#ifdef _DEBUG
+#ifdef DEBUG_OUTPUT
 		lexer.writeTokensToFile("tokens.txt");
 #endif
 	}
@@ -69,13 +69,16 @@ int main(int argc, char *argv[]) {
 	timer.start();
 	ast::Program *program = parser.parse(lexer.tokens(), settings);
 	qDebug() << "Parsing took " << timer.elapsed() << "ms";
-	ast::Printer printer;
-	printer.printToFile("ast.txt");
+
+#ifdef DEBUG_OUTPUT
 	if (program) {
-#ifdef _DEBUG
+		ast::Printer printer;
+		printer.printToFile("ast.txt");
 		printer.printProgram(program);
-#endif
+
 	}
+#endif
+
 	if (!parser.success()) {
 		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), 0, QString());
 		return ErrorCodes::ecParsingFailed;
