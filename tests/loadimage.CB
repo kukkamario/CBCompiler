@@ -1,0 +1,15 @@
+grass As Image = LoadImage("Media/grass.bmp")
+
+cow As Image = LoadImage("Media/cow.bmp") 
+MaskImage cow, 0, 0, 0
+Repeat
+	Text 10, 10, FPS()
+	'Draw the ground
+	DrawImage grass,150,100
+
+	'Draw the cow
+	DrawImage cow,200,150
+
+	DrawScreen
+
+Forever
