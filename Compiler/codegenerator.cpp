@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include <QDir>
+#include <QCoreApplication>
 #include "intvaluetype.h"
 #include "floatvaluetype.h"
 #include "stringvaluetype.h"
@@ -19,6 +21,7 @@
 #include "valuetypesymbol.h"
 #include "customvaluetype.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
+
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
@@ -117,6 +120,10 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		qDebug("Invalid module. See verifier.log");
 		return false;
 	}
+
+	QString p = QDir::currentPath();
+	QDir::setCurrent(QCoreApplication::applicationDirPath());
+
 	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::raw_fd_ostream::F_Binary);
 	if (fileOpenErrorInfo.empty()) {
 		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
@@ -124,6 +131,7 @@ bool CodeGenerator::createExecutable(const QString &path) {
 	}
 	else {
 		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""),0,0);
+		QDir::setCurrent(p);
 		return false;
 	}
 	qDebug() << "Optimizing bitcode...\n";
@@ -131,8 +139,13 @@ bool CodeGenerator::createExecutable(const QString &path) {
 	qDebug() << "Creating native assembly...\n";
 	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) return false;
 	qDebug() << "Building binary...\n";
-	if (!mSettings.callLinker("llc", path)) return false;
+
+	QFileInfo fi;
+	fi.setFile(QDir(p), path);
+
+	if (!mSettings.callLinker("llc", fi.absoluteFilePath())) return false;
 	qDebug() << "Success\n";
+	QDir::setCurrent(p);
 	return true;
 }
 

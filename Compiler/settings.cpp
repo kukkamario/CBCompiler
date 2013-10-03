@@ -78,25 +78,16 @@ bool Settings::loadDefaults() {
 }
 
 bool Settings::callOpt(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
 	int ret = QProcess::execute(mOpt.arg(mOptFlags, inputFile, outputFile));
-	QDir::setCurrent(p);
 	return ret == 0;
 }
 
 bool Settings::callLLC(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
 	int ret = QProcess::execute(mLLC.arg(mLLCFlags, inputFile, outputFile));
-	QDir::setCurrent(p);
 	return ret == 0;
 }
 
 bool Settings::callLinker(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
-	int ret = QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, "\"" + p + "/" + outputFile + "\""));
-	QDir::setCurrent(p);
+	int ret = QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, "\"" + outputFile + "\""));
 	return ret == 0;
 }
