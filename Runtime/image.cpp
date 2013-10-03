@@ -24,10 +24,8 @@ Image *Image::load(const LString &path) {
 	return img;
 }
 
-bool Image::activate() {
+bool Image::activateRenderContext() {
 	al_set_target_bitmap(mBitmap);
-	setupDrawingState();
-	sCurrentTarget = this;
 	return true;
 }
 
@@ -64,4 +62,8 @@ void Image::resize(int w, int h) {
 
 void Image::mask(const ALLEGRO_COLOR &color) {
 	al_convert_mask_to_alpha(mBitmap, color);
+}
+
+void Image::draw(float x, float y) {
+	al_draw_bitmap(mBitmap, x, y, 0);
 }
