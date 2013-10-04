@@ -3,7 +3,7 @@
 #include <allegro5/allegro5.h>
 #include "rendertarget.h"
 #include "common.h"
-class Window : RenderTarget{
+class Window : public RenderTarget{
 	public:
 		enum WindowMode {
 			Windowed,

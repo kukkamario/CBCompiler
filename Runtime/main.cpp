@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
 	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
+	RenderTarget::setFallbackRenderTarget(window);
 
 
 	info(U"Initializing interfaces");
