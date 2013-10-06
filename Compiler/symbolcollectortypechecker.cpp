@@ -723,7 +723,7 @@ bool SymbolCollectorTypeChecker::checkStatement(ast::ForEachStatement *s) {
 			case Symbol::stArray: {
 				ArraySymbol *array = static_cast<ArraySymbol*>(sym);
 				if (array->valueType() != var) {
-					emit error(ErrorCodes::ecForVariableContainerTypeMismatch, tr("The variable \"%1\" and the array \"%1\" have different value types").arg(s->mVarName, s->mContainer), mLine, mFile);
+					emit error(ErrorCodes::ecForVariableContainerTypeMismatch, tr("The variable \"%1\" and the array \"%2\" have different value types").arg(s->mVarName, s->mContainer), mLine, mFile);
 					success = false;
 				}
 				break;

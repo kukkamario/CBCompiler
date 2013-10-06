@@ -10,16 +10,19 @@
 #include "stringpool.h"
 #include "cbfunction.h"
 #include "typepointervaluetype.h"
+#include "intvaluetype.h"
+#include "booleanvaluetype.h"
 #include "typesymbol.h"
 
 FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
 	QObject(parent),
-	mCurrentBasicBlock(0),
-	mFunction(0),
-	mCurrentBasicBlockIt(mBasicBlocks.end()),
-	mExprGen(this),
 	mBuilder(0),
+	mFunction(0),
 	mSetupBasicBlock(0),
+	mCurrentBasicBlockIt(mBasicBlocks.end()),
+	mCurrentBasicBlock(0),
+	mExprGen(this),
+	mRuntime(0),
 	mReturnType(0) {
 	connect(&mExprGen, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
 	connect(&mExprGen,SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
@@ -400,8 +403,63 @@ void FunctionCodeGenerator::generate(ast::ForEachStatement *n) {
 		mBuilder->setInsertPoint(mCurrentBasicBlock);
 	}
 	else if (containerSym->type() == Symbol::stArray) {
-		assert("STUB" && 0);
+
+		//Initializations
 		ArraySymbol *array = static_cast<ArraySymbol*>(containerSym);
+		llvm::Value *arraySize = mBuilder->irBuilder().CreateLoad(array->globalArraySize(), false);
+
+		llvm::Value *counter = mBuilder->irBuilder().CreateAlloca(mBuilder->irBuilder().getInt32Ty());
+		mBuilder->irBuilder().CreateStore(mBuilder->irBuilder().getInt32(0), counter);
+
+		Symbol *sym = mScope->find(n->mVarName);
+		assert(sym && sym->type() == Symbol::stVariable);
+		VariableSymbol *variableSymbol = static_cast<VariableSymbol*>(sym);
+
+		//Condition block
+		nextBasicBlock();
+		mBuilder->branch(mCurrentBasicBlock);
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		mCurrentBasicBlock->setName("For-Each condition");
+
+		llvm::BasicBlock *conditionBlock = mCurrentBasicBlock;
+
+		//Block
+		nextBasicBlock();
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
+		llvm::BasicBlock *block = mCurrentBasicBlock;
+
+
+		Value newVal = mBuilder->load(array, Value(mRuntime->intValueType(), mBuilder->irBuilder().CreateLoad(counter, false)));
+		mBuilder->store(variableSymbol, newVal);
+
+		generate(&n->mBlock);
+
+
+		/*//Store back
+		mBuilder->store(array,
+						Value(mRuntime->intValueType(), mBuilder->irBuilder().CreateLoad(counter, false)),
+						mBuilder->load(variableSymbol));*/
+
+		//Increase counter
+		llvm::Value *counterLoaded = mBuilder->irBuilder().CreateLoad(counter, false);
+		llvm::Value *counterIncreased = mBuilder->irBuilder().CreateAdd(counterLoaded, mBuilder->irBuilder().getInt32(1));
+		mBuilder->irBuilder().CreateStore(counterIncreased, counter);
+
+		//Jump to condition check
+		mBuilder->branch(conditionBlock);
+
+
+		//Next
+		nextBasicBlock();
+		mCurrentBasicBlock->setName("After For-Each Next");
+
+		//Create condition
+		mBuilder->setInsertPoint(conditionBlock);
+		counterLoaded = mBuilder->irBuilder().CreateLoad(counter, false);
+		llvm::Value *cond = mBuilder->irBuilder().CreateICmpULT(counterLoaded, arraySize); //i < arraySize
+		mBuilder->branch(Value(mRuntime->booleanValueType(), cond), block, mCurrentBasicBlock);
+
+		mBuilder->setInsertPoint(mCurrentBasicBlock);
 	}
 	popExit();
 }

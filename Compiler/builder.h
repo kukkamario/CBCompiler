@@ -52,9 +52,11 @@ class Builder {
 		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);
 		void store(VariableSymbol *var, llvm::Value *val);
+		void store(ArraySymbol *array, const Value &index, const Value &val);
 		void store(ArraySymbol *array, const QList<Value> &dims, const Value &val);
 		void store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v);
 		Value load(const VariableSymbol *var);
+		Value load(ArraySymbol *array, const Value &index);
 		Value load(ArraySymbol *array, const QList<Value> &dims);
 		Value load(VariableSymbol *typePtrVar, const QString &fieldName);
 		void destruct(VariableSymbol *var);
@@ -66,12 +68,13 @@ class Builder {
 		llvm::Value *calculateArrayElementCount(const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes);
 		/**
-		 * @brief arrayElement calculates a pointer address of the array element.
+		 * @brief arrayElementpointer calculates a pointer address of the array element.
 		 * @param array
 		 * @param index
 		 * @return A pointer to an array element in index
 		 */
 		llvm::Value *arrayElementPointer(ArraySymbol *array, const QList<Value> &index);
+		llvm::Value *arrayElementPointer(ArraySymbol *array, const Value &index);
 		llvm::Value *arrayIndexMultiplier(ArraySymbol *array, int index);
 		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);
 

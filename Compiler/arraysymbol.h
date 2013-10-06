@@ -47,6 +47,8 @@ class ArraySymbol : public Symbol {
 		 */
 		llvm::GlobalVariable *globalIndexMultiplierArray() const { return mGlobalIndexMultiplierArray; }
 
+		llvm::GlobalVariable *globalArraySize() const { return mGlobalArraySize; }
+
 		void createGlobalVariables(Builder *builder);
 	private:
 		ValueType *mValueType;
@@ -54,6 +56,7 @@ class ArraySymbol : public Symbol {
 
 		llvm::GlobalVariable *mGlobalArrayData;
 		llvm::GlobalVariable *mGlobalIndexMultiplierArray;
+		llvm::GlobalVariable *mGlobalArraySize;
 };
 
 #endif // ARRAYSYMBOL_H

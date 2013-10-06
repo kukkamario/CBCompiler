@@ -7,7 +7,8 @@ ArraySymbol::ArraySymbol(const QString &name, ValueType *valType, int dim, const
 	mValueType(valType),
 	mDimensions(dim),
 	mGlobalArrayData(0),
-	mGlobalIndexMultiplierArray(0)
+	mGlobalIndexMultiplierArray(0),
+	mGlobalArraySize(0)
 {
 }
 
@@ -23,16 +24,20 @@ void ArraySymbol::createGlobalVariables(Builder *builder) {
 				llvm::ConstantPointerNull::get(mValueType->llvmType()->getPointerTo()),
 				(name() + "_array_data").toStdString());
 
+	mGlobalArraySize = builder->createGlobalVariable(
+				llvm::IntegerType::get(builder->context(), 32),
+				false,
+				llvm::GlobalValue::CommonLinkage,
+				llvm::Constant::getNullValue(llvm::IntegerType::get(builder->context(), 32)),
+				(name() + "_array_size").toStdString());
+
 	if (mDimensions > 1) {
-		//Initialize a global array filled with zeros
 		llvm::ArrayType *type = llvm::ArrayType::get(llvm::IntegerType::get(builder->context(), 32), mDimensions - 1);
-		std::vector<llvm::Constant*> zeros(mDimensions - 1, builder->irBuilder().getInt32(0));
-		llvm::Constant *zeroArr = llvm::ConstantArray::get(type, zeros);
 		mGlobalIndexMultiplierArray = builder->createGlobalVariable(
 					type,
 					false,
 					llvm::GlobalValue::CommonLinkage,
-					zeroArr,
+					llvm::Constant::getNullValue(type),
 					(name() + "_dimension_multipliers").toStdString());
 	}
 

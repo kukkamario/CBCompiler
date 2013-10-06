@@ -340,6 +340,25 @@ void Builder::store(VariableSymbol *var, llvm::Value *val) {
 	}
 }
 
+void Builder::store(ArraySymbol *array, const Value &index, const Value &val) {
+	store(arrayElementPointer(array, index), array->valueType()->cast(this, val));
+}
+
+void Builder::store(ArraySymbol *array, const QList<Value> &dims, const Value &val) {
+	store(arrayElementPointer(array, dims), array->valueType()->cast(this, val));
+}
+
+void Builder::store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	store(fieldPointer, fieldValueType->cast(this, v));
+}
+
 Value Builder::load(const VariableSymbol *var) {
 	llvm::Value *val = mIRBuilder.CreateLoad(var->alloca_(), false);
 	if (var->valueType()->type() == ValueType::String) {
@@ -347,6 +366,30 @@ Value Builder::load(const VariableSymbol *var) {
 	}
 	return Value(var->valueType(), val);
 }
+
+Value Builder::load(ArraySymbol *array, const Value &index) {
+	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, index)));
+}
+
+Value Builder::load(ArraySymbol *array, const QList<Value> &dims) {
+	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
+}
+
+Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
+	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
+
+	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
+	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
+
+	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
+	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
+	llvm::Value *val = mIRBuilder.CreateLoad(fieldPointer);
+	if (fieldValueType->type() == ValueType::String) {
+		mRuntime->stringValueType()->refString(&mIRBuilder, val);
+	}
+	return Value(fieldValueType, val);
+}
+
 
 void Builder::destruct(VariableSymbol *var) {
 	if (var->valueType()->type() == ValueType::String) {
@@ -369,54 +412,26 @@ Value Builder::nullTypePointer() {
 void Builder::initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 
-	llvm::Value *memSize = calculateArrayMemorySize(array, dimSizes);
+	llvm::Value *elements = calculateArrayElementCount(dimSizes);
+	int sizeOfElement = array->valueType()->size();
+	llvm::Value *memSize = mIRBuilder.CreateMul(elements, llvmValue(sizeOfElement));
+
 	llvm::Value *mem = mIRBuilder.CreateBitCast(allocate(memSize), array->valueType()->llvmType()->getPointerTo());
 	memSet(mem, memSize, llvmValue(uint8_t(0)));
+
+
 	mIRBuilder.CreateStore(mem, array->globalArrayData());
-
+	mIRBuilder.CreateStore(elements, array->globalArraySize());
 	fillArrayIndexMultiplierArray(array, dimSizes);
-
 }
 
-void Builder::store(ArraySymbol *array, const QList<Value> &dims, const Value &val) {
-	store(arrayElementPointer(array, dims), array->valueType()->cast(this, val));
-}
 
-void Builder::store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v) {
-	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
-
-	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
-	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
-
-	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
-	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
-	store(fieldPointer, fieldValueType->cast(this, v));
-}
-
-Value Builder::load(ArraySymbol *array, const QList<Value> &dims) {
-	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)));
-}
-
-Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
-	assert(typePtrVar->valueType()->type() == ValueType::TypePointer);
-
-	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
-	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
-
-	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
-	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
-	llvm::Value *val = mIRBuilder.CreateLoad(fieldPointer);
-	if (fieldValueType->type() == ValueType::String) {
-		mRuntime->stringValueType()->refString(&mIRBuilder, val);
-	}
-	return Value(fieldValueType, val);
-}
 
 llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
 
 	QList<Value>::ConstIterator i = dimSizes.begin();
 	llvm::Value *result = llvmValue(toInt(*i));
-	for (; i != dimSizes.end(); i++) {
+	for (++i; i != dimSizes.end(); i++) {
 		result = mIRBuilder.CreateMul(result, llvmValue(toInt(*i)));
 	}
 	return result;
@@ -445,6 +460,10 @@ llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const QList<Value>
 		arrIndex = mIRBuilder.CreateAdd(arrIndex, llvmValue(toInt(*i)));
 		return mIRBuilder.CreateGEP(mIRBuilder.CreateLoad(array->globalArrayData()), arrIndex);
 	}
+}
+
+llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const Value &index) {
+	return mIRBuilder.CreateGEP(mIRBuilder.CreateLoad(array->globalArrayData()), llvmValue(toInt(index)));
 }
 
 llvm::Value *Builder::arrayIndexMultiplier(ArraySymbol *array, int index) {
@@ -666,7 +685,6 @@ Value Builder::add(const Value &a, const Value &b) {
 				}
 				case ValueType::String: {
 					result = mRuntime->stringValueType()->stringAddition(&mIRBuilder, llvmValue(a), llvmValue(b));
-					destruct(a);
 					return Value(mRuntime->stringValueType(), result);
 				}
 				default: break;
