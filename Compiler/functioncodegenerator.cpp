@@ -159,7 +159,7 @@ void FunctionCodeGenerator::generate(ast::Node *n) {
 		case ast::Node::ntVariableDefinition:
 			return generate((ast::VariableDefinition*)n);
 		case ast::Node::ntWhileStatement:
-			return generate((ast::VariableDefinition*)n);
+			return generate((ast::WhileStatement*)n);
 		case ast::Node::ntLabel:
 			return generate((ast::Label*)n);
 		case ast::Node::ntSpecialFunctionCall:

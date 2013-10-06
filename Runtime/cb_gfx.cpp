@@ -110,4 +110,8 @@ void CBF_unlock() {
 }
 
 
+void CBF_drawToScreen() {
+	Window::instance()->activate();
+}
+
 

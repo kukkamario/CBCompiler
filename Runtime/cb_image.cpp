@@ -25,3 +25,7 @@ void CBF_maskImage(Image *img, int r, int g, int b) {
 void CBF_maskImage(Image *img, int r, int g, int b, int a) {
 	img->mask(al_map_rgba(r, g, b, a));
 }
+
+void CBF_drawToImage(Image *img) {
+	img->activate();
+}
