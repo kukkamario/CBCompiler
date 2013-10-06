@@ -1,0 +1,36 @@
+themap As Image = LoadImage("Media/map.bmp")
+
+angle=0
+
+
+
+
+While Not EscapeKey()
+    DrawImage themap,Cos(angle) * 100,Sin(angle) * 100
+
+    If Timer()>moment+20 Then
+
+        DrawToImage themap
+
+        'red filled circle
+        Color 255,0,0
+        Circle 200+Cos(angle)*100-5,150-Sin(angle)*100-5,10
+
+        'black hollow circle (outlines)
+        Color 0,0,0
+        Circle 200+Cos(angle)*100-5,150-Sin(angle)*100-5,10,OFF
+
+        angle=angle+10
+
+        moment=Timer()
+
+        DrawToScreen
+
+    EndIf
+	Text 10, 10, FPS()
+    DrawScreen
+
+Wend
+
+End
+
