@@ -12,10 +12,11 @@ class Function;
 namespace ast {
 class Visitor;
 
+class Node;
 class ChildNodeIterator {
 		friend class Node;
 	public:
-		ChildNodeIterator(const ChildNodeIterator &i) : mNode(i.mNode), mChildNodeId(i) {}
+		ChildNodeIterator(const ChildNodeIterator &i) : mNode(i.mNode), mChildNodeId(i.mChildNodeId) {}
 		~ChildNodeIterator() {}
 
 		Node *node() const { return mNode; }
@@ -39,12 +40,12 @@ class ChildNodeIterator {
 		}
 
 		ChildNodeIterator &operator++() { //++i
-			assert(mChildNodeId != mNode->childNodeCount());
+			validId(++mChildNodeId);
 			++mChildNodeId;
-			return this;
+			return *this;
 		}
 		ChildNodeIterator operator++(int) { //i++
-			assert(mChildNodeId != mNode->childNodeCount());
+			validId(++mChildNodeId);
 			ChildNodeIterator temp = *this;
 			++mChildNodeId;
 			return temp;
@@ -53,7 +54,7 @@ class ChildNodeIterator {
 		ChildNodeIterator &operator--() { //--i
 			assert(mChildNodeId != 0);
 			--mChildNodeId;
-			return this;
+			return *this;
 		}
 		ChildNodeIterator operator--(int) { //i--
 			assert(mChildNodeId != 0);
@@ -72,17 +73,22 @@ class ChildNodeIterator {
 			return ChildNodeIterator(mNode, this->mChildNodeId - i);
 		}
 
+		Node *operator*();
 
 
 		bool operator ==(const ChildNodeIterator &i) {
-			return this->mNode == i.mNode && this->mChildNodeId == i.mChildNodeId;
+			assert(this->mNode == i.mNode);
+			return this->mChildNodeId == i.mChildNodeId;
 		}
 
-	private:
-		bool validId(int id) {
-			//id == mNode->childNodeCount() is the END
-			return id >= 0 && id <= mNode->childNodeCount();
+		bool operator !=(const ChildNodeIterator &i) {
+			assert(this->mNode == i.mNode);
+			return  this->mChildNodeId != i.mChildNodeId;
 		}
+
+
+	private:
+		bool validId(int id);
 
 		ChildNodeIterator(Node *n, int childNode) : mNode(n), mChildNodeId(childNode) {}
 
@@ -98,7 +104,6 @@ class Node {
 			ntFloat,
 			ntString,
 			ntIdentifier,
-			ntType,
 			ntLabel,
 			ntList,
 			ntGoto,
@@ -116,6 +121,7 @@ class Node {
 			ntUnary,
 			ntArraySubscript,
 			ntFunctionCall,
+			ntKeywordFunctionCall,
 			ntDefaultValue,
 			ntVariable,
 
@@ -126,12 +132,12 @@ class Node {
 			ntForToStatement,
 			ntForEachStatement,
 			ntSelectStatement,
-			ntCase,
-			ntDefault,
+			ntSelectCase,
 
 			ntConst,
 			ntDim,
 			ntGlobal,
+			ntRedim,
 			ntVariableDefinition,
 			ntArrayInitialization,
 			ntFunctionDefinition,
@@ -163,10 +169,25 @@ class Node {
 
 		virtual void write(QTextStream &s, int tab = 0);
 
+		ChildNodeIterator childNodesBegin() { return ChildNodeIterator(this, 0); }
+		ChildNodeIterator childNodesEnd() { return ChildNodeIterator(this, childNodeCount()); }
+
 		const char *typeAsString() const;
 	protected:
 		CodePoint mCodePoint;
 };
+
+Node *ChildNodeIterator::operator*() {
+	return mNode->childNode(mChildNodeId);
+}
+
+bool ChildNodeIterator::validId(int id) {
+	//id == mNode->childNodeCount() is the END
+	return id >= 0 && id <= mNode->childNodeCount();
+}
+
+#define NODE_ACCEPT_VISITOR_PRE_DEF public: void accept(Visitor *visitor);
+#define NODE_ACCEPT_VISITOR_DEF (_node_)  void _node_##::accept(Visitor *visitor) { visitor->visit(this); }
 
 class LeafNode : public Node {
 	public:
@@ -196,6 +217,7 @@ class BlockNode : public Node {
 //--------------------------------
 template <typename T, Node::Type NT>
 class Literal : public LeafNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Literal(T value, const CodePoint &cp) : LeafNode(cp), mValue(value) { }
 		~Literal() { }
@@ -215,6 +237,7 @@ typedef Literal<QString, Node::ntString> String;
 //Identifier
 template <Node::Type NT>
 class IdentifierT : public LeafNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		IdentifierT(const QString &name, const CodePoint &cp) : LeafNode(cp), mName(name) { }
 		virtual ~IdentifierT() { }
@@ -226,16 +249,11 @@ class IdentifierT : public LeafNode {
 };
 
 typedef IdentifierT<Node::ntIdentifier> Identifier;
+typedef IdentifierT<Node::ntLabel> Label;
 
-
-class Label : public Identifier {
-	public:
-		Label(const QString &name, const CodePoint &cp) : Identifier(name, cp) { }
-		~Label() { }
-		Type type() const { return ntLabel; }
-};
 
 class Return : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Return(const CodePoint &cp) : Node(cp), mValue(0) { }
 		~Return() { if (mValue) delete mValue; }
@@ -250,6 +268,7 @@ class Return : public Node {
 };
 
 class Exit : public LeafNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Exit(const CodePoint &cp) : LeafNode(cp) { }
 		~Exit() { }
@@ -259,6 +278,7 @@ class Exit : public LeafNode {
 //ValueTypes:
 
 class DefaultType : public LeafNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		DefaultType(const CodePoint &cp) : LeafNode(cp) {}
 		~DefaultType() { }
@@ -266,6 +286,7 @@ class DefaultType : public LeafNode {
 };
 
 class BasicType : public LeafNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		enum ValueType {
 			Integer, //%
@@ -283,6 +304,7 @@ class BasicType : public LeafNode {
 };
 
 class NamedType : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		NamedType(const CodePoint &cp) : Node(cp), mIdentifier(0) { }
 		~NamedType() { if (mIdentifier) delete mIdentifier; }
@@ -297,6 +319,7 @@ class NamedType : public Node {
 };
 
 class ArrayType : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ArrayType(const CodePoint &cp) : Node(cp), mParentType(0), mDimensions(0) { }
 		~ArrayType() { if (mParentType) delete mParentType; }
@@ -315,6 +338,7 @@ class ArrayType : public Node {
 };
 
 class Variable : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Variable(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0) { }
 		~Variable() { if (mIdentifier) delete mIdentifier; if (mType) delete mType; }
@@ -334,6 +358,7 @@ class Variable : public Node {
 
 
 class ExpressionNode : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		enum Op {
 			opAssign,
@@ -377,22 +402,9 @@ class ExpressionNode : public Node {
 		Node *mOperand;
 };
 
-class List : public Node {
-	public:
-		List(const CodePoint &cp) : Node(cp) { }
-		~List() { qDeleteAll(mItems); }
-		Type type() const { return ntList; }
-		int childNodeCount() const { return mItems.size(); }
-		Node *childNode(int n) const { return mItems.at(n); }
-		void appendItem(Node *n) { mItems.append(n); }
-		QList<Node*> items() const { return mItems; }
-		void setItems(const QList<Node*> &items) { mItems = items; }
-		void takeAll() { mItems.clear(); }
-	protected:
-		QList<Node*> mItems;
-};
 
 class Expression : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		enum Associativity {
 			LeftToRight,
@@ -416,7 +428,24 @@ class Expression : public Node {
 		Associativity mAssociativity;
 };
 
+class List : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		List(const CodePoint &cp) : Node(cp) { }
+		~List() { qDeleteAll(mItems); }
+		Type type() const { return ntList; }
+		int childNodeCount() const { return mItems.size(); }
+		Node *childNode(int n) const { return mItems.at(n); }
+		void appendItem(Node *n) { mItems.append(n); }
+		QList<Node*> items() const { return mItems; }
+		void setItems(const QList<Node*> &items) { mItems = items; }
+		void takeAll() { mItems.clear(); }
+	protected:
+		QList<Node*> mItems;
+};
+
 class FunctionCall : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		FunctionCall(const CodePoint &cp) : Node (cp), mFunction(0), mParameters(0) {}
 		~FunctionCall() { if (mFunction) delete mFunction; if (mParameters) delete mParameters; }
@@ -433,6 +462,7 @@ class FunctionCall : public Node {
 };
 
 class KeywordFunctionCall : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		enum KeywordFunction {
 			New,
@@ -444,7 +474,7 @@ class KeywordFunctionCall : public Node {
 
 		KeywordFunctionCall(KeywordFunction type, const CodePoint &cp) : Node (cp), mKeyword(type), mParameters(0) {}
 		~KeywordFunctionCall() { if (mParameters) delete mParameters; }
-		Type type() const { return ntFunctionCall; }
+		Type type() const { return ntKeywordFunctionCall; }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert((n == 0) && "Invalid child node id"); return mParameters; }
 		Node *parameters() const { return mParameters; }
@@ -456,6 +486,7 @@ class KeywordFunctionCall : public Node {
 
 
 class ArraySubscript : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ArraySubscript(const CodePoint &cp) : Node (cp), mArray(0), mSubscript(0) {}
 		~ArraySubscript() { if (mArray) delete mArray; if (mSubscript) delete mSubscript; }
@@ -472,6 +503,7 @@ class ArraySubscript : public Node {
 };
 
 class DefaultValue : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		DefaultValue(const CodePoint &cp) : Node (cp), mValueType(0) { }
 		~DefaultValue() { if (mValueType) delete mValueType; }
@@ -486,6 +518,7 @@ class DefaultValue : public Node {
 };
 
 class Unary : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		enum Op {
 			opNot,
@@ -510,6 +543,7 @@ class Unary : public Node {
 };
 
 class VariableDefinition : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		VariableDefinition(const CodePoint &cp) : Node(cp) { }
 		~VariableDefinition();
@@ -530,6 +564,7 @@ class VariableDefinition : public Node {
 };
 
 class ArrayInitialization : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ArrayInitialization(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0), mDimensions(0) { }
 		~ArrayInitialization();
@@ -551,6 +586,7 @@ class ArrayInitialization : public Node {
 
 template <int NT>
 class VariableDefinitionStatement : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		VariableDefinitionStatement(const CodePoint &cp) : Node(cp) { }
 		~VariableDefinitionStatement() { qDeleteAll(mDefinitions); }
@@ -567,8 +603,25 @@ class VariableDefinitionStatement : public Node {
 typedef VariableDefinitionStatement<Node::ntDim> Dim;
 typedef VariableDefinitionStatement<Node::ntGlobal> Global;
 
+class Redim : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		Redim(const CodePoint &cp) : Node(cp) { }
+		~Redim() { qDeleteAll(mArrayInitializations); }
+		Type type() const { return ntRedim; }
+		int childNodeCount() const { return mArrayInitializations.size(); }
+		Node *childNode(int i) const { return mArrayInitializations.at(i); }
+
+		QList<ArrayInitialization*> arrayInitialization() const { return mArrayInitializations; }
+		void setArrayInializations(const QList<ArrayInitialization*> &inits) { mArrayInitializations = inits; }
+
+	private:
+		QList<ArrayInitialization*> mArrayInitializations;
+};
+
 
 class TypeDefinition : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		TypeDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
 		~TypeDefinition() { if (mIdentifier) delete mIdentifier; qDeleteAll(mFields); }
@@ -589,6 +642,7 @@ class TypeDefinition : public BlockNode {
 //Blocks
 //--------------------------------
 class Block : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Block(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
 		~Block() { qDeleteAll(mNodes); }
@@ -604,6 +658,7 @@ class Block : public BlockNode {
 };
 
 class IfStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		IfStatement(const CodePoint &start, const CodePoint &end) :
 			BlockNode(start, end), mCondition(0), mBlock(0), mElse(0) { }
@@ -626,6 +681,7 @@ class IfStatement : public BlockNode {
 
 template <Node::Type NT, bool CondBeforeBlock>
 class SingleConditionBlockStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		SingleConditionBlockStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mCondition(0), mBlock(0) { }
 		~SingleConditionBlockStatement() { if (mCondition) delete mCondition; if (mBlock) delete mBlock; }
@@ -646,6 +702,7 @@ typedef SingleConditionBlockStatement<Node::ntWhileStatement, true> WhileStateme
 typedef SingleConditionBlockStatement<Node::ntRepeatUntilStatement, false> RepeatUntilStatement;
 
 class RepeatForeverStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		RepeatForeverStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mBlock(0) {}
 		~RepeatForeverStatement() {}
@@ -660,6 +717,7 @@ class RepeatForeverStatement : public BlockNode {
 };
 
 class ForToStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ForToStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mFrom(0), mTo(0), mStep(0), mBlock(0) { }
 		~ForToStatement();
@@ -671,6 +729,8 @@ class ForToStatement : public BlockNode {
 		void setFrom(Node *n) { mFrom = n; }
 		Node *to() const { return mTo; }
 		void setTo(Node *n) { mTo = n; }
+		Node *step() const { return mStep; }
+		void setStep(Node *n) { mStep = n; }
 		Node *block() const { return mBlock; }
 		void setBlock(Node *n) { mBlock = n; }
 	protected:
@@ -681,6 +741,7 @@ class ForToStatement : public BlockNode {
 };
 
 class ForEachStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ForEachStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mContainer(0), mBlock(0) { }
 		~ForEachStatement();
@@ -701,6 +762,7 @@ class ForEachStatement : public BlockNode {
 };
 
 class SelectStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		SelectStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mDefault(0) { }
 		~SelectStatement();
@@ -721,11 +783,12 @@ class SelectStatement : public BlockNode {
 		Node *mDefault;
 };
 
-class Case : public BlockNode {
+class SelectCase : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		Case(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mValue(0), mBlock(0) { }
-		~Case();
-		Type type() const { return ntCase; }
+		SelectCase(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mValue(0), mBlock(0) { }
+		~SelectCase();
+		Type type() const { return ntSelectCase; }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const { assert("Invalid child node id" && n >= 0 && n < 2); return n == 0 ? mValue : mBlock; }
 
@@ -739,23 +802,25 @@ class Case : public BlockNode {
 };
 
 class Const : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		Const(const CodePoint &cp) : Node(cp), mVariable(0), mValue(0) { }
-		~Const() { if (mVariable) delete mVariable; if (mValue) delete mValue; }
+		Const(const CodePoint &cp) : Node(cp), mIdentifier(0), mValue(0) { }
+		~Const() { if (mIdentifier) delete mIdentifier; if (mValue) delete mValue; }
 		Type type() const { return ntConst; }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const;
 
-		Node *variable() const { return mVariable; }
-		void setVariable(Node *var) { mVariable = var; }
+		Node *identifier() const { return mIdentifier; }
+		void setIdentifier(Node *var) { mIdentifier = var; }
 		Node *value() const { return mValue; }
 		void setValue(Node *val) { mValue = val; }
 	protected:
-		Node *mVariable;
+		Node *mIdentifier;
 		Node *mValue;
 };
 
 class FunctionDefinition : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		FunctionDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mIdentifier(0), mParameterList(0), mReturnType(0), mBlock(0) { }
 		~FunctionDefinition();
@@ -781,6 +846,7 @@ class FunctionDefinition : public BlockNode {
 
 template <Node::Type NT>
 class GotoT : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		GotoT(const QString &label, const CodePoint &cp) : Node(cp), mLabel(label) { }
 		~GotoT() { if (mLabel) delete mLabel; }
@@ -798,24 +864,22 @@ typedef GotoT<Node::ntGoto> Goto;
 typedef GotoT<Node::ntGosub> Gosub;
 
 class Program : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Program() : Node() { }
 		~Program();
 		Type type() const { return ntProgram; }
-		int childNodeCount() const { return mConstants.size() + mFunctionDefinitions.size() + mTypeDefinitions.size() + 1; }
+		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + 1; }
 		Node *childNode(int n) const;
 
 
 		Node *mainBlock() const { return mMainBlock; }
 		void setMainBlock(Node *n) { mMainBlock = n; }
-		const QList<Const*> &constants() const { return mConstants; }
-		void setConstants(const QList<Const*> &constants) { mConstants = constants; }
 		const QList<FunctionDefinition*> &functionDefinitions() const { return mFunctionDefinitions; }
 		void setFunctionDefinitions(const QList<FunctionDefinition*> funcDefs) { mFunctionDefinitions = funcDefs; }
 		const QList<TypeDefinition*> &typeDefitions() const { return mTypeDefinitions; }
 		void setTypeDefinitions(const QList<TypeDefinition*> typeDefs) { mTypeDefinitions = typeDefs; }
 	private:
-		QList<Const*> mConstants;
 		QList<FunctionDefinition*> mFunctionDefinitions;
 		QList<TypeDefinition*> mTypeDefinitions;
 		Node *mMainBlock;

@@ -4,7 +4,8 @@ namespace WarningCodes {
 	enum WarningCode {
 		wcUselessLineIgnored,
 		wcFunctionReturnTypeDefinedTwice,
-		wcVariableTypeDefinedTwice
+		wcVariableTypeDefinedTwice,
+		wcNextVariableIgnored
 	};
 
 }

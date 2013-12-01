@@ -1,4 +1,6 @@
 #include "abstractsyntaxtree.h"
+#include "astvisitor.h"
+
 #include <QDebug>
 #include <QByteArray>
 #include <QFile>
@@ -89,6 +91,51 @@ Node *Variable::childNode(int n) {
 			return 0;
 	}
 }
+
+NODE_ACCEPT_VISITOR_DEF(Integer)
+NODE_ACCEPT_VISITOR_DEF(Float)
+NODE_ACCEPT_VISITOR_DEF(String)
+
+NODE_ACCEPT_VISITOR_DEF(Identifier)
+NODE_ACCEPT_VISITOR_DEF(Label)
+NODE_ACCEPT_VISITOR_DEF(Return)
+NODE_ACCEPT_VISITOR_DEF(Exit)
+NODE_ACCEPT_VISITOR_DEF(DefaultType)
+NODE_ACCEPT_VISITOR_DEF(BasicType)
+NODE_ACCEPT_VISITOR_DEF(NamedType)
+NODE_ACCEPT_VISITOR_DEF(ArrayType)
+NODE_ACCEPT_VISITOR_DEF(Variable)
+NODE_ACCEPT_VISITOR_DEF(ExpressionNode)
+NODE_ACCEPT_VISITOR_DEF(Expression)
+NODE_ACCEPT_VISITOR_DEF(List)
+NODE_ACCEPT_VISITOR_DEF(FunctionCall)
+NODE_ACCEPT_VISITOR_DEF(KeywordFunctionCall)
+NODE_ACCEPT_VISITOR_DEF(ArraySubscript)
+NODE_ACCEPT_VISITOR_DEF(DefaultValue)
+NODE_ACCEPT_VISITOR_DEF(Unary)
+NODE_ACCEPT_VISITOR_DEF(VariableDefinition)
+NODE_ACCEPT_VISITOR_DEF(ArrayInitialization)
+NODE_ACCEPT_VISITOR_DEF(Dim)
+NODE_ACCEPT_VISITOR_DEF(Global)
+NODE_ACCEPT_VISITOR_DEF(Redim)
+NODE_ACCEPT_VISITOR_DEF(TypeDefinition)
+NODE_ACCEPT_VISITOR_DEF(Block)
+NODE_ACCEPT_VISITOR_DEF(IfStatement)
+NODE_ACCEPT_VISITOR_DEF(WhileStatement)
+NODE_ACCEPT_VISITOR_DEF(RepeatUntilStatement)
+NODE_ACCEPT_VISITOR_DEF(RepeatForeverStatement)
+NODE_ACCEPT_VISITOR_DEF(ForToStatement)
+NODE_ACCEPT_VISITOR_DEF(ForEachStatement)
+NODE_ACCEPT_VISITOR_DEF(SelectStatement)
+NODE_ACCEPT_VISITOR_DEF(SelectCase)
+NODE_ACCEPT_VISITOR_DEF(Const)
+NODE_ACCEPT_VISITOR_DEF(FunctionDefinition)
+NODE_ACCEPT_VISITOR_DEF(Goto)
+NODE_ACCEPT_VISITOR_DEF(Gosub)
+NODE_ACCEPT_VISITOR_DEF(Program)
+
+
+
 
 
 QString ExpressionNode::opToString(ExpressionNode::Op op) {
@@ -242,7 +289,7 @@ Node *ArrayInitialization::childNode(int n) const {
 Node *Const::childNode(int n) const {
 	switch (n) {
 		case 0:
-			return mVariable;
+			return mIdentifier;
 		case 1:
 			return mValue;
 		default:
@@ -267,14 +314,11 @@ Node *SelectStatement::childNode(int n) const {
 
 Program::~Program() {
 	qDeleteAll(mFunctionDefinitions);
-	qDeleteAll(mConstants);
 	qDeleteAll(mTypeDefinitions);
 }
 
 Node *Program::childNode(int n) const {
 	assert("Invalid child node id" && (n >= 0 && n < childNodeCount()));
-	if (n < mConstants.size()) return mConstants.at(n);
-	n -= mConstants.size();
 	if (n < mTypeDefinitions.size()) return mTypeDefinitions.at(n);
 	n -= mTypeDefinitions.size();
 	if (n < mFunctionDefinitions.size()) return mFunctionDefinitions.at(n);

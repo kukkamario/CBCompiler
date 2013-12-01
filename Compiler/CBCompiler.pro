@@ -94,7 +94,9 @@ SOURCES += main.cpp \
     valuetypesymbol.cpp \
     customdatatypedefinitions.cpp \
     customvaluetype.cpp \
-    astvisitor.cpp
+    astvisitor.cpp \
+    symbolcollector.cpp \
+    typeresolver.cpp
 
 HEADERS += \
     lexer.h \
@@ -142,4 +144,6 @@ HEADERS += \
     customdatatypedefinitions.h \
     customvaluetype.h \
     codepoint.h \
-    astvisitor.h
+    astvisitor.h \
+    symbolcollector.h \
+    typeresolver.h
