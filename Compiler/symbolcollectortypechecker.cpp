@@ -273,7 +273,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::Unary *s) {
 	return r;
 }
 
-ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCallOrArraySubscript *s) {
+ValueType *SymbolCollectorTypeChecker::typeCheck(ast::FunctionCall *s) {
 	mLine = s->mLine;
 	mFile = s->mFile;
 	Symbol *sym = mScope->find(s->mName);
@@ -485,22 +485,22 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 	mScope = globalScope;
 	mLine = func->mLine;
 	mFile = func->mFile;
-	Symbol *sym = mScope->find(func->mName);
+	Symbol *sym = mScope->find(func->mIdentifier);
 	FunctionSymbol *funcSym = 0;
 	if (sym) {
 		if (sym->type() != Symbol::stFunctionOrCommand) {
-			emit error(ErrorCodes::ecSymbolAlreadyDefinedWithDifferentType, tr("Symbol \"%1\" already defined").arg(func->mName), mLine, mFile);
+			emit error(ErrorCodes::ecSymbolAlreadyDefinedWithDifferentType, tr("Symbol \"%1\" already defined").arg(func->mIdentifier), mLine, mFile);
 			return 0;
 		}
 		funcSym = static_cast<FunctionSymbol*>(sym);
 	}
 	else {
-		funcSym = new FunctionSymbol(func->mName);
+		funcSym = new FunctionSymbol(func->mIdentifier);
 		globalScope->addSymbol(funcSym);
 	}
 
 	//Function local scope
-	Scope *funcScope = new Scope(func->mName, globalScope);
+	Scope *funcScope = new Scope(func->mIdentifier, globalScope);
 	mScope = funcScope;
 	QList<CBFunction::Parameter> paramList;
 	bool valid = true;
@@ -525,20 +525,20 @@ CBFunction *SymbolCollectorTypeChecker::checkFunctionDefinitionAndAddToGlobalSco
 	ValueType *retType = findValueType(func->mRetType, mLine, mFile);
 	if (!retType) return 0;
 
-	CBFunction *function = new CBFunction(func->mName, retType, paramList, funcScope, mLine, mFile);
+	CBFunction *function = new CBFunction(func->mIdentifier, retType, paramList, funcScope, mLine, mFile);
 
 	//Exactly same function overload already defined
 	Function *otherFunction = 0;
 	if ((otherFunction = funcSym->exactMatch(function->paramTypes()))) {
 		if (otherFunction->isRuntimeFunction()) {
-			emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined in the runtime").arg(func->mName), mLine, mFile);
+			emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined in the runtime").arg(func->mIdentifier), mLine, mFile);
 		}
 		else {
 			if (otherFunction->line() && !otherFunction->file().isEmpty()) {
-				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined at line %2 in file \"%3\"").arg(func->mName, QString::number(otherFunction->line()), otherFunction->file()), mLine, mFile);
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined at line %2 in file \"%3\"").arg(func->mIdentifier, QString::number(otherFunction->line()), otherFunction->file()), mLine, mFile);
 			}
 			else {
-				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined").arg(func->mName), mLine, mFile);
+				emit error(ErrorCodes::ecFunctionAlreadyDefined, tr("Function \"%1\" already defined").arg(func->mIdentifier), mLine, mFile);
 			}
 		}
 		return 0;

@@ -28,11 +28,11 @@ class Parser : public QObject
 		 */
 		bool success() {return mStatus == Ok;}
 
-		ast::ConstDefinition *tryConstDefinition(TokIterator &i);
-		ast::GlobalDefinition *tryGlobalDefinition(TokIterator &i);
-		QString tryVariableTypeDefinition(TokIterator &i);
-		QString tryVariableTypeMark(TokIterator &i);
-		QString tryVariableAsType(TokIterator &i);
+		ast::Const *tryConstDefinition(TokIterator &i);
+		ast::Global *tryGlobalDefinition(TokIterator &i);
+		ast::Node *tryVariableTypeDefinition(TokIterator &i);
+		ast::Node *tryVariableTypeMark(TokIterator &i);
+		ast::Node *tryVariableAsType(TokIterator &i);
 		ast::Node *tryReturn(TokIterator &i);
 		ast::TypeDefinition *tryTypeDefinition(TokIterator &i);
 		ast::Variable *expectVariable(TokIterator &i);
@@ -40,21 +40,24 @@ class Parser : public QObject
 		ast::Node *trySelectStatement(TokIterator &i);
 		ast::Node *tryGotoGosubAndLabel(TokIterator &i);
 		ast::Node *tryRedim(TokIterator &i);
-		void expectVariable(ast::Variable *var, TokIterator &i);
 		ast::Node *tryDim(TokIterator &i);
 		ast::Node *tryIfStatement(TokIterator &i);
+		ast::Node *expectIfStatementNoKeyword(const CodePoint& startCp, TokIterator &i);
 		ast::Node *expectElseIfStatement(TokIterator &i);
 		ast::Node *tryWhileStatement(TokIterator &i);
 		ast::Node *tryRepeatStatement(TokIterator &i);
 		ast::Node *tryForStatement(TokIterator &i);
-		ast::Node *tryFunctionOrCommandCallOrArraySubscriptAssignment(TokIterator &i);
-		ast::Block expectBlock(TokIterator &i);
-		ast::Block expectInlineBlock(TokIterator &i);
+		ast::Node *expectBlock(TokIterator &i);
+		ast::Node *expectInlineBlock(TokIterator &i);
 
 		ast::FunctionDefinition *tryFunctionDefinition(TokIterator &i);
-		ast::FunctionParametreDefinition expectFunctionParametreDefinition(TokIterator &i);
+
+		ast::Node *expectExpressionList(TokIterator &i);
+
+		ast::Node *expectVariableDefinitionList(TokIterator &i);
 
 		ast::Node *expectExpression(TokIterator &i);
+		ast::Node *expectAssignementExpression(TokIterator &i);
 		ast::Node *expectLogicalOrExpression(TokIterator &i);
 		ast::Node *expectLogicalAndExpression(TokIterator &i);
 		ast::Node *expectEqualityExpression(TokIterator &i);
@@ -64,15 +67,23 @@ class Parser : public QObject
 		ast::Node *expectMultiplicativeExpression(TokIterator &i);
 		ast::Node *expectPowExpression(TokIterator &i);
 		ast::Node *expectUnaryExpession(TokIterator &i);
+		ast::Node *expectCallOrArraySubscriptExpression(TokIterator &i);
 		ast::Node *expectPrimaryExpression(TokIterator &i);
-		ast::Node *tryAssignmentExpression(TokIterator &i);
-		QString expectIdentifier(TokIterator &i);
-		QString expectIdentifierAfter(TokIterator &i, const QString &after);
+		ast::Identifier *expectIdentifier(TokIterator &i);
+		ast::Node *expectIdentifierAfter(TokIterator &i, const QString &after);
+
+		bool expectLeftParenthese(TokIterator &i);
+		bool expectRightParenthese(TokIterator &i);
 
 		ast::Node *expectDefinitionOfVariableOrArray(TokIterator &i);
 
+		ast::Node *expectPrimaryTypeDefinition(TokIterator &i);
+		ast::Node *expectArrayTypeDefinition(TokIterator &i);
+		ast::Node *expectVariableTypeDefinition(TokIterator &i);
 
 		void expectEndOfStatement(TokIterator &i);
+
+		bool variableTypesAreEqual(ast::Node *a, ast::Node *b);
 	private:
 		enum Status {
 			Error,
@@ -82,13 +93,9 @@ class Parser : public QObject
 
 		Status mStatus;
 		Settings mSettings;
-
-		QString mStringValueTypeName;
-		QString mFloatValueTypeName;
-		QString mIntegerValueTypeName;
 	signals:
-		void error(int code, QString msg, int line, QString file);
-		void warning(int code, QString msg, int line, QString file);
+		void error(int code, QString msg, CodePoint cp);
+		void warning(int code, QString msg, CodePoint cp);
 };
 
 #endif // PARSER_H

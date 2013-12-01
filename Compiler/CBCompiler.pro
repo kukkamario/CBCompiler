@@ -93,7 +93,8 @@ SOURCES += main.cpp \
     typevaluetype.cpp \
     valuetypesymbol.cpp \
     customdatatypedefinitions.cpp \
-    customvaluetype.cpp
+    customvaluetype.cpp \
+    astvisitor.cpp
 
 HEADERS += \
     lexer.h \
@@ -139,4 +140,6 @@ HEADERS += \
     typevaluetype.h \
     valuetypesymbol.h \
     customdatatypedefinitions.h \
-    customvaluetype.h
+    customvaluetype.h \
+    codepoint.h \
+    astvisitor.h

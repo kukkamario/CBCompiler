@@ -22,6 +22,8 @@ enum ErrorCode {
 	ecExpectingVarType,
 	ecExpectingLeftParenthese,
 	ecExpectingRightParenthese,
+	ecExpectingLeftSquareBracket,
+	ecExpectingRightSquareBracket,
 	ecExpectingPrimaryExpression,
 	ecExpectingEndOfRepeat,
 	ecExpectingEndFunction,
