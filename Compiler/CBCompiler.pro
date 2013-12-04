@@ -83,7 +83,6 @@ SOURCES += main.cpp \
     typesymbol.cpp \
     typepointervaluetype.cpp \
     symbolcollectortypechecker.cpp \
-    arraysymbol.cpp \
     cbfunction.cpp \
     functioncodegenerator.cpp \
     expressioncodegenerator.cpp \
@@ -96,7 +95,9 @@ SOURCES += main.cpp \
     customvaluetype.cpp \
     astvisitor.cpp \
     symbolcollector.cpp \
-    typeresolver.cpp
+    typeresolver.cpp \
+    valuetypecollection.cpp \
+    arrayvaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -130,7 +131,6 @@ HEADERS += \
     typesymbol.h \
     typepointervaluetype.h \
     symbolcollectortypechecker.h \
-    arraysymbol.h \
     cbfunction.h \
     functioncodegenerator.h \
     expressioncodegenerator.h \
@@ -146,4 +146,6 @@ HEADERS += \
     codepoint.h \
     astvisitor.h \
     symbolcollector.h \
-    typeresolver.h
+    typeresolver.h \
+    valuetypecollection.h \
+    arrayvaluetype.h

@@ -25,12 +25,12 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		mReturnValue = 0;
 	}
 	else {
-		mReturnValue = mRuntime->findValueType(retTy);
+		mReturnValue = mRuntime->valueTypeCollection().valueTypeForLLVMType(retTy);
 		if (!mReturnValue) return false;
 	}
 	mName = name.toLower();
 	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
-		ValueType *paramType = mRuntime->findValueType(*i);
+		ValueType *paramType = mRuntime->valueTypeCollection().valueTypeForLLVMType(*i);
 		if (paramType) {
 			mParamTypes.append(paramType);
 		}

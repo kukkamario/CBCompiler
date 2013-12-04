@@ -12,16 +12,17 @@ class TypeResolver : public QObject{
 	public:
 		TypeResolver(Runtime *runtime);
 		ValueType *resolve(ast::Node *type);
-		ValueType *resolve(ast::ArrayType *arrTy);
-		ValueType *resolve(ast::DefaultType *defaultTy);
-		ValueType *resolve(ast::NamedType *namedTy);
-		ValueType *resolve(ast::BasicType *basicTy);
 	signals:
 		void error(int code, QString msg, CodePoint cp);
 		void warning(int code, QString msg, CodePoint cp);
 
 	private:
 		Runtime *mRuntime;
+
+		QString *resolve(ast::ArrayType *arrTy);
+		QString *resolve(ast::DefaultType *defaultTy);
+		QString *resolve(ast::NamedType *namedTy);
+		QString *resolve(ast::BasicType *basicTy);
 };
 
 #endif // TYPERESOLVER_H

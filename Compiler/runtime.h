@@ -7,6 +7,8 @@
 #include <QMap>
 #include <QMultiMap>
 #include <QHash>
+#include "valuetypecollection.h"
+#include "codepoint.h"
 
 class IntValueType;
 class StringValueType;
@@ -53,9 +55,6 @@ class Runtime : public QObject {
 		TypePointerCommonValueType *typePointerCommonValueType() const {return mTypePointerCommonValueType;}
 		TypeValueType *typeValueType() const { return mTypeValueType; }
 
-		ValueType *findValueType(ValueType::eType valType);
-		ValueType *findValueType(llvm::Type *llvmType);
-
 		llvm::Function *allocatorFunction() const { return mAllocatorFunction; }
 		llvm::Function *freeFunction() const { return mFreeFunction; }
 
@@ -64,6 +63,8 @@ class Runtime : public QObject {
 		llvm::Type *typeMemberLLVMType() const { return mTypeMemberLLVMType; }
 		llvm::PointerType *typeMemberPointerLLVMType() const { return mTypeMemberLLVMType->getPointerTo(); }
 
+		const ValueTypeCollection &valueTypeCollection() const { return mValueTypeCollection; }
+		ValueTypeCollection &valueTypeCollection() { return mValueTypeCollection; }
 
 	private:
 		bool loadRuntimeFunctions();
@@ -73,12 +74,10 @@ class Runtime : public QObject {
 		bool isFreeFuntionValid();
 		bool loadFunctionMapping(const QString &functionMapping);
 		bool loadCustomDataTypes(const QString &customDataTypes);
-		bool generateLLVMValueTypeMapping();
 
 		bool mValid;
 		llvm::Module *mModule;
 		QList<RuntimeFunction*> mFunctions;
-		QList<ValueType*> mValueTypes;
 		llvm::Function *mCBMain;
 		llvm::Function *mCBInitialize;
 
@@ -90,7 +89,8 @@ class Runtime : public QObject {
 		BooleanValueType *mBooleanValueType;
 		TypeValueType *mTypeValueType;
 		TypePointerCommonValueType *mTypePointerCommonValueType;
-		QMap<ValueType::eType, ValueType *> mValueTypeEnum;
+
+		ValueTypeCollection mValueTypeCollection;
 
 		llvm::DataLayout *mDataLayout;
 
@@ -101,12 +101,9 @@ class Runtime : public QObject {
 		llvm::Type *mTypeMemberLLVMType;
 
 		QMultiMap<QString, QString> mFunctionMapping;
-
-		QHash<llvm::Type*, ValueType *> mLLVMValueTypeMapping;
-		QList<CustomValueType *> mCustomValueTypes;
 	signals:
-		void error(int code, QString msg, int line, const QString &file);
-		void warning(int code, QString msg, int line, const QString &file);
+		void error(int code, QString msg, CodePoint cp);
+		void warning(int code, QString msg, CodePoint cp);
 };
 
 #endif // RUNTIME_H
