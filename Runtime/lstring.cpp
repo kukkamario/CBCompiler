@@ -795,7 +795,3 @@ std::ostream &operator <<(std::ostream &stream, const LString &str) {
 	return stream;
 }
 
-
-
-#endif
-

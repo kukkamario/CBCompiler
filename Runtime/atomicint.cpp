@@ -36,3 +36,5 @@ void atomicThreadFenceAcquire() {
 int atomicLoad(AtomicInt &i) {
 	return i;
 }
+
+#endif
