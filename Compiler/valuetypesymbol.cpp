@@ -1,13 +1,13 @@
 #include "valuetypesymbol.h"
 #include "valuetype.h"
 
-ValueTypeSymbol::ValueTypeSymbol(const QString &name, QString f, int line) :
-	Symbol(name, f, line){
+ValueTypeSymbol::ValueTypeSymbol(const QString &name, const CodePoint &cp) :
+	Symbol(name, cp){
 }
 
 
 DefaultValueTypeSymbol::DefaultValueTypeSymbol(ValueType *valType) :
-	ValueTypeSymbol(valType->name(), QString(), 0),
+	ValueTypeSymbol(valType->name(), CodePoint()),
 	mValueType(valType) {
 }
 

@@ -6,8 +6,8 @@
 #include "typevaluetype.h"
 
 
-TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const QString &file, int line):
-	ValueTypeSymbol(name, file, line),
+TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp):
+	ValueTypeSymbol(name, cp),
 	mGlobalTypeVariable(0),
 	mFirstFieldIndex(0),
 	mMemberSize(0),
@@ -52,11 +52,10 @@ void TypeSymbol::createOpaqueTypes(Builder *b) {
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType, const QString &file, int line) :
+TypeField::TypeField(const QString &name, ValueType *valueType, const CodePoint &cp) :
 	mName(name),
 	mValueType(valueType),
-	mLine(line),
-	mFile(file){
+	mCodePoint(cp) {
 }
 
 QString TypeField::info() const {
