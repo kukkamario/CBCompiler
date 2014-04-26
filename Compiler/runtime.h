@@ -41,8 +41,6 @@ class Runtime : public QObject {
 		bool load(StringPool *strPool, const Settings &settings);
 		llvm::Module *module() {return mModule;}
 		QList<RuntimeFunction*> functions() const {return mFunctions;}
-		const QList<ValueType*> &valueTypes() const {return mValueTypes;}
-		const QList<CustomValueType*> &customValueTypes() const { return mCustomValueTypes; }
 		llvm::Function *cbMain() const {return mCBMain;}
 		llvm::Function *cbInitialize() const { return mCBInitialize; }
 

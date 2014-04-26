@@ -5,7 +5,7 @@
 
 class ArrayValueType : public ValueType {
 	public:
-		ArrayValueType(ValueType *baseType, int dimensions);
+		ArrayValueType(ValueType *baseType, llvm::Type *llvmType, int dimensions);
 		QString name() const;
 		llvm::Type *llvmType() {return mType;}
 		CastCost castingCostToOtherValueType(ValueType *to) const;
@@ -18,7 +18,8 @@ class ArrayValueType : public ValueType {
 
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
-		int size() const { return 4; }
+		int size() const;
+		llvm::PointerType *llvmType() const {return llvm::cast<llvm::PointerType>(mType);}
 	private:
 		ValueType *mBaseValueType;
 		int mDimensions;

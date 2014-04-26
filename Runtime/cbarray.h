@@ -35,7 +35,7 @@ struct CB_ArrayDataHeader : CB_GenericArrayDataHeader {
 	ArraySizeType mSizes[D];
 	ArraySizeType mMults[D];
 	static ArraySizeType headerSize() {
-		return sizeof(ArraySizeType) * (1 /*mFullSize*/ + 1 /* mSizeOfDataType*/ + 1 /* mDimensions*/ + D /*mSizes */ + D /* mMults */ + 1 /*mOffset*/) + sizeof(AtomicInt) /*mRefCounter*/ + sizeof(OffsetType) /* mOffset */;
+		return sizeof(CB_GenericArrayDataHeader) + sizeof(ArraySizeType) * (D /*mSizes */ + D /* mMults */ );
 	}
 };
 

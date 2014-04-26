@@ -1,7 +1,7 @@
 #include "arrayvaluetype.h"
-
-ArrayValueType::ArrayValueType(ValueType *baseType, int dimensions):
-	ValueType(baseType->runtime()) {
+#include "runtime.h"
+ArrayValueType::ArrayValueType(ValueType *baseType, llvm::Type *llvmType, int dimensions):
+	ValueType(baseType->runtime(), llvmType) {
 	assert(dimensions > 0);
 }
 
@@ -11,5 +11,9 @@ QString ArrayValueType::name() const {
 
 
 llvm::Constant *ArrayValueType::defaultValue() const {
-	return llvm::ConstantPointerNull()
+	return llvm::ConstantPointerNull(llvm::cast<llvm::PointerType>(mType));
+}
+
+int ArrayValueType::size() const {
+	return mRuntime->dataLayout().getPointerSize();
 }

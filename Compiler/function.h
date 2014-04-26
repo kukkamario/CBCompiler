@@ -2,8 +2,8 @@
 #define FUNCTION_H
 #include <QList>
 #include <QString>
+#include "codepoint.h"
 class ValueType;
-class QFile;
 class Builder;
 class Value;
 namespace llvm {
@@ -16,7 +16,7 @@ namespace llvm {
 class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
-		Function(const QString &name, const QString &f, int line);
+		Function(const QString &name, const CodePoint &cp);
 		virtual ~Function() { }
 		QString name() const{return mName;}
 
@@ -39,14 +39,13 @@ class Function {
 		const ParamList &paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
 
-		/**
-		 * @return Pointer to file where Function is defined or null.
-		 */
-		const QString &file() const { return mFile; }
+		const QString &file() const { return mCodePoint.file(); }
 		/**
 		 * @return Line number where Function is defined or 0.
 		 */
-		int line() const { return mLine; }
+		int line() const { return mCodePoint.line(); }
+
+		const CodePoint &codePoint() const { return mCodePoint; }
 
 		/**
 		 * @brief isRuntimeFunction
@@ -71,10 +70,9 @@ class Function {
 		QString mName;
 		ValueType *mReturnValue;
 		ParamList mParamTypes;
-		int mRequiredParams;
 		llvm::Function *mFunction;
-		const QString &mFile;
-		int mLine;
+		CodePoint mCodePoint;
+		int mRequiredParams;
 };
 
 #endif // FUNCTION_H

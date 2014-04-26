@@ -26,7 +26,7 @@ class ValueType {
 		virtual ~ValueType() {}
 		virtual QString name() const = 0;
 		virtual bool isNamedValueType() const = 0;
-		llvm::Type *llvmType() {return mType;}
+		llvm::Type *llvmType() const {return mType;}
 		virtual bool isTypePointer() const = 0;
 		virtual bool isNumber() const = 0;
 		virtual llvm::Constant *defaultValue() const = 0;

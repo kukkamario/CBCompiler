@@ -19,7 +19,7 @@ class ChildNodeIterator {
 		ChildNodeIterator(const ChildNodeIterator &i) : mNode(i.mNode), mChildNodeId(i.mChildNodeId) {}
 		~ChildNodeIterator() {}
 
-		Node *node() const { return mNode; }
+		Node *parentNode() const { return mNode; }
 
 		ChildNodeIterator &operator=(const ChildNodeIterator &i) {
 			mChildNodeId = i.mChildNodeId;
@@ -346,13 +346,13 @@ class Variable : public Node {
 		int childNodeCount() const { return 1 + (mType ? 1 : 0); }
 		Node *childNode(int n);
 
-		Node *identifier() const { return mIdentifier; }
-		void setIdentifier(Node *identifier) { mIdentifier = identifier; }
+		Identifier *identifier() const { return mIdentifier; }
+		void setIdentifier(Identifier *identifier) { mIdentifier = identifier; }
 		Node *valueType() const { return mType; }
 		void setValueType(Node *type) { mType = type; }
 		bool hasDefaultType() const { return mType == 0; }
 	protected:
-		Node *mIdentifier;
+		Identifier *mIdentifier;
 		Node *mType;
 };
 
@@ -420,7 +420,7 @@ class Expression : public Node {
 		Node *firstOperand() const { return mFirstOperand; }
 		void setFirstOperand(Node *n) { mFirstOperand = n; }
 		void appendOperation(ExpressionNode *n) { mOperations.append(n); }
-		QList<ExpressionNode*> operations() const { return mOperations; }
+		const QList<ExpressionNode*> &operations() const { return mOperations; }
 		Associativity associativity() const { return mAssociativity; }
 	protected:
 		Node *mFirstOperand;
@@ -437,7 +437,7 @@ class List : public Node {
 		int childNodeCount() const { return mItems.size(); }
 		Node *childNode(int n) const { return mItems.at(n); }
 		void appendItem(Node *n) { mItems.append(n); }
-		QList<Node*> items() const { return mItems; }
+		const QList<Node*> &items() const { return mItems; }
 		void setItems(const QList<Node*> &items) { mItems = items; }
 		void takeAll() { mItems.clear(); }
 	protected:

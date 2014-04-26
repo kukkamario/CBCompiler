@@ -1,7 +1,10 @@
 #include "valuetypecollection.h"
 #include "valuetype.h"
+#include "arrayvaluetype.h"
+#include "runtime.h"
 
-ValueTypeCollection::ValueTypeCollection() {
+ValueTypeCollection::ValueTypeCollection(Runtime *r) :
+mRuntime(r) {
 }
 
 ValueTypeCollection::~ValueTypeCollection() {
@@ -29,4 +32,8 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 	if (i != mArrayMapping.end()) {
 		return i.value();
 	}
+
+	ArrayValueType *valTy = new ArrayValueType(baseValueType, llvm::IntegerType::getInt8PtrTy(mRuntime->module()->getContext()), dimensions);
+	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
+	return valTy;
 }

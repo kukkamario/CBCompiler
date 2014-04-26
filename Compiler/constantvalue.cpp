@@ -14,24 +14,24 @@ int imod(int a, int b) {
 }
 
 ConstantValue::ConstantValue():
-	mType(ValueType::Invalid)
+	mType(Invalid)
 {
 }
 
-ConstantValue::ConstantValue(ValueType::eType t) :
+ConstantValue::ConstantValue(eType t) :
 	mType(t) {
 	switch(t) {
-		case ValueType::Boolean:
+		case Boolean:
 			mData.mBool = false;
-		case ValueType::Byte:
+		case Byte:
 			mData.mByte = 0;
-		case ValueType::Short:
+		case Short:
 			mData.mShort = 0;
-		case ValueType::Integer:
+		case Integer:
 			mData.mInt = 0;
-		case ValueType::Float:
+		case Float:
 			mData.mFloat = 0;
-		case ValueType::String:
+		case String:
 			mData.mString.construct();
 		default:
 			return;
@@ -39,43 +39,43 @@ ConstantValue::ConstantValue(ValueType::eType t) :
 }
 
 ConstantValue::ConstantValue(bool t) :
-	mType(ValueType::Boolean) {
+	mType(Boolean) {
 	mData.mBool = t;
 }
 
 ConstantValue::ConstantValue(int i):
-	mType(ValueType::Integer) {
+	mType(Integer) {
 	mData.mInt = i;
 }
 
 ConstantValue::ConstantValue(double d) :
-	mType(ValueType::Float){
+	mType(Float){
 	mData.mFloat = d;
 }
 
 ConstantValue::ConstantValue(float f) :
-	mType(ValueType::Float){
+	mType(Float){
 	mData.mFloat = f;
 }
 
 ConstantValue::ConstantValue(quint8 b) :
-	mType(ValueType::Byte){
+	mType(Byte){
 	mData.mByte = b;
 }
 
 ConstantValue::ConstantValue(quint16 s) :
-	mType(ValueType::Short){
+	mType(Short){
 	mData.mShort = s;
 }
 
 ConstantValue::ConstantValue(const QString s) :
-	mType(ValueType::String){
+	mType(String){
 	mData.mString.construct(s);
 }
 
 ConstantValue::ConstantValue(const ConstantValue &o) :
 	mType(o.mType) {
-	if (mType == ValueType::String) {
+	if (mType == String) {
 		this->mData.mString.construct();
 		*this->mData.mString = *o.mData.mString;
 	}
@@ -85,14 +85,14 @@ ConstantValue::ConstantValue(const ConstantValue &o) :
 }
 
 ConstantValue::~ConstantValue() {
-	if (mType == ValueType::String) {
+	if (mType == String) {
 		mData.mString.destruct();
 	}
 }
 
 ConstantValue &ConstantValue::operator =(const ConstantValue &v) {
-	if (this->mType == ValueType::String) {
-		if (v.mType == ValueType::String) {
+	if (this->mType == String) {
+		if (v.mType == String) {
 			this->mData.mString = v.mData.mString;
 			return *this;
 		}
@@ -107,17 +107,17 @@ ConstantValue &ConstantValue::operator =(const ConstantValue &v) {
 bool ConstantValue::operator ==(const ConstantValue &o) {
 	if (this->mType != o.mType) return false;
 	switch( this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return this->mData.mBool == o.mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return this->mData.mByte == o.mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return this->mData.mShort == o.mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return this->mData.mInt == o.mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return this->mData.mFloat == o.mData.mFloat;
-		case ValueType::String:
+		case String:
 			return *this->mData.mString == *o.mData.mString;
 		default:
 			return true;
@@ -127,17 +127,17 @@ bool ConstantValue::operator ==(const ConstantValue &o) {
 bool ConstantValue::operator !=(const ConstantValue &o) {
 	if (this->mType != o.mType) return true;
 	switch( this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return this->mData.mBool != o.mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return this->mData.mByte != o.mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return this->mData.mShort != o.mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return this->mData.mInt != o.mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return this->mData.mFloat != o.mData.mFloat;
-		case ValueType::String:
+		case String:
 			return *this->mData.mString != *o.mData.mString;
 		default:
 			return true;
@@ -146,13 +146,13 @@ bool ConstantValue::operator !=(const ConstantValue &o) {
 
 ConstantValue ConstantValue::plus(const ConstantValue &a) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			return abs(a.mData.mInt);
-		case ValueType::Float:
+		case Float:
 			return fabs(a.mData.mFloat);
-		case ValueType::Short:
+		case Short:
 			return a.mData.mShort;
-		case ValueType::Byte:
+		case Byte:
 			return a.mData.mByte;
 		default:
 			return ConstantValue();
@@ -161,13 +161,13 @@ ConstantValue ConstantValue::plus(const ConstantValue &a) {
 
 ConstantValue ConstantValue::minus(const ConstantValue &a) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			return -a.mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return -a.mData.mFloat;
-		case ValueType::Short:
+		case Short:
 			return -a.mData.mShort;
-		case ValueType::Byte:
+		case Byte:
 			return -a.mData.mByte;
 		default:
 			return ConstantValue();
@@ -175,7 +175,7 @@ ConstantValue ConstantValue::minus(const ConstantValue &a) {
 }
 
 ConstantValue ConstantValue::not_(const ConstantValue &a) {
-	if (a.mType == ValueType::TypePointer) {
+	if (a.mType == TypePointer) {
 		return ConstantValue();
 	}
 
@@ -184,83 +184,83 @@ ConstantValue ConstantValue::not_(const ConstantValue &a) {
 
 ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt == b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt == b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt == b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt == b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) == *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat == b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat == b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat == b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat == b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) == *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort == b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort == b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort == b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort == b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) == *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte == b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte == b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte == b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte == b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) == *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString == QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString == QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString == QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString == QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString == *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::TypePointerCommon:
-			if (b.mType == ValueType::TypePointerCommon) { // NULL = NULL
+		case Null:
+			if (b.mType == Null) { // NULL = NULL
 				return true;
 			}
 		default:
@@ -270,83 +270,83 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 
 ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt != b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt != b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt != b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt != b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) != *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat != b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat != b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat != b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat != b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) != *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort != b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort != b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort != b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort != b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) != *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte != b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte != b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte != b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte != b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) != *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString != QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString != QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString != QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString != QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString != *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::TypePointerCommon:
-			if (b.mType == ValueType::TypePointerCommon) {
+		case Null:
+			if (b.mType == Null) {
 				return false;
 			}
 		default:
@@ -356,77 +356,77 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 
 ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt > b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt > b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt > b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt > b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) > *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat > b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat > b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat > b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat > b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) > *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort > b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort > b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort > b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort > b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) > *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte > b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte > b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte > b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte > b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) > *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString > QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString > QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString > QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString > QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString > *b.mData.mString;
 				default:
 					return ConstantValue();
@@ -438,77 +438,77 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 
 ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt >= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt >= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt >= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt >= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) >= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat >= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat >= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat >= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat >= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) >= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort >= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort >= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort >= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort >= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) >= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte >= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte >= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte >= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte >= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) >= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString >= QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString >= QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString >= QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString >= QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString >= *b.mData.mString;
 				default:
 					return ConstantValue();
@@ -520,77 +520,77 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 
 ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt < b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt < b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt < b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt < b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) < *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat < b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat < b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat < b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat < b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) < *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort < b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort < b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort < b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort < b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) < *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte < b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte < b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte < b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte < b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) < *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString < QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString < QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString < QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString < QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString < *b.mData.mString;
 				default:
 					return ConstantValue();
@@ -602,77 +602,77 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 
 ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt <= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt <= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt <= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt <= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) <= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat <= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat <= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat <= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat <= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) <= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort <= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort <= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort <= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort <= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) <= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte <= b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte <= b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte <= b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte <= b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) <= *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString <= QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString <= QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString <= QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString <= QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString <= *b.mData.mString;
 				default:
 					return ConstantValue();
@@ -684,77 +684,77 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 
 ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt + b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt + b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt + b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt + b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mInt) + *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat + b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat + b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat + b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat + b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mFloat) + *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort + b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort + b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort + b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort + b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mShort) + *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte + b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte + b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte + b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte + b.mData.mByte;
-				case ValueType::String:
+				case String:
 					return QString::number(a.mData.mByte) + *b.mData.mString;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::String:
+		case String:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return *a.mData.mString + QString::number(b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return *a.mData.mString + QString::number(b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return *a.mData.mString + QString::number(b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return *a.mData.mString + QString::number(b.mData.mByte);
-				case ValueType::String:
+				case String:
 					return *a.mData.mString + *b.mData.mString;
 				default:
 					return ConstantValue();
@@ -766,54 +766,54 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 
 ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt - b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt - b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt - b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt - b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat - b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat - b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat - b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat - b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort - b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort - b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort - b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort - b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte - b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte - b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte - b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte - b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -825,54 +825,54 @@ ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValu
 
 ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mInt * b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt * b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt * b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt * b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat * b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat * b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat * b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat * b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort * b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort * b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort * b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort * b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte * b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte * b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte * b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte * b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -884,63 +884,63 @@ ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValu
 
 ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mInt / b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mInt / b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			//TODO: Warnings if result is NaN or INF
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mFloat / b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mFloat / b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mFloat / b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mFloat / b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mShort / b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mShort / b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mInt;
-				case ValueType::Float:
+				case Float:
 					return a.mData.mByte / b.mData.mFloat;
-				case ValueType::Short:
+				case Short:
 					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
 					return a.mData.mByte / b.mData.mByte;
 				default:
@@ -953,54 +953,54 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 
 ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return cbPow(a.mData.mInt, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return pow(a.mData.mInt, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return cbPow(a.mData.mInt, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return cbPow(a.mData.mInt, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return pow(a.mData.mFloat, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return pow(a.mData.mFloat, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return pow(a.mData.mFloat, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return pow(a.mData.mFloat, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return cbPow(a.mData.mShort, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return pow(a.mData.mShort, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return cbPow(a.mData.mShort, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return cbPow(a.mData.mShort, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return cbPow(a.mData.mByte, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return pow(a.mData.mByte, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return cbPow(a.mData.mByte, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return cbPow(a.mData.mByte, b.mData.mByte);
 				default:
 					return ConstantValue();
@@ -1012,54 +1012,54 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 
 ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return imod(a.mData.mInt, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return fmod(a.mData.mInt, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return imod(a.mData.mInt, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return imod(a.mData.mInt, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Float:
+		case Float:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return fmod(a.mData.mFloat, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return fmod(a.mData.mFloat, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return fmod(a.mData.mFloat, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return fmod(a.mData.mFloat, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return mod(a.mData.mShort, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return fmod(a.mData.mShort, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return imod(a.mData.mShort, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return imod(a.mData.mShort, b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return mod(a.mData.mByte, b.mData.mInt);
-				case ValueType::Float:
+				case Float:
 					return fmod(a.mData.mByte, b.mData.mFloat);
-				case ValueType::Short:
+				case Short:
 					return imod(a.mData.mByte, b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return imod(a.mData.mByte, b.mData.mByte);
 				default:
 					return ConstantValue();
@@ -1071,35 +1071,35 @@ ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b)
 
 ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return  int((unsigned int)a.mData.mInt >> (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return int((unsigned int)a.mData.mInt >> b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return int((unsigned int)a.mData.mInt >> b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return int(a.mData.mShort >> (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort >> b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort >> b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return int(a.mData.mByte >> (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte >> b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte >> b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -1111,35 +1111,35 @@ ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b)
 
 ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return  int((unsigned int)a.mData.mInt << (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return int((unsigned int)a.mData.mInt << b.mData.mShort);
-				case ValueType::Byte:
+				case Byte:
 					return int((unsigned int)a.mData.mInt << b.mData.mByte);
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return int(a.mData.mShort << (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort << b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort << b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return int(a.mData.mByte << (unsigned int)b.mData.mInt);
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte << b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte << b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -1151,35 +1151,35 @@ ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b)
 
 ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b) {
 	switch (a.mType) {
-		case ValueType::Integer:
+		case Integer:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return  a.mData.mInt >> b.mData.mInt;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mInt >> b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mInt >> b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Short:
+		case Short:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mShort >> b.mData.mInt;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mShort >> b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mShort >> b.mData.mByte;
 				default:
 					return ConstantValue();
 			}
-		case ValueType::Byte:
+		case Byte:
 			switch (b.mType) {
-				case ValueType::Integer:
+				case Integer:
 					return a.mData.mByte >> b.mData.mInt;
-				case ValueType::Short:
+				case Short:
 					return a.mData.mByte >> b.mData.mShort;
-				case ValueType::Byte:
+				case Byte:
 					return a.mData.mByte >> b.mData.mByte;
 				default:
 					return ConstantValue();
@@ -1190,17 +1190,17 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 }
 
 ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
+	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
 	return a.toBool() && b.toBool();
 }
 
 ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
+	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
 	return a.toBool() || b.toBool();
 }
 
 ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b){
-	if (a.mType == ValueType::TypePointerCommon || b.mType == ValueType::TypePointerCommon) return ConstantValue();
+	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
 	return a.toBool() ^ b.toBool();
 }
 
@@ -1210,17 +1210,17 @@ int ConstantValue::cbIntPower(int a, int b) {
 
 QString ConstantValue::toString() const{
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool ? "1" : "0";
-		case ValueType::Byte:
+		case Byte:
 			return QString::number(mData.mByte);
-		case ValueType::Short:
+		case Short:
 			return QString::number(mData.mShort);
-		case ValueType::Integer:
+		case Integer:
 			return QString::number(mData.mInt);
-		case ValueType::Float:
+		case Float:
 			return QString::number(mData.mFloat);
-		case ValueType::String:
+		case String:
 			return *mData.mString;
 		default:
 			return QString();
@@ -1229,17 +1229,17 @@ QString ConstantValue::toString() const{
 
 quint16 ConstantValue::toShort() const{
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return mData.mFloat;
-		case ValueType::String:
+		case String:
 			return mData.mString->toUShort();
 		default:
 			return 0;
@@ -1248,17 +1248,17 @@ quint16 ConstantValue::toShort() const{
 
 quint8 ConstantValue::toByte() const {
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return mData.mFloat;
-		case ValueType::String:
+		case String:
 			return (quint8)mData.mString->toUShort();
 		default:
 			return 0;
@@ -1267,17 +1267,17 @@ quint8 ConstantValue::toByte() const {
 
 float ConstantValue::toFloat() const{
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return mData.mFloat;
-		case ValueType::String:
+		case String:
 			return mData.mString->toFloat();
 		default:
 			return 0;
@@ -1286,17 +1286,17 @@ float ConstantValue::toFloat() const{
 
 int ConstantValue::toInt() const{
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return mData.mByte;
-		case ValueType::Short:
+		case Short:
 			return mData.mShort;
-		case ValueType::Integer:
+		case Integer:
 			return mData.mInt;
-		case ValueType::Float:
+		case Float:
 			return mData.mFloat;
-		case ValueType::String:
+		case String:
 			return mData.mString->toInt();
 		default:
 			return 0;
@@ -1305,17 +1305,17 @@ int ConstantValue::toInt() const{
 
 bool ConstantValue::toBool() const{
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool;
-		case ValueType::Byte:
+		case Byte:
 			return mData.mByte != 0;
-		case ValueType::Short:
+		case Short:
 			return mData.mShort != 0;
-		case ValueType::Integer:
+		case Integer:
 			return mData.mInt != 0;
-		case ValueType::Float:
+		case Float:
 			return bool(mData.mFloat);
-		case ValueType::String:
+		case String:
 			return !mData.mString->isEmpty();
 		default:
 			return false;
@@ -1324,19 +1324,19 @@ bool ConstantValue::toBool() const{
 
 QString ConstantValue::typeName() const {
 	switch(mType) {
-		case ValueType::Integer:
+		case Integer:
 			return "Integer";
-		case ValueType::Float:
+		case Float:
 			return "Float";
-		case ValueType::String:
+		case String:
 			return "String";
-		case ValueType::Byte:
+		case Byte:
 			return "Byte";
-		case ValueType::Short:
+		case Short:
 			return "Short";
-		case ValueType::Boolean:
+		case Boolean:
 			return "Boolean";
-		case ValueType::TypePointerCommon:
+		case Null:
 			return "NULL";
 		default:
 			return "Invalid";
@@ -1345,19 +1345,19 @@ QString ConstantValue::typeName() const {
 
 QString ConstantValue::valueInfo() const {
 	switch(this->mType) {
-		case ValueType::Boolean:
+		case Boolean:
 			return mData.mBool ? "true" : "false";
-		case ValueType::Byte:
+		case Byte:
 			return QString::number(mData.mByte);
-		case ValueType::Short:
+		case Short:
 			return QString::number(mData.mShort);
-		case ValueType::Integer:
+		case Integer:
 			return QString::number(mData.mInt);
-		case ValueType::Float:
+		case Float:
 			return QString::number(mData.mFloat);
-		case ValueType::String:
+		case String:
 			return "\"" + *mData.mString  + "\"";
-		case ValueType::TypePointerCommon:
+		case TypePointerCommon:
 			return "NULL";
 		default:
 			return QString("Invalid constant value");

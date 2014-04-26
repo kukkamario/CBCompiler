@@ -5,13 +5,15 @@
 #include "scope.h"
 #include <QObject>
 class Runtime;
+class ValueType;
+class VariableSymbol;
 class SymbolCollector : public QObject, protected ast::Visitor {
 	Q_OBJECT
 	public:
 		SymbolCollector(Runtime *runtime, Settings *settings);
 		~SymbolCollector();
 
-		void collect(ast::Program *program, Scope *globalScope, Scope *mainScope);
+		bool collect(ast::Program *program, Scope *globalScope, Scope *mainScope);
 
 	private:
 		bool actAfter(ast::Global *global);
@@ -24,8 +26,24 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		bool actBefore(ast::TypeDefinition *typeDef);
 
 		bool createTypeDefinition(ast::Identifier *id);
+		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);
 
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);
+		void functionAlreadyDefinedError(const CodePoint &cp, Function *oldFunctionDef);
+
+
+		VariableSymbol *handleVariableDefinitionAndArrayInitialization(ast::Node *node);
+		VariableSymbol *handleVariableDefinition(ast::VariableDefinition *varDef);
+		VariableSymbol *handleArrayInitialization(ast::ArrayInitialization *arrayInit);
+		QList<VariableSymbol*> handleVariableDefinitionList(ast::Node *node);
+
+		ValueType *resolveValueType(ast::Node *valueType);
+		ValueType *basicValueType(ast::BasicType *basicType);
+		ValueType *namedValueType(ast::NamedType *namedType);
+		ValueType *arrayValueType(ast::ArrayType *arrayType);
+		ValueType *defaultValueType();
+
+		int astListSize(ast::Node *node);
 
 		Settings *mSettings;
 		Scope *mGlobalScope;

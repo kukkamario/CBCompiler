@@ -22,17 +22,14 @@ class ConstantExpressionEvaluator : public QObject {
 
 		void setRuntime(Runtime *runtime);
 		void setGlobalScope(Scope *globalScope);
-		void setCodeFile(const QString &f);
-		void setCodeLine(int l);
 	private:
 		Runtime *mRuntime;
 		Scope* mGlobalScope;
-		QString mFile;
-		int mLine;
-		void errorConstantAlreadyDefinedWithAnotherType(const QString &name);
+		void errorConstantAlreadyDefinedWithAnotherType(const QString &name, const CodePoint &firstDef, const CodePoint &secondDef);
+		bool checkConstantType(ConstantSymbol *symbol, ast::Node *givenType);
 	signals:
-		void error(int code, QString msg, int line, const QString &file);
-		void warning(int code, QString msg, int line, const QString &file);
+		void error(int code, QString msg, const CodePoint &cp);
+		void warning(int code, QString msg, const CodePoint &cp);
 };
 
 #endif // CONSTANTEXPRESSIONEVALUATOR_H

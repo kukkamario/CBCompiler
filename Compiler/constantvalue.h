@@ -5,8 +5,18 @@
 #include "unionwrapper.h"
 class ConstantValue {
 	public:
+		enum Type {
+			Byte,
+			Short,
+			Integer,
+			Float,
+			Boolean,
+			String,
+			Null,
+			Invalid
+		};
+
 		ConstantValue();
-		ConstantValue(ValueType::eType t);
 		ConstantValue(bool t);
 		ConstantValue(int i);
 		ConstantValue(double d);
@@ -19,8 +29,8 @@ class ConstantValue {
 		ConstantValue &operator=(const ConstantValue &v);
 		bool operator== (const ConstantValue &o);
 		bool operator!= (const ConstantValue &o);
-		bool isValid() const{return mType != ValueType::Invalid;}
-		ValueType::eType type() const {return mType;}
+		bool isValid() const{return mType != Invalid;}
+		Type type() const {return mType;}
 
 		static ConstantValue plus(const ConstantValue &a);
 		static ConstantValue minus(const ConstantValue &a);
@@ -55,7 +65,7 @@ class ConstantValue {
 		QString typeName() const;
 		QString valueInfo() const;
 	private:
-		ValueType::eType mType;
+		Type mType;
 		union {
 				bool mBool;
 				int mInt;

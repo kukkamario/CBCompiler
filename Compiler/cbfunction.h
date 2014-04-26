@@ -3,6 +3,8 @@
 #include "function.h"
 #include "constantvalue.h"
 #include <QPair>
+#include "codepoint.h"
+
 class Scope;
 class VariableSymbol;
 
@@ -18,7 +20,7 @@ class CBFunction : public Function {
 				ConstantValue mDefaultValue;
 		};
 
-		CBFunction(const QString & name, ValueType *retValue, const QList<Parameter> &params, Scope *scope, int line, const QString &file);
+		CBFunction(const QString & name, ValueType *retValue, const QList<Parameter> &params, Scope *scope, const CodePoint &cp);
 		void generateFunction(Runtime *runtime);
 		void setScope(Scope *scope);
 		Scope *scope() const {return mScope;}

@@ -5,8 +5,8 @@
 #include "runtime.h"
 #include "builder.h"
 
-CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parameter> &params, Scope *scope, int line, const QString &file):
-	Function(name, file, line),
+CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parameter> &params, Scope *scope, const CodePoint &cp):
+	Function(name, cp),
 	mParams(params),
 	mScope(scope) {
 	mReturnValue = retValue;

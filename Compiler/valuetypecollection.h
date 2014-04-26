@@ -3,10 +3,11 @@
 #include <QMap>
 class ValueType;
 class ArrayValueType;
+class Runtime;
 namespace llvm { class Type; }
 class ValueTypeCollection {
 	public:
-		ValueTypeCollection();
+		ValueTypeCollection(Runtime *r);
 		~ValueTypeCollection();
 		void addValueType(ValueType *valType);
 		ValueType *valueTypeForLLVMType(llvm::Type *type);
@@ -17,6 +18,7 @@ class ValueTypeCollection {
 		QMap<QPair<ValueType*, int> , ValueType *> mArrayMapping;
 		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
 		QMap<QString, ValueType *> mNamedType;
+		Runtime *mRuntime;
 };
 
 #endif // VALUETYPECOLLECTION_H
