@@ -3,10 +3,13 @@
 #include "astvisitor.h"
 #include "settings.h"
 #include "scope.h"
+#include "typeresolver.h"
 #include <QObject>
 class Runtime;
 class ValueType;
 class VariableSymbol;
+class FunctionSymbol;
+class ConstantSymbol;
 class SymbolCollector : public QObject, protected ast::Visitor {
 	Q_OBJECT
 	public:
@@ -16,14 +19,11 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		bool collect(ast::Program *program, Scope *globalScope, Scope *mainScope);
 
 	private:
-		bool actAfter(ast::Global *global);
-
-		bool actBefore(ast::Global *global);
-		bool actBefore(ast::Const *c);
-		bool actBefore(ast::FunctionDefinition *funcDef);
-		bool actBefore(ast::VariableDefinition *def);
-		bool actBefore(ast::ArrayInitialization *arrInit);
-		bool actBefore(ast::TypeDefinition *typeDef);
+		void visit(ast::Global *c);
+		void visit(ast::Const *c);
+		void visit(ast::Dim *c);
+		void visit(ast::Variable *c);
+		void visit(ast::Label *c);
 
 		bool createTypeDefinition(ast::Identifier *id);
 		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);
@@ -31,17 +31,16 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);
 		void functionAlreadyDefinedError(const CodePoint &cp, Function *oldFunctionDef);
 
-
-		VariableSymbol *handleVariableDefinitionAndArrayInitialization(ast::Node *node);
-		VariableSymbol *handleVariableDefinition(ast::VariableDefinition *varDef);
-		VariableSymbol *handleArrayInitialization(ast::ArrayInitialization *arrayInit);
-		QList<VariableSymbol*> handleVariableDefinitionList(ast::Node *node);
+		QList<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
 
 		ValueType *resolveValueType(ast::Node *valueType);
-		ValueType *basicValueType(ast::BasicType *basicType);
-		ValueType *namedValueType(ast::NamedType *namedType);
-		ValueType *arrayValueType(ast::ArrayType *arrayType);
-		ValueType *defaultValueType();
+
+		VariableSymbol *variableDefinition(ast::Node *def, Scope *scope);
+		VariableSymbol *variableDefinition(ast::VariableDefinition *def, Scope *scope);
+		VariableSymbol *variableDefinition(ast::ArrayInitialization *def, Scope *scope);
+
+		VariableSymbol *addVariableSymbol(ast::Identifier *identifier, ValueType *type, Scope *scope);
+		ConstantSymbol *addConstantSymbol(ast::Identifier *identifier, ValueType *type, Scope *scope);
 
 		int astListSize(ast::Node *node);
 
@@ -50,7 +49,12 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		Scope *mMainScope;
 		Scope *mCurrentScope;
 		Runtime *mRuntime;
+		TypeResolver mTypeResolver;
+		bool mValid;
 
+		QMap<ast::FunctionDefinition*, Scope*> mFunctionScopes;
+	private slots:
+		void errorOccured(int, QString, CodePoint);
 	signals:
 		void warning(int code, QString msg, CodePoint codePoint);
 		void error(int code, QString msg, CodePoint codePoint);

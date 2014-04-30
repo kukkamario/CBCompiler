@@ -2,52 +2,6 @@
 #define ASTVISITOR_H
 #include "abstractsyntaxtree.h"
 namespace ast {
-enum fagfagaggae {
-	ntBlock = 0,
-	ntInteger,
-	ntFloat,
-	ntString,
-	ntIdentifier,
-	ntLabel,
-	ntList,
-	ntGoto,
-	ntGosub,
-	ntReturn,
-	ntExit,
-
-	ntDefaultType,
-	ntBasicType,
-	ntNamedType,
-	ntArrayType,
-
-	ntExpression,
-	ntExpressionNode,
-	ntUnary,
-	ntArraySubscript,
-	ntFunctionCall,
-	ntDefaultValue,
-	ntVariable,
-
-	ntIfStatement,
-	ntWhileStatement,
-	ntRepeatForeverStatement,
-	ntRepeatUntilStatement,
-	ntForToStatement,
-	ntForEachStatement,
-	ntSelectStatement,
-	ntCase,
-	ntDefault,
-
-	ntConst,
-	ntDim,
-	ntGlobal,
-	ntVariableDefinition,
-	ntArrayInitialization,
-	ntFunctionDefinition,
-	ntTypeDefinition,
-
-	ntProgram
-};
 
 #define AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT( _NODE_ ) virtual void Visitor::visit(_NODE_ *n);
 #define AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) virtual bool Visitor::actBefore(_NODE_ *n);
@@ -89,6 +43,7 @@ class Visitor {
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(BasicType)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(NamedType)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(ArrayType)
+
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Expression)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(ExpressionNode)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Unary)

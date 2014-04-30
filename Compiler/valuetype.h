@@ -44,6 +44,17 @@ class ValueType {
 
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 
+		virtual ValueType *operatorResultType(int opType, ValueType *operand1, ValueType *operand2) const { return 0; }
+		virtual ValueType *operatorResultType(int opType, ValueType *operand) const { return 0; }
+		bool hasOperator(int opType, ValueType *operand1, ValueType *operand2) const { return operatorResultType(opType, operand1, operand2) != 0; }
+		bool hasOperator(int opType, ValueType *operand) const { return operatorResultType(opType, operand) != 0; }
+		virtual Value generateOperation(int opType, const Value &operand1, const Value &operand2) const {}
+		virtual Value generateOperation(int opType, const Value &operand) const {}
+
+		virtual Value member(Builder *builder, const Value &self, const QString &name) const { return Value(); }
+		virtual ValueType *memberType(const QString &name) const { return 0; }
+		bool hasMember(const QString &name) const { return memberType(name) != 0; }
+
 		llvm::LLVMContext &context();
 		Runtime *runtime() const { return mRuntime; }
 	protected:

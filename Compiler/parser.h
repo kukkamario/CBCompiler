@@ -35,7 +35,8 @@ class Parser : public QObject {
 		ast::Node *tryReturn(TokIterator &i);
 		ast::TypeDefinition *tryTypeDefinition(TokIterator &i);
 		ast::Variable *expectVariable(TokIterator &i);
-		ast::Node *tryVariable(TokIterator &i);
+		ast::Variable *tryVariable(TokIterator &i);
+		ast::Node *expectVariableOrIdentifier(TokIterator &i);
 		ast::Node *trySelectStatement(TokIterator &i);
 		ast::Node *tryGotoGosubAndLabel(TokIterator &i);
 		ast::Node *tryRedim(TokIterator &i);

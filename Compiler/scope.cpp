@@ -40,6 +40,14 @@ Symbol *Scope::find(const QString &name) const{
 	return 0;
 }
 
+Symbol *Scope::findOnlyThisScope(const QString &name) const {
+	SymbolMap::const_iterator i = mSymbols.find(name);
+	if (i != mSymbols.end()) {
+		return i.value();
+	}
+	return 0;
+}
+
 void Scope::writeToStream(QTextStream &s) const {
 	s << "Scope \"" << mName << "\"\n";
 	for (SymbolMap::ConstIterator i = mSymbols.begin(); i != mSymbols.end(); i++) {

@@ -160,7 +160,7 @@ void ConstantExpressionEvaluator::setGlobalScope(Scope *globalScope) {
 
 
 void ConstantExpressionEvaluator::errorConstantAlreadyDefinedWithAnotherType(const QString &name) {
-	emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Constant \"%1\" already defined with another type").arg(name), mLine, mFile);
+	emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Constant \"%1\" already defined with another type").arg(name), mLine, mFile);
 }
 
 bool ConstantExpressionEvaluator::checkConstantType(ConstantSymbol *sym, ast::Node *givenType) {
@@ -194,6 +194,6 @@ bool ConstantExpressionEvaluator::checkConstantType(ConstantSymbol *sym, ast::No
 		}
 		return true;
 	}
-	emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Please, don't use \"As\" with constants... FIXME"));
+	emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Please, don't use \"As\" with constants... FIXME"));
 	return false;
 }

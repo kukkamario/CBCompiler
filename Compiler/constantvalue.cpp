@@ -1208,6 +1208,25 @@ int ConstantValue::cbIntPower(int a, int b) {
 	return cbPow(a, b);
 }
 
+ConstantValue ConstantValue::to(ConstantValue::Type type) {
+	switch(type) {
+		case Boolean:
+			return toBool();
+		case Byte:
+			return toByte();
+		case Short:
+			return toShort();
+		case Integer:
+			return toInt();
+		case Float:
+			return toFloat();
+		case String:
+			return toString();
+		default:
+			assert("Invalid cast" && 0);
+	}
+}
+
 QString ConstantValue::toString() const{
 	switch(this->mType) {
 		case Boolean:

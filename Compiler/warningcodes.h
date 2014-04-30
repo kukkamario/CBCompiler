@@ -5,7 +5,8 @@ namespace WarningCodes {
 		wcUselessLineIgnored,
 		wcFunctionReturnTypeDefinedTwice,
 		wcVariableTypeDefinedTwice,
-		wcNextVariableIgnored
+		wcNextVariableIgnored,
+		wcTypeOfConstantIsIgnored
 	};
 
 }

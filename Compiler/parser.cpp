@@ -174,10 +174,10 @@ ast::Const *Parser::tryConstDefinition(Parser::TokIterator &i) {
 	if (i->type() == Token::kConst) {
 		CodePoint cp = i->codePoint();
 		i++;
-		ast::Node *id = expectVariable(i);
+		ast::Variable *var = expectVariable(i);
 		if (mStatus == Error) return 0;
 		if (i->type() != Token::opEqual) {
-			emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting '=' after constant name, got \"%1\"").arg(i->toString()), i->codePoint());
+			emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting '=' after the constant, got \"%1\"").arg(i->toString()), i->codePoint());
 			mStatus = Error;
 			return 0;
 		}
@@ -185,7 +185,7 @@ ast::Const *Parser::tryConstDefinition(Parser::TokIterator &i) {
 		ast::Node *value = expectExpression(i);
 		if (mStatus == Error) return 0;
 		ast::Const *ret = new ast::Const(cp);
-		ret->setIdentifier(id);
+		ret->setVariable(var);
 		ret->setValue(value);
 		return ret;
 	}
@@ -537,10 +537,10 @@ bool Parser::variableTypesAreEqual(ast::Node *a, ast::Node *b) {
 }
 
 
-ast::Identifier *Parser::expectVariable(Parser::TokIterator &i) {
-	ast::Identifier * var = tryVariable(i);
+ast::Variable *Parser::expectVariable(Parser::TokIterator &i) {
+	ast::Variable* var = tryVariable(i);
 	if (!var) {
-		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting variable, got \"%1\"").arg(i->toString()), i->codePoint());
+		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting a variable, got \"%1\"").arg(i->toString()), i->codePoint());
 		mStatus = Error;
 		return 0;
 	}
@@ -548,7 +548,7 @@ ast::Identifier *Parser::expectVariable(Parser::TokIterator &i) {
 }
 
 
-ast::Node *Parser::tryVariable(Parser::TokIterator &i) {
+ast::Variable *Parser::tryVariable(Parser::TokIterator &i) {
 	if (i->type() != Token::Identifier) {
 		return 0;
 	}
@@ -559,13 +559,32 @@ ast::Node *Parser::tryVariable(Parser::TokIterator &i) {
 	ast::Node *ty = tryVariableTypeDefinition(i);
 	if (mStatus == Error) { delete id; return 0; }
 
-	if (ty) {
-		ast::Variable *var = new ast::Variable(cp);
-		var->setIdentifier(id);
-		var->setType(ty);
-		return var;
+	if (!ty) ty = new ast::DefaultType(cp);
+	ast::Variable *var = new ast::Variable(cp);
+	var->setIdentifier(id);
+	var->setType(ty);
+	return var;
+}
+
+ast::Node *Parser::expectVariableOrIdentifier(Parser::TokIterator &i) {
+	if (i->type() != Token::Identifier) {
+		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting an identifier, got \"%1\"").arg(i->toString()), i->codePoint());
+		mStatus = Error;
+		return 0;
 	}
-	return id;
+	CodePoint cp = i->codePoint();
+	ast::Identifier *id = expectIdentifier(i);
+	if (mStatus == Error) { return 0; }
+	i++;
+	ast::Node *ty = tryVariableTypeDefinition(i);
+	if (mStatus == Error) { delete id; return 0; }
+
+	if (!ty) return id;
+
+	ast::Variable *var = new ast::Variable(cp);
+	var->setIdentifier(id);
+	var->setType(ty);
+	return var;
 }
 
 ast::Node *Parser::trySelectStatement(Parser::TokIterator &i) {
@@ -1242,11 +1261,11 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting a right parenthese, got \"%1\"").arg(i->toString()), i->codePoint());
 					mStatus = Error;
 					delete params;
-					delete p;
 					return 0;
 				}
 				++i;
 
+				expr = 0;
 				ast::FunctionCall *call = new ast::FunctionCall(cp);
 				call->setFunction(p);
 				call->setParameters(params);
@@ -1258,7 +1277,7 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 				ast::Node *params = 0;
 				if (i != Token::RightSquareBracket) {
 					params = expectExpressionList(i);
-					if (mStatus == Error) { delete p; return 0; }
+					if (mStatus == Error) { return 0; }
 				}
 				else {
 					params = new ast::List(i->codePoint());
@@ -1268,7 +1287,6 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 					emit error(ErrorCodes::ecExpectingRightSquareBracket, tr("Expecting a right square bracket, got \"%1\"").arg(i->toString()), i->codePoint());
 					mStatus = Error;
 					delete params;
-					delete p;
 					return 0;
 				}
 				++i;
@@ -1277,6 +1295,28 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 				s->setArray(base);
 				s->setSubscript(params);
 				base = s;
+			}
+			case Token::opDot: {
+				CodePoint cp = i->codePoint();
+				i++;
+				ast::Expression *expr = 0;
+				if (base->type() == ast::Node::ntExpression) {
+					expr = base->cast<ast::Expression>();
+					if (expr->associativity() != ast::Expression::LeftToRight) {
+						expr = 0;
+					}
+				}
+				if (!expr) {
+					expr = new ast::Expression(ast::Expression::LeftToRight, cp);
+					expr->setFirstOperand(base);
+				}
+
+				ast::Node *identifier = expectVariableOrIdentifier(i);
+				ast::ExpressionNode *exprNode = new ast::ExpressionNode(ast::ExpressionNode::opMember, cp);
+
+				exprNode->setOperand(identifier);
+				expr->appendOperation(exprNode);
+				base = expr;
 			}
 			default:
 				return base;
@@ -1326,10 +1366,10 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		case Token::Float: {
 			bool success;
 			float val;
-			if (*i->mBegin == '.') { //leading dot .13123
+			if (*i->begin() == '.') { //leading dot .13123
 				val = ('0' + i->toString()).toFloat(&success);
 			}
-			else if (*(i->mEnd - 1) == '.') { //Ending dot 1231.
+			else if (*(i->end() - 1) == '.') { //Ending dot 1231.
 				val = (i->toString() + '0').toFloat(&success);
 			}
 			else {

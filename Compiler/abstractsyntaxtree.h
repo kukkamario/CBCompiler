@@ -154,7 +154,7 @@ class Node {
 		Node() { }
 		Node(const CodePoint &cp) : mCodePoint(cp) { }
 
-		virtual Type type() const = 0;
+		virtual Type type() = 0;
 		virtual ~Node() { }
 
 		virtual const CodePoint &startCodePoint() const { return mCodePoint; }
@@ -173,6 +173,18 @@ class Node {
 		ChildNodeIterator childNodesEnd() { return ChildNodeIterator(this, childNodeCount()); }
 
 		const char *typeAsString() const;
+
+		template <typename T>
+		T *cast() {
+			assert(this->type() == T::staticType());
+			return static_cast<T*>(this);
+		}
+		template <typename T>
+		const T *cast() const {
+			assert(this->type() == T::staticType());
+			return static_cast<const T*>(this);
+		}
+
 	protected:
 		CodePoint mCodePoint;
 };
@@ -221,7 +233,8 @@ class Literal : public LeafNode {
 	public:
 		Literal(T value, const CodePoint &cp) : LeafNode(cp), mValue(value) { }
 		~Literal() { }
-		Type type() const { return NT; }
+		static Type staticType() { return NT; }
+		Type type() const { return staticType(); }
 		void setValue(T val) { mValue = val; }
 		T value() const { return mValue; }
 
@@ -241,7 +254,8 @@ class IdentifierT : public LeafNode {
 	public:
 		IdentifierT(const QString &name, const CodePoint &cp) : LeafNode(cp), mName(name) { }
 		virtual ~IdentifierT() { }
-		virtual Type type() const { return NT; }
+		static Type staticType() { return NT; }
+		Type type() const { return staticType(); }
 		void setName(const QString &name) { mName = name; }
 		QString name() const { return mName; }
 	protected:
@@ -257,7 +271,8 @@ class Return : public Node {
 	public:
 		Return(const CodePoint &cp) : Node(cp), mValue(0) { }
 		~Return() { if (mValue) delete mValue; }
-		Type type() const { return ntReturn; }
+		static Type staticType() { return ntReturn; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return (mValue != 0) ? 1 : 0; }
 		Node *childNode(int n) const { assert(n == 0); return mValue; }
 
@@ -272,7 +287,7 @@ class Exit : public LeafNode {
 	public:
 		Exit(const CodePoint &cp) : LeafNode(cp) { }
 		~Exit() { }
-		Type type() const { return ntExit; }
+		static Type staticType() { return ntExit; }
 };
 
 //ValueTypes:
@@ -282,7 +297,8 @@ class DefaultType : public LeafNode {
 	public:
 		DefaultType(const CodePoint &cp) : LeafNode(cp) {}
 		~DefaultType() { }
-		Type type() const { return ntDefaultType; }
+		static Type staticType() { return ntDefaultType; }
+		Type type() const { return staticType(); }
 };
 
 class BasicType : public LeafNode {
@@ -296,7 +312,8 @@ class BasicType : public LeafNode {
 
 		BasicType(ValueType ty, const CodePoint &cp) : LeafNode(cp), mValueType(ty) { }
 		~BasicType() { }
-		Type type() const { return ntBasicType; }
+		static Type staticType() { return ntBasicType; }
+		Type type() const { return staticType(); }
 		ValueType valueType() const { return mValueType; }
 		void setValueType(ValueType ty) { mValueType = ty; }
 	protected:
@@ -308,7 +325,8 @@ class NamedType : public Node {
 	public:
 		NamedType(const CodePoint &cp) : Node(cp), mIdentifier(0) { }
 		~NamedType() { if (mIdentifier) delete mIdentifier; }
-		Type type() const { return ntNamedType; }
+		static Type staticType() { return ntNamedType; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node index"); return mIdentifier; }
 
@@ -323,7 +341,8 @@ class ArrayType : public Node {
 	public:
 		ArrayType(const CodePoint &cp) : Node(cp), mParentType(0), mDimensions(0) { }
 		~ArrayType() { if (mParentType) delete mParentType; }
-		Type type() const { return ntArrayType; }
+		static Type staticType() { return ntArrayType; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node index"); return mParentType; }
 
@@ -342,7 +361,8 @@ class Variable : public Node {
 	public:
 		Variable(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0) { }
 		~Variable() { if (mIdentifier) delete mIdentifier; if (mType) delete mType; }
-		Type type() const { return ntVariable; }
+		static Type staticType() { return ntVariable; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + (mType ? 1 : 0); }
 		Node *childNode(int n);
 
@@ -389,7 +409,8 @@ class ExpressionNode : public Node {
 
 		ExpressionNode(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
 		~ExpressionNode() { if (mOperand) delete mOperand; }
-		Type type() const { return ntExpressionNode; }
+		static Type staticType() { return ntExpressionNode; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node id"); return mOperand; }
 
@@ -413,7 +434,8 @@ class Expression : public Node {
 
 		Expression(Associativity as, const CodePoint &cp) : Node(cp), mFirstOperand(0), mAssociativity(as) { }
 		~Expression() { if (mFirstOperand) delete mFirstOperand; qDeleteAll(mOperations); }
-		Type type() const { return ntExpression; }
+		static Type staticType() { return ntExpression; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mOperations.size(); }
 		Node *childNode(int n) const { if (n == 0) return mFirstOperand; return mOperations.at(n - 1); }
 
@@ -433,7 +455,8 @@ class List : public Node {
 	public:
 		List(const CodePoint &cp) : Node(cp) { }
 		~List() { qDeleteAll(mItems); }
-		Type type() const { return ntList; }
+		static Type staticType() { return ntList; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return mItems.size(); }
 		Node *childNode(int n) const { return mItems.at(n); }
 		void appendItem(Node *n) { mItems.append(n); }
@@ -449,7 +472,8 @@ class FunctionCall : public Node {
 	public:
 		FunctionCall(const CodePoint &cp) : Node (cp), mFunction(0), mParameters(0) {}
 		~FunctionCall() { if (mFunction) delete mFunction; if (mParameters) delete mParameters; }
-		Type type() const { return ntFunctionCall; }
+		static Type staticType() { return ntFunctionCall; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const { assert((n == 0 || n == 1) && "Invalid child node id"); if (n == 0) return mFunction; return mParameters; }
 		Node *function() const { return mFunction; }
@@ -474,7 +498,8 @@ class KeywordFunctionCall : public Node {
 
 		KeywordFunctionCall(KeywordFunction type, const CodePoint &cp) : Node (cp), mKeyword(type), mParameters(0) {}
 		~KeywordFunctionCall() { if (mParameters) delete mParameters; }
-		Type type() const { return ntKeywordFunctionCall; }
+		static Type staticType() { return ntKeywordFunctionCall; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert((n == 0) && "Invalid child node id"); return mParameters; }
 		Node *parameters() const { return mParameters; }
@@ -490,7 +515,8 @@ class ArraySubscript : public Node {
 	public:
 		ArraySubscript(const CodePoint &cp) : Node (cp), mArray(0), mSubscript(0) {}
 		~ArraySubscript() { if (mArray) delete mArray; if (mSubscript) delete mSubscript; }
-		Type type() const { return ntFunctionCall; }
+		static Type staticType() { return ntFunctionCall; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const { assert((n == 0 || n == 1) && "Invalid child node id"); if (n == 0) return mArray; return mSubscript; }
 		Node *array() const { return mArray; }
@@ -507,7 +533,8 @@ class DefaultValue : public Node {
 	public:
 		DefaultValue(const CodePoint &cp) : Node (cp), mValueType(0) { }
 		~DefaultValue() { if (mValueType) delete mValueType; }
-		Type type() const { return ntDefaultValue; }
+		static Type staticType() { return ntDefaultValue; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node * childNode(int n) const { assert(n == 0 && "Invalid child node id"); return mValueType; }
 
@@ -530,7 +557,8 @@ class Unary : public Node {
 
 		Unary(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
 		~Unary() { if (mOperand) delete mOperand; }
-		Type type() const { return ntUnary; }
+		static Type staticType() { return ntUnary; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node id"); return mOperand; }
 
@@ -547,7 +575,8 @@ class VariableDefinition : public Node {
 	public:
 		VariableDefinition(const CodePoint &cp) : Node(cp) { }
 		~VariableDefinition();
-		Type type() const { return ntVariableDefinition; }
+		static Type staticType() { return ntVariableDefinition; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 3; }
 		Node *childNode(int n) const;
 
@@ -568,7 +597,8 @@ class ArrayInitialization : public Node {
 	public:
 		ArrayInitialization(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0), mDimensions(0) { }
 		~ArrayInitialization();
-		Type type() const { return ntArrayInitialization; }
+		static Type staticType() { return ntArrayInitialization; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 3; }
 		Node *childNode(int n) const;
 
@@ -590,12 +620,13 @@ class VariableDefinitionStatement : public Node {
 	public:
 		VariableDefinitionStatement(const CodePoint &cp) : Node(cp) { }
 		~VariableDefinitionStatement() { qDeleteAll(mDefinitions); }
-		Type type() const { return NT; }
+		static Type staticType() { return NT; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return mDefinitions.size(); }
 		Node *childNode(int n) const { return mDefinitions.at(n); }
 
 		void appendDefinitions(Node *def) { mDefinitions.append(def); }
-		const QList<Node*> definitions() const { return mDefinitions; }
+		const QList<Node*> &definitions() const { return mDefinitions; }
 		void setDefinitions(const QList<Node*> &defs) { mDefinitions = defs; }
 	protected:
 		QList<Node*> mDefinitions;
@@ -608,7 +639,8 @@ class Redim : public Node {
 	public:
 		Redim(const CodePoint &cp) : Node(cp) { }
 		~Redim() { qDeleteAll(mArrayInitializations); }
-		Type type() const { return ntRedim; }
+		static Type staticType() { return ntRedim; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return mArrayInitializations.size(); }
 		Node *childNode(int i) const { return mArrayInitializations.at(i); }
 
@@ -625,7 +657,8 @@ class TypeDefinition : public BlockNode {
 	public:
 		TypeDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
 		~TypeDefinition() { if (mIdentifier) delete mIdentifier; qDeleteAll(mFields); }
-		Type type() const { return ntTypeDefinition; }
+		static Type staticType() { return ntTypeDefinition; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mFields.size(); }
 		Node *childNode(int n) const { if (n == 0) return mIdentifier; return mFields.at(n - 1); }
 
@@ -646,7 +679,8 @@ class Block : public BlockNode {
 	public:
 		Block(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
 		~Block() { qDeleteAll(mNodes); }
-		Type type() const { return ntBlock; }
+		static Type staticType() { return ntBlock; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return mNodes.size(); }
 		Node *childNode(int n) const { return mNodes.at(n); }
 
@@ -663,7 +697,8 @@ class IfStatement : public BlockNode {
 		IfStatement(const CodePoint &start, const CodePoint &end) :
 			BlockNode(start, end), mCondition(0), mBlock(0), mElse(0) { }
 		~IfStatement();
-		Type type() const { return ntIfStatement; }
+		static Type staticType() { return ntIfStatement; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2 + ((mElse != 0) ? 1 : 0); }
 		Node *childNode(int n) const;
 
@@ -685,7 +720,8 @@ class SingleConditionBlockStatement : public BlockNode {
 	public:
 		SingleConditionBlockStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mCondition(0), mBlock(0) { }
 		~SingleConditionBlockStatement() { if (mCondition) delete mCondition; if (mBlock) delete mBlock; }
-		Type type() const { return NT; }
+		static Type staticType() { return NT; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const {assert((n == 0 || n == 1) && "Invalid child node id"); return (n == CondBeforeBlock) ? mBlock : mCondition;}
 
@@ -706,7 +742,8 @@ class RepeatForeverStatement : public BlockNode {
 	public:
 		RepeatForeverStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mBlock(0) {}
 		~RepeatForeverStatement() {}
-		Type type() const { return ntRepeatUntilStatement; }
+		static Type staticType() { return ntRepeatUntilStatement; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node id"); return mBlock; }
 
@@ -721,7 +758,8 @@ class ForToStatement : public BlockNode {
 	public:
 		ForToStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mFrom(0), mTo(0), mStep(0), mBlock(0) { }
 		~ForToStatement();
-		Type type() const { return ntForToStatement; }
+		static Type staticType() { return ntForToStatement; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 3 + (mStep != 0 ? 1 : 0); }
 		Node *childNode(int n) const;
 
@@ -745,7 +783,8 @@ class ForEachStatement : public BlockNode {
 	public:
 		ForEachStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mContainer(0), mBlock(0) { }
 		~ForEachStatement();
-		Type type() const { return ntForEachStatement; }
+		static Type staticType() { return ntForEachStatement; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 3; }
 		Node *childNode(int n) const;
 
@@ -766,7 +805,8 @@ class SelectStatement : public BlockNode {
 	public:
 		SelectStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mDefault(0) { }
 		~SelectStatement();
-		Type type() const { return ntSelectStatement; }
+		static Type staticType() { return ntSelectStatement; }
+		Type type() const { return staticType(); }
 		int childNodeCount() { return 1 + mCases.size() + (mDefault != 0 ? 1 : 0); }
 		Node *childNode(int n) const;
 
@@ -788,7 +828,8 @@ class SelectCase : public BlockNode {
 	public:
 		SelectCase(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mValue(0), mBlock(0) { }
 		~SelectCase();
-		Type type() const { return ntSelectCase; }
+		static Type staticType() { return ntSelectCase; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const { assert("Invalid child node id" && n >= 0 && n < 2); return n == 0 ? mValue : mBlock; }
 
@@ -804,18 +845,19 @@ class SelectCase : public BlockNode {
 class Const : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		Const(const CodePoint &cp) : Node(cp), mIdentifier(0), mValue(0) { }
+		Const(const CodePoint &cp) : Node(cp), mVariable(0), mValue(0) { }
 		~Const() { if (mIdentifier) delete mIdentifier; if (mValue) delete mValue; }
-		Type type() const { return ntConst; }
+		static Type staticType() { return ntConst; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const;
 
-		Node *identifier() const { return mIdentifier; }
-		void setIdentifier(Node *var) { mIdentifier = var; }
+		Variable *variable() const { return mVariable; }
+		void setVariable(Variable *var) { mVariable = var; }
 		Node *value() const { return mValue; }
 		void setValue(Node *val) { mValue = val; }
 	protected:
-		Node *mIdentifier;
+		Variable *mVariable;
 		Node *mValue;
 };
 
@@ -824,7 +866,8 @@ class FunctionDefinition : public BlockNode {
 	public:
 		FunctionDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mIdentifier(0), mParameterList(0), mReturnType(0), mBlock(0) { }
 		~FunctionDefinition();
-		Type type() const { return ntFunctionDefinition; }
+		static Type staticType() { return ntFunctionDefinition; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 4; }
 		Node *childNode(int n) const;
 
@@ -850,7 +893,8 @@ class GotoT : public Node {
 	public:
 		GotoT(const QString &label, const CodePoint &cp) : Node(cp), mLabel(label) { }
 		~GotoT() { if (mLabel) delete mLabel; }
-		Type type() const { return NT; }
+		static Type staticType() { return NT; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node index"); return mLabel; }
 
@@ -868,7 +912,8 @@ class Program : public Node {
 	public:
 		Program() : Node() { }
 		~Program();
-		Type type() const { return ntProgram; }
+		static Type staticType() { return ntProgram; }
+		Type type() const { return staticType(); }
 		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + 1; }
 		Node *childNode(int n) const;
 

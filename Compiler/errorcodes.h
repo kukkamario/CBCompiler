@@ -48,7 +48,8 @@ enum ErrorCode {
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,
 
-	ecVarAlreadyDefinedWithAnotherType,
+	ecVariableAlreadyDefinedWithAnotherType,
+	ecConstantAlreadyDefinedWithAnotherType,
 	ecVariableTypeDefinedTwice,
 
 	ecParsingFailed,

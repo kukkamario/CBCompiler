@@ -56,6 +56,7 @@ class ConstantValue {
 
 		static int cbIntPower(int a, int b);
 
+		ConstantValue to(Type type);
 		QString toString() const;
 		quint16 toShort() const;
 		quint8 toByte() const;

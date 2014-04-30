@@ -233,7 +233,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 					continue;
 				}
 				if (*i == '=') {
-					addToken(Token(Token::opLessEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
+					addToken(Token(Token::opEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
 					continue;
 				}
 			}

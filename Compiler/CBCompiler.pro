@@ -98,7 +98,8 @@ SOURCES += main.cpp \
     typeresolver.cpp \
     valuetypecollection.cpp \
     arrayvaluetype.cpp \
-    genericarrayvaluetype.cpp
+    genericarrayvaluetype.cpp \
+    typechecker.cpp
 
 HEADERS += \
     lexer.h \
@@ -150,4 +151,5 @@ HEADERS += \
     typeresolver.h \
     valuetypecollection.h \
     arrayvaluetype.h \
-    genericarrayvaluetype.h
+    genericarrayvaluetype.h \
+    typechecker.h

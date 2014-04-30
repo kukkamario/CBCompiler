@@ -10,22 +10,23 @@
 #include <QDebug>
 
 Value::Value():
-	mValueType(0), mValue(0) {
+	mValueType(0), mValue(0), mReference(false) {
 }
 
 Value::Value(const Value &value) :
-	mValueType(value.mValueType), mValue(value.mValue), mConstant(value.mConstant){
+	mValueType(value.mValueType), mValue(value.mValue), mConstant(value.mConstant), mReference(value.mReference) {
 }
 
 Value::Value(const ConstantValue &c, Runtime *r) :
 	mValueType(0),
 	mValue(0),
-	mConstant(c) {
+	mConstant(c),
+	mReference(false) {
 	mValueType = r->findValueType(c.type());
 }
 
-Value::Value(ValueType *t, llvm::Value *v):
-	mValueType(t), mValue(v) {
+Value::Value(ValueType *t, llvm::Value *v, bool reference):
+	mValueType(t), mValue(v), mReference(reference) {
 }
 
 void Value::toLLVMValue(Builder *builder) {
@@ -40,7 +41,7 @@ void Value::dump() const {
 		qDebug("Invalid Value");
 		return;
 	}
-	qDebug() << "Value:" << mValueType->name();
+	qDebug() << "Value:" << mValueType->name() << (isReference() ? " (reference)" : "");
 	if (isConstant())
-	qDebug() << "\t = " << constant().valueInfo();
+		qDebug() << "\t = " << constant().valueInfo();
 }

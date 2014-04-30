@@ -454,7 +454,7 @@ ValueType *SymbolCollectorTypeChecker::typeCheck(ast::TypePtrField *s) {
 
 	const TypeField &field = typePtrVt->typeSymbol()->field(s->mFieldName);
 	if (!s->mFieldType.isEmpty() && field.valueType()->name() != s->mFieldType) {
-		emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Type field \"%1\" is defined with another type at line %2").arg(s->mFieldName, QString::number(field.line())), mLine, mFile);
+		emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Type field \"%1\" is defined with another type at line %2").arg(s->mFieldName, QString::number(field.line())), mLine, mFile);
 		return 0;
 	}
 
@@ -1118,7 +1118,7 @@ ValueType *SymbolCollectorTypeChecker::checkVariable(const QString &name, const 
 				if (!valTy) return 0;
 
 				if (var->valueType() != valTy) {
-					emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Variable already defined with another type"), mLine, mFile);
+					emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Variable already defined with another type"), mLine, mFile);
 					return 0;
 				}
 			}
