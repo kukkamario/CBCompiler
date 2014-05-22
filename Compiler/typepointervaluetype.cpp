@@ -3,6 +3,7 @@
 #include "value.h"
 #include "runtime.h"
 #include "builder.h"
+#include "llvm.h"
 
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
@@ -14,10 +15,10 @@ QString TypePointerValueType::name() const {
 	return mTypeSymbol->name();
 }
 
-ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueType *to) const {
-	if (to == this) return 0;
-	if (to->type() == ValueType::TypePointerCommon) return 1;
-	return sMaxCastCost;
+ValueType::CastCost TypePointerValueType::castingCostToOtherValueType(ValueType *to) const {
+	if (to == this) return ccNoCost;
+	if (to == mRuntime->typePointerCommonValueType()) return ccCastToBigger;
+	return ccNoCast;
 }
 
 Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
@@ -35,16 +36,16 @@ int TypePointerValueType::size() const {
 }
 
 
-ValueType::CastCostType TypePointerCommonValueType::castingCostToOtherValueType(ValueType *to) const {
-	if (to == this) return 0;
-	return sMaxCastCost;
+ValueType::CastCost TypePointerCommonValueType::castingCostToOtherValueType(ValueType *to) const {
+	if (to == this) return ccNoCost;
+	return ccNoCast;
 }
 
 Value TypePointerCommonValueType::cast(Builder *builder, const Value &v) const {
-	if (v.valueType()->type() == ValueType::TypePointerCommon) {
+	if (v.valueType() == this) {
 		return v;
 	}
-	if (v.valueType()->type() == ValueType::TypePointer) {
+	if (v.valueType()->isTypePointer()) {
 		if (v.isConstant()) {
 			return Value(const_cast<TypePointerCommonValueType*>(this), defaultValue());
 		}

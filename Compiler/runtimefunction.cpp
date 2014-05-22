@@ -7,13 +7,15 @@
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
+#include "functionvaluetype.h"
 #include "typevaluetype.h"
 #include "value.h"
 #include "builder.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
 	Function(QString(), 0,0),
-	mRuntime(r){
+	mRuntime(r),
+	mFunctionValueType(0) {
 
 }
 
@@ -42,6 +44,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		}
 	}
 	mRequiredParams = mParamTypes.size();
+	mFunctionValueType = new FunctionValueType(mRuntime, mReturnValue, mParamTypes);
 	return true;
 }
 
@@ -59,3 +62,4 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 		return Value(mReturnValue, ret);
 	}
 }
+

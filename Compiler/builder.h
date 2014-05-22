@@ -48,6 +48,7 @@ class Builder {
 		void returnValue(ValueType *retType, const Value &v);
 
 		void construct(VariableSymbol *var);
+		void store(const Value &ref, const Value &value);
 		void store(llvm::Value *ptr, llvm::Value *val);
 		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);

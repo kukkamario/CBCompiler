@@ -3,6 +3,8 @@
 #include <QString>
 #include <QObject>
 #include "llvm.h"
+#include "operationflags.h"
+
 class Value;
 namespace llvm {
 	class Value;
@@ -12,13 +14,27 @@ namespace llvm {
 }
 class Builder;
 class Runtime;
+class Function;
 class ValueType {
 	public:
 		enum CastCost {
 			ccNoCost = 0,
 			ccCastToBigger = 1,
-			ccCastToSmaller = 2,
-			ccNoCast = 100
+			ccCastToSmaller = 50,
+			ccCastToString = 2500,
+			ccCastFromString = 125000,
+			ccNoCast = 6250000
+		};
+
+		/* Keep this priority order */
+		enum BasicType {
+			Boolean = 1,
+			Byte,
+			Short,
+			Integer,
+			Float,
+			String,
+			Unknown
 		};
 
 		ValueType(Runtime *r);
@@ -31,6 +47,8 @@ class ValueType {
 		virtual bool isNumber() const = 0;
 		virtual llvm::Constant *defaultValue() const = 0;
 
+		virtual BasicType basicType() const { return Unknown; }
+		bool isBasicType() const { return basicType() != Unknown; }
 		/**
 		 * @brief size Returns ValueType's size in bytes.
 		 * @return Size of ValueType in bytes.
@@ -44,20 +62,26 @@ class ValueType {
 
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 
-		virtual ValueType *operatorResultType(int opType, ValueType *operand1, ValueType *operand2) const { return 0; }
-		virtual ValueType *operatorResultType(int opType, ValueType *operand) const { return 0; }
-		bool hasOperator(int opType, ValueType *operand1, ValueType *operand2) const { return operatorResultType(opType, operand1, operand2) != 0; }
-		bool hasOperator(int opType, ValueType *operand) const { return operatorResultType(opType, operand) != 0; }
-		virtual Value generateOperation(int opType, const Value &operand1, const Value &operand2) const {}
-		virtual Value generateOperation(int opType, const Value &operand) const {}
+		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
+		virtual Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
 
 		virtual Value member(Builder *builder, const Value &self, const QString &name) const { return Value(); }
 		virtual ValueType *memberType(const QString &name) const { return 0; }
 		bool hasMember(const QString &name) const { return memberType(name) != 0; }
+		
+		virtual bool isCallable() const { return false; }
+		virtual QList<Function*> overloads() const { return QList<Function*>(); }
 
 		llvm::LLVMContext &context();
 		Runtime *runtime() const { return mRuntime; }
+
+		static OperationFlags castCostOperationFlags(CastCost cc);
+		static CastCost castToSameType(Builder *builder, Value &a, Value &b);
+
 	protected:
+		Value generateBasicTypeOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
+		Value generateBasicTypeOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
+
 		llvm::Type *mType;
 		Runtime *mRuntime;
 };

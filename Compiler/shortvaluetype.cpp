@@ -37,3 +37,12 @@ llvm::Constant *ShortValueType::constant(quint16 i) const {
 llvm::Constant *ShortValueType::defaultValue() const {
 	return constant(0);
 }
+
+Value ShortValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value ShortValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

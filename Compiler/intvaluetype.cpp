@@ -10,7 +10,7 @@ IntValueType::IntValueType(Runtime *r, llvm::Module *mod) :
 
 
 
-ValueType::CastCostType IntValueType::castingCostToOtherValueType(ValueType *to) const {
+ValueType::CastCost IntValueType::castingCostToOtherValueType(ValueType *to) const {
 	switch (to->type()) {
 		case ValueType::Integer:
 			return 0;
@@ -40,3 +40,12 @@ llvm::Constant *IntValueType::constant(int v) const {
 llvm::Constant *IntValueType::defaultValue() const {
 	return constant(0);
 }
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

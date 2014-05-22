@@ -8,22 +8,23 @@
 CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBFunction::Parameter> &params, Scope *scope, const CodePoint &cp):
 	Function(name, cp),
 	mParams(params),
-	mScope(scope) {
+	mScope(scope),
+	mFunctionValueType(0) {
 	mReturnValue = retValue;
 	mRequiredParams = 0;
 	foreach(const Parameter &param, mParams) {
 		if (!param.mDefaultValue.isValid()) mRequiredParams++;
 		mParamTypes.append(param.mVariableSymbol->valueType());
 	}
+	mFunctionValueType = new FunctionValueType(retValue->runtime(), retValue, mParamTypes);
+}
+
+CBFunction::~CBFunction() {
+	delete mFunctionValueType;
 }
 
 void CBFunction::generateFunction(Runtime *runtime) {
-	std::vector<llvm::Type*> parameterTypes;
-	foreach(const Parameter &param, mParams) {
-		parameterTypes.push_back(param.mVariableSymbol->valueType()->llvmType());
-	}
-	llvm::FunctionType *funcTy = llvm::FunctionType::get(mReturnValue->llvmType(), parameterTypes, false);
-	mFunction = llvm::Function::Create(funcTy, llvm::Function::PrivateLinkage, "CBF_user_" + mName.toStdString(), runtime->module());
+	mFunction = llvm::Function::Create(llvm::cast<llvm::FunctionType>(mFunctionValueType->llvmType()), llvm::Function::PrivateLinkage, "CBF_user_" + mName.toStdString(), runtime->module());
 }
 
 

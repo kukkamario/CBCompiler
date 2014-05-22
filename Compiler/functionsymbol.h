@@ -4,6 +4,8 @@
 #include "function.h"
 #include <QList>
 
+class FunctionSelectorValueType;
+
 /**
  * @brief The FunctionSymbol class contains one or more function/command overloads with the same name. It can search best overload for given parameters.
  */
@@ -28,8 +30,11 @@ class FunctionSymbol:public Symbol {
 		 */
 		Function *findBestOverload(const QList<ValueType*> &paramTypes, bool command = false, OverloadSearchError *err = 0);
 		QString info() const;
+
+		FunctionSelectorValueType *functionSelector() const;
 	private:
 		QList<Function*> mFunctions;
+		mutable FunctionSelectorValueType *mSelector;
 
 };
 

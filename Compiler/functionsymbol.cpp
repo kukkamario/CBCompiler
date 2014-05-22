@@ -1,8 +1,10 @@
 #include "functionsymbol.h"
 #include "valuetype.h"
+#include "functionselectorvaluetype.h"
 
 FunctionSymbol::FunctionSymbol(const QString &name):
-	Symbol(name, 0, 0)
+	Symbol(name, CodePoint()),
+	mSelector(0)
 {
 }
 
@@ -84,5 +86,14 @@ QString FunctionSymbol::info() const {
 	QString str("Function " + mName);
 	if (mFunctions.count() > 1) str += ", " + QString::number(mFunctions.count()) + " overloads";
 	return str;
+}
+
+FunctionSelectorValueType *FunctionSymbol::functionSelector() const {
+	if (!mSelector) {
+		mSelector = new FunctionSelectorValueType();
+		mSelector->
+	}
+
+	return mSelector;
 }
 

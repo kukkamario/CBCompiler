@@ -6,6 +6,8 @@
 class ValueType;
 class Builder;
 class Value;
+class FunctionValueType;
+
 namespace llvm {
 	class Function;
 }
@@ -66,6 +68,8 @@ class Function {
 		 * @return Return value with ValueType of returnValue(). If the function is a command, isValid() == false.
 		 */
 		virtual Value call(Builder *builder, const QList<Value> &params) = 0;
+
+		virtual FunctionValueType *functionValueType() const = 0;
 	protected:
 		QString mName;
 		ValueType *mReturnValue;

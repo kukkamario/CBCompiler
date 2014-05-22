@@ -219,6 +219,15 @@ void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) {
 	builder->CreateCall(mRefFunction, a);
 }
 
+Value StringValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value StringValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+
+
 bool StringValueType::isValid() const {
 	return mAdditionFunction && mAssignmentFunction && mType && mIntToStringFunction && mFloatToStringFunction && mStringToFloatFunction && mStringToIntFunction;
 }

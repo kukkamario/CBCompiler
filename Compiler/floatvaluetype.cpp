@@ -39,3 +39,12 @@ llvm::Constant *FloatValueType::constant(float f) const {
 llvm::Constant *FloatValueType::defaultValue() const {
 	return constant(0.0f);
 }
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

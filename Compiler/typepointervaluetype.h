@@ -5,9 +5,8 @@ class TypeSymbol;
 class TypePointerValueType : public ValueType {
 	public:
 		TypePointerValueType(Runtime *r, TypeSymbol *s);
-		eType type()const{return TypePointer;}
 		virtual QString name()const;
-		virtual CastCostType castingCostToOtherValueType(ValueType *to) const;
+		virtual CastCost castingCostToOtherValueType(ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
@@ -22,9 +21,8 @@ class TypePointerValueType : public ValueType {
 class TypePointerCommonValueType : public ValueType {
 	public:
 		TypePointerCommonValueType(Runtime *r, llvm::Type *type) : ValueType(r) { mType = type; }
-		eType type()const{return TypePointerCommon;}
 		virtual QString name() const { return "TypePointerCommon"; }
-		virtual CastCostType castingCostToOtherValueType(ValueType *to) const;
+		virtual CastCost castingCostToOtherValueType(ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
 		TypeSymbol *typeSymbol() const {return mTypeSymbol;}
 		bool isTypePointer() const{return true;}
