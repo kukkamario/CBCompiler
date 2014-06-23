@@ -44,7 +44,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Value generate(ast::Const *n);
 		Value generate(ast::Node *n);
 
-		Function *findBestOverload(const QList<Function*> &functions, const QList<Value> &parameters, const CodePoint &cp);
+		Function *findBestOverload(const QList<Function*> &functions, const QList<Value> &parameters, bool command, const CodePoint &cp);
 		QList<Value> generateParameterList(ast::Node *n);
 
 		bool generateAllocas();

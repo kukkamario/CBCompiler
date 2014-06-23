@@ -491,7 +491,7 @@ class List : public Node {
 class FunctionCall : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		FunctionCall(const CodePoint &cp) : Node (cp), mFunction(0), mParameters(0) {}
+		FunctionCall(const CodePoint &cp) : Node (cp), mFunction(0), mParameters(0), mCommand(false) {}
 		~FunctionCall() { delete mFunction; delete mParameters; }
 		static Type staticType() { return ntFunctionCall; }
 		Type type() const { return staticType(); }
@@ -501,9 +501,12 @@ class FunctionCall : public Node {
 		void setFunction(Node *f) { mFunction = f; }
 		Node *parameters() const { return mParameters; }
 		void setParameters(Node *p) { mParameters = p; }
+		bool isCommand() const { return mCommand; }
+		void setIsCommand(bool t) { mCommand = t; }
 	protected:
 		Node *mFunction;
 		Node *mParameters;
+		bool mCommand;
 };
 
 class KeywordFunctionCall : public Node {

@@ -23,9 +23,16 @@ FunctionValueType::FunctionValueType(Runtime *r, ValueType *returnValue, const Q
 
 
 QString FunctionValueType::name() const {
-	return QStringLiteral("Function (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
-		return valTy->name();
-	}) % QStringLiteral(") As ") % mReturnType->name();
+	if (mReturnType) {
+		return QStringLiteral("Function (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
+			return valTy->name();
+		}) % QStringLiteral(") As ") % mReturnType->name();
+	}
+	else {
+		return QStringLiteral("Command (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
+			return valTy->name();
+		}) % QStringLiteral(")");
+	}
 }
 
 

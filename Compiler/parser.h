@@ -54,6 +54,7 @@ class Parser : public QObject {
 		ast::FunctionDefinition *tryFunctionDefinition(TokIterator &i);
 
 		ast::Node *expectExpressionList(TokIterator &i);
+		ast::Node *expectCommandCall(TokIterator &i);
 
 		ast::Node *expectVariableDefinitionList(TokIterator &i);
 

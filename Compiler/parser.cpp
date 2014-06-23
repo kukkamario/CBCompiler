@@ -102,7 +102,17 @@ ast::Node *Parser::expectInlineBlock(Parser::TokIterator &i) {
 
 ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 	switch (i->type()) {
-		case Token::Identifier:
+		case Token::Identifier: {
+			Parser::TokIterator begin = i;
+			ast::Variable *var = tryVariable(i);
+			if ((i->type() < Token::OperatorsBegin || i->type() > Token::OperatorsEnd) && i->type() != Token::LeftParenthese && i->type() != Token::RightParenthese) { //Probably a command
+				i = begin;
+				delete var;
+				return expectCommandCall(i);
+			}
+			delete var;
+			i = begin;
+		}
 		case Token::Float:
 		case Token::Integer:
 		case Token::String:
@@ -1478,6 +1488,19 @@ ast::Node *Parser::expectExpressionList(Parser::TokIterator &i) {
 		return onlyItem;
 	}
 	return list;
+}
+
+ast::Node *Parser::expectCommandCall(Parser::TokIterator &i) {
+	CodePoint cp = i->codePoint();
+	ast::Identifier *id = expectIdentifier(i);
+	if (mStatus == Error) return 0;
+	ast::Node *params = expectExpressionList(i);
+	if (mStatus == Error) return 0;
+	ast::FunctionCall *call = new ast::FunctionCall(cp);
+	call->setFunction(id);
+	call->setParameters(params);
+	call->setIsCommand(true);
+	return call;
 }
 
 ast::Node *Parser::expectVariableDefinitionList(Parser::TokIterator &i) {

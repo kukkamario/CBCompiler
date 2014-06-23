@@ -304,8 +304,7 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(valueType);
 		QList<Function*> functions = funcSelector->overloads();
 
-
-		Function *func = findBestOverload(functions, paramValues, n->codePoint());
+		Function *func = findBestOverload(functions, paramValues, n->isCommand(), n->codePoint());
 		assert(func);
 
 		return mBuilder->call(func, paramValues);
@@ -412,10 +411,21 @@ Value FunctionCodeGenerator::generate(ast::Node *n) {
 	}
 }
 
-Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &functions, const QList<Value> &parameters, const CodePoint &cp) {
+Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &functions, const QList<Value> &parameters, bool command, const CodePoint &cp) {
 	//No overloads
 	if (functions.size() == 1) {
 		Function *f = functions.first();
+
+		if (f->isCommand() != command) {
+			if (command) {
+				emit error(ErrorCodes::ecNotCommand, tr("There is no command \"%1\" (but there is a function with same name)").arg(f->name()), cp);
+				throw CodeGeneratorError(ErrorCodes::ecNotCommand);
+			} else {
+				emit error(ErrorCodes::ecCantFindFunction,  tr("There is no function \"%1\" (but there is a command with same name)").arg(f->name()), cp);
+				throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+			}
+		}
+
 		if (f->requiredParams() > parameters.size()) {
 			emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
 						   f->functionValueType()->name(),
@@ -424,6 +434,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 			})), cp);
 			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
 		}
+
 		Function::ParamList::ConstIterator p1i = f->paramTypes().begin();
 		CastCostCalculator totalCost;
 		for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
@@ -431,12 +442,22 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 			p1i++;
 		}
 		if (!totalCost.isCastPossible()) {
-			emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
-						   f->functionValueType()->name(),
-						   listStringJoin(parameters, [](const Value &val) {
-				return val.valueType()->name();
-			})), cp);
-			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+			if (command) {
+				emit error(ErrorCodes::ecCantFindFunction, tr("Command doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
+							   f->functionValueType()->name(),
+							   listStringJoin(parameters, [](const Value &val) {
+					return val.valueType()->name();
+				})), cp);
+				throw CodeGeneratorError(ErrorCodes::ecCantFindCommand);
+			}
+			else {
+				emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
+							   f->functionValueType()->name(),
+							   listStringJoin(parameters, [](const Value &val) {
+					return val.valueType()->name();
+				})), cp);
+				throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+			}
 		}
 		return f;
 	}
@@ -446,7 +467,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 
 	for (QList<Function*>::ConstIterator fi = functions.begin(); fi != functions.end(); fi++) {
 		Function *f = *fi;
-		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size()) {
+		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size() && f->isCommand() == command) {
 			QList<ValueType*>::ConstIterator p1i = f->paramTypes().begin();
 			CastCostCalculator totalCost;
 			for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
@@ -466,14 +487,25 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 		}
 	}
 	if (bestFunc == 0) {
-		emit error(ErrorCodes::ecCantFindFunction, tr("Can't find function overload which would accept given parameters (%1)").arg(
-					   listStringJoin(parameters, [](const Value &val) {
-			return val.valueType()->name();
-		})), cp);
-		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+		if (command) {
+			emit error(ErrorCodes::ecCantFindCommand, tr("Can't find a command overload which would accept given parameters (%1)").arg(
+						   listStringJoin(parameters, [](const Value &val) {
+				return val.valueType()->name();
+			})), cp);
+			throw CodeGeneratorError(ErrorCodes::ecCantFindCommand);
+		}
+		else {
+			emit error(ErrorCodes::ecCantFindFunction, tr("Can't find a function overload which would accept given parameters (%1)").arg(
+						   listStringJoin(parameters, [](const Value &val) {
+				return val.valueType()->name();
+			})), cp);
+			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+		}
+
 	}
 	if (multiples) {
-		emit error(ErrorCodes::ecMultiplePossibleOverloads, tr("Found multiple possible function overloads with parameters (%1) and can't choose between them.").arg(
+		QString msg = command ? tr("Found multiple possible command overloads with parameters (%1) and can't choose between them.") : tr("Found multiple possible function overloads with parameters (%1) and can't choose between them.");
+		emit error(ErrorCodes::ecMultiplePossibleOverloads,  msg.arg(
 					   listStringJoin(parameters, [](const Value &val) {
 			return val.valueType()->name();
 		})), cp);
