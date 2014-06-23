@@ -41,7 +41,7 @@ class Function {
 		const ParamList &paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
 
-		const QString &file() const { return mCodePoint.file(); }
+		QString file() const { return mCodePoint.file(); }
 		/**
 		 * @return Line number where Function is defined or 0.
 		 */

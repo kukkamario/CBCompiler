@@ -6,33 +6,54 @@
 #include "booleanvaluetype.h"
 #include "bytevaluetype.h"
 #include "shortvaluetype.h"
+#include "functionselectorvaluetype.h"
 #include "builder.h"
 #include <QDebug>
 
 Value::Value():
-	mValueType(0), mValue(0), mReference(false) {
+	mValueType(0), mValue(0), mType(tNormalValue) {
 }
 
 Value::Value(const Value &value) :
-	mValueType(value.mValueType), mValue(value.mValue), mConstant(value.mConstant), mReference(value.mReference) {
+	mValueType(value.mValueType), mValue(value.mValue), mConstant(value.mConstant), mType(value.mType) {
 }
 
 Value::Value(const ConstantValue &c, Runtime *r) :
 	mValueType(0),
 	mValue(0),
 	mConstant(c),
-	mReference(false) {
-	mValueType = r->findValueType(c.type());
+	mType(tConstant) {
+	mValueType = r->valueTypeCollection().constantValueType(c.type());
 }
 
 Value::Value(ValueType *t, llvm::Value *v, bool reference):
-	mValueType(t), mValue(v), mReference(reference) {
+	mValueType(t), mValue(v), mType(reference ? tReference : tNormalValue) {
+}
+
+Value::Value(ValueType *valType) :
+	mValueType(valType), mValue(0), mType(tValueType) {
+
+}
+
+Value::Value(FunctionSelectorValueType *t) :
+	mValueType(t),
+	mValue(0),
+	mType(tFunctionSelectorValueType) {
+}
+
+Value::~Value() {
+
+}
+
+bool Value::isValid() const {
+	return mValueType != 0 && ((isConstant() ? mConstant.isValid() : false) || mType == tFunctionSelectorValueType || mType == tValueType || mValue);
 }
 
 void Value::toLLVMValue(Builder *builder) {
 	if (isConstant()) {
 		mValue = builder->llvmValue(constant());
 		mConstant = ConstantValue();
+		mType = tNormalValue;
 	}
 }
 

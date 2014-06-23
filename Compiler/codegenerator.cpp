@@ -11,6 +11,7 @@
 #include "stringvaluetype.h"
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
+#include "booleanvaluetype.h"
 #include "typesymbol.h"
 #include "typepointervaluetype.h"
 #include "functionsymbol.h"
@@ -29,61 +30,54 @@
 
 CodeGenerator::CodeGenerator(QObject *parent) :
 	QObject(parent),
+	mSymbolCollector(&mRuntime, &mSettings),
 	mGlobalScope("Global"),
 	mMainScope("Main", &mGlobalScope),
-	mFuncCodeGen(this),
+	mFuncCodeGen(&mRuntime, &mSettings),
 	mBuilder(0)
 {
-	mConstEval.setGlobalScope(&mGlobalScope);
-	mConstEval.setRuntime(&mRuntime);
-	mTypeChecker.setRuntime(&mRuntime);
-	mTypeChecker.setGlobalScope(&mGlobalScope);
-	mTypeChecker.setConstantExpressionEvaluator(&mConstEval);
-
-	connect(&mConstEval, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
-	connect(&mConstEval, SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
-	connect(&mRuntime, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
-	connect(&mRuntime, SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
-	connect(&mTypeChecker, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
-	connect(&mTypeChecker, SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
-	connect(&mFuncCodeGen, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
-	connect(&mFuncCodeGen, SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
+	connect(&mRuntime, &Runtime::error, this, &CodeGenerator::error);
+	connect(&mRuntime, &Runtime::warning, this, &CodeGenerator::warning);
+	connect(&mSymbolCollector, &SymbolCollector::error, this, &CodeGenerator::error);
+	connect(&mSymbolCollector, &SymbolCollector::warning, this, &CodeGenerator::warning);
+	connect(&mFuncCodeGen, &FunctionCodeGenerator::error, this, &CodeGenerator::error);
+	connect(&mFuncCodeGen, &FunctionCodeGenerator::warning, this, &CodeGenerator::warning);
 
 	addPredefinedConstantSymbols();
 }
 
 bool CodeGenerator::initialize(const Settings &settings) {
 	mSettings = settings;
-	mTypeChecker.setForceVariableDeclaration(settings.forceVariableDeclaration());
 	if (!mRuntime.load(&mStringPool, settings)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), 0, 0);
+		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), CodePoint());
 		return false;
 	}
-	mValueTypes.append(mRuntime.valueTypes());
 	addValueTypesToGlobalScope();
 
 	createBuilder();
-	mFuncCodeGen.setBuilder(mBuilder);
 	return addRuntimeFunctions();
 }
 
 bool CodeGenerator::generate(ast::Program *program) {
-	qDebug() << "Preparing code generation";
-	qDebug() << "Calculating constants";
-	bool constantsValid = calculateConstants(program);
-	qDebug() << "Adding types to scopes";
-	bool typesValid = addTypesToScope(program);
-	qDebug() << "Adding globals to scopes";
-	bool globalsValid = addGlobalsToScope(program);
-	qDebug() << "Adding functions to scopes";
-	bool functionDefinitionsValid = addFunctions(program->mFunctions);
-	if (!(constantsValid && globalsValid && typesValid && functionDefinitionsValid)) return false;
+	qDebug() << "Preparing code generation...";
+	qDebug() << "Collecting symbols...";
+	if (!mSymbolCollector.collect(program, &mGlobalScope, &mMainScope)) {
+		qDebug() << "Failed";
+		return false;
+	}
+	qDebug() << "Generating types...";
+	if (!generateTypes(program)) {
+		qDebug() << "Failed";
+		return false;
+	}
+	qDebug() << "Generating global variables...";
+	if (!generateGlobalVariables()) {
+		qDebug() << "Failed";
+		return false;
+	}
+	qDebug() << "Generating function definitions...";
+	generateFunctionDefinitions(program->functionDefinitions());
 
-	qDebug() << "Checking main scope";
-	bool mainScopeValid = checkMainScope(program);
-	qDebug() << "Main scope valid: " << mainScopeValid;
-	qDebug() << "Checking local scopes of the functions";
-	bool functionLocalScopesValid = checkFunctions();
 
 #ifdef DEBUG_OUTPUT
 	QFile file("scopes.txt");
@@ -96,14 +90,22 @@ bool CodeGenerator::generate(ast::Program *program) {
 		qCritical() << "Can't open scopes.txt";
 	}
 #endif
-	if (!(mainScopeValid && functionLocalScopesValid)) return false;
 
 	qDebug() << "Starting code generation";
-	mFuncCodeGen.setRuntime(&mRuntime);
-	generateMainScope(&program->mMainBlock);
-	generateFunctions();
+	qDebug() << "Generating main scope...";
+	if (!generateMainScope(program->mainBlock())) {
+		qDebug() << "Failed";
+		return false;
+	}
+	qDebug() << "Generating functions...";
+	if (!generateFunctions(program->functionDefinitions())) {
+		qDebug() << "Failed";
+		return false;
+	}
 
+	qDebug() << "Generating initializers...";
 	generateInitializers();
+	qDebug() << "Finished code generation \n\n";
 	return true;
 }
 
@@ -130,7 +132,7 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		bitcodeFile.close();
 	}
 	else {
-		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""),0,0);
+		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""), CodePoint());
 		QDir::setCurrent(p);
 		return false;
 	}
@@ -169,96 +171,20 @@ bool CodeGenerator::addRuntimeFunctions() {
 	return true;
 }
 
-bool CodeGenerator::addFunctions(const QList<ast::FunctionDefinition*> &functions) {
+bool CodeGenerator::generateFunctionDefinitions(const QList<ast::FunctionDefinition*> &functions) {
 	bool valid = true;
 	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
-
-		CBFunction *func = mTypeChecker.checkFunctionDefinitionAndAddToGlobalScope(*i, &mGlobalScope);
-		if (!func) {
-			valid = false;
-			continue;
-		}
+		CBFunction *func = mSymbolCollector.functionByDefinition(*i);
 		func->generateFunction(&mRuntime);
-		mCBFunctions[*i] = func;
 	}
 	return valid;
 }
 
-bool CodeGenerator::checkMainScope(ast::Program *program) {
-	return mTypeChecker.run(&program->mMainBlock, &mMainScope);
-}
 
-bool CodeGenerator::checkFunctions() {
-	bool valid = true;
-	for (QMap<ast::FunctionDefinition *, CBFunction *>::ConstIterator i = mCBFunctions.begin(), end = mCBFunctions.end(); i != end; ++i) {
-		mTypeChecker.setReturnValueType(i.value()->returnValue());
-		if (!mTypeChecker.run(&i.key()->mBlock, i.value()->scope())) valid = false;
-	}
-	return valid;
-}
-
-bool CodeGenerator::calculateConstants(ast::Program *program) {
-	bool valid = true;
-	for (QList<ast::ConstDefinition*>::ConstIterator i = program->mConstants.begin(); i != program->mConstants.end(); i++) {
-		ast::ConstDefinition* def = *i;
-		if (mGlobalScope.find(def->mName)) {
-			emit error(ErrorCodes::ecConstantAlreadyDefined, tr("Symbol \"%1\" already defined"), def->mLine, def->mFile);
-			valid = false;
-		}
-		mConstEval.setCodeFile(def->mFile);
-		mConstEval.setCodeLine(def->mLine);
-		ConstantValue val = mConstEval.evaluate(def->mValue);
-		if (!val.isValid()) {
-			valid = false;
-			continue;
-		}
-
-		if (def->mVarType.isEmpty()) {
-			mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val, def->mFile, def->mLine));
-		}
-		else {
-			ValueType *constType = findValueType(def->mVarType, def->mLine, def->mFile);
-			if (!constType) {
-				valid = false;
-				continue;
-			}
-			if (val.type() != constType->type()) {
-				emit warning(ErrorCodes::ecForcingType, tr("The type of the constant differs from its value. Forcing the value to the type of the constant"), def->mLine, def->mFile);
-			}
-			if (constType == mRuntime.intValueType())
-				mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val.toInt(), def->mFile, def->mLine));
-			else if (constType  == mRuntime.floatValueType())
-					mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val.toFloat(), def->mFile, def->mLine));
-			else if (constType == mRuntime.shortValueType())
-				mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val.toShort(), def->mFile, def->mLine));
-			else if (constType  == mRuntime.byteValueType())
-				mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val.toByte(), def->mFile, def->mLine));
-			else if (constType  == mRuntime.stringValueType())
-				mGlobalScope.addSymbol(new ConstantSymbol(def->mName, val.toString(), def->mFile, def->mLine));
-			else {
-				emit error(ErrorCodes::ecOnlyBasicValueTypeCanBeConstant, tr("\"%1\" is not a basic value type and cannot be a constant type").arg(def->mVarType), def->mLine, def->mFile);
-				valid = false;
-				continue;
-			}
-		}
-	}
-	return valid;
-}
-
-bool CodeGenerator::addGlobalsToScope(ast::Program *program) {
-	bool valid = true;
-	mTypeChecker.setScope(&mGlobalScope);
-	for (QList<ast::GlobalDefinition*>::ConstIterator i = program->mGlobals.begin(); i != program->mGlobals.end(); i++) {
-		ast::GlobalDefinition *globalDef = *i;
-		mTypeChecker.setFile(globalDef->mFile);
-		mTypeChecker.setLine(globalDef->mLine);
-		for (QList<ast::Variable*>::ConstIterator v = globalDef->mDefinitions.begin(); v != globalDef->mDefinitions.end(); v++) {
-			ast::Variable *var = *v;
-			VariableSymbol *varSym = mTypeChecker.declareVariable(var);
-			if (!varSym) {
-				valid = false;
-				continue;
-			}
+bool CodeGenerator::generateGlobalVariables() {
+	for (Scope::Iterator i = mGlobalScope.begin(); i != mGlobalScope.end(); i++) {
+		if ((*i)->type() == Symbol::stVariable) {
+			VariableSymbol *varSym = static_cast<VariableSymbol*>(*i);
 			varSym->setAlloca(mBuilder->createGlobalVariable(
 						varSym->valueType()->llvmType(),
 						false,
@@ -266,30 +192,18 @@ bool CodeGenerator::addGlobalsToScope(ast::Program *program) {
 						varSym->valueType()->defaultValue(),
 						("CB_Global_" + varSym->name()).toStdString()
 						));
-
 		}
 	}
-	return valid;
+	return true;
 }
 
-bool CodeGenerator::addTypesToScope(ast::Program *program) {
+bool CodeGenerator::generateTypes(ast::Program *program) {
 	bool valid = true;
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->mTypes.begin(); i != program->mTypes.end(); i++) {
+	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
 		ast::TypeDefinition *def = *i;
-		Symbol *sym;
-		if ((sym = mGlobalScope.find(def->mName))) {
-			if (sym->file() == 0) {
-				emit error(ErrorCodes::ecSymbolAlreadyDefinedInRuntime, tr("Symbol \"%1\" already defined in runtime library").arg(def->mName), def->mLine, def->mFile);
-			}
-			else {
-				emit error(ErrorCodes::ecSymbolAlreadyDefined,
-						   tr("Symbol \"%1\" at line %2 in file %3 already defined").arg(
-							   def->mName, QString::number(sym->line()), sym->file()), def->mLine, def->mFile);
-			}
-			valid = false;
-			continue;
-		}
-		TypeSymbol *type = new TypeSymbol(def->mName, &mRuntime, def->mFile, def->mLine);
+		Symbol *sym = mGlobalScope.find(def->identifier()->name());
+		assert(sym && sym->type() == Symbol::stType);
+		TypeSymbol *type = static_cast<TypeSymbol*>(sym);
 
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
@@ -297,32 +211,9 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 	}
 	if (!valid) return false;
 
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->mTypes.begin(); i != program->mTypes.end(); i++) {
+	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
 		ast::TypeDefinition *def = *i;
-		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->mName));
-		assert(type);
-		for (QList<QPair<int, ast::Variable*> >::ConstIterator f = def->mFields.begin(); f != def->mFields.end(); f++ ) {
-			const QPair<int, ast::Variable*> &fieldDef = *f;
-
-			ValueType *valType = 0;
-			if (fieldDef.second->mTypeName.isEmpty()) { //Default int field
-				valType = mRuntime.intValueType();
-			}
-			else {
-				valType = findValueType(fieldDef.second->mTypeName, fieldDef.first, def->mFile);
-				if (!valType) {
-					valid = false;
-					continue;
-				}
-			}
-			assert(valType);
-			if (!type->addField(TypeField(fieldDef.second->mName, valType, def->mFile, fieldDef.first))) {
-				emit error(ErrorCodes::ecTypeHasMultipleFieldsWithSameName, tr("Type \"%1\" has already field with name \"%2\"").arg(def->mName, fieldDef.second->mName), fieldDef.first, def->mFile);
-				valid = false;
-				continue;
-			}
-		}
-
+		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->identifier()->name()));
 		type->createTypePointerValueType(mBuilder);
 		mTypes.append(type);
 	}
@@ -331,17 +222,17 @@ bool CodeGenerator::addTypesToScope(ast::Program *program) {
 	return valid;
 }
 
-void CodeGenerator::generateFunctions() {
-	for (QMap<ast::FunctionDefinition *, CBFunction *>::ConstIterator i = mCBFunctions.begin(); i != mCBFunctions.end(); ++i) {
-		mFuncCodeGen.setFunction(i.value()->function());
-		mFuncCodeGen.generateCBFunction(i.key(), i.value());
+bool CodeGenerator::generateFunctions(const QList<ast::FunctionDefinition*> &functions) {
+	bool valid = true;
+	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
+		CBFunction *func = mSymbolCollector.functionByDefinition(*i);
+		valid &= mFuncCodeGen.generate(mBuilder, (*i)->block(), func, &mGlobalScope);
 	}
+	return valid;
 }
 
-void CodeGenerator::generateMainScope(ast::Block *block) {
-	mFuncCodeGen.setFunction(mRuntime.cbMain());
-	mFuncCodeGen.setScope(&mMainScope);
-	mFuncCodeGen.generateMainScope(block);
+bool CodeGenerator::generateMainScope(ast::Block *block) {
+	return mFuncCodeGen.generateMainBlock(mBuilder, block, mRuntime.cbMain(), &mMainScope, &mGlobalScope);
 }
 
 void CodeGenerator::generateInitializers() {
@@ -370,52 +261,25 @@ void CodeGenerator::createBuilder() {
 }
 
 void CodeGenerator::addValueTypesToGlobalScope() {
-	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.intValueType()));
-	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.floatValueType()));
-	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.shortValueType()));
-	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.stringValueType()));
-	mGlobalScope.addSymbol(new DefaultValueTypeSymbol(mRuntime.byteValueType()));
-
-	foreach(CustomValueType* valTy, mRuntime.customValueTypes()) {
-		mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valTy));
+	QList<ValueType*> valueTypes = mRuntime.valueTypeCollection().namedTypes();
+	for (ValueType* valueType : valueTypes) {
+		mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valueType));
 	}
 }
 
 void CodeGenerator::addPredefinedConstantSymbols() {
-	ConstantSymbol *sym = new ConstantSymbol("pi", ConstantValue(M_PI), 0, 0);
+	ConstantSymbol *sym = new ConstantSymbol("pi", mRuntime.floatValueType(), ConstantValue(M_PI), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("on", ConstantValue(true), 0, 0);
+	sym = new ConstantSymbol("on", mRuntime.booleanValueType(), ConstantValue(true), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("off", ConstantValue(false), 0, 0);
+	sym = new ConstantSymbol("off", mRuntime.booleanValueType(), ConstantValue(false), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("true", ConstantValue(true), 0, 0);
+	sym = new ConstantSymbol("true", mRuntime.booleanValueType(), ConstantValue(true), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("false", ConstantValue(false), 0, 0);
+	sym = new ConstantSymbol("false", mRuntime.booleanValueType(), ConstantValue(false), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("null", ConstantValue(ValueType::TypePointerCommon), 0, 0);
+	sym = new ConstantSymbol("null", mRuntime.typePointerCommonValueType(), ConstantValue(ConstantValue::Null), CodePoint());
 	mGlobalScope.addSymbol(sym);
 }
 
-ValueType *CodeGenerator::findValueType(const QString &valueTypeName, int line, QString file) {
-	Symbol *sym = mGlobalScope.find(valueTypeName);
-	if (!sym->isValueTypeSymbol()) {
-		emit error(ErrorCodes::ecExpectingVarType, tr("\"%1\" is not a value type").arg(valueTypeName), line, file);
-		return 0;
-	}
-	return static_cast<ValueTypeSymbol*>(sym)->valueType();
-}
 
-
-
-TypeSymbol *CodeGenerator::findTypeSymbol(const QString &typeName, const QString &f, int line) {
-	Symbol *sym = mGlobalScope.find(typeName);
-	if (!sym) {
-		emit error(ErrorCodes::ecCantFindType, tr("Can't find type with name \"%1\""), line, f);
-		return 0;
-	}
-	if (sym->type() != Symbol::stType) {
-		emit error(ErrorCodes::ecCantFindType, tr("\"%1\" is not a type").arg(typeName), line, f);
-		return 0;
-	}
-	return static_cast<TypeSymbol*>(sym);
-}

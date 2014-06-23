@@ -7,22 +7,22 @@ ShortValueType::ShortValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt16Ty(mod->getContext());
 }
 
-ValueType::CastCostType ShortValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost ShortValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case ValueType::Short:
-			return 0;
+			return ccNoCost;
 		case ValueType::Integer:
-			return 1;
+			return ccCastToBigger;
 		case Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case ValueType::Float:
-			return 2;
+			return ccCastToBigger;
 		case ValueType::Byte:
-			return 4;
+			return ccCastToSmaller;
 		case ValueType::String:
-			return 10;
+			return ccCastToString;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 

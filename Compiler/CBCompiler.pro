@@ -78,16 +78,12 @@ SOURCES += main.cpp \
     shortvaluetype.cpp \
     bytevaluetype.cpp \
     booleanvaluetype.cpp \
-    constantexpressionevaluator.cpp \
     constantvalue.cpp \
     constantsymbol.cpp \
     variablesymbol.cpp \
     typesymbol.cpp \
     typepointervaluetype.cpp \
-    symbolcollectortypechecker.cpp \
     cbfunction.cpp \
-    functioncodegenerator.cpp \
-    expressioncodegenerator.cpp \
     labelsymbol.cpp \
     builder.cpp \
     settings.cpp \
@@ -101,9 +97,10 @@ SOURCES += main.cpp \
     valuetypecollection.cpp \
     arrayvaluetype.cpp \
     genericarrayvaluetype.cpp \
-    typechecker.cpp \
     functionvaluetype.cpp \
-    functionselectorvaluetype.cpp
+    functionselectorvaluetype.cpp \
+    functioncodegenerator.cpp \
+    castcostcalculator.cpp
 
 HEADERS += \
     lexer.h \
@@ -129,17 +126,13 @@ HEADERS += \
     shortvaluetype.h \
     bytevaluetype.h \
     booleanvaluetype.h \
-    constantexpressionevaluator.h \
     constantvalue.h \
     unionwrapper.h \
     constantsymbol.h \
     variablesymbol.h \
     typesymbol.h \
     typepointervaluetype.h \
-    symbolcollectortypechecker.h \
     cbfunction.h \
-    functioncodegenerator.h \
-    expressioncodegenerator.h \
     labelsymbol.h \
     builder.h \
     global.h \
@@ -156,8 +149,9 @@ HEADERS += \
     valuetypecollection.h \
     arrayvaluetype.h \
     genericarrayvaluetype.h \
-    typechecker.h \
     functionvaluetype.h \
     liststringjoin.h \
     operationflags.h \
-    functionselectorvaluetype.h
+    functionselectorvaluetype.h \
+    functioncodegenerator.h \
+    castcostcalculator.h

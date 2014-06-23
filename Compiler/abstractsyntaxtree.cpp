@@ -10,7 +10,7 @@
 namespace ast {
 
 
-static printTabs(QTextStream &s, int tabs) {
+void printTabs(QTextStream &s, int tabs) {
 	for (int i = 0; i < tabs; i++) {
 		s << '\t';
 	}
@@ -26,6 +26,7 @@ void Node::write(QTextStream &s, int tabs) {
 	s << "}\n";
 }
 
+
 const char *Node::typeAsString() const {
 	static const char * const types[] = {
 		"ntBlock",
@@ -33,7 +34,6 @@ const char *Node::typeAsString() const {
 		"ntFloat",
 		"ntString",
 		"ntIdentifier",
-		"ntType",
 		"ntLabel",
 		"ntList",
 		"ntGoto",
@@ -51,6 +51,7 @@ const char *Node::typeAsString() const {
 		"ntUnary",
 		"ntArraySubscript",
 		"ntFunctionCall",
+		"ntKeywordFunctionCall",
 		"ntDefaultValue",
 		"ntVariable",
 
@@ -61,18 +62,23 @@ const char *Node::typeAsString() const {
 		"ntForToStatement",
 		"ntForEachStatement",
 		"ntSelectStatement",
-		"ntCase",
-		"ntDefault",
+		"ntSelectCase",
 
 		"ntConst",
 		"ntDim",
 		"ntGlobal",
+		"ntRedim",
 		"ntVariableDefinition",
 		"ntArrayInitialization",
 		"ntFunctionDefinition",
 		"ntTypeDefinition",
-		"ntProgram"
 
+		"ntProgram",
+
+
+
+
+		//Last
 		"ntInvalid" };
 	Type ty = type();
 	if (ty < 0 || ty >= ntInvalid) return types[ntInvalid];
@@ -80,7 +86,7 @@ const char *Node::typeAsString() const {
 
 }
 
-Node *Variable::childNode(int n) {
+Node *Variable::childNode(int n) const {
 	switch (n) {
 		case 0:
 			return mIdentifier;
@@ -91,12 +97,15 @@ Node *Variable::childNode(int n) {
 			return 0;
 	}
 }
-
+template<>
 NODE_ACCEPT_VISITOR_DEF(Integer)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Float)
+template<>
 NODE_ACCEPT_VISITOR_DEF(String)
-
+template<>
 NODE_ACCEPT_VISITOR_DEF(Identifier)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Label)
 NODE_ACCEPT_VISITOR_DEF(Return)
 NODE_ACCEPT_VISITOR_DEF(Exit)
@@ -115,13 +124,17 @@ NODE_ACCEPT_VISITOR_DEF(DefaultValue)
 NODE_ACCEPT_VISITOR_DEF(Unary)
 NODE_ACCEPT_VISITOR_DEF(VariableDefinition)
 NODE_ACCEPT_VISITOR_DEF(ArrayInitialization)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Dim)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Global)
 NODE_ACCEPT_VISITOR_DEF(Redim)
 NODE_ACCEPT_VISITOR_DEF(TypeDefinition)
 NODE_ACCEPT_VISITOR_DEF(Block)
 NODE_ACCEPT_VISITOR_DEF(IfStatement)
+template<>
 NODE_ACCEPT_VISITOR_DEF(WhileStatement)
+template<>
 NODE_ACCEPT_VISITOR_DEF(RepeatUntilStatement)
 NODE_ACCEPT_VISITOR_DEF(RepeatForeverStatement)
 NODE_ACCEPT_VISITOR_DEF(ForToStatement)
@@ -130,7 +143,9 @@ NODE_ACCEPT_VISITOR_DEF(SelectStatement)
 NODE_ACCEPT_VISITOR_DEF(SelectCase)
 NODE_ACCEPT_VISITOR_DEF(Const)
 NODE_ACCEPT_VISITOR_DEF(FunctionDefinition)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Goto)
+template<>
 NODE_ACCEPT_VISITOR_DEF(Gosub)
 NODE_ACCEPT_VISITOR_DEF(Program)
 
@@ -159,8 +174,8 @@ QString ExpressionNode::opToString(ExpressionNode::Op op) {
 		QT_TRANSLATE_NOOP("ExpressionNode", "logical and"),
 		QT_TRANSLATE_NOOP("ExpressionNode", "logical or"),
 		QT_TRANSLATE_NOOP("ExpressionNode", "logical xor"),
-		QT_TRANSLATE_NOOP("ExpressionNode", "comma"),, // ,
-		QT_TRANSLATE_NOOP("ExpressionNode", "member"),, // .
+		QT_TRANSLATE_NOOP("ExpressionNode", "comma"), // ,
+		QT_TRANSLATE_NOOP("ExpressionNode", "member"), // .
 		QT_TRANSLATE_NOOP("ExpressionNode", "invalid"),
 	};
 	if (op >= ExpressionNode::opAssign && op < ExpressionNode::opInvalid) {
@@ -184,9 +199,9 @@ QString Unary::opToString(Unary::Op op) {
 }
 
 IfStatement::~IfStatement() {
-	if (mCondition) delete mCondition;
-	if (mBlock) delete mBlock;
-	if (mElse) delete mElse;
+	delete mCondition;
+	delete mBlock;
+	delete mElse;
 }
 
 Node *IfStatement::childNode(int n) const {
@@ -200,10 +215,10 @@ Node *IfStatement::childNode(int n) const {
 }
 
 ForToStatement::~ForToStatement() {
-	if (mFrom) delete mFrom;
-	if (mTo) delete mTo;
-	if (mStep) delete mStep;
-	if (mBlock) delete mBlock;
+	delete mFrom;
+	delete mTo;
+	delete mStep;
+	delete mBlock;
 }
 
 Node *ForToStatement::childNode(int n) const {
@@ -224,9 +239,9 @@ Node *ForToStatement::childNode(int n) const {
 }
 
 ForEachStatement::~ForEachStatement() {
-	if (mVariable) delete mVariable;
-	if (mContainer) delete mContainer;
-	if (mBlock) delete mBlock;
+	delete mVariable;
+	delete mContainer;
+	delete mBlock;
 }
 
 Node *ForEachStatement::childNode(int n) const {
@@ -244,10 +259,10 @@ Node *ForEachStatement::childNode(int n) const {
 }
 
 FunctionDefinition::~FunctionDefinition() {
-	if (mIdentifier) delete mIdentifier;
-	if (mParameterList) delete mParameterList;
-	if (mReturnType) delete mReturnType;
-	if (mBlock) delete mBlock;
+	delete mIdentifier;
+	delete mParameterList;
+	delete mReturnType;
+	delete mBlock;
 }
 
 Node *FunctionDefinition::childNode(int n) const {
@@ -289,7 +304,7 @@ Node *ArrayInitialization::childNode(int n) const {
 Node *Const::childNode(int n) const {
 	switch (n) {
 		case 0:
-			return mIdentifier;
+			return mVariable;
 		case 1:
 			return mValue;
 		default:
@@ -299,9 +314,9 @@ Node *Const::childNode(int n) const {
 }
 
 SelectStatement::~SelectStatement() {
-	if (mVariable) delete mVariable;
+	delete mVariable;
 	qDeleteAll(mCases);
-	if (mDefault) delete mDefault;
+	delete mDefault;
 }
 
 Node *SelectStatement::childNode(int n) const {
@@ -327,30 +342,11 @@ Node *Program::childNode(int n) const {
 
 
 
-ast::Node *VariableDefinition::getMValueType() const
-{
-	return mValueType;
-}
-
-void VariableDefinition::setMValueType(ast::Node *value)
-{
-	mValueType = value;
-}
-
-ast::Identifier *VariableDefinition::getMIdentifier() const
-{
-	return mIdentifier;
-}
-
-void VariableDefinition::setMIdentifier(ast::Identifier *value)
-{
-	mIdentifier = value;
-}
 
 VariableDefinition::~VariableDefinition() {
-	if (mIdentifier) delete mIdentifier;
-	if (mValueType) delete mValueType;
-	if (mValue) delete mValue;
+	delete mIdentifier;
+	delete mValueType;
+	delete mValue;
 }
 
 Node *VariableDefinition::childNode(int n) const {
@@ -360,6 +356,12 @@ Node *VariableDefinition::childNode(int n) const {
 		case 1: return mValueType;
 		case 2: return mValue;
 	}
+	return 0;
+}
+
+SelectCase::~SelectCase() {
+	delete mValue;
+	delete mBlock;
 }
 
 }

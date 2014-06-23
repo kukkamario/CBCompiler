@@ -3,9 +3,10 @@
 #include "value.h"
 #include "function.h"
 #include "builder.h"
+#include "functionvaluetype.h"
 
 FunctionSelectorValueType::FunctionSelectorValueType(Runtime *runtime, const QList<Function *> &functions) :
-	Runtime(runtime),
+	ValueType(runtime),
 	mFunctions(functions)
 {
 
@@ -32,7 +33,7 @@ int FunctionSelectorValueType::size() const {
 	return 0;
 }
 
-ValueType::CastCost FunctionSelectorValueType::castingCostToOtherValueType(ValueType *to) {
+ValueType::CastCost FunctionSelectorValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to != this) return ValueType::ccNoCast;
 	return ValueType::ccNoCost;
 }
@@ -40,6 +41,10 @@ ValueType::CastCost FunctionSelectorValueType::castingCostToOtherValueType(Value
 Value FunctionSelectorValueType::cast(Builder *, const Value &v) const {
 	if (v.valueType() != this) return Value();
 	return v;
+}
+
+QList<Function *> FunctionSelectorValueType::overloads() const {
+	return mFunctions;
 }
 
 

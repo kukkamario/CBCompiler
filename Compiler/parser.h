@@ -27,8 +27,8 @@ class Parser : public QObject {
 		 */
 		bool success() {return mStatus == Ok;}
 
-		ast::Const *tryConstDefinition(TokIterator &i);
-		ast::Global *tryGlobalDefinition(TokIterator &i);
+		ast::Node *tryConstDefinition(TokIterator &i);
+		ast::Node *tryGlobalDefinition(TokIterator &i);
 		ast::Node *tryVariableTypeDefinition(TokIterator &i);
 		ast::Node *tryVariableTypeMark(TokIterator &i);
 		ast::Node *tryVariableAsType(TokIterator &i);
@@ -71,7 +71,7 @@ class Parser : public QObject {
 		ast::Node *expectCallOrArraySubscriptExpression(TokIterator &i);
 		ast::Node *expectPrimaryExpression(TokIterator &i);
 		ast::Identifier *expectIdentifier(TokIterator &i);
-		ast::Node *expectIdentifierAfter(TokIterator &i, const QString &after);
+		ast::Identifier *expectIdentifierAfter(TokIterator &i, const QString &after);
 
 		ast::ArrayInitialization *expectArrayInitialization(TokIterator &i);
 

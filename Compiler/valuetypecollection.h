@@ -1,6 +1,8 @@
 #ifndef VALUETYPECOLLECTION_H
 #define VALUETYPECOLLECTION_H
 #include <QMap>
+#include "constantvalue.h"
+
 class ValueType;
 class ArrayValueType;
 class Runtime;
@@ -14,8 +16,11 @@ class ValueTypeCollection {
 		ValueType *findNamedType(const QString &name);
 
 		ArrayValueType *arrayValueType(ValueType *baseValueType, int dimensions);
+
+		ValueType *constantValueType(ConstantValue::Type type) const;
+		QList<ValueType*> namedTypes() const;
 	private:
-		QMap<QPair<ValueType*, int> , ValueType *> mArrayMapping;
+		QMap<QPair<ValueType*, int> , ArrayValueType *> mArrayMapping;
 		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
 		QMap<QString, ValueType *> mNamedType;
 		Runtime *mRuntime;

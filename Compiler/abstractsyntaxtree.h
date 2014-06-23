@@ -6,10 +6,13 @@
 #include <QPair>
 #include <QTextStream>
 #include "codepoint.h"
+#include <cassert>
 
 class QFile;
 class Function;
 namespace ast {
+void printTabs(QTextStream &s, int tabs);
+
 class Visitor;
 
 class Node;
@@ -40,26 +43,26 @@ class ChildNodeIterator {
 		}
 
 		ChildNodeIterator &operator++() { //++i
-			validId(++mChildNodeId);
 			++mChildNodeId;
+			assert(validId(mChildNodeId));
 			return *this;
 		}
 		ChildNodeIterator operator++(int) { //i++
-			validId(++mChildNodeId);
 			ChildNodeIterator temp = *this;
 			++mChildNodeId;
+			assert(validId(mChildNodeId));
 			return temp;
 		}
 
 		ChildNodeIterator &operator--() { //--i
-			assert(mChildNodeId != 0);
 			--mChildNodeId;
+			assert(validId(mChildNodeId));
 			return *this;
 		}
 		ChildNodeIterator operator--(int) { //i--
-			assert(mChildNodeId != 0);
 			ChildNodeIterator temp = *this;
 			--mChildNodeId;
+			assert(validId(mChildNodeId));
 			return temp;
 		}
 
@@ -154,7 +157,7 @@ class Node {
 		Node() { }
 		Node(const CodePoint &cp) : mCodePoint(cp) { }
 
-		virtual Type type() = 0;
+		virtual Type type() const = 0;
 		virtual ~Node() { }
 
 		virtual const CodePoint &startCodePoint() const { return mCodePoint; }
@@ -189,17 +192,18 @@ class Node {
 		CodePoint mCodePoint;
 };
 
-Node *ChildNodeIterator::operator*() {
+inline Node *ChildNodeIterator::operator*() {
 	return mNode->childNode(mChildNodeId);
 }
 
-bool ChildNodeIterator::validId(int id) {
+inline bool ChildNodeIterator::validId(int id) {
 	//id == mNode->childNodeCount() is the END
 	return id >= 0 && id <= mNode->childNodeCount();
 }
 
 #define NODE_ACCEPT_VISITOR_PRE_DEF public: void accept(Visitor *visitor);
-#define NODE_ACCEPT_VISITOR_DEF (_node_)  void _node_##::accept(Visitor *visitor) { visitor->visit(this); }
+#define NODE_ACCEPT_VISITOR_DEF(_node_)  void _node_ :: accept(Visitor *visitor) { visitor->visit(this); }
+#define NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(_node_) template<> void _node_ ::accept(Visitor *visitor);
 
 class LeafNode : public Node {
 	public:
@@ -207,7 +211,7 @@ class LeafNode : public Node {
 		virtual ~LeafNode() { }
 
 		virtual int childNodeCount() const { return 0; }
-		virtual Node *childNode(int) { assert("LeafNode doesn't have child nodes" && 0); return 0; }
+		virtual Node *childNode(int) const { assert("LeafNode doesn't have child nodes" && 0); return 0; }
 };
 
 class BlockNode : public Node {
@@ -232,19 +236,29 @@ class Literal : public LeafNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Literal(T value, const CodePoint &cp) : LeafNode(cp), mValue(value) { }
-		~Literal() { }
+		virtual ~Literal() { }
 		static Type staticType() { return NT; }
 		Type type() const { return staticType(); }
 		void setValue(T val) { mValue = val; }
 		T value() const { return mValue; }
-
+		void write(QTextStream &s, int tab = 0) {
+			printTabs(s, tab);
+			s << "Node:" << typeAsString() << " \"" << this->value() << "\"\n";
+		}
 	protected:
 		T mValue;
 };
 
 typedef Literal<int, Node::ntInteger> Integer;
-typedef Literal<float, Node::ntFloat> Float;
+typedef Literal<float, Node::ntFloat>  Float;
 typedef Literal<QString, Node::ntString> String;
+
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(Integer)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(Float)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(String)
+
+
+
 
 
 //Identifier
@@ -258,19 +272,27 @@ class IdentifierT : public LeafNode {
 		Type type() const { return staticType(); }
 		void setName(const QString &name) { mName = name; }
 		QString name() const { return mName; }
+		void write(QTextStream &s, int tab = 0) {
+			printTabs(s, tab);
+			s << "Node:" << typeAsString() << " \"" << this->name() << "\"\n";
+		}
 	protected:
 		QString mName;
 };
 
-typedef IdentifierT<Node::ntIdentifier> Identifier;
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(IdentifierT<Node::ntIdentifier>)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(IdentifierT<Node::ntLabel>)
+
 typedef IdentifierT<Node::ntLabel> Label;
+typedef IdentifierT<Node::ntIdentifier> Identifier;
+
 
 
 class Return : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Return(const CodePoint &cp) : Node(cp), mValue(0) { }
-		~Return() { if (mValue) delete mValue; }
+		~Return() { delete mValue; }
 		static Type staticType() { return ntReturn; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return (mValue != 0) ? 1 : 0; }
@@ -324,7 +346,7 @@ class NamedType : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		NamedType(const CodePoint &cp) : Node(cp), mIdentifier(0) { }
-		~NamedType() { if (mIdentifier) delete mIdentifier; }
+		~NamedType() { delete mIdentifier; }
 		static Type staticType() { return ntNamedType; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -340,7 +362,7 @@ class ArrayType : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ArrayType(const CodePoint &cp) : Node(cp), mParentType(0), mDimensions(0) { }
-		~ArrayType() { if (mParentType) delete mParentType; }
+		~ArrayType() { delete mParentType; }
 		static Type staticType() { return ntArrayType; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -360,17 +382,16 @@ class Variable : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Variable(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0) { }
-		~Variable() { if (mIdentifier) delete mIdentifier; if (mType) delete mType; }
+		~Variable() { delete mIdentifier; delete mType; }
 		static Type staticType() { return ntVariable; }
 		Type type() const { return staticType(); }
-		int childNodeCount() const { return 1 + (mType ? 1 : 0); }
-		Node *childNode(int n);
+		int childNodeCount() const { return 2; }
+		Node *childNode(int n) const;
 
 		Identifier *identifier() const { return mIdentifier; }
 		void setIdentifier(Identifier *identifier) { mIdentifier = identifier; }
 		Node *valueType() const { return mType; }
 		void setValueType(Node *type) { mType = type; }
-		bool hasDefaultType() const { return mType == 0; }
 	protected:
 		Identifier *mIdentifier;
 		Node *mType;
@@ -408,7 +429,7 @@ class ExpressionNode : public Node {
 		static QString opToString(Op op);
 
 		ExpressionNode(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
-		~ExpressionNode() { if (mOperand) delete mOperand; }
+		~ExpressionNode() { delete mOperand; }
 		static Type staticType() { return ntExpressionNode; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -433,7 +454,7 @@ class Expression : public Node {
 		};
 
 		Expression(Associativity as, const CodePoint &cp) : Node(cp), mFirstOperand(0), mAssociativity(as) { }
-		~Expression() { if (mFirstOperand) delete mFirstOperand; qDeleteAll(mOperations); }
+		~Expression() { delete mFirstOperand; qDeleteAll(mOperations); }
 		static Type staticType() { return ntExpression; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mOperations.size(); }
@@ -471,7 +492,7 @@ class FunctionCall : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		FunctionCall(const CodePoint &cp) : Node (cp), mFunction(0), mParameters(0) {}
-		~FunctionCall() { if (mFunction) delete mFunction; if (mParameters) delete mParameters; }
+		~FunctionCall() { delete mFunction; delete mParameters; }
 		static Type staticType() { return ntFunctionCall; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
@@ -497,7 +518,7 @@ class KeywordFunctionCall : public Node {
 		};
 
 		KeywordFunctionCall(KeywordFunction type, const CodePoint &cp) : Node (cp), mKeyword(type), mParameters(0) {}
-		~KeywordFunctionCall() { if (mParameters) delete mParameters; }
+		~KeywordFunctionCall() { delete mParameters; }
 		static Type staticType() { return ntKeywordFunctionCall; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -514,7 +535,7 @@ class ArraySubscript : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		ArraySubscript(const CodePoint &cp) : Node (cp), mArray(0), mSubscript(0) {}
-		~ArraySubscript() { if (mArray) delete mArray; if (mSubscript) delete mSubscript; }
+		~ArraySubscript() { delete mArray; delete mSubscript; }
 		static Type staticType() { return ntFunctionCall; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
@@ -532,7 +553,7 @@ class DefaultValue : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		DefaultValue(const CodePoint &cp) : Node (cp), mValueType(0) { }
-		~DefaultValue() { if (mValueType) delete mValueType; }
+		~DefaultValue() { delete mValueType; }
 		static Type staticType() { return ntDefaultValue; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -556,7 +577,7 @@ class Unary : public Node {
 		static QString opToString(Op op);
 
 		Unary(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
-		~Unary() { if (mOperand) delete mOperand; }
+		~Unary() { delete mOperand; }
 		static Type staticType() { return ntUnary; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
@@ -619,8 +640,8 @@ class VariableDefinitionStatement : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		VariableDefinitionStatement(const CodePoint &cp) : Node(cp) { }
-		~VariableDefinitionStatement() { qDeleteAll(mDefinitions); }
-		static Type staticType() { return NT; }
+		virtual ~VariableDefinitionStatement() { qDeleteAll(mDefinitions); }
+		static Type staticType() { return static_cast<Type>(NT); }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return mDefinitions.size(); }
 		Node *childNode(int n) const { return mDefinitions.at(n); }
@@ -631,8 +652,13 @@ class VariableDefinitionStatement : public Node {
 	protected:
 		QList<Node*> mDefinitions;
 };
+
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(VariableDefinitionStatement<Node::ntDim>)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(VariableDefinitionStatement<Node::ntGlobal>)
+
 typedef VariableDefinitionStatement<Node::ntDim> Dim;
 typedef VariableDefinitionStatement<Node::ntGlobal> Global;
+
 
 class Redim : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
@@ -656,19 +682,19 @@ class TypeDefinition : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		TypeDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
-		~TypeDefinition() { if (mIdentifier) delete mIdentifier; qDeleteAll(mFields); }
+		~TypeDefinition() { delete mIdentifier; qDeleteAll(mFields); }
 		static Type staticType() { return ntTypeDefinition; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mFields.size(); }
 		Node *childNode(int n) const { if (n == 0) return mIdentifier; return mFields.at(n - 1); }
 
-		Node *identifier() const { return mIdentifier; }
-		void setIdentifier(Node *n) { mIdentifier = n; }
+		Identifier *identifier() const { return mIdentifier; }
+		void setIdentifier(Identifier *n) { mIdentifier = n; }
 		const QList<Node*> &fields() const { return mFields; }
 		void setFields(const QList<Node*> &fields) { mFields = fields; }
 		void appendField(Node *n) { mFields.append(n); }
 	protected:
-		Node *mIdentifier;
+		Identifier *mIdentifier;
 		QList<Node*> mFields;
 };
 
@@ -719,7 +745,7 @@ class SingleConditionBlockStatement : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		SingleConditionBlockStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mCondition(0), mBlock(0) { }
-		~SingleConditionBlockStatement() { if (mCondition) delete mCondition; if (mBlock) delete mBlock; }
+		~SingleConditionBlockStatement() { delete mCondition; delete mBlock; }
 		static Type staticType() { return NT; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
@@ -736,6 +762,11 @@ class SingleConditionBlockStatement : public BlockNode {
 
 typedef SingleConditionBlockStatement<Node::ntWhileStatement, true> WhileStatement;
 typedef SingleConditionBlockStatement<Node::ntRepeatUntilStatement, false> RepeatUntilStatement;
+
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(WhileStatement)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(RepeatUntilStatement)
+
+
 
 class RepeatForeverStatement : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
@@ -800,28 +831,6 @@ class ForEachStatement : public BlockNode {
 		Node *mBlock;
 };
 
-class SelectStatement : public BlockNode {
-		NODE_ACCEPT_VISITOR_PRE_DEF
-	public:
-		SelectStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mDefault(0) { }
-		~SelectStatement();
-		static Type staticType() { return ntSelectStatement; }
-		Type type() const { return staticType(); }
-		int childNodeCount() { return 1 + mCases.size() + (mDefault != 0 ? 1 : 0); }
-		Node *childNode(int n) const;
-
-		Node *variable() const { return mVariable; }
-		void setVariable(Node *var) { mVariable = var; }
-		const QList<Node*> cases() const { return mCases; }
-		void setCases(const QList<Node*> &cases) { mCases = cases; }
-		void appendCase(Node *n) { mCases.append(n); }
-		Node *defaultCase() const { return mDefault; }
-		void setDefaultCase(Node *n) { mDefault = n; }
-	protected:
-		Node *mVariable;
-		QList<Node*> mCases;
-		Node *mDefault;
-};
 
 class SelectCase : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
@@ -842,11 +851,35 @@ class SelectCase : public BlockNode {
 		Node *mBlock;
 };
 
+class SelectStatement : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		SelectStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mVariable(0), mDefault(0) { }
+		~SelectStatement();
+		static Type staticType() { return ntSelectStatement; }
+		Type type() const { return staticType(); }
+		int childNodeCount() const { return 1 + mCases.size() + (mDefault != 0 ? 1 : 0); }
+		Node *childNode(int n) const;
+
+		Node *variable() const { return mVariable; }
+		void setVariable(Node *var) { mVariable = var; }
+		const QList<SelectCase*> &cases() const { return mCases; }
+		void setCases(const QList<SelectCase*> &cases) { mCases = cases; }
+		void appendCase(SelectCase *n) { mCases.append(n); }
+		Node *defaultCase() const { return mDefault; }
+		void setDefaultCase(Node *n) { mDefault = n; }
+	protected:
+		Node *mVariable;
+		QList<SelectCase*> mCases;
+		Node *mDefault;
+};
+
+
 class Const : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Const(const CodePoint &cp) : Node(cp), mVariable(0), mValue(0) { }
-		~Const() { if (mIdentifier) delete mIdentifier; if (mValue) delete mValue; }
+		~Const() { delete mVariable; delete mValue; }
 		static Type staticType() { return ntConst; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
@@ -891,14 +924,14 @@ template <Node::Type NT>
 class GotoT : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		GotoT(const QString &label, const CodePoint &cp) : Node(cp), mLabel(label) { }
-		~GotoT() { if (mLabel) delete mLabel; }
+		GotoT(const CodePoint &cp) : Node(cp), mLabel(0) { }
+		~GotoT() { delete mLabel; }
 		static Type staticType() { return NT; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node index"); return mLabel; }
 
-		void setLabel(Node *n) { mLabel = label; }
+		void setLabel(Node *n) { mLabel = n; }
 		Node *label() const { return mLabel; }
 	protected:
 		Node *mLabel;
@@ -906,6 +939,10 @@ class GotoT : public Node {
 
 typedef GotoT<Node::ntGoto> Goto;
 typedef GotoT<Node::ntGosub> Gosub;
+
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(GotoT<Node::ntGoto>)
+NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(GotoT<Node::ntGosub>)
+
 
 class Program : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
@@ -918,8 +955,8 @@ class Program : public Node {
 		Node *childNode(int n) const;
 
 
-		Node *mainBlock() const { return mMainBlock; }
-		void setMainBlock(Node *n) { mMainBlock = n; }
+		Block *mainBlock() const { return mMainBlock; }
+		void setMainBlock(Block *n) { mMainBlock = n; }
 		const QList<FunctionDefinition*> &functionDefinitions() const { return mFunctionDefinitions; }
 		void setFunctionDefinitions(const QList<FunctionDefinition*> funcDefs) { mFunctionDefinitions = funcDefs; }
 		const QList<TypeDefinition*> &typeDefitions() const { return mTypeDefinitions; }
@@ -927,7 +964,7 @@ class Program : public Node {
 	private:
 		QList<FunctionDefinition*> mFunctionDefinitions;
 		QList<TypeDefinition*> mTypeDefinitions;
-		Node *mMainBlock;
+		Block *mMainBlock;
 };
 
 

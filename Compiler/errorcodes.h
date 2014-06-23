@@ -113,6 +113,7 @@ enum ErrorCode {
 	ecCantCastValue,
 	ecExpectingVariableDefinition,
 	ecSymbolNotValueType,
+	ecIntegerDividedByZero,
 
 	ecCantWriteBitcodeFile,
 

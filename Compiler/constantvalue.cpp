@@ -1,4 +1,5 @@
 #include "constantvalue.h"
+#include "valuetype.h"
 #include <math.h>
 
 int cbPow(int a, int b) {
@@ -18,25 +19,6 @@ ConstantValue::ConstantValue():
 {
 }
 
-ConstantValue::ConstantValue(eType t) :
-	mType(t) {
-	switch(t) {
-		case Boolean:
-			mData.mBool = false;
-		case Byte:
-			mData.mByte = 0;
-		case Short:
-			mData.mShort = 0;
-		case Integer:
-			mData.mInt = 0;
-		case Float:
-			mData.mFloat = 0;
-		case String:
-			mData.mString.construct();
-		default:
-			return;
-	}
-}
 
 ConstantValue::ConstantValue(bool t) :
 	mType(Boolean) {
@@ -82,6 +64,27 @@ ConstantValue::ConstantValue(const ConstantValue &o) :
 	else {
 		this->mData = o.mData;
 	}
+}
+
+ConstantValue::ConstantValue(ConstantValue::Type type) :
+	mType(type) {
+	switch (type) {
+		case Byte:
+			mData.mByte = 0;
+		case Short:
+			mData.mShort = 0;
+		case Integer:
+			mData.mInt = 0;
+		case Float:
+			mData.mFloat = 0;
+		case Boolean:
+			mData.mBool = 0;
+		case String:
+			mData.mString.construct();
+		default:
+			mData.mInt = 0;
+	}
+
 }
 
 ConstantValue::~ConstantValue() {
@@ -175,7 +178,7 @@ ConstantValue ConstantValue::minus(const ConstantValue &a) {
 }
 
 ConstantValue ConstantValue::not_(const ConstantValue &a) {
-	if (a.mType == TypePointer) {
+	if (a.mType == Null) {
 		return ConstantValue();
 	}
 
@@ -1190,17 +1193,17 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 }
 
 ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
+	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
 	return a.toBool() && b.toBool();
 }
 
 ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
+	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
 	return a.toBool() || b.toBool();
 }
 
 ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b){
-	if (a.mType == TypePointerCommon || b.mType == TypePointerCommon) return ConstantValue();
+	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
 	return a.toBool() ^ b.toBool();
 }
 
@@ -1376,7 +1379,7 @@ QString ConstantValue::valueInfo() const {
 			return QString::number(mData.mFloat);
 		case String:
 			return "\"" + *mData.mString  + "\"";
-		case TypePointerCommon:
+		case  Null:
 			return "NULL";
 		default:
 			return QString("Invalid constant value");

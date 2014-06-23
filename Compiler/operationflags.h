@@ -18,7 +18,7 @@ namespace OperationFlag {
 
 Q_DECLARE_FLAGS(OperationFlags, OperationFlag::OperationFlagEnum)
 
-bool operationFlagsContainFatalFlags(OperationFlags flags) {
+inline bool operationFlagsContainFatalFlags(OperationFlags flags) {
 	return (flags & (OperationFlag::IntegerDividedByZero | OperationFlag::NoSuchOperation | OperationFlag::ReferenceRequired | OperationFlag::OperandBCantBeCastedToA)) != 0;
 }
 

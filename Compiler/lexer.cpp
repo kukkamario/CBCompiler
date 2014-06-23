@@ -71,9 +71,9 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &sett
 	combineTokens();
 
 	//Dirty trick, but works
-	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
-	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
-	mTokens.append(Token(Token::EndOfTokens, mFiles.first().second.end(), mFiles.first().second.end(), 0, mFiles.first().first));
+	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
+	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
+	mTokens.append(Token(Token::EndOfTokens, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
 	return ret;
 }
 
@@ -111,7 +111,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			if (i == code.end()) return state;
 			readToEOL(i, code.end());
 			if (i != code.end()) {
-				addToken(Token(Token::EOL, i, i + 1, line, curFilePath));
+				addToken(Token(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
 				++i;
 				line++;
 				lineStart = i;
@@ -200,11 +200,13 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			QString::iterator start = i;
 			i++;
 			if (*i == '=') {
-				addToken(Token(Token::opLessEqual, start, ++i, codePoint(i, lineStart, line, curFilePath)));
+				++i;
+				addToken(Token(Token::opLessEqual, start, i, codePoint(i, lineStart, line, curFilePath)));
 				continue;
 			}
 			if (*i == '>') {
-				addToken(Token(Token::opNotEqual, start, ++i, codePoint(i, lineStart, line, curFilePath)));
+				++i;
+				addToken(Token(Token::opNotEqual, start, i, codePoint(i, lineStart, line, curFilePath)));
 				continue;
 			}
 			addToken(Token(Token::opLess, start, i, codePoint(i, lineStart, line, curFilePath)));
@@ -214,7 +216,8 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			QString::iterator begin = i;
 			i++;
 			if (*i == '=') {
-				addToken(Token(Token::opGreaterEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
+				++i;
+				addToken(Token(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
 				continue;
 			}
 			addToken(Token(Token::opGreater, begin, i, codePoint(begin, lineStart, line, curFilePath)));
@@ -225,15 +228,18 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			i++;
 			if (i != code.end()) {
 				if (*i == '>') {
-					addToken(Token(Token::opGreaterEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
+					++i;
+					addToken(Token(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
 					continue;
 				}
 				if (*i == '<') {
-					addToken(Token(Token::opLessEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
+					++i;
+					addToken(Token(Token::opLessEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
 					continue;
 				}
 				if (*i == '=') {
-					addToken(Token(Token::opEqual, begin, ++i, codePoint(begin, lineStart, line, curFilePath)));
+					++i;
+					addToken(Token(Token::opEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
 					continue;
 				}
 			}
@@ -405,7 +411,7 @@ Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterat
 		}
 		i++;
 	}
-	error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), codePoint(i - 1, lineStart, line, file);
+	error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), codePoint(i - 1, lineStart, line, file));
 	return ErrorButContinue;
 }
 
@@ -494,11 +500,11 @@ void Lexer::combineTokens() {
 	QList<Token>::Iterator i = mTokens.begin();
 	QList<Token>::Iterator last;
 	while (i != mTokens.end()) {
-		if (i->mType == Token::kEnd) {
+		if (i->type() == Token::kEnd) {
 			last = i;
 			i++;
 			if (i != mTokens.end()) {
-				if (i->mType == Token::kFunction) {
+				if (i->type() == Token::kFunction) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = i->end();
 					i++;
@@ -507,7 +513,7 @@ void Lexer::combineTokens() {
 					i++;
 					continue;
 				}
-				if (i->mType == Token::kIf) {
+				if (i->type() == Token::kIf) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = i->end();
 					i++;
@@ -516,7 +522,7 @@ void Lexer::combineTokens() {
 					i++;
 					continue;
 				}
-				if (i->mType == Token::kSelect) {
+				if (i->type() == Token::kSelect) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = i->end();
 					i++;
@@ -525,7 +531,7 @@ void Lexer::combineTokens() {
 					i++;
 					continue;
 				}
-				if (i->mType == Token::kType) {
+				if (i->type() == Token::kType) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = i->end();
 					i++;
@@ -540,14 +546,14 @@ void Lexer::combineTokens() {
 				return;
 			}
 		}
-		if (i->mType == Token::EOL) {
+		if (i->type() == Token::EOL) {
 			i++;
 			if (i == mTokens.end()) return;
-			if (i->mType == Token::Identifier) {
+			if (i->type() == Token::Identifier) {
 				last = i;
 				i++;
 				if (i == mTokens.end()) return;
-				if (i->mType == Token::Colon) {
+				if (i->type() == Token::Colon) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = last->end();
 					i++;

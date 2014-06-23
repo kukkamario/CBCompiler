@@ -63,7 +63,6 @@ class Runtime : public QObject {
 
 		const ValueTypeCollection &valueTypeCollection() const { return mValueTypeCollection; }
 		ValueTypeCollection &valueTypeCollection() { return mValueTypeCollection; }
-
 	private:
 		bool loadRuntimeFunctions();
 		bool loadDefaultRuntimeFunctions();

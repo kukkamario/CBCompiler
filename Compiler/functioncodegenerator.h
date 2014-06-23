@@ -1,114 +1,68 @@
 #ifndef FUNCTIONCODEGENERATOR_H
 #define FUNCTIONCODEGENERATOR_H
-#include <QObject>
-#include <QVector>
-#include <QStack>
 
-#include "llvm.h"
+#include <QObject>
+#include "astvisitor.h"
+#include "settings.h"
 #include "scope.h"
-#include "abstractsyntaxtree.h"
-#include "expressioncodegenerator.h"
+#include "value.h"
 #include "builder.h"
-class QFile;
+
 class CBFunction;
-/**
- * @brief The FunctionCodeGenerator class generates llvm-ir for a function. It expects AST and Scope to valid.
- */
-class FunctionCodeGenerator: public QObject{
+
+class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Q_OBJECT
 	public:
-		explicit FunctionCodeGenerator(QObject *parent = 0);
-		/**
-		 * @brief Sets the runtime used for the generation.
-		 * @param r Runtime
-		 */
-		void setRuntime(Runtime *r);
+		FunctionCodeGenerator(Runtime *runtime, Settings *settings, QObject *parent = 0);
+		bool generate(Builder *builder, ast::Node *block, CBFunction *func, Scope *globalScope);
+		bool generateMainBlock(Builder *builder, ast::Node *block, llvm::Function *func, Scope *localScope, Scope *globalScope);
 
-		/**
-		 * @brief setFunction
-		 * @param func The function in which generateFunctionCode generates the llvm-ir.
-		 */
-		void setFunction(llvm::Function *func);
-		void setScope(Scope *scope);
-		void setSetupBasicBlock(llvm::BasicBlock *bb);
-		void setBuilder(Builder *builder);
-
-		void generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc);
-
-		/**
-		 * @brief generateMainScope generates llvm-IR code for a AST tree.
-		 *
-		 * llvm::Function where llvm-IR is inserted have to be set using setFunction. The scope should be specificated with setScope.
-		 * @param n The block that contains AST.
-		 */
-		void generateMainScope(ast::Block *n);
-		Scope *scope() const {return mScope;}
-		llvm::Function *function()const{return mFunction;}
-		Runtime *runtime() const {return mRuntime;}
 	private:
-		void generate(ast::Node *n);
-		void generate(ast::IfStatement *n);
-		void generate(ast::AssignmentExpression *n);
-		void generate(ast::CommandCall *n);
-		void generate(ast::RepeatForeverStatement *n);
-		void generate(ast::FunctionCallOrArraySubscript *n);
-		void generate(ast::Exit *n);
-		void generate(ast::Return *n);
-		void generate(ast::Block *n);
-		void generate(ast::ArrayDefinition *n);
-		void generate(ast::ArraySubscriptAssignmentExpression *n);
-		void generate(ast::SelectStatement *n);
-		void generate(ast::ForEachStatement *n);
-		void generate(ast::ForToStatement *n);
-		void generate(ast::Goto *n);
-		void generate(ast::Gosub *n);
-		void generate(ast::RepeatUntilStatement *n);
-		void generate(ast::WhileStatement *n);
-		void generate(ast::VariableDefinition *n);
-		void generate(ast::Redim *n);
-		void generate(ast::Label *n);
-		void generate(ast::Dim *n);
-		void generate(ast::SpecialFunctionCall *n);
+		void visit(ast::Expression *n);
+		void visit(ast::Const *n);
+		void visit(ast::VariableDefinition *n);
+		void visit(ast::ArrayInitialization *n);
+		void visit(ast::FunctionCall *n);
 
-		void basicBlockGenerationPass(ast::Block *n);
-		void basicBlockGenerationPass(ast::IfStatement *n);
-		void basicBlockGenerationPass(ast::ForToStatement *n);
-		void basicBlockGenerationPass(ast::ForEachStatement *n);
-		void basicBlockGenerationPass(ast::RepeatUntilStatement *n);
-		void basicBlockGenerationPass(ast::RepeatForeverStatement *n);
-		void basicBlockGenerationPass(ast::Label *n);
-		void basicBlockGenerationPass(ast::WhileStatement *n);
-		void basicBlockGenerationPass(ast::SelectStatement *n);
+		Value generate(ast::Integer *n);
+		Value generate(ast::String *n);
+		Value generate(ast::Float *n);
+		Value generate(ast::Variable *n);
+		Value generate(ast::Identifier *n);
+		Value generate(ast::Expression *n);
+		Value generate(ast::FunctionCall *n);
+		Value generate(ast::KeywordFunctionCall *n);
+		Value generate(ast::ArraySubscript *n);
 
-		void addBasicBlock();
+		Value generate(ast::WhileStatement *n);
+		Value generate(ast::RepeatForeverStatement *n);
+		Value generate(ast::RepeatUntilStatement *n);
+		Value generate(ast::ForToStatement *n);
+		Value generate(ast::ForEachStatement *n);
+		Value generate(ast::SelectStatement *n);
+		Value generate(ast::SelectCase *n);
+		Value generate(ast::Const *n);
+		Value generate(ast::Node *n);
 
-		void generateLocalVariables();
+		Function *findBestOverload(const QList<Function*> &functions, const QList<Value> &parameters, const CodePoint &cp);
+		QList<Value> generateParameterList(ast::Node *n);
+
+		bool generateAllocas();
 		void generateDestructors();
 
-		bool isCurrentBBEmpty() const { return mCurrentBasicBlock->getInstList().empty(); }
-		void nextBasicBlock();
-		void pushExit(const QVector<llvm::BasicBlock*>::ConstIterator &i) { mExitStack.push(i);}
-		void pushExit(ast::Node *n) { const QVector<llvm::BasicBlock*>::ConstIterator i = mExitLocations[n]; assert(i != mBasicBlocks.end()); pushExit(i); }
-		void popExit() { mExitStack.pop(); }
-		llvm::BasicBlock *currentExit() const { assert(!mExitStack.isEmpty()); return *mExitStack.top(); }
 
-		Scope *mScope;
+		Settings *mSettings;
+		Scope *mLocalScope;
+		Scope *mGlobalScope;
+		Runtime *mRuntime;
 		Builder *mBuilder;
 		llvm::Function *mFunction;
-		llvm::BasicBlock *mSetupBasicBlock;
-		QVector<llvm::BasicBlock*> mBasicBlocks;
-		QVector<llvm::BasicBlock*>::ConstIterator mCurrentBasicBlockIt;
-		llvm::BasicBlock *mCurrentBasicBlock;
-		QMap<ast::Node*, QVector<llvm::BasicBlock*>::ConstIterator> mExitLocations;
-		QStack<QVector<llvm::BasicBlock*>::ConstIterator> mExitStack;
-		ExpressionCodeGenerator mExprGen;
-		Runtime *mRuntime;
-		ValueType *mReturnType;
-	public slots:
-
+		bool mValid;
 	signals:
-		void error(int code, QString msg, int line, const QString &file);
-		void warning(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, CodePoint codePoint);
+		void error(int code, QString msg, CodePoint codePoint);
+	private slots:
+		void errorOccured(int, QString, CodePoint);
 };
 
 #endif // FUNCTIONCODEGENERATOR_H

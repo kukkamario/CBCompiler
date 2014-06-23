@@ -30,6 +30,7 @@ Runtime::Runtime():
 	mByteValueType(0),
 	mBooleanValueType(0),
 	mTypePointerCommonValueType(0),
+	mValueTypeCollection(this),
 	mDataLayout(0) {
 	assert(runtimeInstance == 0);
 	runtimeInstance = this;
@@ -37,13 +38,7 @@ Runtime::Runtime():
 
 Runtime::~Runtime() {
 	runtimeInstance = 0;
-	delete mBooleanValueType;
-	delete mIntValueType;
-	delete mShortValueType;
-	delete mByteValueType;
-	delete mStringValueType;
 	delete mTypePointerCommonValueType;
-	delete mFloatValueType;
 }
 
 bool Runtime::load(StringPool *strPool, const Settings &settings) {
@@ -83,7 +78,7 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mValueTypeCollection.addValueType(mIntValueType);
 
 	//String
-	mStringValueType = new StringValueType(strPool, this, mModule);
+	mStringValueType = new StringValueType(strPool, this);
 	llvm::StructType *str = mModule->getTypeByName("struct.CB_StringData");
 	if (!str) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_StringData\" in runtime library bitcode"), CodePoint());
@@ -153,7 +148,7 @@ bool Runtime::loadFunctionMapping(const QString &functionMapping) {
 		if (line.isEmpty()) continue;
 		QStringList parts = line.split('=');
 		if (parts.size() != 2) {
-			emit error(ErrorCodes::ecInvalidFunctionMappingFile, tr("Invalid function mapping file"), lineNum, functionMapping);
+			emit error(ErrorCodes::ecInvalidFunctionMappingFile, tr("Invalid function mapping file"), CodePoint(lineNum, 1, functionMapping));
 			return false;
 		}
 		mFunctionMapping.insert(parts.first(), parts.last());
@@ -180,7 +175,7 @@ bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
 
 		llvm::Type *type = mModule->getTypeByName(dtName.toStdString());
 		if (!type) {
-			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), 0, customDataTypes);
+			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), CodePoint(0, 0, customDataTypes));
 			valid = false;
 			continue;
 		}
@@ -198,16 +193,6 @@ Runtime *Runtime::instance() {
 	return runtimeInstance;
 }
 
-
-ValueType *Runtime::findValueType(ValueType::eType valType) {
-	ValueType *vt = mValueTypeEnum[valType];
-	assert(vt);
-	return vt;
-}
-
-ValueType *Runtime::findValueType(llvm::Type *llvmType) {
-	return mLLVMValueTypeMapping.value(llvmType);
-}
 
 bool Runtime::loadRuntimeFunctions() {
 	bool valid = true;

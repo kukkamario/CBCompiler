@@ -1,6 +1,10 @@
 #include "valuetype.h"
 #include "llvm.h"
 #include "value.h"
+#include "abstractsyntaxtree.h"
+#include "builder.h"
+#include "floatvaluetype.h"
+#include "booleanvaluetype.h"
 
 ValueType::ValueType(Runtime *r):
 	mType(0),
@@ -14,15 +18,15 @@ ValueType::ValueType(Runtime *r, llvm::Type *type) :
 }
 
 bool ValueType::canBeCastedToValueType(ValueType *to) const {
-	return castingCostToOtherValueType(to) < sMaxCastCost;
+	return castingCostToOtherValueType(to) != ccNoCast;
 }
 
-Value ValueType::generateOperation(int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+Value ValueType::generateOperation(Builder *, int , const Value &, const Value &, OperationFlags &operationFlags) const {
 	operationFlags = OperationFlag::NoSuchOperation;
 	return Value();
 }
 
-Value ValueType::generateOperation(int opType, const Value &operand, OperationFlags &operationFlags) const {
+Value ValueType::generateOperation(Builder *, int , const Value &, OperationFlags &operationFlags) const {
 	operationFlags = OperationFlag::NoSuchOperation;
 	return Value();
 }
@@ -170,7 +174,7 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				Value op1 = operand2.valueType()->cast(operand1);
+				Value op1 = operand2.valueType()->cast(builder, operand1);
 				return builder->lessEqual(op1, operand2);
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
@@ -304,8 +308,8 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			operationFlags |= castCostOperationFlags(cc2);
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-			Value op1 = mRuntime->booleanValueType()->cast(operand1);
-			Value op2 = mRuntime->booleanValueType()->cast(operand2);
+			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
+			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
 			return builder->and_(op1, op2);
 		}
@@ -318,8 +322,8 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			operationFlags |= castCostOperationFlags(cc2);
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-			Value op1 = mRuntime->booleanValueType()->cast(operand1);
-			Value op2 = mRuntime->booleanValueType()->cast(operand2);
+			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
+			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
 			return builder->or_(op1, op2);
 		}
@@ -332,14 +336,16 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			operationFlags |= castCostOperationFlags(cc2);
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-			Value op1 = mRuntime->booleanValueType()->cast(operand1);
-			Value op2 = mRuntime->booleanValueType()->cast(operand2);
+			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
+			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
 			return builder->xor_(op1, op2);
 		}
 		case ast::ExpressionNode::opComma:
 			return operand2;
 	}
+	assert("Invalid ast::ExpressionNode::Op" && 0);
+	return Value();
 }
 
 Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
@@ -355,7 +361,7 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			operationFlags = castCostOperationFlags(cc);
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-			Value op = this->cast(operand);
+			Value op = this->cast(builder, operand);
 			return builder->not_(op);
 		}
 		case ast::Unary::opPositive: {
@@ -366,4 +372,6 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			return Value();
 		}
 	}
+	assert("Invalid ast::Unary::Op" && 0);
+	return Value();
 }

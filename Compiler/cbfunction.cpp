@@ -47,6 +47,6 @@ Value CBFunction::call(Builder *builder, const QList<Value> &params) {
 		return Value();
 	}
 	else {
-		return Value(mReturnValue, ret);
+		return Value(mReturnValue, ret, false);
 	}
 }

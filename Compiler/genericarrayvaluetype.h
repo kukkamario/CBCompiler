@@ -18,7 +18,7 @@ public:
 	int size() const;
 
 	bool canBeCastedToValueType(ValueType *to) const;
-	CastCost castingCostToOtherValueType(ValueType *to) const;
+	CastCost castingCostToOtherValueType(const ValueType *to) const;
 
 	virtual Value cast(Builder *builder, const Value &v) const = 0;
 

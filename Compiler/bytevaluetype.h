@@ -8,7 +8,7 @@ class ByteValueType : public ValueType {
 		BasicType basicType() const { return Byte; }
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
-		CastCost castingCostToOtherValueType(ValueType *to) const;
+		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		llvm::Constant *constant(quint8 i) const;
 		llvm::Constant *defaultValue() const;
@@ -18,6 +18,7 @@ class ByteValueType : public ValueType {
 
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return true;}
+		bool isNamedValueType() const { return true; }
 		int size() const { return 1; }
 	private:
 };

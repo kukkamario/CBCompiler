@@ -4,8 +4,7 @@
 #include <QObject>
 #include "llvm.h"
 #include "operationflags.h"
-
-class Value;
+#include "value.h"
 namespace llvm {
 	class Value;
 	class Type;
@@ -19,11 +18,14 @@ class ValueType {
 	public:
 		enum CastCost {
 			ccNoCost = 0,
-			ccCastToBigger = 1,
-			ccCastToSmaller = 50,
-			ccCastToString = 2500,
-			ccCastFromString = 125000,
-			ccNoCast = 6250000
+			ccCastToBoolean,
+			ccCastToBigger,
+			ccCastToSmaller,
+			ccCastToString,
+			ccCastFromString,
+
+			//Must be the last
+			ccNoCast
 		};
 
 		/* Keep this priority order */
@@ -45,6 +47,7 @@ class ValueType {
 		llvm::Type *llvmType() const {return mType;}
 		virtual bool isTypePointer() const = 0;
 		virtual bool isNumber() const = 0;
+		virtual bool isFunctionSelector() const { return false; }
 		virtual llvm::Constant *defaultValue() const = 0;
 
 		virtual BasicType basicType() const { return Unknown; }
@@ -58,15 +61,16 @@ class ValueType {
 		bool canBeCastedToValueType(ValueType *to) const;
 		/** Calculates cost for casting this ValueType to given ValueType.
 		 *If returned cost is ccNoCast, cast cannot be done. */
-		virtual CastCost castingCostToOtherValueType(ValueType *to) const = 0;
+		virtual CastCost castingCostToOtherValueType(const ValueType *to) const = 0;
 
 		virtual Value cast(Builder *builder, const Value &v) const = 0;
 
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
 
-		virtual Value member(Builder *builder, const Value &self, const QString &name) const { return Value(); }
-		virtual ValueType *memberType(const QString &name) const { return 0; }
+
+		virtual Value member(Builder *, const Value &, const QString &) const { return Value(); }
+		virtual ValueType *memberType(const QString &) const { return 0; }
 		bool hasMember(const QString &name) const { return memberType(name) != 0; }
 		
 		virtual bool isCallable() const { return false; }

@@ -7,10 +7,9 @@ class TypeValueType : public ValueType {
 		TypeValueType(Runtime *r, llvm::Type *type);
 		QString name() const { return QObject::tr("Type"); }
 		llvm::Type *llvmType() { return mType; }
-		eType type() const { return Type; }
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
-		CastCostType castingCostToOtherValueType(ValueType *to) const;
+		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *, const Value &v) const;
 		llvm::Constant *defaultValue() const;
 		bool setConstructTypeFunction(llvm::Function * func);
@@ -29,6 +28,7 @@ class TypeValueType : public ValueType {
 		bool isNumber() const{return false;}
 		int size() const;
 		bool isValid();
+		bool isNamedValueType() const { return true; }
 	private:
 	llvm::Function *mConstructTypeFunction;
 	llvm::Function *mNewFunction;

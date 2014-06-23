@@ -8,6 +8,10 @@ VariableSymbol::VariableSymbol(const QString &name, ValueType *t, const CodePoin
 	assert(t);
 }
 
+VariableSymbol::~VariableSymbol() {
+
+}
+
 QString VariableSymbol::info() const {
 	return QString("Variable \"%1\" %2").arg(mName, mValueType->name());
 }

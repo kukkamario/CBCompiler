@@ -2,6 +2,7 @@
 #define CUSTOMDATATYPEDEFINITIONS_H
 #include <QString>
 #include <QObject>
+#include "codepoint.h"
 
 class CustomDataTypeDefinitions : public QObject {
 		Q_OBJECT
@@ -20,8 +21,8 @@ class CustomDataTypeDefinitions : public QObject {
 		bool parse(const QString &file);
 		const QList<CustomDataType> &dataTypes() const { return mDataTypes; }
 	signals:
-		void error(int code, QString msg, int line, const QString &file);
-		void warning(int code, QString msg, int line, const QString &file);
+		void error(int code, QString msg, CodePoint cp);
+		void warning(int code, QString msg, CodePoint cp);
 	private:
 		void invalidFormatError(const QString &file);
 		bool parseDataType(QJsonObject obj, CustomDataType &ret);

@@ -10,6 +10,7 @@ namespace llvm {
 class VariableSymbol : public Symbol{
 	public:
 		VariableSymbol(const QString &name, ValueType *t, const CodePoint &cp);
+		virtual ~VariableSymbol();
 		Type type()const {return stVariable;}
 		QString info() const;
 		void setAlloca(llvm::Value *alloc) {mAlloca = alloc;}

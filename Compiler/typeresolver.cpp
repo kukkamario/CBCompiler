@@ -1,5 +1,11 @@
 #include "typeresolver.h"
 #include "errorcodes.h"
+#include "runtime.h"
+#include "intvaluetype.h"
+#include "floatvaluetype.h"
+#include "arrayvaluetype.h"
+#include "stringvaluetype.h"
+
 TypeResolver::TypeResolver(Runtime *runtime) :
 	mRuntime(runtime) {
 }

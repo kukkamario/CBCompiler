@@ -15,7 +15,6 @@ class Symbol {
 			stVariable,
 			stFunctionOrCommand,
 			stConstant,
-			stArray,
 			stType,
 			stLabel,
 			stValueType

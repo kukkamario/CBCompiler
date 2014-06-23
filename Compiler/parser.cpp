@@ -20,9 +20,9 @@ static BlockParserFunction blockParsers[] =  {
 	&Parser::tryConstDefinition,
 	&Parser::tryExpression
 };
-static const int blockParserCount = 10;
+static const int blockParserCount = 11;
 
-ast::Block *Parser::expectBlock(Parser::TokIterator &i) {
+ast::Node *Parser::expectBlock(Parser::TokIterator &i) {
 	QList<ast::Node*> statements;
 	CodePoint startCp = i->codePoint();
 	while (true) {
@@ -58,7 +58,7 @@ ast::Block *Parser::expectBlock(Parser::TokIterator &i) {
 	return block;
 }
 
-ast::Block Parser::expectInlineBlock(Parser::TokIterator &i) {
+ast::Node *Parser::expectInlineBlock(Parser::TokIterator &i) {
 	QList<ast::Node*> nodes;
 	CodePoint startCp = i->codePoint();
 	while (i->line() == startCp.line()) {
@@ -73,7 +73,7 @@ ast::Block Parser::expectInlineBlock(Parser::TokIterator &i) {
 		ast::Node * n;
 		for (int p = 0; p < blockParserCount; p++) {
 			n = (this->*(blockParsers[p]))(i);
-			if (mStatus == Error) return ast::Block();
+			if (mStatus == Error) return 0;
 			if (n) {
 				if (i->type() == Token::EOL || i->type() == Token::kElse || i->type() == Token::kElseIf) { // WTF CB?
 					nodes.append(n);
@@ -83,7 +83,7 @@ ast::Block Parser::expectInlineBlock(Parser::TokIterator &i) {
 				}
 				else {
 					expectEndOfStatement(i);
-					if (mStatus == Error) return ast::Block();
+					if (mStatus == Error) return 0;
 				}
 				break;
 			}
@@ -116,7 +116,6 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 	mSettings = settings;
 
 	QList<ast::TypeDefinition*> typeDefs;
-	QList<ast::Const*> constants;
 	QList<ast::FunctionDefinition*> funcDefs;
 	ast::Block *block = new ast::Block(tokens.first().codePoint(), tokens.last().codePoint());
 	TokIterator i = tokens.begin();
@@ -128,7 +127,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 		ast::TypeDefinition *type = tryTypeDefinition(i);
 		if (mStatus == Error) return 0;
 		if (type) {
-			program->mTypes.append(type);
+			typeDefs.append(type);
 			expectEndOfStatement(i);
 			if (mStatus == Error) return 0;
 			continue;
@@ -170,7 +169,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 	return program;
 }
 
-ast::Const *Parser::tryConstDefinition(Parser::TokIterator &i) {
+ast::Node *Parser::tryConstDefinition(Parser::TokIterator &i) {
 	if (i->type() == Token::kConst) {
 		CodePoint cp = i->codePoint();
 		i++;
@@ -192,7 +191,7 @@ ast::Const *Parser::tryConstDefinition(Parser::TokIterator &i) {
 	return 0;
 }
 
-ast::Global *Parser::tryGlobalDefinition(Parser::TokIterator &i) {
+ast::Node *Parser::tryGlobalDefinition(Parser::TokIterator &i) {
 	if (i->type() == Token::kGlobal) {
 		CodePoint cp = i->codePoint();
 		i++;
@@ -218,11 +217,12 @@ ast::Global *Parser::tryGlobalDefinition(Parser::TokIterator &i) {
 
 ast::Node *Parser::tryVariableTypeDefinition(Parser::TokIterator &i) {
 	ast::Node *r;
-	if (r = tryVariableTypeMark(i)) return r;
+	if ((r = tryVariableTypeMark(i))) return r;
 	if (i->type() == Token::kAs) {
 		i++;
 		return expectVariableTypeDefinition(i);
 	}
+	return 0;
 }
 
 ast::Node *Parser::tryVariableTypeMark(Parser::TokIterator &i) {
@@ -243,7 +243,7 @@ ast::Node *Parser::tryVariableAsType(Parser::TokIterator &i) {
 		i++;
 		return expectIdentifierAfter(i, (i - 1)->toString()); //expecting an identifier after "As"
 	}
-	return QString();
+	return 0;
 }
 
 
@@ -277,7 +277,7 @@ ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
 		while (i->type() == Token::kField) {
 			CodePoint fCp = i->codePoint();
 			i++;
-			ast::Node *field = expectDefinitionOfVariableOrArray(i);
+			ast::Node *field = expectVariable(i); // FIXME? expectDefinitionOfVariableOrArray(i);
 			if (mStatus == Error) return 0;
 			fields.append(field);
 			expectEndOfStatement(i);
@@ -303,7 +303,7 @@ ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
 
 ast::Identifier *Parser::expectIdentifier(Parser::TokIterator &i) {
 	if (i->type() == Token::Identifier) {
-		ast::Identifier *id = new ast::Identifier(i->toString(), i->codePoint());
+		ast::Identifier *id = new ast::Identifier( i->toString(), i->codePoint());
 		i++;
 		return id;
 	}
@@ -313,7 +313,7 @@ ast::Identifier *Parser::expectIdentifier(Parser::TokIterator &i) {
 	return 0;
 }
 
-ast::Node *Parser::expectIdentifierAfter(Parser::TokIterator &i, const QString &after) {
+ast::Identifier *Parser::expectIdentifierAfter(Parser::TokIterator &i, const QString &after) {
 	if (i->type() == Token::Identifier) {
 		ast::Identifier *id = new ast::Identifier(i->toString(), i->codePoint());
 		i++;
@@ -348,7 +348,7 @@ ast::ArrayInitialization *Parser::expectArrayInitialization(Parser::TokIterator 
 		}
 	}
 	if (!varType) varType = varType2;
-	if (!varType) varType = new ast::DefaultType;
+	if (!varType) varType = new ast::DefaultType(cp);
 
 	ast::ArrayInitialization *init = new ast::ArrayInitialization(cp);
 	init->setDimensions(dims);
@@ -399,7 +399,7 @@ bool Parser::expectRightSquareBracket(Parser::TokIterator &i){
 
 ast::Node *Parser::expectDefinitionOfVariableOrArray(Parser::TokIterator &i) {
 	CodePoint cp = i->codePoint();
-	ast::Node *id = expectIdentifierAfter(i, (i - 1).toString());
+	ast::Identifier *id = expectIdentifierAfter(i, (i - 1)->toString());
 	if (mStatus == Error) return 0;
 	i++;
 	ast::Node *varType = tryVariableTypeDefinition(i);
@@ -429,12 +429,12 @@ ast::Node *Parser::expectDefinitionOfVariableOrArray(Parser::TokIterator &i) {
 		else {
 			varType = varType2;
 		}
-		if (!varType) varType = new ast::DefaultType;
+		if (!varType) varType = new ast::DefaultType(cp);
 
 		ast::ArrayInitialization *arr = new ast::ArrayInitialization(cp);
 		arr->setIdentifier(id);
 		arr->setDimensions(dims);
-		arr->setType(varType);
+		arr->setValueType(varType);
 		return arr;
 	}
 	else {
@@ -450,6 +450,7 @@ ast::Node *Parser::expectDefinitionOfVariableOrArray(Parser::TokIterator &i) {
 		def->setIdentifier(id);
 		def->setValueType(varType);
 		def->setValue(value);
+		return def;
 	}
 }
 
@@ -562,7 +563,7 @@ ast::Variable *Parser::tryVariable(Parser::TokIterator &i) {
 	if (!ty) ty = new ast::DefaultType(cp);
 	ast::Variable *var = new ast::Variable(cp);
 	var->setIdentifier(id);
-	var->setType(ty);
+	var->setValueType(ty);
 	return var;
 }
 
@@ -583,7 +584,7 @@ ast::Node *Parser::expectVariableOrIdentifier(Parser::TokIterator &i) {
 
 	ast::Variable *var = new ast::Variable(cp);
 	var->setIdentifier(id);
-	var->setType(ty);
+	var->setValueType(ty);
 	return var;
 }
 
@@ -596,7 +597,7 @@ ast::Node *Parser::trySelectStatement(Parser::TokIterator &i) {
 	if (mStatus == Error) return 0;
 	expectEndOfStatement(i);
 	if (mStatus == Error) return 0;
-	QList<ast::SelectCase> cases;
+	QList<ast::SelectCase*> cases;
 	ast::Node *defaultCase = 0;
 	while (i->type() != Token::kEndSelect) {
 		if (i->isEndOfStatement()) {
@@ -766,7 +767,7 @@ ast::Node *Parser::expectIfStatementNoKeyword(const CodePoint &startCp, Parser::
 		i++;
 	}
 
-	ast::Node *block = *expectBlock(i);
+	ast::Node *block = expectBlock(i);
 	ast::Node *elseBlock = 0;
 	if (mStatus == Error) return 0;
 	if (i->type() == Token::kElseIf) {
@@ -779,7 +780,7 @@ ast::Node *Parser::expectIfStatementNoKeyword(const CodePoint &startCp, Parser::
 		if (mStatus == Error) return 0;
 	}
 	if (i->type() != Token::kEndIf) {
-		emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begin at line %1,").arg(QString::number(line)), i->codePoint());
+		emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begins at %1,").arg(startCp.toString()), i->codePoint());
 		mStatus = Error;
 		return 0;
 	}
@@ -810,7 +811,7 @@ ast::Node *Parser::tryWhileStatement(Parser::TokIterator &i) {
 		expectEndOfStatement(i);
 		if (mStatus == Error) return 0;
 
-		ast::Block *block = expectBlock(i);
+		ast::Block *block = expectBlock(i)->cast<ast::Block>();
 		if (mStatus == Error) return 0;
 
 		if (i->type() != Token::kWend) {
@@ -846,7 +847,7 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 		}
 		i++;
 
-		QList<ast::Node*> args;
+		ast::Node* args = 0;
 		if (i->type() != Token::RightParenthese) {
 			args = expectVariableDefinitionList(i);
 			if (mStatus == Error) return 0;
@@ -951,7 +952,7 @@ ast::Node *Parser::expectAssignementExpression(Parser::TokIterator &i) {
 		++i;
 		ast::Node *second = expectLogicalOrExpression(i);
 		if (mStatus == Error) { delete first; return 0; }
-		ast::Expression *expr = ast::Expression(ast::Expression::RightToLeft, cp1);
+		ast::Expression *expr = new ast::Expression(ast::Expression::RightToLeft, cp1);
 		expr->setFirstOperand(first);
 		ast::ExpressionNode *exprNode = new ast::ExpressionNode(ast::ExpressionNode::opAssign, cp2);
 		exprNode->setOperand(second);
@@ -1223,21 +1224,26 @@ ast::Node *Parser::expectPowExpression(Parser::TokIterator &i) {
 
 ast::Node *Parser::expectUnaryExpession(Parser::TokIterator &i) {
 	CodePoint cp = i->codePoint();
+	ast::Unary::Op op;
 	switch (i->type()) {
 		case Token::opPlus:
+			op = ast::Unary::opPositive;
+			break;
 		case Token::opMinus:
-		case Token::opNot: {
-			ast::Unary::Op op = tokenTypeToOperator(i->type());
-			i++;
-			ast::Node *expr = expectCallOrArraySubscriptExpression(i);
-			if (mStatus == Error) return 0;
-			ast::Unary *unary = new ast::Unary(op, cp);
-			unary->setOperand(expr);
-			return unary;
-		}
+			op = ast::Unary::opNegative;
+			break;
+		case Token::opNot:
+			op = ast::Unary::opNot;
+			break;
 		default:
 			return expectCallOrArraySubscriptExpression(i);
 	}
+	i++;
+	ast::Node *expr = expectCallOrArraySubscriptExpression(i);
+	if (mStatus == Error) return 0;
+	ast::Unary *unary = new ast::Unary(op, cp);
+	unary->setOperand(expr);
+	return unary;
 }
 
 ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) {
@@ -1249,33 +1255,7 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 				CodePoint cp = i->codePoint();
 				i++;
 				ast::Node *params = 0;
-				if (i != Token::RightParenthese) {
-					params = expectExpressionList(i);
-					if (mStatus == Error) { delete p; return 0; }
-				}
-				else {
-					params = new ast::List(i->codePoint());
-				}
-
-				if (i != Token::RightParenthese) {
-					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting a right parenthese, got \"%1\"").arg(i->toString()), i->codePoint());
-					mStatus = Error;
-					delete params;
-					return 0;
-				}
-				++i;
-
-				expr = 0;
-				ast::FunctionCall *call = new ast::FunctionCall(cp);
-				call->setFunction(p);
-				call->setParameters(params);
-				return call;
-			}
-			case Token::LeftSquareBracket: {
-				CodePoint cp = i->codePoint();
-				i++;
-				ast::Node *params = 0;
-				if (i != Token::RightSquareBracket) {
+				if (i->type() != Token::RightParenthese) {
 					params = expectExpressionList(i);
 					if (mStatus == Error) { return 0; }
 				}
@@ -1283,7 +1263,32 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 					params = new ast::List(i->codePoint());
 				}
 
-				if (i != Token::RightSquareBracket) {
+				if (i->type() != Token::RightParenthese) {
+					emit error(ErrorCodes::ecExpectingRightParenthese, tr("Expecting a right parenthese, got \"%1\"").arg(i->toString()), i->codePoint());
+					mStatus = Error;
+					delete params;
+					return 0;
+				}
+				++i;
+
+				ast::FunctionCall *call = new ast::FunctionCall(cp);
+				call->setFunction(base);
+				call->setParameters(params);
+				return call;
+			}
+			case Token::LeftSquareBracket: {
+				CodePoint cp = i->codePoint();
+				i++;
+				ast::Node *params = 0;
+				if (i->type() != Token::RightSquareBracket) {
+					params = expectExpressionList(i);
+					if (mStatus == Error) { return 0; }
+				}
+				else {
+					params = new ast::List(i->codePoint());
+				}
+
+				if (i->type() != Token::RightSquareBracket) {
 					emit error(ErrorCodes::ecExpectingRightSquareBracket, tr("Expecting a right square bracket, got \"%1\"").arg(i->toString()), i->codePoint());
 					mStatus = Error;
 					delete params;
@@ -1323,6 +1328,7 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 		}
 	}
 }
+
 
 
 ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
@@ -1391,13 +1397,13 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		}
 		case Token::Identifier: {
 			CodePoint cp = i->codePoint();
-			ast::Identifier *identifier = ast::Identifier(i->toString(), i->codePoint());
+			ast::Identifier *identifier = new ast::Identifier(i->toString(), i->codePoint());
 			i++;
 			ast::Node *varType = tryVariableTypeDefinition(i);
 			if (varType) {
 				ast::Variable *var = new ast::Variable(cp);
 				var->setIdentifier(identifier);
-				var->setType(varType);
+				var->setValueType(varType);
 				return var;
 			}
 			else {
@@ -1453,15 +1459,17 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 
 
 ast::Node *Parser::expectExpressionList(Parser::TokIterator &i) {
-	ast::List *list = ast::List(i->codePoint());
+	ast::List *list = new ast::List(i->codePoint());
+	--i;
 	do {
+		++i;
 		ast::Node *expr = expectExpression(i);
 		if (mStatus == Error) {
 			delete list;
 			return 0;
 		}
 		list->appendItem(expr);
-	} while ((i++)->type() == Token::Comma);
+	} while (i->type() == Token::Comma);
 
 	if (list->childNodeCount() == 1) {
 		ast::Node *onlyItem = list->childNode(0);

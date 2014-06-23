@@ -10,22 +10,20 @@ ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt8Ty(mod->getContext());
 }
 
-ValueType::CastCost ByteValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost ByteValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case ValueType::Byte:
-			return 0;
+			return ccNoCost;
 		case ValueType::Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case ValueType::Short:
-			return 1;
 		case ValueType::Integer:
-			return 1;
 		case ValueType::Float:
-			return 2;
+			return ccCastToBigger;
 		case ValueType::String:
-			return 10;
+			return ccCastToString;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 

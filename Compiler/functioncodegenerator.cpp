@@ -1,732 +1,522 @@
 #include "functioncodegenerator.h"
-#include "labelsymbol.h"
-#include "arraysymbol.h"
-#include "variablesymbol.h"
 #include "functionsymbol.h"
-#include "builder.h"
-#include <QDebug>
+#include "variablesymbol.h"
+#include "labelsymbol.h"
+#include "typesymbol.h"
+#include "valuetypesymbol.h"
+#include "constantsymbol.h"
 #include "errorcodes.h"
 #include "warningcodes.h"
-#include "stringpool.h"
+#include "runtime.h"
+#include "functionselectorvaluetype.h"
+#include "functionvaluetype.h"
+#include "liststringjoin.h"
+#include "castcostcalculator.h"
 #include "cbfunction.h"
-#include "typepointervaluetype.h"
-#include "intvaluetype.h"
-#include "booleanvaluetype.h"
-#include "typesymbol.h"
 
-FunctionCodeGenerator::FunctionCodeGenerator(QObject *parent):
+struct CodeGeneratorError {
+		CodeGeneratorError(ErrorCodes::ErrorCode ec) : mErrorCodes(ec) { }
+		ErrorCodes::ErrorCode errorCode() const { return mErrorCodes; }
+	private:
+		ErrorCodes::ErrorCode mErrorCodes;
+};
+
+FunctionCodeGenerator::FunctionCodeGenerator(Runtime *runtime, Settings *settings, QObject *parent) :
 	QObject(parent),
-	mBuilder(0),
-	mFunction(0),
-	mSetupBasicBlock(0),
-	mCurrentBasicBlockIt(mBasicBlocks.end()),
-	mCurrentBasicBlock(0),
-	mExprGen(this),
-	mRuntime(0),
-	mReturnType(0) {
-	connect(&mExprGen, SIGNAL(error(int,QString,int,QString)), this, SIGNAL(error(int,QString,int,QString)));
-	connect(&mExprGen,SIGNAL(warning(int,QString,int,QString)), this, SIGNAL(warning(int,QString,int,QString)));
+	mSettings(settings),
+	mRuntime(runtime)
+{
+	connect(this, &FunctionCodeGenerator::error, this, &FunctionCodeGenerator::errorOccured);
 }
 
-void FunctionCodeGenerator::setRuntime(Runtime *r) {
-	mRuntime = r;
-}
+bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunction *func, Scope *globalScope) {
 
-void FunctionCodeGenerator::setFunction(llvm::Function *func) {
-	mFunction = func;
-}
-
-void FunctionCodeGenerator::setScope(Scope *scope) {
-	mScope = scope;
-	mExprGen.setScope(scope);
-}
-
-void FunctionCodeGenerator::setSetupBasicBlock(llvm::BasicBlock *bb) {
-	assert(mSetupBasicBlock == 0);
-	mSetupBasicBlock = bb;
-}
-
-void FunctionCodeGenerator::setBuilder(Builder *builder) {
+	mLocalScope = func->scope();
+	mGlobalScope = globalScope;
+	mFunction = func->function();
+	mValid = true;
 	mBuilder = builder;
-	mExprGen.setBuilder(builder);
-}
 
+	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", mFunction);
+	mBuilder->setInsertPoint(firstBasicBlock);
+	generateAllocas();
 
-void FunctionCodeGenerator::generateCBFunction(ast::FunctionDefinition *func, CBFunction *cbFunc) {
-	mFunction = cbFunc->function();
-	setScope(cbFunc->scope());
-	mBasicBlocks.clear();
-	mReturnType = cbFunc->returnValue();
-
-	llvm::BasicBlock *start = llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction);
-	mBasicBlocks.append(start);
-	mCurrentBasicBlockIt = mBasicBlocks.begin();
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
-	mBuilder->setInsertPoint(start);
-
-	generateLocalVariables();
-
-	basicBlockGenerationPass(&func->mBlock);
-
-	mCurrentBasicBlockIt = mBasicBlocks.begin();
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
-	mBuilder->setInsertPoint(start);
-
-	//Store parameters to variables
-	QList<CBFunction::Parameter>::ConstIterator pI = cbFunc->parameters().begin();
-	for (llvm::Function::arg_iterator argI = mFunction->arg_begin(); argI != mFunction->arg_end(); ++argI) {
-		mBuilder->store(pI->mVariableSymbol, argI);
-		pI++;
+	try {
+		block->accept(this);
+	}
+	catch (CodeGeneratorError ) {
+		return false;
 	}
 
-	generate(&func->mBlock);
-
-	mCurrentBasicBlock = mBasicBlocks.last();
-	if (!mCurrentBasicBlock->getTerminator()) {
-		mBuilder->setInsertPoint(mCurrentBasicBlock); //No return
+	if (!mBuilder->currentBasicBlock()->getTerminator()) {
 		generateDestructors();
-		mBuilder->returnValue(mReturnType, Value(mReturnType, mReturnType->defaultValue()));
+		mBuilder->returnValue(func->returnValue(), Value(func->returnValue(), func->returnValue()->defaultValue()));
+		emit warning(WarningCodes::wcReturnsDefaultValue, tr("Function might return default value of the return type because the function doesn't end to return statement"), func->codePoint());
 	}
+
+	return mValid;
 }
 
-void FunctionCodeGenerator::generateMainScope(ast::Block *n) {
-	assert(mFunction);
-	mReturnType = 0;
-	mBasicBlocks.clear();
+bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block, llvm::Function *func, Scope *localScope, Scope *globalScope) {
+	mLocalScope = localScope;
+	mGlobalScope = globalScope;
+	mFunction = func;
+	mValid = true;
+	mBuilder = builder;
 
-	qDebug() << "Generating basic blocks";
-	mSetupBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "Setup", mFunction);
-	mBasicBlocks.append(mSetupBasicBlock);
+	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", func);
+	mBuilder->setInsertPoint(firstBasicBlock);
+	if (!generateAllocas()) return false;
 
-	mBasicBlocks.append(llvm::BasicBlock::Create(mFunction->getContext(), "Start", mFunction));
-
-	basicBlockGenerationPass(n);
-	qDebug() << mBasicBlocks.size() << " basic blocks created";
-
-	mCurrentBasicBlockIt = mBasicBlocks.begin();
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
-
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	qDebug() << "Generating local variables";
-	generateLocalVariables();
-
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-
-	qDebug() << "Generating code";
-	generate(n);
-	qDebug() << "Generating destructors";
+	try {
+		block->accept(this);
+	}
+	catch (CodeGeneratorError ) {
+		return false;
+	}
 	generateDestructors();
-	qDebug() << "Generating finished";
-	mBuilder->irBuilder().CreateRetVoid();
+	mBuilder->returnVoid();
+
+	return mValid;
+}
+
+void FunctionCodeGenerator::visit(ast::Expression *n) {
+	Value result = generate(n);
+	mBuilder->destruct(result);
+}
+
+
+void FunctionCodeGenerator::visit(ast::Const *n) {
+	Value constVal = generate(n->value());
+	if (!constVal.isConstant()) {
+		emit error(ErrorCodes::ecNotConstant, tr("Expression isn't constant expression"), n->codePoint());
+		throw CodeGeneratorError(ErrorCodes::ecNotConstant);
+	}
+	Symbol *sym = mLocalScope->find(n->variable()->identifier()->name());
+	assert(sym->type() == Symbol::stConstant);
+	ConstantSymbol *constant = static_cast<ConstantSymbol*>(sym);
+	constant->setValue(constVal.constant());
+}
+
+void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
+	n->identifier();
+}
+
+void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
 
 }
 
-void FunctionCodeGenerator::generate(ast::Node *n) {
-	switch(n->type()) {
-		case ast::Node::ntArrayDefinition:
-			return generate((ast::ArrayDefinition*)n);
-		case ast::Node::ntArraySubscriptAssignmentExpression:
-			return generate((ast::ArraySubscriptAssignmentExpression*)n);
-		case ast::Node::ntAssignmentExpression:
-			return generate((ast::AssignmentExpression*)n);
+void FunctionCodeGenerator::visit(ast::FunctionCall *n) {
+	mBuilder->destruct(generate(n));
+}
+
+
+Value FunctionCodeGenerator::generate(ast::Integer *n) {
+	return Value(ConstantValue(n->value()), mRuntime);
+}
+
+
+Value FunctionCodeGenerator::generate(ast::String *n) {
+	return Value(ConstantValue(n->value()), mRuntime);
+}
+
+Value FunctionCodeGenerator::generate(ast::Float *n) {
+	return Value(ConstantValue(n->value()), mRuntime);
+}
+
+Value FunctionCodeGenerator::generate(ast::Variable *n) {
+	return generate(n->identifier());
+}
+
+Value FunctionCodeGenerator::generate(ast::Identifier *n) {
+	Symbol *symbol = mLocalScope->find(n->name());
+	switch (symbol->type()) {
+		case Symbol::stVariable: {
+			VariableSymbol *varSym = static_cast<VariableSymbol*>(symbol);
+			return Value(varSym->valueType(), varSym->alloca_(), true);
+		}
+		case Symbol::stConstant: {
+			ConstantSymbol *constant = static_cast<ConstantSymbol*>(symbol);
+			return Value(constant->value(), mRuntime);
+		}
+		case Symbol::stFunctionOrCommand: {
+			FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(symbol);
+			if (funcSym->functions().size() == 1) {
+				Function *func = funcSym->functions().first();
+				return Value(func->functionValueType(), func->function(), false);
+			}
+
+			return Value(funcSym->functionSelector());
+		}
+		case Symbol::stLabel:
+			emit error(ErrorCodes::ecNotVariable, tr("Symbol \"%1\" is a label defined [%2]").arg(symbol->name(), symbol->codePoint().toString()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecNotVariable);
+			return Value();
+		case Symbol::stValueType: {
+			ValueTypeSymbol *valTySymbol = static_cast<ValueTypeSymbol*>(symbol);
+			return Value(valTySymbol->valueType());
+		}
+		case Symbol::stType: {
+			TypeSymbol *type = static_cast<TypeSymbol*>(symbol);
+			return Value(type->valueType());
+		}
+	}
+}
+
+Value FunctionCodeGenerator::generate(ast::Expression *n) {
+	if (n->associativity() == ast::Expression::LeftToRight) {
+		Value op1 = generate(n->firstOperand());
+		for (QList<ast::ExpressionNode*>::ConstIterator i = n->operations().begin(); i != n->operations().end(); ++i) {
+			ast::ExpressionNode *exprNode = *i;
+			Value op2 = generate(exprNode->operand());
+
+			ValueType *valueType = op1.valueType();
+			OperationFlags opFlags;
+
+			if (op1.isConstant() ^ op2.isConstant()) {
+				op1.toLLVMValue(mBuilder);
+				op2.toLLVMValue(mBuilder);
+			}
+
+			Value result = valueType->generateOperation(mBuilder, exprNode->op(), op1, op2, opFlags);
+
+			if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
+				emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
+				return Value();
+			}
+			if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
+				emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), exprNode->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
+				return Value();
+			}
+
+			if (opFlags.testFlag(OperationFlag::ReferenceRequired)) {
+				emit error(ErrorCodes::ecInvalidAssignment, tr("You can only assign a value to a reference"), exprNode->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecInvalidAssignment);
+				return Value();
+			}
+			if (opFlags.testFlag(OperationFlag::CastFromString)) {
+				emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), exprNode->codePoint());
+			}
+
+			if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
+				emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
+				return Value();
+			}
+
+			assert(op1.isValid());
+
+			mBuilder->destruct(op1);
+			mBuilder->destruct(op2);
+
+			op1 = result;
+		}
+		return op1;
+	}
+	else {
+		QList<ast::ExpressionNode*>::ConstIterator i = --n->operations().end();
+		Value op2 = generate((*i)->operand());
+		ast::ExpressionNode::Op op = (*i)->op();
+		CodePoint cp = (*i)->codePoint();
+		OperationFlags opFlags;
+		if (i != n->operations().begin()) {
+			do {
+				--i;
+				Value op1 = generate((*i)->operand());
+				ValueType *valueType = op1.valueType();
+
+				if (op1.isConstant() ^ op2.isConstant()) {
+					op1.toLLVMValue(mBuilder);
+					op2.toLLVMValue(mBuilder);
+				}
+
+				Value result = valueType->generateOperation(mBuilder, op, op1, op2, opFlags);
+
+				if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
+					emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
+				}
+				if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
+					emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), cp);
+					throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
+				}
+
+				if (opFlags.testFlag(OperationFlag::ReferenceRequired)) {
+					emit error(ErrorCodes::ecInvalidAssignment, tr("You can only assign a value to a reference"), cp);
+					throw CodeGeneratorError(ErrorCodes::ecInvalidAssignment);
+				}
+				if (opFlags.testFlag(OperationFlag::CastFromString)) {
+					emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), cp);
+				}
+
+				if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
+					emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
+					throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
+				}
+
+				mBuilder->destruct(op1);
+				mBuilder->destruct(op2);
+
+				op = (*i)->op();
+				cp = (*i)->codePoint();
+				op2 = result;
+			} while (i != n->operations().begin());
+		}
+		Value op1 = generate(n->firstOperand());
+		ValueType *valueType = op1.valueType();
+		Value result = valueType->generateOperation(mBuilder, op, op1, op2, opFlags);
+
+		if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
+			emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
+		}
+		if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
+			emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), cp);
+			throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
+		}
+
+		if (opFlags.testFlag(OperationFlag::ReferenceRequired)) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("You can only assign a value to a reference"), cp);
+			throw CodeGeneratorError(ErrorCodes::ecInvalidAssignment);
+		}
+		if (opFlags.testFlag(OperationFlag::CastFromString)) {
+			emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), cp);
+		}
+
+		if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
+			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
+			throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
+		}
+
+		return result;
+	}
+}
+
+Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
+	Value functionValue = generate(n->function());
+	ValueType *valueType = functionValue.valueType();
+	if (!valueType->isCallable()) {
+		emit error(ErrorCodes::ecCantFindFunction, tr("%1 is not a function and can't be called").arg(valueType->name()), n->codePoint());
+		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+	}
+	QList<Value> paramValues = generateParameterList(n->parameters());
+
+	if (valueType->isFunctionSelector()) {
+		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(valueType);
+		QList<Function*> functions = funcSelector->overloads();
+
+
+		Function *func = findBestOverload(functions, paramValues, n->codePoint());
+		assert(func);
+
+		return mBuilder->call(func, paramValues);
+	}
+	else {
+		FunctionValueType *functionValueType = static_cast<FunctionValueType*>(valueType);
+		llvm::Value *llvmFunction = functionValue.value();
+		return mBuilder->call(functionValueType, llvmFunction, paramValues);
+	}
+}
+
+
+Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
+
+}
+
+
+
+Value FunctionCodeGenerator::generate(ast::WhileStatement *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::RepeatUntilStatement *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::ForToStatement *n)
+{
+
+}
+
+Value FunctionCodeGenerator::generate(ast::ForEachStatement *n)
+{
+
+}
+
+Value FunctionCodeGenerator::generate(ast::SelectStatement *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::SelectCase *n)
+{
+
+}
+
+Value FunctionCodeGenerator::generate(ast::Const *n) {
+
+}
+
+Value FunctionCodeGenerator::generate(ast::Node *n) {
+	switch (n->type()) {
 		case ast::Node::ntBlock:
-			return generate((ast::Block*)n);
-		case ast::Node::ntCommandCall:
-			return generate((ast::CommandCall*)n);
-		case ast::Node::ntExit:
-			return generate((ast::Exit*)n);
-		case ast::Node::ntForEachStatement:
-			return generate((ast::ForEachStatement*)n);
-		case ast::Node::ntForToStatement:
-			return generate((ast::ForToStatement*)n);
-		case ast::Node::ntFunctionCallOrArraySubscript:
-			return generate((ast::FunctionCallOrArraySubscript*)n);
-		case ast::Node::ntGosub:
-			return generate((ast::Gosub*)n);
-		case ast::Node::ntGoto:
-			return generate((ast::Goto*)n);
-		case ast::Node::ntIfStatement:
-			return generate((ast::IfStatement*)n);
-		case ast::Node::ntRedim:
-			return generate((ast::Redim*)n);
-		case ast::Node::ntRepeatForeverStatement:
-			return generate((ast::RepeatForeverStatement*)n);
-		case ast::Node::ntRepeatUntilStatement:
-			return generate((ast::RepeatUntilStatement*)n);
-		case ast::Node::ntReturn:
-			return generate((ast::Return*)n);
-		case ast::Node::ntSelectStatement:
-			return generate((ast::SelectStatement*)n);
-		case ast::Node::ntVariableDefinition:
-			return generate((ast::VariableDefinition*)n);
-		case ast::Node::ntWhileStatement:
-			return generate((ast::WhileStatement*)n);
+			return generate(n->cast<ast::Block>());
+		case ast::Node::ntInteger:
+			return generate(n->cast<ast::Integer>());
+		case ast::Node::ntFloat:
+			return generate(n->cast<ast::Float>());
+		case ast::Node::ntString:
+			return generate(n->cast<ast::String>());
+		case ast::Node::ntIdentifier:
+			return generate(n->cast<ast::Identifier>());
 		case ast::Node::ntLabel:
-			return generate((ast::Label*)n);
-		case ast::Node::ntSpecialFunctionCall:
-			return generate((ast::SpecialFunctionCall*)n);
-		case ast::Node::ntDim:
-			return generate((ast::Dim*)n);
+			return generate(n->cast<ast::Label>());
+		case ast::Node::ntList:
+			return generate(n->cast<ast::List>());
+		case ast::Node::ntGoto:
+			return generate(n->cast<ast::Goto>());
+		case ast::Node::ntGosub:
+			return generate(n->cast<ast::Gosub>());
+		case ast::Node::ntReturn:
+			return generate(n->cast<ast::Return>());
+		case ast::Node::ntExit:
+			return generate(n->cast<ast::Exit>());
+
+
+		case ast::Node::ntExpression:
+			return generate(n->cast<ast::Expression>());
+		case ast::Node::ntExpressionNode:
+			return generate(n->cast<ast::ExpressionNode>());
+		case ast::Node::ntUnary:
+			return generate(n->cast<ast::Unary>());
+		case ast::Node::ntArraySubscript:
+			return generate(n->cast<ast::ArraySubscript>());
+		case ast::Node::ntFunctionCall:
+			return generate(n->cast<ast::FunctionCall>());
+		case ast::Node::ntKeywordFunctionCall:
+			return generate(n->cast<ast::KeywordFunctionCall>());
+		case ast::Node::ntDefaultValue:
+			return generate(n->cast<ast::DefaultValue>());
+		case ast::Node::ntVariable:
+			return generate(n->cast<ast::Variable>());
+
 		default:
-			assert(0 && "Invalid node");
+			assert("Invalid ast::Node for generate(ast::Node*)" && 0);
+			return Value();
 	}
 }
 
-void FunctionCodeGenerator::generate(ast::IfStatement *n) {
-	llvm::BasicBlock *ifBB = mCurrentBasicBlock;
-	Value cond = mExprGen.generate(n->mCondition);
-	assert(cond.isValid());
-	//If true
-	nextBasicBlock();
-	llvm::BasicBlock *ifTrueBB = mCurrentBasicBlock;
-	ifTrueBB->setName("If true");
-
-	mBuilder->setInsertPoint(ifTrueBB);
-	generate(&n->mIfTrue);
-	llvm::BasicBlock *ifTrueEndBB = mCurrentBasicBlock;
-
-	if (n->mElse.isEmpty()) {
-		nextBasicBlock();
-
-		//exit a if-statement
-		mBuilder->branch(mCurrentBasicBlock);
-
-		//Condition
-		mBuilder->setInsertPoint(ifBB);
-		mBuilder->branch(cond, ifTrueBB, mCurrentBasicBlock);
+Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &functions, const QList<Value> &parameters, const CodePoint &cp) {
+	//No overloads
+	if (functions.size() == 1) {
+		Function *f = functions.first();
+		if (f->requiredParams() > parameters.size()) {
+			emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
+						   f->functionValueType()->name(),
+						   listStringJoin(parameters, [](const Value &val) {
+				return val.valueType()->name();
+			})), cp);
+			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+		}
+		Function::ParamList::ConstIterator p1i = f->paramTypes().begin();
+		CastCostCalculator totalCost;
+		for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
+			totalCost += p2i->valueType()->castingCostToOtherValueType(*p1i);
+			p1i++;
+		}
+		if (!totalCost.isCastPossible()) {
+			emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
+						   f->functionValueType()->name(),
+						   listStringJoin(parameters, [](const Value &val) {
+				return val.valueType()->name();
+			})), cp);
+			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+		}
+		return f;
 	}
-	else {
-		nextBasicBlock();
-		llvm::BasicBlock *elseBB = mCurrentBasicBlock;
-		elseBB->setName("Else");
-		mBuilder->setInsertPoint(elseBB);
-		generate(&n->mElse);
-
-		mCurrentBasicBlockIt++; //EndIf
-		mCurrentBasicBlock = *mCurrentBasicBlockIt;
-
-		mBuilder->branch(mCurrentBasicBlock); //Jump over the EndIf
-
-		mBuilder->setInsertPoint(ifBB);
-		mBuilder->branch(cond, ifTrueBB, elseBB);
-
-		mBuilder->setInsertPoint(ifTrueEndBB);
-		mBuilder->branch(mCurrentBasicBlock);
-	}
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("EndIf");
-}
-
-void FunctionCodeGenerator::generate(ast::AssignmentExpression *n) {
-	Value val = mExprGen.generate(n->mExpression);
-	assert(val.isValid());
-
-	if (n->mVariable->type() == ast::Node::ntVariable) {
-		Symbol *sym = mScope->find(static_cast<ast::Variable*>(n->mVariable)->mName);
-		assert(sym->type() == Symbol::stVariable);
-		VariableSymbol *var = static_cast<VariableSymbol*>(sym);
-		mBuilder->store(var, val);
-		return;
-	}
-	else if (n->mVariable->type() == ast::Node::ntTypePtrField) {
-		ast::TypePtrField *typeField = static_cast<ast::TypePtrField *>(n->mVariable);
-
-		Symbol *sym = mScope->find(typeField->mVariableName);
-		assert(sym && sym->type() == Symbol::stVariable);
-		VariableSymbol *varSym = static_cast<VariableSymbol*>(sym);
-
-		mBuilder->store(varSym, typeField->mFieldName, val);
-		return;
-	}
-	assert(0); //Should never happen
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::CommandCall *n) {
-	Symbol *sym = scope()->find(n->mName);
-	assert(sym->type() == Symbol::stFunctionOrCommand);
-
-	QList<ValueType*> valueTypes;
-	QList<Value> params;
-	for (QList<ast::Node*>::ConstIterator i = n->mParams.begin();i != n->mParams.end(); i++) {
-		Value p = mExprGen.generate(*i);
-		valueTypes.append(p.valueType());
-		params.append(p);
-	}
-
-	FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
-	Function *command = funcSym->findBestOverload(valueTypes, true);
-	assert(command);
-
-	mBuilder->call(command, params);
-}
-
-void FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
-	pushExit(mExitLocations[n]);
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-
-	llvm::BasicBlock *repeatBlock = mCurrentBasicBlock;
-	repeatBlock->setName("Repeat");
-	generate(&n->mBlock);
-	mBuilder->branch(repeatBlock);
-	nextBasicBlock();
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("Forever");
-	popExit();
-}
-
-void FunctionCodeGenerator::generate(ast::FunctionCallOrArraySubscript *n) { // Function or command call
-	Symbol *sym = scope()->find(n->mName);
-	if (sym->type() == Symbol::stArray) {
-		emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored useless array \"%1\" subscript"), n->mLine, n->mFile);
-		return;
-	}
-	assert(sym->type() == Symbol::stFunctionOrCommand);
-
-	QList<ValueType*> valueTypes;
-	QList<Value> params;
-	for (QList<ast::Node*>::ConstIterator i = n->mParams.begin();i != n->mParams.end(); i++) {
-		Value p = mExprGen.generate(*i);
-		assert(p.isValid());
-		valueTypes.append(p.valueType());
-		params.append(p);
-	}
-
-	FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(sym);
-	Function *func = funcSym->findBestOverload(valueTypes, false); //Find function
-	if (!func) {
-		func = funcSym->findBestOverload(valueTypes, true); //Find command
-	}
-	assert(func);
-
-	Value val = mBuilder->call(func, params);
-	mBuilder->destruct(val);
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::Exit *n) {
-	mBuilder->branch(currentExit());
-	nextBasicBlock();
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("Useless branch after exit");
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::Return *n) {
-	if (mReturnType) {
-		generateDestructors();
-		mBuilder->returnValue(mReturnType, mExprGen.generate(n->mValue));
-		nextBasicBlock();
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-		return;
-	}
-	assert("TODO: Implement gosub-return" && 0);
-}
-
-void FunctionCodeGenerator::generate(ast::Block *n) {
-	for (ast::Block::ConstIterator i = n->begin(); i != n->end(); ++i) {
-		ast::Node *s = *i;
-		generate(s);
-	}
-}
-
-void FunctionCodeGenerator::generate(ast::ArrayDefinition *n) {
-	Symbol *sym = mScope->find(n->mName);
-	assert(sym && sym->type() == Symbol::stArray);
-	ArraySymbol *array = static_cast<ArraySymbol*>(sym);
-
-	QList<Value> dimensions = mExprGen.generateParameterList(n->mDimensions);
-
-	array->createGlobalVariables(mBuilder);
-	mBuilder->initilizeArray(array, dimensions);
-}
-
-void FunctionCodeGenerator::generate(ast::ArraySubscriptAssignmentExpression *n) {
-	Symbol *sym = mScope->find(n->mArrayName);
-	assert(sym && sym->type() == Symbol::stArray);
-	ArraySymbol *array = static_cast<ArraySymbol*>(sym);
-
-	QList<Value> dims = mExprGen.generateParameterList(n->mSubscripts);
-
-	Value value = mExprGen.generate(n->mValue);
-	assert(value.isValid());
-	mBuilder->store(array, dims, value);
-}
-
-void FunctionCodeGenerator::generate(ast::SelectStatement *n) {
-	assert(0); return;
-}
-
-void FunctionCodeGenerator::generate(ast::ForEachStatement *n) {
-	pushExit(n);
-	Symbol *containerSym = mScope->find(n->mContainer);
-	assert(containerSym);
-	if (containerSym->type() == Symbol::stType) {
-		TypeSymbol *typeSymbol = static_cast<TypeSymbol*>(containerSym);
-
-		Symbol *sym = mScope->find(n->mVarName);
-		assert(sym && sym->type() == Symbol::stVariable);
-		VariableSymbol *variableSymbol = static_cast<VariableSymbol*>(sym);
-
-		Value firstTypeMember = mBuilder->firstTypeMember(typeSymbol);
-		mBuilder->store(variableSymbol, firstTypeMember);
-
-		nextBasicBlock();
-		mBuilder->branch(mCurrentBasicBlock);
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-		mCurrentBasicBlock->setName("For-Each condition");
-
-		llvm::BasicBlock *conditionBlock = mCurrentBasicBlock;
-
-		nextBasicBlock();
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-		llvm::BasicBlock *block = mCurrentBasicBlock;
-
-		generate(&n->mBlock);
-
-		//Next
-		mBuilder->store(variableSymbol, mBuilder->afterTypeMember(mBuilder->load(variableSymbol)));
-		mBuilder->branch(conditionBlock);
-
-		nextBasicBlock();
-		mCurrentBasicBlock->setName("After For-Each Next");
-
-		//Create condition
-		mBuilder->setInsertPoint(conditionBlock);
-		Value cond = mBuilder->typePointerNotNull(mBuilder->load(variableSymbol));
-		mBuilder->branch(cond, block, mCurrentBasicBlock);
-
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-	}
-	else if (containerSym->type() == Symbol::stArray) {
-
-		//Initializations
-		ArraySymbol *array = static_cast<ArraySymbol*>(containerSym);
-		llvm::Value *arraySize = mBuilder->irBuilder().CreateLoad(array->globalArraySize(), false);
-
-		llvm::Value *counter = mBuilder->irBuilder().CreateAlloca(mBuilder->irBuilder().getInt32Ty());
-		mBuilder->irBuilder().CreateStore(mBuilder->irBuilder().getInt32(0), counter);
-
-		Symbol *sym = mScope->find(n->mVarName);
-		assert(sym && sym->type() == Symbol::stVariable);
-		VariableSymbol *variableSymbol = static_cast<VariableSymbol*>(sym);
-
-		//Condition block
-		nextBasicBlock();
-		mBuilder->branch(mCurrentBasicBlock);
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-		mCurrentBasicBlock->setName("For-Each condition");
-
-		llvm::BasicBlock *conditionBlock = mCurrentBasicBlock;
-
-		//Block
-		nextBasicBlock();
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-		llvm::BasicBlock *block = mCurrentBasicBlock;
-
-
-		Value newVal = mBuilder->load(array, Value(mRuntime->intValueType(), mBuilder->irBuilder().CreateLoad(counter, false)));
-		mBuilder->store(variableSymbol, newVal);
-
-		generate(&n->mBlock);
-
-
-		/*//Store back
-		mBuilder->store(array,
-						Value(mRuntime->intValueType(), mBuilder->irBuilder().CreateLoad(counter, false)),
-						mBuilder->load(variableSymbol));*/
-
-		//Increase counter
-		llvm::Value *counterLoaded = mBuilder->irBuilder().CreateLoad(counter, false);
-		llvm::Value *counterIncreased = mBuilder->irBuilder().CreateAdd(counterLoaded, mBuilder->irBuilder().getInt32(1));
-		mBuilder->irBuilder().CreateStore(counterIncreased, counter);
-
-		//Jump to condition check
-		mBuilder->branch(conditionBlock);
-
-
-		//Next
-		nextBasicBlock();
-		mCurrentBasicBlock->setName("After For-Each Next");
-
-		//Create condition
-		mBuilder->setInsertPoint(conditionBlock);
-		counterLoaded = mBuilder->irBuilder().CreateLoad(counter, false);
-		llvm::Value *cond = mBuilder->irBuilder().CreateICmpULT(counterLoaded, arraySize); //i < arraySize
-		mBuilder->branch(Value(mRuntime->booleanValueType(), cond), block, mCurrentBasicBlock);
-
-		mBuilder->setInsertPoint(mCurrentBasicBlock);
-	}
-	popExit();
-}
-
-void FunctionCodeGenerator::generate(ast::ForToStatement *n) {
-	pushExit(mExitLocations[n]);
-
-	Symbol *sym = mScope->find(n->mVarName);
-	assert(sym);
-	assert(sym->type() == Symbol::stVariable);
-	VariableSymbol *var = (VariableSymbol*)sym;
-	mBuilder->store(var, mExprGen.generate(n->mFrom));
-	nextBasicBlock();
-	llvm::BasicBlock *start = mCurrentBasicBlock;
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-
-	mCurrentBasicBlock->setName("For-To condition");
-	Value val = mBuilder->load(var);
-	Value add = mExprGen.generate(n->mTo);
-	assert(add.isValid());
-	Value cond = mBuilder->lessEqual(val, add);
-	assert(cond.isValid());
-	//Branch
-
-	nextBasicBlock();
-	llvm::BasicBlock *ifTrue = mCurrentBasicBlock;
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("For-To block");
-	generate(&n->mBlock);
-
-	val = mBuilder->load(var);
-	Value step;
-	if (n->mStep) {
-		step = mExprGen.generate(n->mStep);
-	}
-	else {
-		step = Value(ConstantValue(1), mRuntime);
-	}
-	
-	assert(step.isValid());
-	val = mBuilder->add(val, step);
-	mBuilder->store(var, val);
-	mBuilder->branch(start);
-
-	nextBasicBlock();
-
-	//Branch
-	mBuilder->setInsertPoint(start);
-	mBuilder->branch(cond, ifTrue, mCurrentBasicBlock);
-
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("after Next");
-	popExit();
-}
-
-void FunctionCodeGenerator::generate(ast::Goto *n) {
-	Symbol *sym = mScope->find(n->mLabel);
-	assert(sym);
-	assert(sym->type() == Symbol::stLabel);
-	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
-	mBuilder->branch(label->basicBlock());
-
-	nextBasicBlock();
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-}
-
-void FunctionCodeGenerator::generate(ast::Gosub *n) {
-	assert(0); return;
-}
-
-void FunctionCodeGenerator::generate(ast::RepeatUntilStatement *n) {
-	pushExit(mExitLocations[n]);
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("While");
-	llvm::BasicBlock *start = mCurrentBasicBlock;
-	generate(&n->mBlock);
-
-	Value cond = mExprGen.generate(n->mCondition);
-	assert(cond.isValid());
-	nextBasicBlock();
-	mBuilder->branch(cond, mCurrentBasicBlock, start);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("Wend");
-	popExit();
-}
-
-void FunctionCodeGenerator::generate(ast::WhileStatement *n) {
-	pushExit(mExitLocations[n]);
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("While condition");
-	llvm::BasicBlock *start = mCurrentBasicBlock;
-	Value cond = mExprGen.generate(n->mCondition);
-	//
-	nextBasicBlock();
-	llvm::BasicBlock *ifTrue = mCurrentBasicBlock;
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("While block");
-	generate(&n->mBlock);
-	mBuilder->branch(start);
-	nextBasicBlock();
-
-	mBuilder->setInsertPoint(start);
-	mBuilder->branch(cond, ifTrue, mCurrentBasicBlock); //While check
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName("Wend");
-	popExit();
-
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::VariableDefinition *n) {
-	if (n->mValue) {
-		Symbol *sym = mScope->find(n->mVariable.mName);
-		assert(sym);
-		assert(sym->type() == Symbol::stVariable);
-		VariableSymbol *var = (VariableSymbol*)sym;
-		mBuilder->store(var, mExprGen.generate(n->mValue));
-	}
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::Redim *n) {
-	assert(0); return;
-}
-
-void FunctionCodeGenerator::generate(ast::Label *n) {
-	nextBasicBlock();
-	mBuilder->branch(mCurrentBasicBlock);
-	mCurrentBasicBlock->setName(("LABEL " + n->mName).toStdString());
-	mBuilder->setInsertPoint(mCurrentBasicBlock);
-	return;
-}
-
-void FunctionCodeGenerator::generate(ast::Dim *n) {
-	foreach (ast::Node *node, n->mDefinitions) generate(node);
-}
-
-void FunctionCodeGenerator::generate(ast::SpecialFunctionCall *n) {
-	mExprGen.generate(n);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::Block *n) {
-	for (ast::Block::ConstIterator i = n->begin(); i != n->end(); ++i) {
-		ast::Node *s = *i;
-		assert(s);
-		switch(s->type()) {
-			case ast::Node::ntIfStatement:
-				basicBlockGenerationPass((ast::IfStatement*)s); break;
-			case ast::Node::ntWhileStatement:
-				basicBlockGenerationPass((ast::WhileStatement*)s); break;
-			case ast::Node::ntRepeatForeverStatement:
-				basicBlockGenerationPass((ast::RepeatForeverStatement*)s); break;
-			case ast::Node::ntRepeatUntilStatement:
-				basicBlockGenerationPass((ast::RepeatUntilStatement*)s); break;
-			case ast::Node::ntForToStatement:
-				basicBlockGenerationPass((ast::ForToStatement*)s); break;
-			case ast::Node::ntForEachStatement:
-				basicBlockGenerationPass((ast::ForEachStatement*)s); break;
-			case ast::Node::ntLabel:
-				basicBlockGenerationPass((ast::Label*)s); break;
-			case ast::Node::ntGosub:
-			case ast::Node::ntGoto:
-			case ast::Node::ntExit:
-			case ast::Node::ntReturn:
-				addBasicBlock(); break;
-			case ast::Node::ntSelectStatement:
-				basicBlockGenerationPass((ast::SelectStatement*)s); break;
-			default: continue;
+	bool multiples = false;
+	Function *bestFunc = 0;
+	CastCostCalculator bestCost = CastCostCalculator::maxCastCost();
+
+	for (QList<Function*>::ConstIterator fi = functions.begin(); fi != functions.end(); fi++) {
+		Function *f = *fi;
+		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size()) {
+			QList<ValueType*>::ConstIterator p1i = f->paramTypes().begin();
+			CastCostCalculator totalCost;
+			for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
+				totalCost += p2i->valueType()->castingCostToOtherValueType(*p1i);
+				p1i++;
+			}
+			if (totalCost == bestCost) {
+				multiples = true;
+				continue;
+			}
+			if (totalCost < bestCost) {
+				bestFunc = f;
+				bestCost = totalCost;
+				multiples = false;
+				continue;
+			}
 		}
 	}
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::IfStatement *n) {
-	addBasicBlock(); //If true
-	basicBlockGenerationPass(&n->mIfTrue);
-	if (!n->mElse.isEmpty()) {
-		addBasicBlock(); //Else
-		basicBlockGenerationPass(&n->mElse);
+	if (bestFunc == 0) {
+		emit error(ErrorCodes::ecCantFindFunction, tr("Can't find function overload which would accept given parameters (%1)").arg(
+					   listStringJoin(parameters, [](const Value &val) {
+			return val.valueType()->name();
+		})), cp);
+		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
 	}
-
-	addBasicBlock(); //EndIf
+	if (multiples) {
+		emit error(ErrorCodes::ecMultiplePossibleOverloads, tr("Found multiple possible function overloads with parameters (%1) and can't choose between them.").arg(
+					   listStringJoin(parameters, [](const Value &val) {
+			return val.valueType()->name();
+		})), cp);
+		throw CodeGeneratorError(ErrorCodes::ecMultiplePossibleOverloads);
+	}
+	return bestFunc;
 }
 
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::ForToStatement *n) {
-	addBasicBlock();
-	addBasicBlock();
-	basicBlockGenerationPass(&n->mBlock);
-	addBasicBlock();
-	mExitLocations.insert(n, mCurrentBasicBlockIt);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::ForEachStatement *n) {
-	addBasicBlock();
-	addBasicBlock();
-	basicBlockGenerationPass(&n->mBlock);
-	addBasicBlock();
-	mExitLocations.insert(n, mCurrentBasicBlockIt);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::RepeatUntilStatement *n) {
-	addBasicBlock();
-	basicBlockGenerationPass(&n->mBlock);
-	addBasicBlock();
-	mExitLocations.insert(n, mCurrentBasicBlockIt);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::RepeatForeverStatement *n) {
-	addBasicBlock();
-	basicBlockGenerationPass(&n->mBlock);
-	addBasicBlock();
-	mExitLocations.insert(n, mCurrentBasicBlockIt);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::Label *n) {
-	addBasicBlock();
-	Symbol *sym = scope()->find(n->mName);
-	assert(sym && sym->type() == Symbol::stLabel);
-	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
-	label->setBasicBlock(mCurrentBasicBlock);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::WhileStatement *n) {
-	addBasicBlock();
-	addBasicBlock();
-	basicBlockGenerationPass(&n->mBlock);
-	addBasicBlock();
-	mExitLocations.insert(n, mCurrentBasicBlockIt);
-}
-
-void FunctionCodeGenerator::basicBlockGenerationPass(ast::SelectStatement *n) {
-	assert("STUB" && 0);
-}
-
-
-void FunctionCodeGenerator::addBasicBlock() {
-	mCurrentBasicBlock = llvm::BasicBlock::Create(mFunction->getContext(), "BasicBlock", mFunction);
-	assert(mCurrentBasicBlock);
-	mBasicBlocks.append(mCurrentBasicBlock);
-	mCurrentBasicBlockIt = mBasicBlocks.end();
-	--mCurrentBasicBlockIt;
-}
-
-void FunctionCodeGenerator::generateLocalVariables() {
-	for (Scope::ConstIterator i = mScope->begin(); i != mScope->end(); ++i) {
-		Symbol *sym = i.value();
-		if (sym->type() == Symbol::stVariable) {
-			mBuilder->construct(static_cast<VariableSymbol*>(sym));
+QList<Value> FunctionCodeGenerator::generateParameterList(ast::Node *n) {
+	QList<Value> result;
+	if (n->type() == ast::Node::ntList) {
+		for (ast::ChildNodeIterator i = n->childNodesBegin(); i != n->childNodesEnd(); i++) {
+			result.append(generate(*i));
 		}
 	}
+	else {
+		result.append(generate(n));
+	}
+	return result;
+}
+
+bool FunctionCodeGenerator::generateAllocas() {
+	for (Scope::Iterator i = mLocalScope->begin(); i != mLocalScope->end(); ++i) {
+		Symbol *symbol = *i;
+		if (symbol->type() == Symbol::stVariable) {
+			VariableSymbol *varSymbol = static_cast<VariableSymbol*>(symbol);
+			mBuilder->construct(varSymbol);
+		}
+	}
+	return true;
 }
 
 void FunctionCodeGenerator::generateDestructors() {
-	for (Scope::ConstIterator i = mScope->begin(); i != mScope->end(); ++i) {
-		Symbol *sym = i.value();
-		if (sym->type() == Symbol::stVariable) {
-			mBuilder->destruct(static_cast<VariableSymbol*>(sym));
+	for (Scope::Iterator i = mLocalScope->begin(); i != mLocalScope->end(); ++i) {
+		Symbol *symbol = *i;
+		if (symbol->type() == Symbol::stVariable) {
+			VariableSymbol *varSymbol = static_cast<VariableSymbol*>(symbol);
+			mBuilder->destruct(varSymbol);
 		}
 	}
 }
 
-void FunctionCodeGenerator::nextBasicBlock() {
-	++mCurrentBasicBlockIt;
-	assert(mCurrentBasicBlockIt != mBasicBlocks.end());
-	mCurrentBasicBlock = *mCurrentBasicBlockIt;
+
+void FunctionCodeGenerator::errorOccured(int, QString, CodePoint) {
+	mValid = false;
 }

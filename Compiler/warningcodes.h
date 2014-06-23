@@ -6,7 +6,9 @@ namespace WarningCodes {
 		wcFunctionReturnTypeDefinedTwice,
 		wcVariableTypeDefinedTwice,
 		wcNextVariableIgnored,
-		wcTypeOfConstantIsIgnored
+		wcTypeOfConstantIsIgnored,
+		wcMayLosePrecision,
+		wcReturnsDefaultValue,
 	};
 
 }

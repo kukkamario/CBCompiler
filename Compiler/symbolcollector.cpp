@@ -5,9 +5,11 @@
 #include "functionsymbol.h"
 #include "variablesymbol.h"
 #include "constantsymbol.h"
+#include "arrayvaluetype.h"
 #include "labelsymbol.h"
 #include "cbfunction.h"
 #include "runtime.h"
+#include "typepointervaluetype.h"
 
 SymbolCollector::SymbolCollector(Runtime *runtime, Settings *settings) :
 	mSettings(settings),
@@ -19,11 +21,15 @@ SymbolCollector::SymbolCollector(Runtime *runtime, Settings *settings) :
 	connect(this, &SymbolCollector::error, this, &SymbolCollector::errorOccured);
 }
 
+SymbolCollector::~SymbolCollector() {
+
+}
+
 
 bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *mainScope) {
 	mGlobalScope = globalScope;
 	mCurrentScope = mMainScope = mainScope;
-	mFunctionScopes.clear();
+	mFunctions.clear();
 
 	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
 	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefitions();
@@ -31,6 +37,10 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 	mValid = true;
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeDefinition(def->identifier());
+	}
+
+	for (ast::TypeDefinition *def : typeDefs) {
+		mValid &= createTypeFields(def);
 	}
 
 	for (ast::FunctionDefinition *def : funcDefs) {
@@ -42,12 +52,16 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 
 	if (!mValid) return false;
 
-	for (QMap<ast::FunctionDefinition*, Scope*>::Iterator i = mFunctionScopes.begin(); i != mFunctionScopes.end(); ++i) {
-		mCurrentScope = i.value();
+	for (QMap<ast::FunctionDefinition*, CBFunction*>::Iterator i = mFunctions.begin(); i != mFunctions.end(); ++i) {
+		mCurrentScope = i.value()->scope();
 		i.key()->block()->accept(this);
 	}
 
 	return mValid;
+}
+
+CBFunction *SymbolCollector::functionByDefinition(ast::FunctionDefinition *def) const {
+	return mFunctions.value(def);
 }
 
 void SymbolCollector::visit(ast::Global *c) {
@@ -70,7 +84,7 @@ void SymbolCollector::visit(ast::Dim *c) {
 }
 
 void SymbolCollector::visit(ast::Variable *c) {
-	Symbol *existingSymbol = mCurrentScope->find(c->identifier());
+	Symbol *existingSymbol = mCurrentScope->find(c->identifier()->name());
 	ValueType *valType = resolveValueType(c->valueType());
 	if (!valType) return;
 	if (!existingSymbol) {
@@ -102,7 +116,7 @@ void SymbolCollector::visit(ast::Variable *c) {
 		}
 
 		if (valType != constSym->valueType()) {
-			emit error(ErrorCodes::ecConstantAlreadyDefinedWithAnotherType, tr("Variable \"%1\" has already been declared as another type in %2").arg(c->identifier()->name(), varSym->codePoint().toString()), c->codePoint());
+			emit error(ErrorCodes::ecConstantAlreadyDefinedWithAnotherType, tr("Variable \"%1\" has already been declared as another type in %2").arg(c->identifier()->name(), c->codePoint().toString()), c->codePoint());
 		}
 		return;
 	}
@@ -111,7 +125,7 @@ void SymbolCollector::visit(ast::Variable *c) {
 }
 
 void SymbolCollector::visit(ast::Label *c) {
-	Symbol *existingSymbol = mCurrentScope->find(c->identifier());
+	Symbol *existingSymbol = mCurrentScope->find(c->name());
 	if (existingSymbol) {
 		if (existingSymbol->type() == Symbol::stLabel) {
 			emit error(ErrorCodes::ecLabelAlreadyDefined, tr("Label \"%1\" already defined in %2").arg(c->name(), existingSymbol->codePoint().toString()), c->codePoint());
@@ -134,6 +148,28 @@ bool SymbolCollector::createTypeDefinition(ast::Identifier *id) {
 	}
 	TypeSymbol *typeSymbol = new TypeSymbol(id->name(), mRuntime, id->codePoint());
 	mGlobalScope->addSymbol(typeSymbol);
+	mRuntime->valueTypeCollection().addValueType(typeSymbol->typePointerValueType());
+	return true;
+}
+
+bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
+	Symbol *sym = mGlobalScope->find(def->identifier()->name());
+	assert(sym && sym->type() == Symbol::stType);
+	TypeSymbol *typeSymbol = static_cast<TypeSymbol*>(sym);
+
+	for (ast::Node *node : def->fields()) {
+		switch(node->type()) {
+			case ast::Node::ntVariable: {
+				ast::Variable *varDef = node->cast<ast::Variable>();
+				QString name = varDef->identifier()->name();
+				ValueType *valType = resolveValueType(varDef->valueType());
+				if (!valType) return false;
+				typeSymbol->addField(TypeField(name, valType, node->codePoint()));
+			}
+			default:
+				assert("Invalid ast::TypeDefinition" && 0);
+		}
+	}
 	return true;
 }
 
@@ -155,7 +191,7 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 	ast::Node *parameterList = funcDef->parameterList();
 
 	Scope *scope = new Scope(funcDef->identifier()->name(), mGlobalScope);
-	QList<VariableSymbol*> paramSymbols = handleVariableDefinitionList(parameterList, scope);
+	QList<VariableSymbol*> paramSymbols = variableDefinitionList(parameterList, scope);
 
 	QList<CBFunction::Parameter> params;
 	Function::ParamList paramValueTypes;
@@ -179,7 +215,7 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 
 	CBFunction *cbFunc = new CBFunction(funcDef->identifier()->name(), retType, params, scope, funcDef->codePoint());
 	funcSym->addFunction(cbFunc);
-	mFunctionScopes[funcDef] = scope;
+	mFunctions[funcDef] = cbFunc;
 	return true;
 }
 
@@ -225,14 +261,18 @@ VariableSymbol *SymbolCollector::variableDefinition(ast::Node *def, Scope *scope
 			return variableDefinition(def->cast<ast::VariableDefinition>(), scope);
 		case ast::Node::ntArrayInitialization:
 			return variableDefinition(def->cast<ast::ArrayInitialization>(), scope);
+		default:
+			assert("Invalid variable definition" && 0);
+			return 0;
 	}
+
 }
 
 VariableSymbol *SymbolCollector::variableDefinition(ast::VariableDefinition *def, Scope *scope) {
 	ast::Identifier *identifier = def->identifier();
 	ast::Node *type = def->valueType();
 	ValueType *valueType = resolveValueType(type);
-	if (!valueType) return false;
+	if (!valueType) return 0;
 	return addVariableSymbol(identifier, valueType, scope);
 }
 

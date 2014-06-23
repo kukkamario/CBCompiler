@@ -5,7 +5,7 @@
 class StringPool;
 class StringValueType : public ValueType {
 	public:
-		StringValueType(StringPool *strPool,Runtime *r, llvm::Module *mod);
+		StringValueType(StringPool *strPool, Runtime *r);
 		QString name() const {return "string";}
 		BasicType basicType() const{return String;}
 		void setStringType(llvm::Type *t) {mType = t;}
@@ -37,9 +37,10 @@ class StringValueType : public ValueType {
 		bool isValid() const;
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
-		CastCostType castingCostToOtherValueType(ValueType *to) const;
+		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return false;}
+		bool isNamedValueType() const { return true; }
 		bool isNumber() const{return false;}
 		int size() const;
 

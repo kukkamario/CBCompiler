@@ -15,20 +15,14 @@ class FunctionValueType : public ValueType {
 
 		virtual int size() const;
 
-		virtual CastCost castingCostToOtherValueType(ValueType *to);
+		virtual CastCost castingCostToOtherValueType(const ValueType *to) const;
 
 		virtual Value cast(Builder *, const Value &v) const;
-
-		virtual ValueType *operatorResultType(int opType, ValueType *operand1, ValueType *operand2, OperationFlags &operationFlags) const { return 0; }
-		virtual ValueType *operatorResultType(int opType, ValueType *operand, OperationFlags &operationFlags) const { return 0; }
-		bool hasOperator(int opType, ValueType *operand1, ValueType *operand2) const { return operatorResultType(opType, operand1, operand2) != 0; }
-		bool hasOperator(int opType, ValueType *operand) const { return operatorResultType(opType, operand) != 0; }
-		virtual Value generateOperation(int opType, const Value &operand1, const Value &operand2) const { return Value();}
-		virtual Value generateOperation(int opType, const Value &operand) const { return Value();}
 		
 		virtual bool isCallable() const { return true; }
-
 		
+		QList<ValueType*> paramTypes() const { return mParamTypes; }
+		ValueType *returnType() const { return mReturnType; }
 	protected:
 		ValueType *mReturnType;
 		QList<ValueType*> mParamTypes;

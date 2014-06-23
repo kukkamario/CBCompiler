@@ -7,26 +7,36 @@
 class Builder;
 class Runtime;
 class ValueType;
+class FunctionSelectorValueType;
 class Value {
 	public:
 		Value();
 		Value(const Value &value);
 		Value(const ConstantValue &c, Runtime *r);
-		Value(ValueType *t, llvm::Value *v, bool reference);
+		Value(ValueType *t, llvm::Value *v, bool reference = false);
+		explicit Value(ValueType *valType);
+		explicit Value(FunctionSelectorValueType *t);
+		~Value();
 
 		ValueType *valueType() const {return mValueType;}
-		bool isConstant()const{return mConstant.isValid();}
-		bool isValid() const{return mValueType != 0 && (isConstant() ? mConstant.isValid() : mValue != 0);}
+		bool isConstant()const { return mType == tConstant; }
+		bool isValid() const;
 		llvm::Value *value() const {return mValue;}
 		const ConstantValue &constant() const {return mConstant;}
 		void toLLVMValue(Builder *builder);
-		bool isReference() const { return mReference; }
+		bool isReference() const { return mType == tReference; }
 		void dump() const;
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;
 		ConstantValue mConstant;
-		bool mReference;
+		enum {
+			tNormalValue,
+			tReference,
+			tConstant,
+			tValueType,
+			tFunctionSelectorValueType
+		} mType;
 };
 
 #endif // VALUE_H

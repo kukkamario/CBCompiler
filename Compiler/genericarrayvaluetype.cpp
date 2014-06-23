@@ -1,4 +1,5 @@
 #include "genericarrayvaluetype.h"
+#include "runtime.h"
 
 GenericArrayValueType::GenericArrayValueType(llvm::PointerType *genericArrayPointerType, Runtime *r) :
 	ValueType(r, genericArrayPointerType){
@@ -21,7 +22,11 @@ llvm::StructType *GenericArrayValueType::structType() const {
 	return llvm::cast<llvm::StructType>(ptrTy->getElementType());
 }
 
-CastCost GenericArrayValueType::castingCostToOtherValueType(ValueType *to) const {
+int GenericArrayValueType::size() const {
+	return mRuntime->dataLayout().getPointerSize();
+}
+
+ValueType::CastCost GenericArrayValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to == this) return ccNoCost;
 	return ccNoCast;
 }

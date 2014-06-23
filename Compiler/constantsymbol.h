@@ -6,6 +6,7 @@
 class ConstantSymbol : public Symbol {
 	public:
 		ConstantSymbol(const QString &symbolName, ValueType *valueType, const CodePoint &cp);
+		ConstantSymbol(const QString &symbolName, ValueType *valueType, const ConstantValue &c, const CodePoint &cp);
 		Type type() const {return stConstant; }
 		void setValue(const ConstantValue &v) { mValue = v; }
 		const ConstantValue &value()const {return mValue;}

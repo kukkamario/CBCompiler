@@ -9,11 +9,11 @@ class BooleanValueType : public ValueType {
 		QString name() const {return "boolean";}
 		BasicType basicType() const { return Boolean; }
 
-		CastCost castingCostToOtherValueType(ValueType *to) const;
+		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		llvm::Constant *constant(bool t) const;
 
-		bool isNamedValueType() const { return true; }
+		bool isNamedValueType() const { return false; }
 
 		llvm::Constant* defaultValue() const;
 

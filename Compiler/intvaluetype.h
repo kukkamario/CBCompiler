@@ -6,7 +6,7 @@ class IntValueType : public ValueType {
 		IntValueType(Runtime *r, llvm::Module *mod);
 		QString name() const {return "integer";}
 		llvm::Type *llvmType() {return mType;}
-		CastCost castingCostToOtherValueType(ValueType *to) const;
+		CastCost castingCostToOtherValueType(const ValueType *to) const;
 
 		/** Casts given value to this ValueType */
 		Value cast(Builder *builder, const Value &v) const;
@@ -19,6 +19,7 @@ class IntValueType : public ValueType {
 		Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
 
 		bool isTypePointer() const{return false;}
+		bool isNamedValueType() const { return true; }
 		bool isNumber() const{return true;}
 		int size() const { return 4; }
 	private:

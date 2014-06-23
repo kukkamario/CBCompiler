@@ -10,22 +10,22 @@ IntValueType::IntValueType(Runtime *r, llvm::Module *mod) :
 
 
 
-ValueType::CastCost IntValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost IntValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case ValueType::Integer:
-			return 0;
+			return ccNoCost;
 		case ValueType::Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case ValueType::Float:
-			return 2;
+			return ccCastToSmaller;
 		case ValueType::Short:
-			return 3;
+			return ccCastToSmaller;
 		case ValueType::Byte:
-			return 4;
+			return ccCastToSmaller;
 		case ValueType::String:
-			return 100;
+			return ccCastToString;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 
@@ -41,11 +41,11 @@ llvm::Constant *IntValueType::defaultValue() const {
 	return constant(0);
 }
 
-Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+Value IntValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
 	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
 }
 
-Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+Value IntValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
 	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
 }
 

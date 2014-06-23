@@ -19,10 +19,10 @@ class TypeResolver : public QObject{
 	private:
 		Runtime *mRuntime;
 
-		QString *resolve(ast::ArrayType *arrTy);
-		QString *resolve(ast::DefaultType *defaultTy);
-		QString *resolve(ast::NamedType *namedTy);
-		QString *resolve(ast::BasicType *basicTy);
+		ValueType *resolve(ast::ArrayType *arrTy);
+		ValueType *resolve(ast::DefaultType *defaultTy);
+		ValueType *resolve(ast::NamedType *namedTy);
+		ValueType *resolve(ast::BasicType *basicTy);
 };
 
 #endif // TYPERESOLVER_H

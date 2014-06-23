@@ -9,9 +9,9 @@
 TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp):
 	ValueTypeSymbol(name, cp),
 	mGlobalTypeVariable(0),
+	mTypePointerValueType(new TypePointerValueType(r, this)),
 	mFirstFieldIndex(0),
-	mMemberSize(0),
-	mTypePointerValueType(new TypePointerValueType(r, this)) {
+	mMemberSize(0) {
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
@@ -70,7 +70,7 @@ void TypeSymbol::createTypePointerValueType(Builder *b) {
 }
 
 Value TypeSymbol::typeValue() {
-	return Value(mRuntime->typeValueType(), mGlobalTypeVariable);
+	return Value(mRuntime->typeValueType(), mGlobalTypeVariable, false);
 }
 
 void TypeSymbol::createLLVMMemberType() {

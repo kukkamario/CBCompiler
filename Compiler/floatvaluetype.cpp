@@ -8,22 +8,22 @@ FloatValueType::FloatValueType(Runtime *runtime, llvm::Module *mod) :
 	mType = llvm::Type::getFloatTy(mod->getContext());
 }
 
-ValueType::CastCostType FloatValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost FloatValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case Float:
-			return 0;
+			return ccNoCost;
 		case Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case Integer:
-			return 5;
+			return ccCastToSmaller;
 		case String:
-			return 100;
+			return ccCastToString;
 		case Short:
-			return 10;
+			return ccCastToSmaller;
 		case Byte:
-			return 10;
+			return ccCastToSmaller;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 

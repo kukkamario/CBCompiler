@@ -3,22 +3,22 @@
 #include "abstractsyntaxtree.h"
 namespace ast {
 
-#define AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT( _NODE_ ) virtual void Visitor::visit(_NODE_ *n);
-#define AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) virtual bool Visitor::actBefore(_NODE_ *n);
-#define AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_AFTER(_NODE_) virtual void Visitor::actAfter(_NODE_ *n);
+#define AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT( _NODE_ ) virtual void visit(_NODE_ *n);
+#define AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) virtual bool actBefore(_NODE_ *n);
+#define AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_AFTER(_NODE_) virtual void actAfter(_NODE_ *n);
 #define AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(_NODE_) AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT( _NODE_ ) \
 	AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) \
 	AST_VISITOR_PRE_DEFINE_DEFAULT_ACT_AFTER(_NODE_)
 
 
-#define AST_VISITOR_DEFINE_DEFAULT_VISIT( _NODE_ ) virtual void Visitor::visit(_NODE_ *n) {\
+#define AST_VISITOR_DEFINE_DEFAULT_VISIT( _NODE_ ) void Visitor::visit(_NODE_ *n) {\
 	if (actBefore(n)) return; \
 	for (ChildNodeIterator i = n->childNodesBegin(), cnEnd = n->childNodesEnd(); i != cnEnd; ++i) { \
 		(*i)->accept(this); \
 	} \
 	actAfter(n); }
-#define AST_VISITOR_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) virtual bool Visitor::actBefore(_NODE_ *n) {  return true; }
-#define AST_VISITOR_DEFINE_DEFAULT_ACT_AFTER(_NODE_) virtual void Visitor::actAfter(_NODE_ *n) { }
+#define AST_VISITOR_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) bool Visitor::actBefore(_NODE_ *) {  return false; }
+#define AST_VISITOR_DEFINE_DEFAULT_ACT_AFTER(_NODE_) void Visitor::actAfter(_NODE_ *) { }
 #define AST_VISITOR_DEFINE_DEFAULT_VISIT_FUNCS(_NODE_) AST_VISITOR_DEFINE_DEFAULT_VISIT( _NODE_ ) \
 	AST_VISITOR_DEFINE_DEFAULT_ACT_BEFORE(_NODE_) \
 	AST_VISITOR_DEFINE_DEFAULT_ACT_AFTER(_NODE_)
@@ -63,6 +63,7 @@ class Visitor {
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(SelectCase)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Const)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Dim)
+		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Redim)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(Global)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(VariableDefinition)
 		AST_VISITOR_PRE_DEFINE_DEFAULT_VISIT_FUNCS(ArrayInitialization)

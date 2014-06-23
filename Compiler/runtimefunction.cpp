@@ -13,7 +13,7 @@
 #include "builder.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
-	Function(QString(), 0,0),
+	Function(QString(), CodePoint()),
 	mRuntime(r),
 	mFunctionValueType(0) {
 
@@ -59,7 +59,7 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 		return Value();
 	}
 	else {
-		return Value(mReturnValue, ret);
+		return Value(mReturnValue, ret, false);
 	}
 }
 

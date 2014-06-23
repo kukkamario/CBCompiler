@@ -1,8 +1,9 @@
 #ifndef CONSTANTVALUE_H
 #define CONSTANTVALUE_H
 #include <QString>
-#include "valuetype.h"
 #include "unionwrapper.h"
+
+class ValueType;
 class ConstantValue {
 	public:
 		enum Type {
@@ -25,6 +26,7 @@ class ConstantValue {
 		ConstantValue(quint16 s);
 		ConstantValue(const QString s);
 		ConstantValue(const ConstantValue &o);
+		ConstantValue(Type type);
 		~ConstantValue();
 		ConstantValue &operator=(const ConstantValue &v);
 		bool operator== (const ConstantValue &o);

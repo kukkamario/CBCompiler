@@ -1,9 +1,16 @@
 #include "constantsymbol.h"
 
-ConstantSymbol::ConstantSymbol(const QString &symbolName, ValueType valueType, const CodePoint &cp):
+ConstantSymbol::ConstantSymbol(const QString &symbolName, ValueType *valueType, const CodePoint &cp):
 	Symbol(symbolName, cp),
-	mValue(val),
 	mValueType(valueType) {
+
+}
+
+ConstantSymbol::ConstantSymbol(const QString &symbolName, ValueType *valueType, const ConstantValue &c, const CodePoint &cp):
+	Symbol(symbolName, cp),
+	mValue(c),
+	mValueType(valueType)
+	{
 
 }
 

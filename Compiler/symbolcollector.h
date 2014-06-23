@@ -10,6 +10,7 @@ class ValueType;
 class VariableSymbol;
 class FunctionSymbol;
 class ConstantSymbol;
+class CBFunction;
 class SymbolCollector : public QObject, protected ast::Visitor {
 	Q_OBJECT
 	public:
@@ -17,6 +18,9 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		~SymbolCollector();
 
 		bool collect(ast::Program *program, Scope *globalScope, Scope *mainScope);
+
+
+		CBFunction *functionByDefinition(ast::FunctionDefinition *def) const;
 
 	private:
 		void visit(ast::Global *c);
@@ -26,6 +30,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void visit(ast::Label *c);
 
 		bool createTypeDefinition(ast::Identifier *id);
+		bool createTypeFields(ast::TypeDefinition *def);
 		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);
 
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);
@@ -52,7 +57,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		TypeResolver mTypeResolver;
 		bool mValid;
 
-		QMap<ast::FunctionDefinition*, Scope*> mFunctionScopes;
+		QMap<ast::FunctionDefinition*, CBFunction*> mFunctions;
 	private slots:
 		void errorOccured(int, QString, CodePoint);
 	signals:
