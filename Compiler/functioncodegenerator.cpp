@@ -13,6 +13,7 @@
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
 #include "cbfunction.h"
+#define CHECK_UNREACHABLE(codePoint) if (checkUnreachable(codePoint)) return;
 
 struct CodeGeneratorError {
 		CodeGeneratorError(ErrorCodes::ErrorCode ec) : mErrorCodes(ec) { }
@@ -27,15 +28,20 @@ FunctionCodeGenerator::FunctionCodeGenerator(Runtime *runtime, Settings *setting
 	mRuntime(runtime)
 {
 	connect(this, &FunctionCodeGenerator::error, this, &FunctionCodeGenerator::errorOccured);
+	connect(&mConstEval, &ConstantExpressionEvaluator::error, this, &FunctionCodeGenerator::error);
+	connect(&mConstEval, &ConstantExpressionEvaluator::warning, this, &FunctionCodeGenerator::warning);
 }
 
 bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunction *func, Scope *globalScope) {
-
+	mMainFunction = false;
+	mUnreachableBasicBlock = false;
 	mLocalScope = func->scope();
 	mGlobalScope = globalScope;
 	mFunction = func->function();
 	mValid = true;
 	mBuilder = builder;
+	mReturnType = func->returnValue();
+	mUnresolvedGotos.clear();
 
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", mFunction);
 	mBuilder->setInsertPoint(firstBasicBlock);
@@ -54,6 +60,8 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 		emit warning(WarningCodes::wcReturnsDefaultValue, tr("Function might return default value of the return type because the function doesn't end to return statement"), func->codePoint());
 	}
 
+	resolveGotos();
+
 	return mValid;
 }
 
@@ -62,7 +70,11 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	mGlobalScope = globalScope;
 	mFunction = func;
 	mValid = true;
+	mUnreachableBasicBlock = false;
 	mBuilder = builder;
+	mMainFunction = true;
+	mReturnType = 0;
+	mUnresolvedGotos.clear();
 
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", func);
 	mBuilder->setInsertPoint(firstBasicBlock);
@@ -77,16 +89,22 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	generateDestructors();
 	mBuilder->returnVoid();
 
+	resolveGotos();
+
 	return mValid;
 }
 
 void FunctionCodeGenerator::visit(ast::Expression *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
 	Value result = generate(n);
 	mBuilder->destruct(result);
 }
 
 
 void FunctionCodeGenerator::visit(ast::Const *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
 	Value constVal = generate(n->value());
 	if (!constVal.isConstant()) {
 		emit error(ErrorCodes::ecNotConstant, tr("Expression isn't constant expression"), n->codePoint());
@@ -99,15 +117,214 @@ void FunctionCodeGenerator::visit(ast::Const *n) {
 }
 
 void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
-	n->identifier();
+	CHECK_UNREACHABLE(n->codePoint());
+
+	Value ref = generate(n->identifier());
+	Value init;
+	if (n->value()->type() == ast::Node::ntDefaultValue) {
+		init = Value(ref.valueType(), ref.valueType()->defaultValue());
+	}
+	else {
+		init = generate(n->value());
+	}
+
+	mBuilder->store(ref, init);
 }
 
 void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
-
+	CHECK_UNREACHABLE(n->codePoint());
 }
 
 void FunctionCodeGenerator::visit(ast::FunctionCall *n) {
+	CHECK_UNREACHABLE(n->codePoint());
 	mBuilder->destruct(generate(n));
+}
+
+void FunctionCodeGenerator::visit(ast::IfStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	llvm::BasicBlock *condBB = mBuilder->currentBasicBlock();
+	Value cond = generate(n->condition());
+	llvm::BasicBlock *trueBlock = createBasicBlock("trueBB");
+	llvm::BasicBlock *endBlock = createBasicBlock("endIfBB");
+
+	mBuilder->setInsertPoint(trueBlock);
+	n->block()->accept(this);
+	if (!mUnreachableBasicBlock)
+		mBuilder->branch(endBlock);
+	mUnreachableBasicBlock = false;
+
+	llvm::BasicBlock *elseBlock = 0;
+	if (n->elseBlock()) {
+		elseBlock = createBasicBlock("elseBB");
+		mBuilder->setInsertPoint(elseBlock);
+		n->elseBlock()->accept(this);
+		if (!mUnreachableBasicBlock)
+			mBuilder->branch(endBlock);
+		mUnreachableBasicBlock = false;
+	}
+
+
+	mBuilder->setInsertPoint(condBB);
+	if (n->elseBlock()) {
+		mBuilder->branch(cond, trueBlock, elseBlock);
+	}
+	else {
+		mBuilder->branch(cond, trueBlock, endBlock);
+	}
+
+	mBuilder->setInsertPoint(endBlock);
+}
+
+void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	llvm::BasicBlock *condBB = createBasicBlock("whileCondBB");
+	llvm::BasicBlock *blockBB = createBasicBlock("whileBodyBB");
+	llvm::BasicBlock *wendBB = createBasicBlock("wendBB");
+
+	mBuilder->branch(condBB);
+	mBuilder->setInsertPoint(condBB);
+
+	Value cond = generate(n->condition());
+	mBuilder->branch(cond, blockBB, wendBB);
+
+	mExitStack.push(wendBB);
+	mBuilder->setInsertPoint(blockBB);
+	n->block()->accept(this);
+	if (!mUnreachableBasicBlock)
+		mBuilder->branch(condBB);
+	mUnreachableBasicBlock = false;
+	mExitStack.pop();
+
+}
+
+void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
+	llvm::BasicBlock *block = createBasicBlock("repeatForeverBB");
+	llvm::BasicBlock *endBlock = createBasicBlock("repeatForeverEndBB");
+
+	mBuilder->branch(block);
+	mBuilder->setInsertPoint(block);
+	mExitStack.push(endBlock);
+	n->block()->accept(this);
+	if (!mUnreachableBasicBlock)
+		mBuilder->branch(block);
+	mUnreachableBasicBlock = false;
+
+	mBuilder->setInsertPoint(endBlock);
+
+
+}
+
+void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
+	llvm::BasicBlock *block = createBasicBlock("repeatUntilBB");
+	llvm::BasicBlock *endBlock = createBasicBlock("repeatUntilEndBB");
+
+	mBuilder->branch(block);
+	mBuilder->setInsertPoint(block);
+	mExitStack.push(endBlock);
+	n->block()->accept(this);
+	Value cond = generate(n->condition());
+	if (!mUnreachableBasicBlock) {
+		mBuilder->branch(cond, block, endBlock);
+	}
+	mUnreachableBasicBlock = false;
+
+	mBuilder->setInsertPoint(endBlock);
+
+}
+
+void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	assert("UNIMPLEMENTED FUNCTION" && 0);
+}
+
+void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	assert("UNIMPLEMENTED FUNCTION" && 0);
+}
+
+void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	assert("UNIMPLEMENTED FUNCTION" && 0);
+}
+
+void FunctionCodeGenerator::visit(ast::SelectCase *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	assert("UNIMPLEMENTED FUNCTION" && 0);
+}
+
+void FunctionCodeGenerator::visit(ast::Return *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+	if (mMainFunction) {
+		assert("Implement gosub" && 0);
+	}
+	else {
+		if (n->value()) {
+			mBuilder->returnValue(mReturnType, generate(n->value()));
+		}
+		else {
+			mBuilder->returnValue(mReturnType, mBuilder->defaultValue(mReturnType));
+		}
+	}
+	mUnreachableBasicBlock = true;
+}
+
+void FunctionCodeGenerator::visit(ast::Goto *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
+	Symbol *sym = mLocalScope->find(n->label()->name());
+	if (!sym) {
+		emit error(ErrorCodes::ecCantFindSymbol, tr("Can't find label \"%1\"").arg(n->label()->name()), n->label()->codePoint());
+		return;
+	}
+	if (sym->type() != Symbol::stLabel) {
+		emit error(ErrorCodes::ecNotLabel, tr("Symbol \"%1\" isn't a label").arg(n->label()->name()), n->label()->codePoint());
+		return;
+	}
+
+	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
+	if (label->basicBlock()) {
+		mBuilder->branch(label->basicBlock());
+	}
+	else {
+		mUnresolvedGotos.append(QPair<LabelSymbol*, llvm::BasicBlock*>(label, mBuilder->currentBasicBlock()));
+	}
+	mUnreachableBasicBlock = true;
+}
+
+void FunctionCodeGenerator::visit(ast::Gosub *n) {
+	assert("UNIMPLEMENTED FUNCTION" && 0);
+}
+
+void FunctionCodeGenerator::visit(ast::Label *n) {
+	llvm::BasicBlock *bb = createBasicBlock("label_" + n->name().toStdString());
+	if (!mUnreachableBasicBlock) {
+		mBuilder->branch(bb);
+	}
+	mBuilder->setInsertPoint(bb);
+	mUnreachableBasicBlock = false;
+
+	Symbol *sym = mLocalScope->find(n->name());
+	assert(sym && sym->type() == Symbol::stLabel);
+
+	LabelSymbol *label = static_cast<LabelSymbol*>(sym);
+	label->setBasicBlock(bb);
+}
+
+void FunctionCodeGenerator::visit(ast::Exit *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
+	if (mExitStack.empty()) {
+		emit error(ErrorCodes::ecInvalidExit, tr("Nothing to exit from"), n->codePoint());
+		return;
+	}
+
+	llvm::BasicBlock *bb = mExitStack.pop();
+	mBuilder->branch(bb);
+	mUnreachableBasicBlock = true;
 }
 
 
@@ -130,6 +347,7 @@ Value FunctionCodeGenerator::generate(ast::Variable *n) {
 
 Value FunctionCodeGenerator::generate(ast::Identifier *n) {
 	Symbol *symbol = mLocalScope->find(n->name());
+	assert(symbol);
 	switch (symbol->type()) {
 		case Symbol::stVariable: {
 			VariableSymbol *varSym = static_cast<VariableSymbol*>(symbol);
@@ -160,6 +378,9 @@ Value FunctionCodeGenerator::generate(ast::Identifier *n) {
 			TypeSymbol *type = static_cast<TypeSymbol*>(symbol);
 			return Value(type->valueType());
 		}
+		default:
+			assert("Invalid Symbol::Type");
+			return Value();
 	}
 }
 
@@ -316,50 +537,12 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 	}
 }
 
-
 Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
-
+	assert("UNIMPLEMENTED FUNCTION " && 0);
 }
 
 Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
-
-}
-
-
-
-Value FunctionCodeGenerator::generate(ast::WhileStatement *n) {
-
-}
-
-Value FunctionCodeGenerator::generate(ast::RepeatForeverStatement *n) {
-
-}
-
-Value FunctionCodeGenerator::generate(ast::RepeatUntilStatement *n) {
-
-}
-
-Value FunctionCodeGenerator::generate(ast::ForToStatement *n)
-{
-
-}
-
-Value FunctionCodeGenerator::generate(ast::ForEachStatement *n)
-{
-
-}
-
-Value FunctionCodeGenerator::generate(ast::SelectStatement *n) {
-
-}
-
-Value FunctionCodeGenerator::generate(ast::SelectCase *n)
-{
-
-}
-
-Value FunctionCodeGenerator::generate(ast::Const *n) {
-
+	assert("UNIMPLEMENTED FUNCTION " && 0);
 }
 
 Value FunctionCodeGenerator::generate(ast::Node *n) {
@@ -527,6 +710,14 @@ QList<Value> FunctionCodeGenerator::generateParameterList(ast::Node *n) {
 	return result;
 }
 
+void FunctionCodeGenerator::resolveGotos() {
+	for (const QPair<LabelSymbol*, llvm::BasicBlock*> &g : mUnresolvedGotos) {
+		assert(g.first->basicBlock());
+		mBuilder->setInsertPoint(g.second);
+		mBuilder->branch(g.first->basicBlock());
+	}
+}
+
 bool FunctionCodeGenerator::generateAllocas() {
 	for (Scope::Iterator i = mLocalScope->begin(); i != mLocalScope->end(); ++i) {
 		Symbol *symbol = *i;
@@ -546,6 +737,18 @@ void FunctionCodeGenerator::generateDestructors() {
 			mBuilder->destruct(varSymbol);
 		}
 	}
+}
+
+llvm::BasicBlock *FunctionCodeGenerator::createBasicBlock(const llvm::Twine &name, llvm::BasicBlock *insertBefore) {
+	return llvm::BasicBlock::Create(mBuilder->context(), name, mFunction, insertBefore);
+}
+
+bool FunctionCodeGenerator::checkUnreachable(CodePoint cp) {
+	if (mUnreachableBasicBlock) {
+		emit warning(WarningCodes::wcUnreachableCode, tr("Unreachable code"), cp);
+		return true;
+	}
+	return false;
 }
 
 

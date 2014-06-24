@@ -4,13 +4,16 @@
 #include "settings.h"
 #include "scope.h"
 #include "typeresolver.h"
+#include "cbfunction.h"
+#include "constantexpressionevaluator.h"
+
 #include <QObject>
+
 class Runtime;
 class ValueType;
 class VariableSymbol;
 class FunctionSymbol;
 class ConstantSymbol;
-class CBFunction;
 class SymbolCollector : public QObject, protected ast::Visitor {
 	Q_OBJECT
 	public:
@@ -28,6 +31,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void visit(ast::Dim *c);
 		void visit(ast::Variable *c);
 		void visit(ast::Label *c);
+		void visit(ast::Identifier *c);
 
 		bool createTypeDefinition(ast::Identifier *id);
 		bool createTypeFields(ast::TypeDefinition *def);
@@ -37,6 +41,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void functionAlreadyDefinedError(const CodePoint &cp, Function *oldFunctionDef);
 
 		QList<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
+		QList<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope);
 
 		ValueType *resolveValueType(ast::Node *valueType);
 
@@ -56,6 +61,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		Runtime *mRuntime;
 		TypeResolver mTypeResolver;
 		bool mValid;
+		ConstantExpressionEvaluator mConstEval;
 
 		QMap<ast::FunctionDefinition*, CBFunction*> mFunctions;
 	private slots:

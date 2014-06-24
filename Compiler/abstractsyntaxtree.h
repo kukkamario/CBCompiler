@@ -310,6 +310,7 @@ class Exit : public LeafNode {
 		Exit(const CodePoint &cp) : LeafNode(cp) { }
 		~Exit() { }
 		static Type staticType() { return ntExit; }
+		Type type() const { return staticType(); }
 };
 
 //ValueTypes:
@@ -777,7 +778,7 @@ class RepeatForeverStatement : public BlockNode {
 	public:
 		RepeatForeverStatement(const CodePoint &start, const CodePoint &end) : BlockNode(start, end), mBlock(0) {}
 		~RepeatForeverStatement() {}
-		static Type staticType() { return ntRepeatUntilStatement; }
+		static Type staticType() { return ntRepeatForeverStatement; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node id"); return mBlock; }
@@ -935,10 +936,10 @@ class GotoT : public Node {
 		int childNodeCount() const { return 1; }
 		Node *childNode(int n) const { assert(n == 0 && "Invalid child node index"); return mLabel; }
 
-		void setLabel(Node *n) { mLabel = n; }
-		Node *label() const { return mLabel; }
+		void setLabel(Identifier *n) { mLabel = n; }
+		Identifier *label() const { return mLabel; }
 	protected:
-		Node *mLabel;
+		Identifier *mLabel;
 };
 
 typedef GotoT<Node::ntGoto> Goto;

@@ -47,6 +47,7 @@ class Parser : public QObject {
 		ast::Node *tryWhileStatement(TokIterator &i);
 		ast::Node *tryRepeatStatement(TokIterator &i);
 		ast::Node *tryForStatement(TokIterator &i);
+		ast::Node *tryExit(TokIterator &i);
 		ast::Node *expectBlock(TokIterator &i);
 		ast::Node *expectInlineBlock(TokIterator &i);
 		ast::Node *tryExpression(TokIterator &i);
@@ -57,6 +58,9 @@ class Parser : public QObject {
 		ast::Node *expectCommandCall(TokIterator &i);
 
 		ast::Node *expectVariableDefinitionList(TokIterator &i);
+		ast::Node *expectFunctionParameterList(TokIterator &i);
+		ast::Node *expectVariableDefinition(TokIterator &i);
+		ast::Node *expectVariableDefinitionOrArrayInitialization(TokIterator &i);
 
 		ast::Node *expectExpression(TokIterator &i);
 		ast::Node *expectAssignementExpression(TokIterator &i);
@@ -81,8 +85,6 @@ class Parser : public QObject {
 
 		bool expectLeftSquareBracket(TokIterator &i);
 		bool expectRightSquareBracket(TokIterator &i);
-
-		ast::Node *expectDefinitionOfVariableOrArray(TokIterator &i);
 
 		ast::Node *expectPrimaryTypeDefinition(TokIterator &i);
 		ast::Node *expectArrayTypeDefinition(TokIterator &i);

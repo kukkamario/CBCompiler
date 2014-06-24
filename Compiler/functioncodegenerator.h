@@ -7,8 +7,10 @@
 #include "scope.h"
 #include "value.h"
 #include "builder.h"
+#include "constantexpressionevaluator.h"
 
 class CBFunction;
+class LabelSymbol;
 
 class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Q_OBJECT
@@ -24,6 +26,20 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		void visit(ast::ArrayInitialization *n);
 		void visit(ast::FunctionCall *n);
 
+		void visit(ast::IfStatement *n);
+		void visit(ast::WhileStatement *n);
+		void visit(ast::RepeatForeverStatement *n);
+		void visit(ast::RepeatUntilStatement *n);
+		void visit(ast::ForToStatement *n);
+		void visit(ast::ForEachStatement *n);
+		void visit(ast::SelectStatement *n);
+		void visit(ast::SelectCase *n);
+		void visit(ast::Return *n);
+		void visit(ast::Goto *n);
+		void visit(ast::Gosub *n);
+		void visit(ast::Label *n);
+		void visit(ast::Exit *n);
+
 		Value generate(ast::Integer *n);
 		Value generate(ast::String *n);
 		Value generate(ast::Float *n);
@@ -33,23 +49,18 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Value generate(ast::FunctionCall *n);
 		Value generate(ast::KeywordFunctionCall *n);
 		Value generate(ast::ArraySubscript *n);
-
-		Value generate(ast::WhileStatement *n);
-		Value generate(ast::RepeatForeverStatement *n);
-		Value generate(ast::RepeatUntilStatement *n);
-		Value generate(ast::ForToStatement *n);
-		Value generate(ast::ForEachStatement *n);
-		Value generate(ast::SelectStatement *n);
-		Value generate(ast::SelectCase *n);
-		Value generate(ast::Const *n);
 		Value generate(ast::Node *n);
 
 		Function *findBestOverload(const QList<Function*> &functions, const QList<Value> &parameters, bool command, const CodePoint &cp);
 		QList<Value> generateParameterList(ast::Node *n);
+		void resolveGotos();
 
 		bool generateAllocas();
 		void generateDestructors();
 
+		llvm::BasicBlock *createBasicBlock(const llvm::Twine &name = llvm::Twine(), llvm::BasicBlock *insertBefore = 0);
+
+		bool checkUnreachable(CodePoint cp);
 
 		Settings *mSettings;
 		Scope *mLocalScope;
@@ -57,6 +68,14 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Runtime *mRuntime;
 		Builder *mBuilder;
 		llvm::Function *mFunction;
+		ConstantExpressionEvaluator mConstEval;
+		ValueType *mReturnType;
+		bool mMainFunction;
+		bool mUnreachableBasicBlock;
+
+		QList<QPair<LabelSymbol*, llvm::BasicBlock*> > mUnresolvedGotos;
+		QStack<llvm::BasicBlock*> mExitStack;
+
 		bool mValid;
 	signals:
 		void warning(int code, QString msg, CodePoint codePoint);

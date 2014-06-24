@@ -7,7 +7,7 @@
 #include "constantsymbol.h"
 #include "arrayvaluetype.h"
 #include "labelsymbol.h"
-#include "cbfunction.h"
+
 #include "runtime.h"
 #include "typepointervaluetype.h"
 
@@ -17,6 +17,8 @@ SymbolCollector::SymbolCollector(Runtime *runtime, Settings *settings) :
 	mTypeResolver(runtime) {
 	connect(&mTypeResolver, &TypeResolver::error, this, &SymbolCollector::error);
 	connect(&mTypeResolver, &TypeResolver::warning, this, &SymbolCollector::warning);
+	connect(&mConstEval, &ConstantExpressionEvaluator::error, this, &SymbolCollector::error);
+	connect(&mConstEval, &ConstantExpressionEvaluator::warning, this, &SymbolCollector::warning);
 
 	connect(this, &SymbolCollector::error, this, &SymbolCollector::errorOccured);
 }
@@ -139,6 +141,10 @@ void SymbolCollector::visit(ast::Label *c) {
 	mCurrentScope->addSymbol(new LabelSymbol(c->name(), c->codePoint()));
 }
 
+void SymbolCollector::visit(ast::Identifier *c) {
+
+}
+
 
 
 bool SymbolCollector::createTypeDefinition(ast::Identifier *id) {
@@ -191,19 +197,10 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 	ast::Node *parameterList = funcDef->parameterList();
 
 	Scope *scope = new Scope(funcDef->identifier()->name(), mGlobalScope);
-	QList<VariableSymbol*> paramSymbols = variableDefinitionList(parameterList, scope);
-
-	QList<CBFunction::Parameter> params;
-	Function::ParamList paramValueTypes;
-	for  (VariableSymbol *ps : paramSymbols) {
-		if (!ps) {
-			qDeleteAll(paramSymbols);
-			return false;
-		}
-		CBFunction::Parameter p;
-		p.mVariableSymbol = ps;
-		paramValueTypes.append(ps->valueType());
-		params.append(p);
+	QList<CBFunction::Parameter> params = functionParameterList(parameterList, scope);
+	QList<ValueType*> paramValueTypes;
+	for (const CBFunction::Parameter p : params) {
+		paramValueTypes.append(p.mVariableSymbol->valueType());
 	}
 
 	ValueType *retType = resolveValueType(funcDef->returnType());
@@ -251,6 +248,22 @@ QList<VariableSymbol *> SymbolCollector::variableDefinitionList(ast::Node *node,
 	return result;
 }
 
+QList<CBFunction::Parameter> SymbolCollector::functionParameterList(ast::Node *node, Scope *scope) {
+	ast::List *list = node->cast<ast::List>();
+	QList<CBFunction::Parameter> ret;
+	for (ast::Node *def : list->items()) {
+		ast::VariableDefinition *varDef = def->cast<ast::VariableDefinition>();
+		VariableSymbol *varSymbol = variableDefinition(varDef, scope);
+		CBFunction::Parameter param;
+		param.mVariableSymbol = varSymbol;
+		if (varDef->value()->type() != ast::Node::ntDefaultValue) {
+			param.mDefaultValue = mConstEval.evaluate(varDef->value());
+		}
+		ret.append(param);
+	}
+	return ret;
+}
+
 ValueType *SymbolCollector::resolveValueType(ast::Node *valueType) {
 	return mTypeResolver.resolve(valueType);
 }
@@ -291,7 +304,9 @@ VariableSymbol *SymbolCollector::addVariableSymbol(ast::Identifier *identifier, 
 		symbolAlreadyDefinedError(identifier->codePoint(), existingSymbol);
 		return 0;
 	}
-	return new VariableSymbol(identifier->name(), type, identifier->codePoint());
+	VariableSymbol *var = new VariableSymbol(identifier->name(), type, identifier->codePoint());
+	scope->addSymbol(var);
+	return var;
 }
 
 ConstantSymbol *SymbolCollector::addConstantSymbol(ast::Identifier *identifier, ValueType *type, Scope *scope) {

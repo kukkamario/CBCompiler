@@ -332,6 +332,10 @@ void Builder::returnVoid() {
 	mIRBuilder.CreateRetVoid();
 }
 
+Value Builder::defaultValue(ValueType *valType) {
+	return Value(valType, valType->defaultValue(), false);
+}
+
 void Builder::construct(VariableSymbol *var) {
 	llvm::Value *allocaInst = mIRBuilder.CreateAlloca(var->valueType()->llvmType());
 	var->setAlloca(allocaInst);

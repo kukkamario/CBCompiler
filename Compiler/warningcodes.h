@@ -9,6 +9,7 @@ namespace WarningCodes {
 		wcTypeOfConstantIsIgnored,
 		wcMayLosePrecision,
 		wcReturnsDefaultValue,
+		wcUnreachableCode
 	};
 
 }

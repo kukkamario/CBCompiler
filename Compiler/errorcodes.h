@@ -70,6 +70,7 @@ enum ErrorCode {
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
+	ecNotLabel,
 	ecArraySubscriptNotInteger,
 	ecConstantAlreadyDefined,
 	ecSymbolAlreadyDefinedInRuntime,
