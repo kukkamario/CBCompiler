@@ -69,13 +69,15 @@ class ConstantValue {
 		QString valueInfo() const;
 	private:
 		Type mType;
-		union {
-				bool mBool;
-				int mInt;
-				float mFloat;
-				quint16 mShort;
-				quint8 mByte;
-				UnionWrapper<QString> mString;
+		struct {
+			union {
+					bool mBool;
+					int mInt;
+					float mFloat;
+					quint16 mShort;
+					quint8 mByte;
+			};
+			QString mString;
 		} mData;
 };
 

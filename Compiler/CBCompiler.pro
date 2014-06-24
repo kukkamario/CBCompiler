@@ -127,7 +127,6 @@ HEADERS += \
     bytevaluetype.h \
     booleanvaluetype.h \
     constantvalue.h \
-    unionwrapper.h \
     constantsymbol.h \
     variablesymbol.h \
     typesymbol.h \

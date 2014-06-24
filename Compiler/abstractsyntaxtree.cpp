@@ -184,6 +184,16 @@ QString ExpressionNode::opToString(ExpressionNode::Op op) {
 	return ops[ExpressionNode::opInvalid];
 }
 
+void ExpressionNode::write(QTextStream &s, int tabs) {
+	printTabs(s, tabs);
+	s << "Node:" << typeAsString() << " " << opToString(mOp) << " {\n";
+	for (int i = 0; i < childNodeCount(); i++) {
+		childNode(i)->write(s, tabs + 1);
+	}
+	printTabs(s, tabs);
+	s << "}\n";
+}
+
 
 QString Unary::opToString(Unary::Op op) {
 	static QString ops[] = {

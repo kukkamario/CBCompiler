@@ -140,6 +140,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 			addToken(Token(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
 			i++;
 			line++;
+			lineStart = i;
 			continue;
 		}
 		if (*i == ',') {
@@ -398,8 +399,8 @@ Lexer::ReturnState Lexer::readHex(QString::iterator &i, const QString::iterator 
 }
 
 Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
-	++i;
 	QString::iterator begin = i;
+	++i;
 	while (i != end) {
 		if (*i == '"') {
 			addToken(Token(Token::String, begin, i, codePoint(begin, lineStart, line, file)));
@@ -408,6 +409,7 @@ Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterat
 		}
 		if (*i == '\n') {
 			line++;
+			lineStart = i + 1;
 		}
 		i++;
 	}
@@ -492,7 +494,7 @@ Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::it
 }
 
 CodePoint Lexer::codePoint(QString::Iterator i, QString::Iterator lineStart, int line, const QString &file) {
-	return CodePoint(line, lineStart - i, file);
+	return CodePoint(line, i - lineStart + 1, file);
 }
 
 

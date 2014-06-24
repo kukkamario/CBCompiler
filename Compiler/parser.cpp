@@ -105,7 +105,7 @@ ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 		case Token::Identifier: {
 			Parser::TokIterator begin = i;
 			ast::Variable *var = tryVariable(i);
-			if ((i->type() < Token::OperatorsBegin || i->type() > Token::OperatorsEnd) && i->type() != Token::LeftParenthese && i->type() != Token::RightParenthese) { //Probably a command
+			if (var->valueType()->type() == ast::Node::ntDefaultType && (i->type() < Token::OperatorsBegin || i->type() > Token::OperatorsEnd) && i->type() != Token::LeftSquareBracket && isCommandParameterList(i)) { //Probably a command
 				i = begin;
 				delete var;
 				return expectCommandCall(i);
@@ -547,6 +547,30 @@ bool Parser::variableTypesAreEqual(ast::Node *a, ast::Node *b) {
 	}
 }
 
+bool Parser::isCommandParameterList(Parser::TokIterator i) {
+	int level = 0;
+	if (i->isEndOfStatement()) return true;
+	while (!i->isEndOfStatement()) {
+		switch ( i->type()) {
+			case Token::LeftParenthese:
+				level++; break;
+			case Token::RightParenthese:
+				level--; break;
+			case Token::Comma:
+				if (level == 0) {
+					return true;
+				}
+				break;
+			default:
+				if (level == 0) {
+					return true;
+				}
+		}
+		++i;
+	}
+	return false;
+}
+
 
 ast::Variable *Parser::expectVariable(Parser::TokIterator &i) {
 	ast::Variable* var = tryVariable(i);
@@ -566,7 +590,7 @@ ast::Variable *Parser::tryVariable(Parser::TokIterator &i) {
 	CodePoint cp = i->codePoint();
 	ast::Identifier *id = expectIdentifier(i);
 	if (mStatus == Error) { return 0; }
-	i++;
+
 	ast::Node *ty = tryVariableTypeDefinition(i);
 	if (mStatus == Error) { delete id; return 0; }
 
@@ -923,6 +947,10 @@ static ast::ExpressionNode::Op tokenTypeToOperator(Token::Type t) {
 			return ast::ExpressionNode::opGreaterEqual;
 		case Token::opLessEqual:
 			return ast::ExpressionNode::opLessEqual;
+		case Token::opPlus:
+			return ast::ExpressionNode::opAdd;
+		case Token::opMinus:
+			return ast::ExpressionNode::opSubtract;
 		case Token::opMultiply:
 			return ast::ExpressionNode::opMultiply;
 		case Token::opPower:
@@ -1494,7 +1522,15 @@ ast::Node *Parser::expectCommandCall(Parser::TokIterator &i) {
 	CodePoint cp = i->codePoint();
 	ast::Identifier *id = expectIdentifier(i);
 	if (mStatus == Error) return 0;
-	ast::Node *params = expectExpressionList(i);
+
+	ast::Node *params;
+	if (i->isEndOfStatement()) {
+		params = new ast::List(i->codePoint());
+	}
+	else {
+		params = expectExpressionList(i);
+	}
+
 	if (mStatus == Error) return 0;
 	ast::FunctionCall *call = new ast::FunctionCall(cp);
 	call->setFunction(id);

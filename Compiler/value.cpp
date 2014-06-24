@@ -45,6 +45,14 @@ Value::~Value() {
 
 }
 
+Value &Value::operator=(const Value &value) {
+	mValueType = value.mValueType;
+	mValue = value.mValue,
+	mConstant = value.mConstant;
+	mType = value.mType;
+	return *this;
+}
+
 bool Value::isValid() const {
 	return mValueType != 0 && ((isConstant() ? mConstant.isValid() : false) || mType == tFunctionSelectorValueType || mType == tValueType || mValue);
 }

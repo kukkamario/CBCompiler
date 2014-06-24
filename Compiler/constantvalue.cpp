@@ -52,18 +52,12 @@ ConstantValue::ConstantValue(quint16 s) :
 
 ConstantValue::ConstantValue(const QString s) :
 	mType(String){
-	mData.mString.construct(s);
+	mData.mString = s;
 }
 
 ConstantValue::ConstantValue(const ConstantValue &o) :
 	mType(o.mType) {
-	if (mType == String) {
-		this->mData.mString.construct();
-		*this->mData.mString = *o.mData.mString;
-	}
-	else {
-		this->mData = o.mData;
-	}
+	this->mData = o.mData;
 }
 
 ConstantValue::ConstantValue(ConstantValue::Type type) :
@@ -80,7 +74,7 @@ ConstantValue::ConstantValue(ConstantValue::Type type) :
 		case Boolean:
 			mData.mBool = 0;
 		case String:
-			mData.mString.construct();
+			mData.mString = QString();
 		default:
 			mData.mInt = 0;
 	}
@@ -88,20 +82,9 @@ ConstantValue::ConstantValue(ConstantValue::Type type) :
 }
 
 ConstantValue::~ConstantValue() {
-	if (mType == String) {
-		mData.mString.destruct();
-	}
 }
 
 ConstantValue &ConstantValue::operator =(const ConstantValue &v) {
-	if (this->mType == String) {
-		if (v.mType == String) {
-			this->mData.mString = v.mData.mString;
-			return *this;
-		}
-
-		this->mData.mString.destruct();
-	}
 	this->mType = v.mType;
 	this->mData = v.mData;
 	return *this;
@@ -121,7 +104,7 @@ bool ConstantValue::operator ==(const ConstantValue &o) {
 		case Float:
 			return this->mData.mFloat == o.mData.mFloat;
 		case String:
-			return *this->mData.mString == *o.mData.mString;
+			return this->mData.mString == o.mData.mString;
 		default:
 			return true;
 	}
@@ -141,7 +124,7 @@ bool ConstantValue::operator !=(const ConstantValue &o) {
 		case Float:
 			return this->mData.mFloat != o.mData.mFloat;
 		case String:
-			return *this->mData.mString != *o.mData.mString;
+			return this->mData.mString != o.mData.mString;
 		default:
 			return true;
 	}
@@ -198,7 +181,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mInt == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) == *b.mData.mString;
+					return QString::number(a.mData.mInt) == b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -213,7 +196,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mFloat == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) == *b.mData.mString;
+					return QString::number(a.mData.mFloat) == b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -228,7 +211,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mShort == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) == *b.mData.mString;
+					return QString::number(a.mData.mShort) == b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -243,22 +226,22 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mByte == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) == *b.mData.mString;
+					return QString::number(a.mData.mByte) == b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString == QString::number(b.mData.mInt);
+					return a.mData.mString == QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString == QString::number(b.mData.mFloat);
+					return a.mData.mString == QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString == QString::number(b.mData.mShort);
+					return a.mData.mString == QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString == QString::number(b.mData.mByte);
+					return a.mData.mString == QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString == *b.mData.mString;
+					return a.mData.mString == b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -284,7 +267,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mInt != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) != *b.mData.mString;
+					return QString::number(a.mData.mInt) != b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -299,7 +282,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mFloat != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) != *b.mData.mString;
+					return QString::number(a.mData.mFloat) != b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -314,7 +297,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mShort != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) != *b.mData.mString;
+					return QString::number(a.mData.mShort) != b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -329,22 +312,22 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mByte != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) != *b.mData.mString;
+					return QString::number(a.mData.mByte) != b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString != QString::number(b.mData.mInt);
+					return a.mData.mString != QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString != QString::number(b.mData.mFloat);
+					return a.mData.mString != QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString != QString::number(b.mData.mShort);
+					return a.mData.mString != QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString != QString::number(b.mData.mByte);
+					return a.mData.mString != QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString != *b.mData.mString;
+					return a.mData.mString != b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -370,7 +353,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mInt > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) > *b.mData.mString;
+					return QString::number(a.mData.mInt) > b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -385,7 +368,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mFloat > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) > *b.mData.mString;
+					return QString::number(a.mData.mFloat) > b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -400,7 +383,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mShort > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) > *b.mData.mString;
+					return QString::number(a.mData.mShort) > b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -415,22 +398,22 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mByte > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) > *b.mData.mString;
+					return QString::number(a.mData.mByte) > b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString > QString::number(b.mData.mInt);
+					return a.mData.mString > QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString > QString::number(b.mData.mFloat);
+					return a.mData.mString > QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString > QString::number(b.mData.mShort);
+					return a.mData.mString > QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString > QString::number(b.mData.mByte);
+					return a.mData.mString > QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString > *b.mData.mString;
+					return a.mData.mString > b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -452,7 +435,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mInt >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) >= *b.mData.mString;
+					return QString::number(a.mData.mInt) >= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -467,7 +450,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mFloat >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) >= *b.mData.mString;
+					return QString::number(a.mData.mFloat) >= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -482,7 +465,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mShort >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) >= *b.mData.mString;
+					return QString::number(a.mData.mShort) >= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -497,22 +480,22 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mByte >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) >= *b.mData.mString;
+					return QString::number(a.mData.mByte) >= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString >= QString::number(b.mData.mInt);
+					return a.mData.mString >= QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString >= QString::number(b.mData.mFloat);
+					return a.mData.mString >= QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString >= QString::number(b.mData.mShort);
+					return a.mData.mString >= QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString >= QString::number(b.mData.mByte);
+					return a.mData.mString >= QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString >= *b.mData.mString;
+					return a.mData.mString >= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -534,7 +517,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mInt < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) < *b.mData.mString;
+					return QString::number(a.mData.mInt) < b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -549,7 +532,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mFloat < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) < *b.mData.mString;
+					return QString::number(a.mData.mFloat) < b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -564,7 +547,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mShort < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) < *b.mData.mString;
+					return QString::number(a.mData.mShort) < b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -579,22 +562,22 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mByte < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) < *b.mData.mString;
+					return QString::number(a.mData.mByte) < b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString < QString::number(b.mData.mInt);
+					return a.mData.mString < QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString < QString::number(b.mData.mFloat);
+					return a.mData.mString < QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString < QString::number(b.mData.mShort);
+					return a.mData.mString < QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString < QString::number(b.mData.mByte);
+					return a.mData.mString < QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString < *b.mData.mString;
+					return a.mData.mString < b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -616,7 +599,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mInt <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) <= *b.mData.mString;
+					return QString::number(a.mData.mInt) <= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -631,7 +614,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mFloat <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) <= *b.mData.mString;
+					return QString::number(a.mData.mFloat) <= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -646,7 +629,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mShort <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) <= *b.mData.mString;
+					return QString::number(a.mData.mShort) <= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -661,22 +644,22 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mByte <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) <= *b.mData.mString;
+					return QString::number(a.mData.mByte) <= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString <= QString::number(b.mData.mInt);
+					return a.mData.mString <= QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString <= QString::number(b.mData.mFloat);
+					return a.mData.mString <= QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString <= QString::number(b.mData.mShort);
+					return a.mData.mString <= QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString <= QString::number(b.mData.mByte);
+					return a.mData.mString <= QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString <= *b.mData.mString;
+					return a.mData.mString <= b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -698,7 +681,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mInt + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) + *b.mData.mString;
+					return QString::number(a.mData.mInt) + b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -713,7 +696,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mFloat + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) + *b.mData.mString;
+					return QString::number(a.mData.mFloat) + b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -728,7 +711,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mShort + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) + *b.mData.mString;
+					return QString::number(a.mData.mShort) + b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -743,22 +726,22 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mByte + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) + *b.mData.mString;
+					return QString::number(a.mData.mByte) + b.mData.mString;
 				default:
 					return ConstantValue();
 			}
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return *a.mData.mString + QString::number(b.mData.mInt);
+					return a.mData.mString + QString::number(b.mData.mInt);
 				case Float:
-					return *a.mData.mString + QString::number(b.mData.mFloat);
+					return a.mData.mString + QString::number(b.mData.mFloat);
 				case Short:
-					return *a.mData.mString + QString::number(b.mData.mShort);
+					return a.mData.mString + QString::number(b.mData.mShort);
 				case Byte:
-					return *a.mData.mString + QString::number(b.mData.mByte);
+					return a.mData.mString + QString::number(b.mData.mByte);
 				case String:
-					return *a.mData.mString + *b.mData.mString;
+					return a.mData.mString + b.mData.mString;
 				default:
 					return ConstantValue();
 			}
@@ -1243,7 +1226,7 @@ QString ConstantValue::toString() const{
 		case Float:
 			return QString::number(mData.mFloat);
 		case String:
-			return *mData.mString;
+			return mData.mString;
 		default:
 			return QString();
 	}
@@ -1262,7 +1245,7 @@ quint16 ConstantValue::toShort() const{
 		case Float:
 			return mData.mFloat;
 		case String:
-			return mData.mString->toUShort();
+			return mData.mString.toUShort();
 		default:
 			return 0;
 	}
@@ -1281,7 +1264,7 @@ quint8 ConstantValue::toByte() const {
 		case Float:
 			return mData.mFloat;
 		case String:
-			return (quint8)mData.mString->toUShort();
+			return (quint8)mData.mString.toUShort();
 		default:
 			return 0;
 	}
@@ -1300,7 +1283,7 @@ float ConstantValue::toFloat() const{
 		case Float:
 			return mData.mFloat;
 		case String:
-			return mData.mString->toFloat();
+			return mData.mString.toFloat();
 		default:
 			return 0;
 	}
@@ -1319,7 +1302,7 @@ int ConstantValue::toInt() const{
 		case Float:
 			return mData.mFloat;
 		case String:
-			return mData.mString->toInt();
+			return mData.mString.toInt();
 		default:
 			return 0;
 	}
@@ -1338,7 +1321,7 @@ bool ConstantValue::toBool() const{
 		case Float:
 			return bool(mData.mFloat);
 		case String:
-			return !mData.mString->isEmpty();
+			return !mData.mString.isEmpty();
 		default:
 			return false;
 	}
@@ -1378,7 +1361,7 @@ QString ConstantValue::valueInfo() const {
 		case Float:
 			return QString::number(mData.mFloat);
 		case String:
-			return "\"" + *mData.mString  + "\"";
+			return "\"" + mData.mString  + "\"";
 		case  Null:
 			return "NULL";
 		default:

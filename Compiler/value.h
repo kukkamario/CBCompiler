@@ -18,6 +18,8 @@ class Value {
 		explicit Value(FunctionSelectorValueType *t);
 		~Value();
 
+		Value &operator=(const Value &value);
+
 		ValueType *valueType() const {return mValueType;}
 		bool isConstant()const { return mType == tConstant; }
 		bool isValid() const;

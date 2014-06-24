@@ -439,6 +439,7 @@ class ExpressionNode : public Node {
 		void setOp(Op op) { mOp = op; }
 		Node *operand() const { return mOperand; }
 		void setOperand(Node *operand) { mOperand = operand; }
+		void write(QTextStream &s, int tabs = 0);
 	protected:
 		Op mOp;
 		Node *mOperand;

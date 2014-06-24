@@ -91,6 +91,8 @@ class Parser : public QObject {
 		void expectEndOfStatement(TokIterator &i);
 
 		bool variableTypesAreEqual(ast::Node *a, ast::Node *b);
+
+		bool isCommandParameterList(TokIterator i);
 	private:
 		enum Status {
 			Error,
