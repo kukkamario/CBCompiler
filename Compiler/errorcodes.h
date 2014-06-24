@@ -114,6 +114,7 @@ enum ErrorCode {
 	ecExpectingVariableDefinition,
 	ecSymbolNotValueType,
 	ecIntegerDividedByZero,
+	ecOperationNotAllowedInConstantExpression,
 
 	ecCantWriteBitcodeFile,
 

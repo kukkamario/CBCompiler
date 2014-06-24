@@ -587,7 +587,8 @@ llvm::LLVMContext &Builder::context() {
 
 Value Builder::not_(const Value &a) {
 	if (a.isConstant()) {
-		return Value(ConstantValue::not_(a.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::not_(a.constant(), flags), mRuntime);
 	}
 
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(llvmValue(toBoolean(a))), false);
@@ -595,7 +596,8 @@ Value Builder::not_(const Value &a) {
 
 Value Builder::minus(const Value &a) {
 	if (a.isConstant()) {
-		return Value(ConstantValue::minus(a.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::minus(a.constant(), flags), mRuntime);
 	}
 
 	if (a.valueType()->basicType() == ValueType::Boolean) {
@@ -613,7 +615,8 @@ Value Builder::plus(const Value &a) {
 
 Value Builder::add(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::add(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::add(a.constant(), b.constant(), flags), mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {
@@ -733,7 +736,8 @@ Value Builder::add(const Value &a, const Value &b) {
 
 Value Builder::subtract(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::subtract(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::subtract(a.constant(), b.constant(), flags), mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {
@@ -810,7 +814,8 @@ Value Builder::subtract(const Value &a, const Value &b) {
 
 Value Builder::multiply(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::multiply(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::multiply(a.constant(), b.constant(), flags), mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {
@@ -887,7 +892,8 @@ Value Builder::multiply(const Value &a, const Value &b) {
 
 Value Builder::divide(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::divide(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::divide(a.constant(), b.constant(), flags), mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {
@@ -962,7 +968,8 @@ Value Builder::divide(const Value &a, const Value &b) {
 
 Value Builder::mod(const Value &a, const Value &b){
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::mod(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::mod(a.constant(), b.constant(), flags), mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {
@@ -1037,7 +1044,8 @@ Value Builder::mod(const Value &a, const Value &b){
 
 Value Builder::shl(const Value &a, const Value &b){
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::shl(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::shl(a.constant(),b.constant(), flags), mRuntime);
 	}
 	//No strings or floats
 	assert(a.valueType()->basicType() != ValueType::Float && a.valueType()->basicType() != ValueType::String);
@@ -1055,7 +1063,8 @@ Value Builder::shl(const Value &a, const Value &b){
 
 Value Builder::shr(const Value &a, const Value &b){
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::shl(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::shl(a.constant(), b.constant(), flags), mRuntime);
 	}
 	//No strings or floats
 	assert(a.valueType()->basicType() != ValueType::Float && a.valueType()->basicType() != ValueType::String);
@@ -1073,7 +1082,8 @@ Value Builder::shr(const Value &a, const Value &b){
 
 Value Builder::sar(const Value &a, const Value &b){
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::shl(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::shl(a.constant(),b.constant(), flags), mRuntime);
 	}
 	//No strings or floats
 	assert(a.valueType()->basicType() != ValueType::Float && a.valueType()->basicType() != ValueType::String);
@@ -1091,28 +1101,32 @@ Value Builder::sar(const Value &a, const Value &b){
 
 Value Builder::and_(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::and_(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::and_(a.constant(), b.constant(), flags), mRuntime);
 	}
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateAnd(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::or_(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::or_(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::or_(a.constant(), b.constant(), flags), mRuntime);
 	}
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateOr(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::xor_(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::xor_(a.constant(),b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::xor_(a.constant(),b.constant(), flags), mRuntime);
 	}
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateXor(llvmValue(toBoolean(a)), llvmValue(toBoolean(b))));
 }
 
 Value Builder::power(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::power(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::power(a.constant(), b.constant(), flags), mRuntime);
 	}
 	if (a.valueType()->basicType() == ValueType::Float || b.valueType()->basicType() == ValueType::Float) {
 		llvm::Value *af = llvmValue(toFloat(a));
@@ -1134,7 +1148,8 @@ Value Builder::power(const Value &a, const Value &b) {
 
 Value Builder::less(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::lessEqual(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::lessEqual(a.constant(), b.constant(), flags), mRuntime);
 	}
 	if (a.valueType()->basicType() == ValueType::String) {
 		//TODO: finish this
@@ -1198,7 +1213,8 @@ Value Builder::less(const Value &a, const Value &b) {
 
 Value Builder::lessEqual(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::lessEqual(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::lessEqual(a.constant(), b.constant(), flags), mRuntime);
 	}
 	if (a.valueType()->basicType() == ValueType::String) {
 		//TODO: finish this
@@ -1261,7 +1277,8 @@ Value Builder::lessEqual(const Value &a, const Value &b) {
 
 Value Builder::greater(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::lessEqual(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::lessEqual(a.constant(), b.constant(), flags), mRuntime);
 	}
 	if (a.valueType()->basicType() == ValueType::String) {
 		//TODO: finish this
@@ -1325,7 +1342,8 @@ Value Builder::greater(const Value &a, const Value &b) {
 
 Value Builder::greaterEqual(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::lessEqual(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::lessEqual(a.constant(), b.constant(), flags), mRuntime);
 	}
 	if (a.valueType()->basicType() == ValueType::String) {
 		//TODO: finish this
@@ -1388,7 +1406,8 @@ Value Builder::greaterEqual(const Value &a, const Value &b) {
 
 Value Builder::equal(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::equal(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::equal(a.constant(), b.constant(), flags), mRuntime);
 	}
 	switch (a.valueType()->basicType()) {
 		case ValueType::Integer:
@@ -1525,7 +1544,8 @@ Value Builder::ptrEqual(llvm::Value *a, llvm::Value *b) {
 
 Value Builder::notEqual(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
-		return Value(ConstantValue::equal(a.constant(), b.constant()), mRuntime);
+		OperationFlags flags;
+		return Value(ConstantValue::equal(a.constant(), b.constant(), flags), mRuntime);
 	}
 	switch (a.valueType()->basicType()) {
 		case ValueType::Integer:

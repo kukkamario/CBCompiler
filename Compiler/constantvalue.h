@@ -1,7 +1,7 @@
 #ifndef CONSTANTVALUE_H
 #define CONSTANTVALUE_H
 #include <QString>
-#include "unionwrapper.h"
+#include "operationflags.h"
 
 class ValueType;
 class ConstantValue {
@@ -34,27 +34,27 @@ class ConstantValue {
 		bool isValid() const{return mType != Invalid;}
 		Type type() const {return mType;}
 
-		static ConstantValue plus(const ConstantValue &a);
-		static ConstantValue minus(const ConstantValue &a);
-		static ConstantValue not_(const ConstantValue &a);
-		static ConstantValue equal(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue notEqual(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue greater(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue greaterEqual(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue less(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue lessEqual(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue add(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue subtract(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue multiply(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue divide(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue power(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue mod(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue shr(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue shl(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue sar(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue and_(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue or_(const ConstantValue &a, const ConstantValue &b);
-		static ConstantValue xor_(const ConstantValue &a, const ConstantValue &b);
+		static ConstantValue plus(const ConstantValue &a, OperationFlags &flags);
+		static ConstantValue minus(const ConstantValue &a, OperationFlags &flags);
+		static ConstantValue not_(const ConstantValue &a, OperationFlags &flags);
+		static ConstantValue equal(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue notEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue greater(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue greaterEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue less(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue lessEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue add(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue subtract(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue multiply(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue divide(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue power(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue mod(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue shr(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue shl(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue sar(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue and_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue or_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
+		static ConstantValue xor_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags);
 
 		static int cbIntPower(int a, int b);
 
@@ -71,11 +71,11 @@ class ConstantValue {
 		Type mType;
 		struct {
 			union {
-					bool mBool;
-					int mInt;
-					float mFloat;
-					quint16 mShort;
-					quint8 mByte;
+				bool mBool;
+				int mInt;
+				float mFloat;
+				quint16 mShort;
+				quint8 mByte;
 			};
 			QString mString;
 		} mData;

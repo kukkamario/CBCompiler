@@ -24,6 +24,7 @@ Value::Value(const ConstantValue &c, Runtime *r) :
 	mConstant(c),
 	mType(tConstant) {
 	mValueType = r->valueTypeCollection().constantValueType(c.type());
+	assert(mConstant.isValid());
 }
 
 Value::Value(ValueType *t, llvm::Value *v, bool reference):

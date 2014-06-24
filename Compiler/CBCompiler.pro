@@ -100,7 +100,8 @@ SOURCES += main.cpp \
     functionvaluetype.cpp \
     functionselectorvaluetype.cpp \
     functioncodegenerator.cpp \
-    castcostcalculator.cpp
+    castcostcalculator.cpp \
+    constantexpressionevaluator.cpp
 
 HEADERS += \
     lexer.h \
@@ -153,4 +154,5 @@ HEADERS += \
     operationflags.h \
     functionselectorvaluetype.h \
     functioncodegenerator.h \
-    castcostcalculator.h
+    castcostcalculator.h \
+    constantexpressionevaluator.h

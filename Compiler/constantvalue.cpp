@@ -130,7 +130,7 @@ bool ConstantValue::operator !=(const ConstantValue &o) {
 	}
 }
 
-ConstantValue ConstantValue::plus(const ConstantValue &a) {
+ConstantValue ConstantValue::plus(const ConstantValue &a, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			return abs(a.mData.mInt);
@@ -141,11 +141,12 @@ ConstantValue ConstantValue::plus(const ConstantValue &a) {
 		case Byte:
 			return a.mData.mByte;
 		default:
+			flags |= OperationFlag::NoSuchOperation;
 			return ConstantValue();
 	}
 }
 
-ConstantValue ConstantValue::minus(const ConstantValue &a) {
+ConstantValue ConstantValue::minus(const ConstantValue &a, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			return -a.mData.mInt;
@@ -156,19 +157,24 @@ ConstantValue ConstantValue::minus(const ConstantValue &a) {
 		case Byte:
 			return -a.mData.mByte;
 		default:
+			flags |= OperationFlag::NoSuchOperation;
 			return ConstantValue();
 	}
 }
 
-ConstantValue ConstantValue::not_(const ConstantValue &a) {
+ConstantValue ConstantValue::not_(const ConstantValue &a, OperationFlags &flags) {
 	if (a.mType == Null) {
+		flags |= OperationFlag::NoSuchOperation;
 		return ConstantValue();
 	}
 
 	return !a.toBool();
 }
 
-ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -183,8 +189,9 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case String:
 					return QString::number(a.mData.mInt) == b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -198,8 +205,9 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case String:
 					return QString::number(a.mData.mFloat) == b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -213,8 +221,9 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case String:
 					return QString::number(a.mData.mShort) == b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -228,8 +237,9 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case String:
 					return QString::number(a.mData.mByte) == b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -243,18 +253,23 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case String:
 					return a.mData.mString == b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Null:
 			if (b.mType == Null) { // NULL = NULL
 				return true;
 			}
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -269,8 +284,9 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case String:
 					return QString::number(a.mData.mInt) != b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -284,8 +300,9 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case String:
 					return QString::number(a.mData.mFloat) != b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -299,8 +316,9 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case String:
 					return QString::number(a.mData.mShort) != b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -314,8 +332,9 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case String:
 					return QString::number(a.mData.mByte) != b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -329,18 +348,24 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case String:
 					return a.mData.mString != b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Null:
 			if (b.mType == Null) {
 				return false;
 			}
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -355,8 +380,9 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case String:
 					return QString::number(a.mData.mInt) > b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -370,8 +396,9 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case String:
 					return QString::number(a.mData.mFloat) > b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -385,8 +412,9 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case String:
 					return QString::number(a.mData.mShort) > b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -400,8 +428,9 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case String:
 					return QString::number(a.mData.mByte) > b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -415,14 +444,20 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case String:
 					return a.mData.mString > b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -437,8 +472,9 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case String:
 					return QString::number(a.mData.mInt) >= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -452,8 +488,9 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case String:
 					return QString::number(a.mData.mFloat) >= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -467,8 +504,9 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case String:
 					return QString::number(a.mData.mShort) >= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -482,8 +520,9 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case String:
 					return QString::number(a.mData.mByte) >= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -497,14 +536,20 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case String:
 					return a.mData.mString >= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -519,8 +564,9 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case String:
 					return QString::number(a.mData.mInt) < b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -534,8 +580,9 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case String:
 					return QString::number(a.mData.mFloat) < b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -549,8 +596,9 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case String:
 					return QString::number(a.mData.mShort) < b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -564,8 +612,9 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case String:
 					return QString::number(a.mData.mByte) < b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -579,14 +628,20 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case String:
 					return a.mData.mString < b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -601,8 +656,9 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case String:
 					return QString::number(a.mData.mInt) <= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -616,8 +672,9 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case String:
 					return QString::number(a.mData.mFloat) <= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -631,8 +688,9 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case String:
 					return QString::number(a.mData.mShort) <= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -646,8 +704,9 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case String:
 					return QString::number(a.mData.mByte) <= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -661,14 +720,20 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case String:
 					return a.mData.mString <= b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -683,8 +748,9 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case String:
 					return QString::number(a.mData.mInt) + b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -698,8 +764,9 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case String:
 					return QString::number(a.mData.mFloat) + b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -713,7 +780,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case String:
 					return QString::number(a.mData.mShort) + b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Byte:
 			switch (b.mType) {
@@ -728,8 +795,9 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case String:
 					return QString::number(a.mData.mByte) + b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case String:
 			switch (b.mType) {
 				case Integer:
@@ -743,14 +811,20 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b)
 				case String:
 					return a.mData.mString + b.mData.mString;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -763,8 +837,9 @@ ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mInt - b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -776,8 +851,9 @@ ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mFloat - b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -789,8 +865,9 @@ ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mShort - b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -802,14 +879,19 @@ ConstantValue ConstantValue::subtract(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mByte - b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -822,8 +904,9 @@ ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mInt * b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -835,8 +918,9 @@ ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mFloat * b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
@@ -848,8 +932,9 @@ ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mShort * b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -861,31 +946,39 @@ ConstantValue ConstantValue::multiply(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mByte * b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if ((a.mType == String) ^ (b.mType == String) ) {
+		flags |= OperationFlag::CastToString;
+	}
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
 				case Integer:
-					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mInt != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
+
 					return a.mData.mInt / b.mData.mInt;
 				case Float:
 					return a.mData.mInt / b.mData.mFloat;
 				case Short:
-					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mShort != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mInt / b.mData.mShort;
 				case Byte:
-					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mByte != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mInt / b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			//TODO: Warnings if result is NaN or INF
 			switch (b.mType) {
@@ -898,46 +991,51 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 				case Byte:
 					return a.mData.mFloat / b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
-					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mInt != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mShort / b.mData.mInt;
 				case Float:
 					return a.mData.mShort / b.mData.mFloat;
 				case Short:
-					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mShort != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mShort / b.mData.mShort;
 				case Byte:
-					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mByte != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mShort / b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
-					assert(b.mData.mInt != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mInt != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mByte / b.mData.mInt;
 				case Float:
 					return a.mData.mByte / b.mData.mFloat;
 				case Short:
-					assert(b.mData.mShort != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mShort != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mByte / b.mData.mShort;
 				case Byte:
-					assert(b.mData.mByte != 0 && "FIXME: Integer divided by Zero");
+					if (b.mData.mByte != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 					return a.mData.mByte / b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -950,7 +1048,7 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return cbPow(a.mData.mInt, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Float:
 			switch (b.mType) {
@@ -963,7 +1061,7 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return pow(a.mData.mFloat, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Short:
 			switch (b.mType) {
@@ -976,7 +1074,7 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return cbPow(a.mData.mShort, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Byte:
 			switch (b.mType) {
@@ -989,14 +1087,16 @@ ConstantValue ConstantValue::power(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return cbPow(a.mData.mByte, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -1009,8 +1109,9 @@ ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return imod(a.mData.mInt, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Float:
 			switch (b.mType) {
 				case Integer:
@@ -1022,12 +1123,13 @@ ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return fmod(a.mData.mFloat, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Short:
 			switch (b.mType) {
 				case Integer:
-					return mod(a.mData.mShort, b.mData.mInt);
+					return imod(a.mData.mShort, b.mData.mInt);
 				case Float:
 					return fmod(a.mData.mShort, b.mData.mFloat);
 				case Short:
@@ -1035,12 +1137,13 @@ ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return imod(a.mData.mShort, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
-					return mod(a.mData.mByte, b.mData.mInt);
+					return imod(a.mData.mByte, b.mData.mInt);
 				case Float:
 					return fmod(a.mData.mByte, b.mData.mFloat);
 				case Short:
@@ -1048,14 +1151,17 @@ ConstantValue ConstantValue::mod(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return imod(a.mData.mByte, b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -1066,7 +1172,7 @@ ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return int((unsigned int)a.mData.mInt >> b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Short:
 			switch (b.mType) {
@@ -1077,8 +1183,9 @@ ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mShort >> b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -1088,14 +1195,17 @@ ConstantValue ConstantValue::shr(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mByte >> b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -1106,7 +1216,7 @@ ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return int((unsigned int)a.mData.mInt << b.mData.mByte);
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Short:
 			switch (b.mType) {
@@ -1117,8 +1227,9 @@ ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mShort << b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -1128,14 +1239,17 @@ ConstantValue ConstantValue::shl(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mByte << b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b) {
+ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
 	switch (a.mType) {
 		case Integer:
 			switch (b.mType) {
@@ -1146,7 +1260,7 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mInt >> b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
 		case Short:
 			switch (b.mType) {
@@ -1157,8 +1271,9 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mShort >> b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
+			break;
 		case Byte:
 			switch (b.mType) {
 				case Integer:
@@ -1168,25 +1283,37 @@ ConstantValue ConstantValue::sar(const ConstantValue &a, const ConstantValue &b)
 				case Byte:
 					return a.mData.mByte >> b.mData.mByte;
 				default:
-					return ConstantValue();
+					break;
 			}
 		default:
-			return ConstantValue();
+			break;
 	}
+	flags |= OperationFlag::NoSuchOperation;
+	return ConstantValue();
 }
 
-ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
+ConstantValue ConstantValue::and_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if (a.mType ==  Null || b.mType ==  Null) {
+		flags |= OperationFlag::NoSuchOperation;
+		return ConstantValue();
+	}
+
 	return a.toBool() && b.toBool();
 }
 
-ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b) {
-	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
+ConstantValue ConstantValue::or_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags) {
+	if (a.mType ==  Null || b.mType ==  Null) {
+		flags |= OperationFlag::NoSuchOperation;
+		return ConstantValue();
+	}
 	return a.toBool() || b.toBool();
 }
 
-ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b){
-	if (a.mType ==  Null || b.mType ==  Null) return ConstantValue();
+ConstantValue ConstantValue::xor_(const ConstantValue &a, const ConstantValue &b, OperationFlags &flags){
+	if (a.mType ==  Null || b.mType ==  Null) {
+		flags |= OperationFlag::NoSuchOperation;
+		return ConstantValue();
+	}
 	return a.toBool() ^ b.toBool();
 }
 
