@@ -19,7 +19,7 @@ bool CustomDataTypeDefinitions::parse(const QString &file) {
 	QByteArray jsonText;
 	QFile jsonFile(file);
 	if (!jsonFile.open(QIODevice::ReadOnly)) {
-		emit error(ErrorCodes::ecCantOpenFile, tr("Can't open a custom data type definition file \"%1\"").arg(file), 0, QString());
+		emit error(ErrorCodes::ecCantOpenFile, tr("Can't open a custom data type definition file \"%1\"").arg(file), CodePoint(0, 0, file));
 		return false;
 	}
 	jsonText = jsonFile.readAll();
@@ -29,7 +29,7 @@ bool CustomDataTypeDefinitions::parse(const QString &file) {
 	QJsonDocument doc = QJsonDocument::fromJson(jsonText, &parseError);
 
 	if (doc.isNull()) {
-		emit error(ErrorCodes::ecCantParseCustomDataTypeDefinitionFile, tr("Can't parse a custom data type definition file:    %1").arg(parseError.errorString()), 0, file);
+		emit error(ErrorCodes::ecCantParseCustomDataTypeDefinitionFile, tr("Can't parse a custom data type definition file:    %1").arg(parseError.errorString()), CodePoint(0, 0, file));
 		return false;
 	}
 
@@ -57,7 +57,7 @@ bool CustomDataTypeDefinitions::parse(const QString &file) {
 
 
 void CustomDataTypeDefinitions::invalidFormatError(const QString &file) {
-	emit error(ErrorCodes::ecInvalidCustomDataTypeDefinitionFileFormat, tr("Invalid custom data type file format"), 0, file);
+	emit error(ErrorCodes::ecInvalidCustomDataTypeDefinitionFileFormat, tr("Invalid custom data type file format"), CodePoint(0, 0, file));
 }
 
 bool CustomDataTypeDefinitions::parseDataType(QJsonObject obj, CustomDataTypeDefinitions::CustomDataType &ret) {

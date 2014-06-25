@@ -1,7 +1,7 @@
 TEMPLATE = app
+QT = core
 CONFIG += console
 CONFIG -= app_bundle
-CONFIG -= qt
 
 SOURCES += main.cpp
 
@@ -19,12 +19,14 @@ win32 {
 		LIBS += -ldbghelp
 	} else { #mingw
 		LIBS += -lpsapi -limagehlp # = dbghelp (msvc)
+		QMAKE_CXXFLAGS += -std=c++11
 	}
 }
 
 linux {
 	LIBS += -L`llvm-config --libdir` `llvm-config --libs bitreader asmparser`
 	LIBS += -ldl -lpthread
+	QMAKE_CXXFLAGS += -std=c++11
 }
 
 macx {

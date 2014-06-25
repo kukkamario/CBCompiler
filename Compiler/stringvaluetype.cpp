@@ -4,7 +4,7 @@
 #include "booleanvaluetype.h"
 #include "builder.h"
 
-StringValueType::StringValueType(StringPool *strPool, Runtime *r, llvm::Module *mod) :
+StringValueType::StringValueType(StringPool *strPool, Runtime *r) :
 	ValueType(r),
 	mStringPool(strPool){
 }
@@ -140,25 +140,23 @@ void StringValueType::assignString(llvm::IRBuilder<> *builder, llvm::Value *var,
 }
 
 
-ValueType::CastCostType StringValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost StringValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case String:
-			return 0;
+			return ccNoCost;
 		case Integer:
-			return 50;
+			return ccCastFromString;
 		case Float:
-			return 50;
+			return ccCastFromString;
 		case Short:
-			return 100;
+			return ccCastFromString;
 		case Byte:
-			return 100;
+			return ccCastFromString;
 		case Boolean:
-			return 2;
+			return ccCastToSmaller;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
-
-	return 0;
 }
 
 
@@ -218,6 +216,15 @@ llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::V
 void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) {
 	builder->CreateCall(mRefFunction, a);
 }
+
+Value StringValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value StringValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+
 
 bool StringValueType::isValid() const {
 	return mAdditionFunction && mAssignmentFunction && mType && mIntToStringFunction && mFloatToStringFunction && mStringToFloatFunction && mStringToIntFunction;

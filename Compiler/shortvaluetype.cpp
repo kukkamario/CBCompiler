@@ -7,22 +7,22 @@ ShortValueType::ShortValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt16Ty(mod->getContext());
 }
 
-ValueType::CastCostType ShortValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost ShortValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case ValueType::Short:
-			return 0;
+			return ccNoCost;
 		case ValueType::Integer:
-			return 1;
+			return ccCastToBigger;
 		case Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case ValueType::Float:
-			return 2;
+			return ccCastToBigger;
 		case ValueType::Byte:
-			return 4;
+			return ccCastToSmaller;
 		case ValueType::String:
-			return 10;
+			return ccCastToString;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 
@@ -37,3 +37,12 @@ llvm::Constant *ShortValueType::constant(quint16 i) const {
 llvm::Constant *ShortValueType::defaultValue() const {
 	return constant(0);
 }
+
+Value ShortValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value ShortValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

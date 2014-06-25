@@ -5,7 +5,7 @@ class ValueType;
 
 class ValueTypeSymbol : public Symbol {
 	public:
-		ValueTypeSymbol(const QString &name, QString f, int line);
+		ValueTypeSymbol(const QString &name, const CodePoint &cp);
 		virtual ValueType *valueType() const = 0;
 		bool isValueTypeSymbol() const { return true; }
 	protected:

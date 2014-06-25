@@ -2,6 +2,7 @@
 #include "llvm.h"
 #include "value.h"
 #include "builder.h"
+#include "abstractsyntaxtree.h"
 
 
 ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :
@@ -9,22 +10,20 @@ ByteValueType::ByteValueType(Runtime *r, llvm::Module *mod) :
 	mType = llvm::Type::getInt8Ty(mod->getContext());
 }
 
-ValueType::CastCostType ByteValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost ByteValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case ValueType::Byte:
-			return 0;
+			return ccNoCost;
 		case ValueType::Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case ValueType::Short:
-			return 1;
 		case ValueType::Integer:
-			return 1;
 		case ValueType::Float:
-			return 2;
+			return ccCastToBigger;
 		case ValueType::String:
-			return 10;
+			return ccCastToString;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 
@@ -39,3 +38,13 @@ llvm::Constant *ByteValueType::constant(quint8 i) const {
 llvm::Constant *ByteValueType::defaultValue() const {
 	return constant(0);
 }
+
+
+Value ByteValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value ByteValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

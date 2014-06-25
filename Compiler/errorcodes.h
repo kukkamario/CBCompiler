@@ -22,6 +22,8 @@ enum ErrorCode {
 	ecExpectingVarType,
 	ecExpectingLeftParenthese,
 	ecExpectingRightParenthese,
+	ecExpectingLeftSquareBracket,
+	ecExpectingRightSquareBracket,
 	ecExpectingPrimaryExpression,
 	ecExpectingEndOfRepeat,
 	ecExpectingEndFunction,
@@ -46,7 +48,8 @@ enum ErrorCode {
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,
 
-	ecVarAlreadyDefinedWithAnotherType,
+	ecVariableAlreadyDefinedWithAnotherType,
+	ecConstantAlreadyDefinedWithAnotherType,
 	ecVariableTypeDefinedTwice,
 
 	ecParsingFailed,
@@ -67,6 +70,7 @@ enum ErrorCode {
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
+	ecNotLabel,
 	ecArraySubscriptNotInteger,
 	ecConstantAlreadyDefined,
 	ecSymbolAlreadyDefinedInRuntime,
@@ -108,6 +112,14 @@ enum ErrorCode {
 	ecExpectingType,
 	ecCastFunctionRequiresOneParameter,
 	ecCantCastValue,
+	ecExpectingVariableDefinition,
+	ecSymbolNotValueType,
+	ecIntegerDividedByZero,
+	ecOperationNotAllowedInConstantExpression,
+	ecWrongNumberOfParameters,
+	ecNotTypeName,
+	ecReferenceRequired,
+	ecNotContainer,
 
 	ecCantWriteBitcodeFile,
 

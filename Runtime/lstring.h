@@ -6,18 +6,7 @@
 #include <cstdint>
 #include <allegro5/allegro.h>
 #include "common.h"
-
-#ifdef USE_BOOST_ATOMIC
-	#include <boost/atomic.hpp>
-	typedef boost::atomic_int AtomicInt;
-#else
-	typedef int AtomicInt;
-#endif
-int atomicLoad(AtomicInt &i);
-void atomicIncrease(AtomicInt &i);
-bool atomicDecrease(AtomicInt &i);
-void atomicThreadFenceAcquire();
-
+#include "atomicint.h"
 typedef char32_t LChar;
 
 class LStringData {

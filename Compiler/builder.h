@@ -7,7 +7,6 @@
 #include <QStack>
 
 #include "runtime.h"
-class ArraySymbol;
 class VariableSymbol;
 class TypeSymbol;
 /**
@@ -43,42 +42,43 @@ class Builder {
 		llvm::Value *bitcast(llvm::Type *type, llvm::Value *val);
 
 		Value call(Function *func, QList<Value> &params);
+		Value call(FunctionValueType *funcType, llvm::Value *func, QList<Value> &params);
 		void branch(llvm::BasicBlock *dest);
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
 		void returnValue(ValueType *retType, const Value &v);
+		void returnVoid();
+
+		Value defaultValue(ValueType *valType);
 
 		void construct(VariableSymbol *var);
+		void store(const Value &ref, const Value &value);
 		void store(llvm::Value *ptr, llvm::Value *val);
 		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);
 		void store(VariableSymbol *var, llvm::Value *val);
-		void store(ArraySymbol *array, const Value &index, const Value &val);
-		void store(ArraySymbol *array, const QList<Value> &dims, const Value &val);
+		/*void store(const Value &ref, const Value &index, const Value &val);
+		void store(const Value &ref, const QList<Value> &dims, const Value &val);*/
 		void store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v);
 		Value load(const VariableSymbol *var);
-		Value load(ArraySymbol *array, const Value &index);
-		Value load(ArraySymbol *array, const QList<Value> &dims);
+		/*Value load(const Value &ref, const Value &index);
+		Value load(const Value &ref, const QList<Value> &dims);*/
 		Value load(VariableSymbol *typePtrVar, const QString &fieldName);
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
+
 		Value nullTypePointer();
 
-		void initilizeArray(ArraySymbol *array, const QList<Value> &dimSizes);
+		/*
+		void initilizeArray(VariableSymbol *array, const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayElementCount(const QList<Value> &dimSizes);
 		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes);
-		/**
-		 * @brief arrayElementpointer calculates a pointer address of the array element.
-		 * @param array
-		 * @param index
-		 * @return A pointer to an array element in index
-		 */
 		llvm::Value *arrayElementPointer(ArraySymbol *array, const QList<Value> &index);
 		llvm::Value *arrayElementPointer(ArraySymbol *array, const Value &index);
 		llvm::Value *arrayIndexMultiplier(ArraySymbol *array, int index);
-		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);
+		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);*/
 
-		llvm::Value *typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName);
+		Value typePointerFieldReference(Value typePtrVar, const QString &fieldName);
 		Value newTypeMember(TypeSymbol *type);
 		Value firstTypeMember(TypeSymbol *type);
 		Value lastTypeMember(TypeSymbol *type);
@@ -114,6 +114,7 @@ class Builder {
 		Value greater(const Value &a, const Value &b);
 		Value greaterEqual(const Value &a, const Value &b);
 		Value equal(const Value &a, const Value &b);
+		Value ptrEqual(llvm::Value *a, llvm::Value *b);
 		Value notEqual(const Value &a, const Value &b);
 
 		/**
@@ -152,6 +153,8 @@ class Builder {
 		 * @return i8 pointer
 		 */
 		llvm::Value *pointerToBytePointer(llvm::Value *ptr);
+
+		llvm::BasicBlock *currentBasicBlock() const;
 
 		//Dont work. Dont use
 		void pushInsertPoint();

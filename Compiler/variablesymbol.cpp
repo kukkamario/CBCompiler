@@ -1,11 +1,15 @@
 #include "variablesymbol.h"
 #include "valuetype.h"
 
-VariableSymbol::VariableSymbol(const QString &name, ValueType *t, const QString &f, int line):
-	Symbol(name, f, line),
+VariableSymbol::VariableSymbol(const QString &name, ValueType *t, const CodePoint &cp):
+	Symbol(name, cp),
 	mValueType(t),
 	mAlloca(0) {
 	assert(t);
+}
+
+VariableSymbol::~VariableSymbol() {
+
 }
 
 QString VariableSymbol::info() const {

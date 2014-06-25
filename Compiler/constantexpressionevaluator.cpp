@@ -1,195 +1,158 @@
 #include "constantexpressionevaluator.h"
 #include "errorcodes.h"
-#include "runtime.h"
-#include "valuetype.h"
-#include "intvaluetype.h"
-#include "floatvaluetype.h"
-#include "stringvaluetype.h"
-#include "bytevaluetype.h"
-#include "shortvaluetype.h"
+#include "warningcodes.h"
+#include "scope.h"
+#include "constantsymbol.h"
 
-
-ConstantExpressionEvaluator::ConstantExpressionEvaluator() :
-	mGlobalScope(0),
-	mRuntime(0) {
+ConstantExpressionEvaluator::ConstantExpressionEvaluator(QObject *parent) :
+	QObject(parent)
+{
 }
 
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Node *s) {
-	switch(s->type()) {
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Node *n) {
+	switch (n->type()) {
 		case ast::Node::ntInteger:
-			return evaluate((ast::Integer*)s);
+			return evaluate(n->cast<ast::Integer>());
 		case ast::Node::ntFloat:
-			return evaluate((ast::Float*)s);
+			return evaluate(n->cast<ast::Float>());
 		case ast::Node::ntString:
-			return evaluate((ast::String*)s);
-		case ast::Node::ntVariable:
-			return evaluate((ast::Variable*)s);
-		case ast::Node::ntExpression:
-			return evaluate((ast::Expression*)s);
-		case ast::Node::ntUnary:
-			return evaluate((ast::Integer*)s);
+			return evaluate(n->cast<ast::String>());
+		case ast::Node::ntIdentifier:
+			return evaluate(n->cast<ast::Identifier>());
 
-		//Errors
-		case ast::Node::ntFunctionCallOrArraySubscript:
-			emit error(ErrorCodes::ecNotConstant, tr("Neither function call nor array subscript is allowed inside constant expression"), mLine, mFile);
-			return ConstantValue();
+		case ast::Node::ntExpression:
+			return evaluate(n->cast<ast::Expression>());
+		case ast::Node::ntUnary:
+			return evaluate(n->cast<ast::Unary>());
+		case ast::Node::ntFunctionCall:
+			return evaluate(n->cast<ast::FunctionCall>());
+		case ast::Node::ntVariable:
+			return evaluate(n->cast<ast::Variable>());
 		default:
-			emit error(ErrorCodes::ecWTF, tr("Unknown AST node, ConstantExpressionEvaluator::evaluate"), mLine, mFile);
+			emit error(ErrorCodes::ecNotConstant, tr("This expression isn't constant expression"), n->codePoint());
 			return ConstantValue();
 	}
 }
 
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Expression *s) {
-	ConstantValue first = evaluate(s->mFirst);
-	if (!first.isValid()) return ConstantValue();
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Expression *node) {
+	ConstantValue op1 = evaluate(node->firstOperand());
+	if (!op1.isValid()) return ConstantValue();
 
-	for (QList<ast::Operation>::ConstIterator i = s->mRest.begin(); i != s->mRest.end(); i++) {
-		ConstantValue second = evaluate(i->mOperand);
-		if (!second.isValid()) return ConstantValue();
+	for (ast::ExpressionNode *operation : node->operations()) {
+		ConstantValue op2 = evaluate(operation->operand());
+		if (!op2.isValid()) return ConstantValue();
 		ConstantValue result;
-		switch (i->mOperator) {
-			case ast::opEqual:
-				result = ConstantValue::equal(first, second); break;
-			case ast::opNotEqual:
-				result = ConstantValue::notEqual(first, second); break;
-			case ast::opGreater:
-				result = ConstantValue::greater(first, second); break;
-			case ast::opLess:
-				result = ConstantValue::less(first, second); break;
-			case ast::opGreaterEqual:
-				result = ConstantValue::greaterEqual(first, second); break;
-			case ast::opLessEqual:
-				result = ConstantValue::lessEqual(first, second); break;
-			case ast::opPlus:
-				result = ConstantValue::add(first, second); break;
-			case ast::opMinus:
-				result = ConstantValue::subtract(first, second); break;
-			case ast::opMultiply:
-				result = ConstantValue::multiply(first, second); break;
-			case ast::opDivide:
-				result = ConstantValue::divide(first, second); break;
-			case ast::opPower:
-				result = ConstantValue::power(first, second); break;
-			case ast::opMod:
-				result = ConstantValue::mod(first, second); break;
-			case ast::opShl:
-				result = ConstantValue::shl(first, second); break;
-			case ast::opShr:
-				result = ConstantValue::shr(first, second); break;
-			case ast::opSar:
-				result = ConstantValue::sar(first, second); break;
-			case ast::opAnd:
-				result = ConstantValue::and_(first, second); break;
-			case ast::opOr:
-				result = ConstantValue::or_(first, second); break;
-			case ast::opXor:
-				result = ConstantValue::xor_(first, second); break;
+		OperationFlags flags;
+		switch (operation->op()) {
+			case ast::ExpressionNode::opAdd:
+				result = ConstantValue::add(op1, op2, flags); break;
+			case ast::ExpressionNode::opSubtract:
+				result = ConstantValue::subtract(op1, op2, flags); break;
+			case ast::ExpressionNode::opMultiply:
+				result = ConstantValue::multiply(op1, op2, flags); break;
+			case ast::ExpressionNode::opDivide:
+				result = ConstantValue::add(op1, op2, flags); break;
+			case ast::ExpressionNode::opMod:
+				result = ConstantValue::mod(op1, op2, flags); break;
+			case ast::ExpressionNode::opPower:
+				result = ConstantValue::power(op1, op2, flags); break;
+			case ast::ExpressionNode::opShl:
+				result = ConstantValue::shl(op1, op2, flags); break;
+			case ast::ExpressionNode::opSar:
+				result = ConstantValue::sar(op1, op2, flags); break;
+			case ast::ExpressionNode::opShr:
+				result = ConstantValue::shr(op1, op2, flags); break;
+			case ast::ExpressionNode::opXor:
+				result = ConstantValue::xor_(op1, op2, flags); break;
+			case ast::ExpressionNode::opOr:
+				result = ConstantValue::or_(op1, op2, flags); break;
+			case ast::ExpressionNode::opAnd:
+				result = ConstantValue::and_(op1, op2, flags); break;
+			case ast::ExpressionNode::opEqual:
+				result = ConstantValue::equal(op1, op2, flags); break;
+			case ast::ExpressionNode::opNotEqual:
+				result = ConstantValue::notEqual(op1, op2, flags); break;
+			case ast::ExpressionNode::opGreater:
+				result = ConstantValue::greater(op1, op2, flags); break;
+			case ast::ExpressionNode::opGreaterEqual:
+				result = ConstantValue::greaterEqual(op1, op2, flags); break;
+			case ast::ExpressionNode::opLess:
+				result = ConstantValue::less(op1, op2, flags); break;
+			case ast::ExpressionNode::opLessEqual:
+				result = ConstantValue::lessEqual(op1, op2, flags); break;
 			default:
-				emit error(ErrorCodes::ecWTF, tr("Unknown expression operator, ConstantExpressionEvaluator::evaluate"), mLine, mFile);
+				emit error(ErrorCodes::ecOperationNotAllowedInConstantExpression, tr("Operation %1 is not allowed in constant").arg(ast::ExpressionNode::opToString(operation->op())), operation->codePoint());
 				return ConstantValue();
 		}
-		if (!result.isValid()) {
-			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch,
-					   tr("Mathematical operation operand type mismatch: No operation \"%1\" between %2 and %3").arg(ast::operatorToString(i->mOperator), first.typeName(), second.typeName()), mLine, mFile);
+		if (flags.testFlag(OperationFlag::IntegerDividedByZero)) {
+			emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by Zero"), operation->codePoint());
+		}
+		if (flags.testFlag(OperationFlag::MayLosePrecision)) {
+			emit warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), operation->codePoint());
+		}
+		if (flags.testFlag(OperationFlag::NoSuchOperation)) {
+			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operator %1 between operands %2 and %3").arg(ast::ExpressionNode::opToString(operation->op()), op1.valueInfo(), op2.valueInfo()), operation->codePoint());
+		}
+		if (operationFlagsContainFatalFlags(flags)) {
 			return ConstantValue();
 		}
-		first = result;
+		op1 = result;
 	}
-	return first;
+	return op1;
 }
 
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Unary *s) {
-	ConstantValue operand = evaluate(s->mOperand);
-	if (!operand.isValid()) return ConstantValue();
-	switch (s->mOperator) {
-		case ast::opPlus:
-			return ConstantValue::plus(operand);
-		case ast::opMinus:
-			return ConstantValue::minus(operand);
-		case ast::opNot:
-			return ConstantValue::not_(operand);
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Unary *node) {
+	ConstantValue value = evaluate(node->operand());
+	if (!value.isValid()) return ConstantValue();
+	ConstantValue result;
+	OperationFlags flags;
+	switch(node->op()) {
+		case ast::Unary::opNegative:
+			result = ConstantValue::minus(value, flags); break;
+		case ast::Unary::opPositive:
+			result = ConstantValue::plus(value, flags); break;
+		case ast::Unary::opNot:
+			result = ConstantValue::not_(value, flags); break;
 		default:
-			assert(0);
-			return ConstantValue();
+			assert("Invalid ast::Unary::Op" && 0);
 	}
-}
-
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::String *s) {
-	return s->mValue;
-}
-
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Integer *s) {
-	return s->mValue;
-}
-
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Float *s) {
-	return s->mValue;
-}
-
-ConstantValue ConstantExpressionEvaluator::evaluate(const ast::Variable *s) {
-
-	Symbol *sym = mGlobalScope->find(s->mName);
-	if (sym->type() != Symbol::stConstant) {
-		emit error(ErrorCodes::ecNotConstant, tr("\"%1\" is not constant").arg(s->mName), mLine, mFile);
+	if (flags.testFlag(OperationFlag::MayLosePrecision)) {
+		emit warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), node->codePoint());
+	}
+	if (flags.testFlag(OperationFlag::NoSuchOperation)) {
+		emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("Invalid operation %1 for value %2").arg(ast::Unary::opToString(node->op()), result.valueInfo()), node->codePoint());
+	}
+	if (operationFlagsContainFatalFlags(flags)) {
 		return ConstantValue();
 	}
-	const ConstantValue &v = static_cast<ConstantSymbol*>(sym)->value();
-	if (!s->mTypeName.isEmpty()) {
-		switch(v.type()) {
-			case ValueType::Integer:
-				if (s->mTypeName != mRuntime->intValueType()->name()) {
-					errorConstantAlreadyDefinedWithAnotherType(s->mName);
-					return ConstantValue();
-				}
-				break;
-			case ValueType::Float:
-				if (s->mTypeName != mRuntime->floatValueType()->name()) {
-					errorConstantAlreadyDefinedWithAnotherType(s->mName);
-					return ConstantValue();
-				}
-				break;
-			case ValueType::Short:
-				if (s->mTypeName != mRuntime->shortValueType()->name()) {
-					errorConstantAlreadyDefinedWithAnotherType(s->mName);
-					return ConstantValue();
-				}
-				break;
-			case ValueType::Byte:
-				if (s->mTypeName != mRuntime->byteValueType()->name()) {
-					errorConstantAlreadyDefinedWithAnotherType(s->mName);
-					return ConstantValue();
-				}
-				break;
-			case ValueType::String:
-				if (s->mTypeName != mRuntime->stringValueType()->name()) {
-					errorConstantAlreadyDefinedWithAnotherType(s->mName);
-					return ConstantValue();
-				}
-				break;
-			default:
-				assert("Invalid constant value");
-		}
+
+	return result;
+}
+
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Identifier *node) {
+	Symbol *sym = mScope->find(node->name());
+	assert(sym);
+	if (sym->type() != Symbol::stConstant) {
+		emit error(ErrorCodes::ecNotConstant, tr("Symbol \"%1\" isn't a constant").arg(node->name()), node->codePoint());
+		return ConstantValue();
 	}
-	return v;
+
+	ConstantSymbol *constant = static_cast<ConstantSymbol*>(sym);
+	return constant->value();
 }
 
-void ConstantExpressionEvaluator::setRuntime(Runtime *runtime) {
-	mRuntime = runtime;
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Variable *node) {
+	return evaluate(node->identifier());
 }
 
-void ConstantExpressionEvaluator::setGlobalScope(Scope *globalScope) {
-	mGlobalScope = globalScope;
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Integer *node) {
+	return node->value();
 }
 
-
-void ConstantExpressionEvaluator::setCodeFile(const QString &f) {
-	mFile = f;
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::Float *node) {
+	return node->value();
 }
 
-void ConstantExpressionEvaluator::setCodeLine(int l) {
-	mLine = l;
-}
-
-void ConstantExpressionEvaluator::errorConstantAlreadyDefinedWithAnotherType(const QString &name) {
-	emit error(ErrorCodes::ecVarAlreadyDefinedWithAnotherType, tr("Constant \"%1\" already defined with another type").arg(name), mLine, mFile);
+ConstantValue ConstantExpressionEvaluator::evaluate(ast::String *node) {
+	return node->value();
 }

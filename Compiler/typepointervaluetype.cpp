@@ -3,6 +3,7 @@
 #include "value.h"
 #include "runtime.h"
 #include "builder.h"
+#include "llvm.h"
 
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	ValueType(r),
@@ -14,13 +15,13 @@ QString TypePointerValueType::name() const {
 	return mTypeSymbol->name();
 }
 
-ValueType::CastCostType TypePointerValueType::castingCostToOtherValueType(ValueType *to) const {
-	if (to == this) return 0;
-	if (to->type() == ValueType::TypePointerCommon) return 1;
-	return sMaxCastCost;
+ValueType::CastCost TypePointerValueType::castingCostToOtherValueType(const ValueType *to) const {
+	if (to == this) return ccNoCost;
+	if (to == mRuntime->typePointerCommonValueType()) return ccCastToBigger;
+	return ccNoCast;
 }
 
-Value TypePointerValueType::cast(Builder *builder, const Value &v) const {
+Value TypePointerValueType::cast(Builder *, const Value &v) const {
 	if (v.valueType() == this) return v;
 	assert("Invalid cast" && 0);
 	return Value();
@@ -34,21 +35,42 @@ int TypePointerValueType::size() const {
 	return mRuntime->dataLayout().getPointerSize();
 }
 
+Value TypePointerValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
 
-ValueType::CastCostType TypePointerCommonValueType::castingCostToOtherValueType(ValueType *to) const {
-	if (to == this) return 0;
-	return sMaxCastCost;
+Value TypePointerValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
+	assert(a.valueType() == this);
+	if (!mTypeSymbol->hasField(memberName)) return Value();
+	return builder->typePointerFieldReference(a, memberName);
+}
+
+ValueType *TypePointerValueType::memberType(const QString &memberName) const {
+	const TypeField &field = mTypeSymbol->field(memberName);
+	return field.valueType();
+}
+
+
+ValueType::CastCost TypePointerCommonValueType::castingCostToOtherValueType(const ValueType *to) const {
+	if (to == this) return ccNoCost;
+	return ccNoCast;
 }
 
 Value TypePointerCommonValueType::cast(Builder *builder, const Value &v) const {
-	if (v.valueType()->type() == ValueType::TypePointerCommon) {
+	if (v.valueType() == this) {
 		return v;
 	}
-	if (v.valueType()->type() == ValueType::TypePointer) {
+	if (v.valueType()->isTypePointer()) {
 		if (v.isConstant()) {
-			return Value(const_cast<TypePointerCommonValueType*>(this), defaultValue());
+			return Value(const_cast<TypePointerCommonValueType*>(this), defaultValue(), false);
 		}
-		return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType, v.value()));
+		if (v.isReference()) {
+			return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType->getPointerTo(), v.value()), true);
+		}
+		else {
+			return Value(const_cast<TypePointerCommonValueType*>(this), builder->bitcast(mType, v.value()), false);
+		}
+
 	}
 	assert("Invalid cast" && 0);
 	return Value();
@@ -61,5 +83,9 @@ llvm::Constant *TypePointerCommonValueType::defaultValue() const {
 
 int TypePointerCommonValueType::size() const {
 	return mRuntime->dataLayout().getPointerSize();
+}
+
+Value TypePointerCommonValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
 }
 

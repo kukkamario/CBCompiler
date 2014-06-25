@@ -3,13 +3,13 @@
 #include <iostream>
 #include <QFile>
 #include <QDebug>
+
 static const char *const tokenNames[] = {
 	"EndOfTokens",
-	"<EOL>",
+	"EOL",
 	"Integer",
 	"IntegerHex",
 	"Float",
-	"FloatLeadingDot",
 	"String",
 	"Identifier",
 	"Label",
@@ -22,9 +22,13 @@ static const char *const tokenNames[] = {
 
 	"LeftParenthese",
 	"RightParenthese",
+
+	"LeftSquareBracket",
+	"RightSquareBracket",
 	//Operators
 
 	"OperatorsBegin",
+	"opAssign",
 	"opEqual",
 	"opNotEqual",
 	"opGreater",
@@ -44,8 +48,7 @@ static const char *const tokenNames[] = {
 	"opOr",
 	"opXor",
 	"opNot",
-	"opTypePtrField",
-	"opTypePtrType",  //   Dot
+	"opDot",  //   Dot
 	"OperatorsEnd",
 
 	//Keywords
@@ -85,11 +88,6 @@ static const char *const tokenNames[] = {
 	"kData",
 	"kRead",
 	"kRestore",
-	"kInteger",
-	"kFloat",
-	"kString",
-	"kShort",
-	"kByte",
 	"kAs",
 	"kInclude",
 	"kExit",
@@ -128,12 +126,9 @@ QString Token::typeToString() const {
 
 
 
-QString Token::info() const
-{
-	QString ret(mFile);
-	ret += " [";
-	ret += QString::number(mLine);
-	ret += "]  ";
+QString Token::info() const {
+	QString ret(mCodePoint.toString());
+	ret += " ";
 	ret += getTokenName(mType);
 	ret += "  \"";
 	ret += toString();

@@ -2,28 +2,23 @@
 #include "value.h"
 #include "llvm.h"
 #include "builder.h"
+#include "abstractsyntaxtree.h"
+#include "stringvaluetype.h"
+
 BooleanValueType::BooleanValueType(Runtime *r, llvm::Module *mod) :
 	ValueType(r){
 	mType = llvm::Type::getInt1Ty(mod->getContext());
 }
 
-ValueType::CastCostType BooleanValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
-		case ValueType::Boolean:
-			return 0;
-		case ValueType::Byte:
-			return 3;
-		case ValueType::Short:
-			return 3;
-		case ValueType::Integer:
-			return 3;
-		case ValueType::Float:
-			return 3;
-		case ValueType::String:
-			return 5;
-		default:
-			return sMaxCastCost;
+ValueType::CastCost BooleanValueType::castingCostToOtherValueType(const ValueType *to) const {
+	if (to == this) return ccNoCost;
+	if (to->isNumber()) {
+		return ccCastToBigger;
 	}
+	if (to == mRuntime->stringValueType()) {
+		return ccCastToString;
+	}
+	return ccNoCast;
 }
 
 Value BooleanValueType::cast(Builder *builder, const Value &v) const {
@@ -36,4 +31,13 @@ llvm::Constant *BooleanValueType::constant(bool t) const {
 
 llvm::Constant *BooleanValueType::defaultValue() const {
 	return constant(false);
+}
+
+
+Value BooleanValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value BooleanValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
 }

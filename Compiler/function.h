@@ -2,10 +2,12 @@
 #define FUNCTION_H
 #include <QList>
 #include <QString>
+#include "codepoint.h"
 class ValueType;
-class QFile;
 class Builder;
 class Value;
+class FunctionValueType;
+
 namespace llvm {
 	class Function;
 }
@@ -16,7 +18,7 @@ namespace llvm {
 class Function {
 	public:
 		typedef QList<ValueType*> ParamList;
-		Function(const QString &name, const QString &f, int line);
+		Function(const QString &name, const CodePoint &cp);
 		virtual ~Function() { }
 		QString name() const{return mName;}
 
@@ -39,14 +41,13 @@ class Function {
 		const ParamList &paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
 
-		/**
-		 * @return Pointer to file where Function is defined or null.
-		 */
-		const QString &file() const { return mFile; }
+		QString file() const { return mCodePoint.file(); }
 		/**
 		 * @return Line number where Function is defined or 0.
 		 */
-		int line() const { return mLine; }
+		int line() const { return mCodePoint.line(); }
+
+		const CodePoint &codePoint() const { return mCodePoint; }
 
 		/**
 		 * @brief isRuntimeFunction
@@ -67,14 +68,15 @@ class Function {
 		 * @return Return value with ValueType of returnValue(). If the function is a command, isValid() == false.
 		 */
 		virtual Value call(Builder *builder, const QList<Value> &params) = 0;
+
+		virtual FunctionValueType *functionValueType() const = 0;
 	protected:
 		QString mName;
 		ValueType *mReturnValue;
 		ParamList mParamTypes;
-		int mRequiredParams;
 		llvm::Function *mFunction;
-		const QString &mFile;
-		int mLine;
+		CodePoint mCodePoint;
+		int mRequiredParams;
 };
 
 #endif // FUNCTION_H

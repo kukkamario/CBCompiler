@@ -19,22 +19,23 @@ class ValueType;
 class Runtime;
 class TypeField {
 	public:
-		TypeField(const QString &name, ValueType *valueType, const QString &file, int line);
+		TypeField(const QString &name, ValueType *valueType, const CodePoint &cp);
 		QString name()const{return mName;}
 		ValueType *valueType()const{return mValueType;}
 		QString info() const;
-		int line() const { return mLine; }
-		QString file() const { return mFile; }
+		int line() const { return mCodePoint.line(); }
+		QString file() const { return mCodePoint.file(); }
+		int column() const { return mCodePoint.column(); }
+		const CodePoint &codePoint() const { return mCodePoint; }
 	private:
 		QString mName;
 		ValueType *mValueType;
-		int mLine;
-		QString mFile;
+		CodePoint mCodePoint;
 };
 
 class TypeSymbol : public ValueTypeSymbol {
 	public:
-		TypeSymbol(const QString &name, Runtime *r, const QString &file, int line);
+		TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp);
 		Type type()const{return stType;}
 		QString info() const;
 		bool addField(const TypeField &field);

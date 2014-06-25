@@ -25,7 +25,7 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 	if (i != mStrings.end()) {
 		llvm::Value *str = builder->irBuilder().CreateLoad(i.value().mCBString, false);
 		builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter
-		return Value(builder->runtime()->stringValueType(), str);
+		return Value(builder->runtime()->stringValueType(), str, false);
 	}
 	StringData sd;
 	sd.mCBString = builder->createGlobalVariable(
@@ -52,5 +52,5 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 
 	llvm::Value *str = builder->irBuilder().CreateLoad(sd.mCBString, false);
 	builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter
-	return Value(builder->runtime()->stringValueType(), str);
+	return Value(builder->runtime()->stringValueType(), str, false);
 }

@@ -1,5 +1,5 @@
 #include "function.h"
 
-Function::Function(const QString &name, const QString &f, int line):
-	mName(name), mReturnValue(0), mFunction(0),mFile(f), mLine(line), mRequiredParams(0) {
+Function::Function(const QString &name, const CodePoint &cp):
+	mName(name), mReturnValue(0), mFunction(0),mCodePoint(cp), mRequiredParams(0) {
 }
