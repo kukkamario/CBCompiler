@@ -28,7 +28,7 @@ bool TypeSymbol::hasField(const QString &name) {
 }
 
 const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name.toLower());
 	assert(i != mFieldSearch.end());
 	return mFields.at(i.value());
 }

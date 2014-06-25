@@ -49,7 +49,6 @@ class Token {
 			opOr,
 			opXor,
 			opNot,
-			opTypePtrField,
 			opDot,  //   Dot
 			OperatorsEnd,
 

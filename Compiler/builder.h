@@ -78,7 +78,7 @@ class Builder {
 		llvm::Value *arrayIndexMultiplier(ArraySymbol *array, int index);
 		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);*/
 
-		llvm::Value *typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName);
+		Value typePointerFieldReference(Value typePtrVar, const QString &fieldName);
 		Value newTypeMember(TypeSymbol *type);
 		Value firstTypeMember(TypeSymbol *type);
 		Value lastTypeMember(TypeSymbol *type);

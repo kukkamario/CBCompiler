@@ -26,11 +26,14 @@ struct CodeGeneratorError {
 FunctionCodeGenerator::FunctionCodeGenerator(Runtime *runtime, Settings *settings, QObject *parent) :
 	QObject(parent),
 	mSettings(settings),
-	mRuntime(runtime)
+	mRuntime(runtime),
+	mTypeResolver(runtime)
 {
 	connect(this, &FunctionCodeGenerator::error, this, &FunctionCodeGenerator::errorOccured);
 	connect(&mConstEval, &ConstantExpressionEvaluator::error, this, &FunctionCodeGenerator::error);
 	connect(&mConstEval, &ConstantExpressionEvaluator::warning, this, &FunctionCodeGenerator::warning);
+	connect(&mTypeResolver, &TypeResolver::error, this, &FunctionCodeGenerator::error);
+	connect(&mTypeResolver, &TypeResolver::warning, this, &FunctionCodeGenerator::warning);
 }
 
 bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunction *func, Scope *globalScope) {
@@ -291,6 +294,48 @@ void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 
 void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 	CHECK_UNREACHABLE(n->codePoint());
+	Value container = generate(n->container());
+	Value var = generate(n->variable());
+	assert(var.isReference());
+
+	llvm::BasicBlock *condBB = createBasicBlock("forEachCondBB");
+	llvm::BasicBlock *blockBB = createBasicBlock("forEachBlockBB");
+	llvm::BasicBlock *endBB = createBasicBlock("endForEachBB");
+
+	ValueType *valueType = container.valueType();
+	if (container.isValueType() && valueType->isTypePointer()) { //Type
+		if (var.valueType() != valueType) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("The type of the variable \"%1\" doesn't match the container type \"%2\"").arg(var.valueType()->name(), valueType->name()), n->codePoint());
+			return;
+		}
+		TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(valueType);
+		TypeSymbol *typeSymbol = typePointerValueType->typeSymbol();
+
+		mBuilder->store(var, mBuilder->firstTypeMember(typeSymbol));
+		mBuilder->branch(condBB);
+
+		mBuilder->setInsertPoint(condBB);
+		Value cond = mBuilder->typePointerNotNull(var);
+		mBuilder->branch(cond, blockBB, endBB);
+
+		mBuilder->setInsertPoint(blockBB);
+		n->block()->accept(this);
+		if (!mUnreachableBasicBlock) {
+			mBuilder->store(var, mBuilder->afterTypeMember(var));
+			mBuilder->branch(condBB);
+		}
+		mUnreachableBasicBlock = false;
+
+		mBuilder->setInsertPoint(endBB);
+	}
+	else if (container.isNormalValue() && valueType->isArray()) {
+		assert("Array For-Each isn't implemented yet" && 0);
+	}
+	else {
+		emit error(ErrorCodes::ecNotContainer, tr("For-Each-statement requires a container (an array or a type). Can't iterate \"%1\"").arg(valueType->name()), n->container()->codePoint());
+		return;
+	}
+
 	assert("UNIMPLEMENTED FUNCTION" && 0);
 }
 
@@ -437,49 +482,85 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 		Value op1 = generate(n->firstOperand());
 		for (QList<ast::ExpressionNode*>::ConstIterator i = n->operations().begin(); i != n->operations().end(); ++i) {
 			ast::ExpressionNode *exprNode = *i;
-			Value op2 = generate(exprNode->operand());
+			if (exprNode->op() == ast::ExpressionNode::opMember) {
+				ValueType *valueType = op1.valueType();
+				QString memberName;
+				ast::Node *memberId = exprNode->operand();
+				switch (memberId->type()) {
+					case ast::Node::ntIdentifier:
+						memberName = memberId->cast<ast::Identifier>()->name();
+						break;
+					case ast::Node::ntVariable: {
+						ast::Variable *var = memberId->cast<ast::Variable>();
+						memberName = var->identifier()->name();
+						if (var->valueType()->type() != ast::Node::ntDefaultType) {
+							ValueType *memberType = valueType->memberType(memberName);
+							ValueType *resolvedType = mTypeResolver.resolve(var->valueType());
+							if (resolvedType && memberType) {
+								if (memberType != resolvedType) {
+									emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Member (\"%1\") is already defined with type \"%2\"").arg(resolvedType->name(), memberType->name()), memberId->codePoint());
+								}
+							}
+						}
+						break;
 
-			ValueType *valueType = op1.valueType();
-			OperationFlags opFlags;
+					}
+					default:
+						assert("Invalid ast::Node::Type" && 0);
+				}
 
-			if (op1.isConstant() ^ op2.isConstant()) {
-				op1.toLLVMValue(mBuilder);
-				op2.toLLVMValue(mBuilder);
+				if (!valueType->hasMember(memberName)) {
+					emit error(ErrorCodes::ecCantFindTypeField, tr("Can't find type field \"%1\"").arg(memberName), memberId->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecCantFindTypeField);
+				}
+
+				op1 = valueType->member(mBuilder, op1, memberName);
 			}
+			else {
+				Value op2 = generate(exprNode->operand());
 
-			Value result = valueType->generateOperation(mBuilder, exprNode->op(), op1, op2, opFlags);
+				ValueType *valueType = op1.valueType();
+				OperationFlags opFlags;
 
-			if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
-				emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
-				return Value();
+				if (op1.isConstant() ^ op2.isConstant()) {
+					op1.toLLVMValue(mBuilder);
+					op2.toLLVMValue(mBuilder);
+				}
+
+				Value result = valueType->generateOperation(mBuilder, exprNode->op(), op1, op2, opFlags);
+
+				if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
+					emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
+					return Value();
+				}
+				if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
+					emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), exprNode->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
+					return Value();
+				}
+
+				if (opFlags.testFlag(OperationFlag::ReferenceRequired)) {
+					emit error(ErrorCodes::ecInvalidAssignment, tr("You can only assign a value to a reference"), exprNode->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecInvalidAssignment);
+					return Value();
+				}
+				if (opFlags.testFlag(OperationFlag::CastFromString)) {
+					emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), exprNode->codePoint());
+				}
+
+				if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
+					emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
+					return Value();
+				}
+
+				assert(op1.isValid());
+
+				mBuilder->destruct(op1);
+				mBuilder->destruct(op2);
+
+				op1 = result;
 			}
-			if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
-				emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), exprNode->codePoint());
-				throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
-				return Value();
-			}
-
-			if (opFlags.testFlag(OperationFlag::ReferenceRequired)) {
-				emit error(ErrorCodes::ecInvalidAssignment, tr("You can only assign a value to a reference"), exprNode->codePoint());
-				throw CodeGeneratorError(ErrorCodes::ecInvalidAssignment);
-				return Value();
-			}
-			if (opFlags.testFlag(OperationFlag::CastFromString)) {
-				emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), exprNode->codePoint());
-			}
-
-			if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
-				emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
-				throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
-				return Value();
-			}
-
-			assert(op1.isValid());
-
-			mBuilder->destruct(op1);
-			mBuilder->destruct(op2);
-
-			op1 = result;
 		}
 		return op1;
 	}

@@ -119,6 +119,7 @@ enum ErrorCode {
 	ecWrongNumberOfParameters,
 	ecNotTypeName,
 	ecReferenceRequired,
+	ecNotContainer,
 
 	ecCantWriteBitcodeFile,
 

@@ -20,7 +20,7 @@ ValueTypeCollection::~ValueTypeCollection() {
 void ValueTypeCollection::addValueType(ValueType *valType) {
 	mLLVMTypeMapping[valType->llvmType()] = valType;
 	if (valType->isNamedValueType())
-		mNamedType[valType->name()] = valType;
+		mNamedType[valType->name().toLower()] = valType;
 }
 
 ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
@@ -28,7 +28,7 @@ ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
 }
 
 ValueType *ValueTypeCollection::findNamedType(const QString &name) {
-	return mNamedType.value(name, 0);
+	return mNamedType.value(name.toLower(), 0);
 }
 
 ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, int dimensions) {

@@ -17,6 +17,7 @@ class ArrayValueType : public ValueType {
 		llvm::Constant *defaultValue() const;
 
 		bool isTypePointer() const{return false;}
+		bool isArray() const { return true; }
 		bool isNumber() const{return true;}
 		bool isNamedValueType() const { return false; }
 		int size() const;

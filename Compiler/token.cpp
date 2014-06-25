@@ -48,7 +48,6 @@ static const char *const tokenNames[] = {
 	"opOr",
 	"opXor",
 	"opNot",
-	"opTypePtrField",
 	"opDot",  //   Dot
 	"OperatorsEnd",
 

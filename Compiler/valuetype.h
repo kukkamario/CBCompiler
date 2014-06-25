@@ -46,6 +46,7 @@ class ValueType {
 		virtual bool isNamedValueType() const = 0;
 		llvm::Type *llvmType() const {return mType;}
 		virtual bool isTypePointer() const = 0;
+		virtual bool isArray() const { return false; }
 		virtual bool isNumber() const = 0;
 		virtual bool isFunctionSelector() const { return false; }
 		virtual llvm::Constant *defaultValue() const = 0;

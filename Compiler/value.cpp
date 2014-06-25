@@ -76,6 +76,10 @@ void Value::dump() const {
 		qDebug() << "\t = " << constant().valueInfo();
 }
 
+bool Value::isNormalValue() const {
+	return mType == tNormalValue || mType == tReference;
+}
+
 bool Value::isValueType() const {
 	return mType == tValueType;
 }

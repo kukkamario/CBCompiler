@@ -386,16 +386,6 @@ void Builder::store(const Value &ref, const QList<Value> &dims, const Value &val
 	store(arrayElementPointer(ref, dims), ref->valueType()->cast(this, val));
 }*/
 
-void Builder::store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v) {
-	assert(typePtrVar->valueType()->isTypePointer());
-
-	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
-	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
-
-	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
-	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
-	store(fieldPointer, fieldValueType->cast(this, v));
-}
 
 Value Builder::load(const VariableSymbol *var) {
 	llvm::Value *val = mIRBuilder.CreateLoad(var->alloca_(), false);
@@ -412,22 +402,6 @@ Value Builder::load(const VariableSymbol *var) {
 Value Builder::load(const Value &ref, const QList<Value> &dims) {
 	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)), false);
 }*/
-
-Value Builder::load(VariableSymbol *typePtrVar, const QString &fieldName) {
-	assert(typePtrVar->valueType()->isTypePointer());
-
-	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
-	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
-
-	ValueType *fieldValueType = typeSymbol->field(fieldName).valueType();
-	llvm::Value *fieldPointer = typePointerFieldPointer(typePtrVar, fieldName);
-	llvm::Value *val = mIRBuilder.CreateLoad(fieldPointer);
-	if (fieldValueType->basicType() == ValueType::String) {
-		mRuntime->stringValueType()->refString(&mIRBuilder, val);
-	}
-	return Value(fieldValueType, val, false);
-}
-
 
 void Builder::destruct(VariableSymbol *var) {
 	if (var->valueType()->basicType() == ValueType::String) {
@@ -533,14 +507,15 @@ void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Valu
 	}
 }*/
 
-llvm::Value *Builder::typePointerFieldPointer(VariableSymbol *typePtrVar, const QString &fieldName) {
-	assert(typePtrVar->valueType()->isTypePointer());
 
-	TypePointerValueType *typePointerValTy = static_cast<TypePointerValueType*>(typePtrVar->valueType());
-	TypeSymbol *typeSymbol = typePointerValTy->typeSymbol();
-	int fieldIndex = typeSymbol->fieldIndex(fieldName);
-
-	return mIRBuilder.CreateStructGEP(mIRBuilder.CreateLoad(typePtrVar->alloca_()), fieldIndex);
+Value Builder::typePointerFieldReference(Value typePtrVar, const QString &fieldName) {
+	assert(typePtrVar.valueType()->isTypePointer());
+	TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(typePtrVar.valueType());
+	TypeSymbol *type = typePointerValueType->typeSymbol();
+	const TypeField &field = type->field(fieldName);
+	int fieldIndex = type->fieldIndex(fieldName);
+	llvm::Value *fieldPtr = mIRBuilder.CreateStructGEP(llvmValue(typePtrVar), fieldIndex);
+	return Value(field.valueType(), fieldPtr, true);
 }
 
 Value Builder::newTypeMember(TypeSymbol *type) {

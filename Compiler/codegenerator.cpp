@@ -207,7 +207,6 @@ bool CodeGenerator::generateTypes(ast::Program *program) {
 
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
-		mGlobalScope.addSymbol(type);
 	}
 	if (!valid) return false;
 

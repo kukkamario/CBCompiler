@@ -11,6 +11,7 @@ public:
 	QString name() const;
 	bool isNamedValueType() const { return false; }
 	bool isTypePointer() const { return false; }
+	bool isArray() const { return true; }
 	bool isNumber() const { return false; }
 	llvm::Constant *defaultValue() const;
 	llvm::StructType *structType() const;

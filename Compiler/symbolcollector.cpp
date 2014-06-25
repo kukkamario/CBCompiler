@@ -163,28 +163,36 @@ void SymbolCollector::visit(ast::Expression *c) {
 					(*i)->accept(this);
 				}
 				before = 0;
-			} else { //Assignment
-				if (before) {
-					if (before->type() == ast::Node::ntIdentifier) {
-						ast::Identifier *id = before->cast<ast::Identifier>();
-						Symbol *existingSymbol = mCurrentScope->find(id->name());
-						ValueType *valType = mRuntime->intValueType();
-						if (!existingSymbol) {
-							if (mSettings->forceVariableDeclaration()) {
-								emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(id->name()), id->codePoint());
-								return;
-							}
-							addVariableSymbol(id, valType, mCurrentScope);
+			}
+			if (before) {
+				if (before->type() == ast::Node::ntIdentifier) {
+					ast::Identifier *id = before->cast<ast::Identifier>();
+					Symbol *existingSymbol = mCurrentScope->find(id->name());
+					ValueType *valType = mRuntime->intValueType();
+					if (!existingSymbol) {
+						if (mSettings->forceVariableDeclaration()) {
+							emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(id->name()), id->codePoint());
+							return;
 						}
+						addVariableSymbol(id, valType, mCurrentScope);
 					}
 				}
-				before = n->operand();
 			}
+			before = n->operand();
 		}
 	}
 	else {
-		for (ast::ChildNodeIterator i = c->childNodesBegin(); i != c->childNodesEnd(); i++) {
-			(*i)->accept(this);
+		c->firstOperand()->accept(this);
+		for (ast::ExpressionNode *n : c->operations()) {
+			if (n->op() == ast::ExpressionNode::opMember) {
+				ast::Node *oprd = n->operand();
+				for (ast::ChildNodeIterator i = oprd->childNodesBegin(); i != oprd->childNodesEnd(); i++) {
+					(*i)->accept(this);
+				}
+			}
+			else {
+				n->accept(this);
+			}
 		}
 	}
 
@@ -216,6 +224,7 @@ bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
 				ValueType *valType = resolveValueType(varDef->valueType());
 				if (!valType) return false;
 				typeSymbol->addField(TypeField(name, valType, node->codePoint()));
+				break;
 			}
 			default:
 				assert("Invalid ast::TypeDefinition" && 0);

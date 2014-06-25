@@ -559,7 +559,7 @@ class ArraySubscript : public Node {
 class DefaultValue : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		DefaultValue(const CodePoint &cp) : Node (cp), mValueType(0) { }
+		DefaultValue(ast::Node *valueType, const CodePoint &cp) : Node (cp), mValueType(valueType) { }
 		~DefaultValue() { delete mValueType; }
 		static Type staticType() { return ntDefaultValue; }
 		Type type() const { return staticType(); }

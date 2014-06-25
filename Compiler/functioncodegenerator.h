@@ -8,6 +8,7 @@
 #include "value.h"
 #include "builder.h"
 #include "constantexpressionevaluator.h"
+#include "typeresolver.h"
 
 class CBFunction;
 class LabelSymbol;
@@ -70,6 +71,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Builder *mBuilder;
 		llvm::Function *mFunction;
 		ConstantExpressionEvaluator mConstEval;
+		TypeResolver mTypeResolver;
 		ValueType *mReturnType;
 		bool mMainFunction;
 		bool mUnreachableBasicBlock;

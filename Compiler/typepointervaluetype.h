@@ -14,9 +14,10 @@ class TypePointerValueType : public ValueType {
 		llvm::Constant *defaultValue() const;
 		int size() const;
 		void setLLVMType(llvm::Type *type) { mType = type; }
-		bool isNamedValueType() const { return false; }
+		bool isNamedValueType() const { return true; }
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
-
+		virtual Value member(Builder *builder, const Value &a, const QString &memberName) const;
+		virtual ValueType *memberType(const QString &memberName) const;
 	private:
 		TypeSymbol *mTypeSymbol;
 };

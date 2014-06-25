@@ -39,6 +39,17 @@ Value TypePointerValueType::generateOperation(Builder *builder, int opType, cons
 	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
 }
 
+Value TypePointerValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
+	assert(a.valueType() == this);
+	if (!mTypeSymbol->hasField(memberName)) return Value();
+	return builder->typePointerFieldReference(a, memberName);
+}
+
+ValueType *TypePointerValueType::memberType(const QString &memberName) const {
+	const TypeField &field = mTypeSymbol->field(memberName);
+	return field.valueType();
+}
+
 
 ValueType::CastCost TypePointerCommonValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to == this) return ccNoCost;

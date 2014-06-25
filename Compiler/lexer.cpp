@@ -256,7 +256,7 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 					continue;
 				}
 			}
-			addToken(Token(Token::opTypePtrField, i - 1, i, codePoint(i - 1, lineStart, line, curFilePath)));
+			addToken(Token(Token::opDot, i - 1, i, codePoint(i - 1, lineStart, line, curFilePath)));
 			continue;
 		}
 		if (*i == '$') {
