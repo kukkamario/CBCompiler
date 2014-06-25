@@ -6,6 +6,7 @@
 #include "variablesymbol.h"
 #include "constantsymbol.h"
 #include "arrayvaluetype.h"
+#include "intvaluetype.h"
 #include "labelsymbol.h"
 
 #include "runtime.h"
@@ -142,7 +143,29 @@ void SymbolCollector::visit(ast::Label *c) {
 }
 
 void SymbolCollector::visit(ast::Identifier *c) {
+	Symbol *existingSymbol = mCurrentScope->find(c->name());
+	ValueType *valType = mRuntime->intValueType();
+	if (!valType) return;
+	if (!existingSymbol) {
+		if (mSettings->forceVariableDeclaration()) {
+			emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(c->name()), c->codePoint());
+			return;
+		}
+		addVariableSymbol(c, valType, mCurrentScope);
+		return;
+	}
+}
 
+
+void SymbolCollector::visit(ast::ExpressionNode *c) {
+	if (c->op() == ast::ExpressionNode::opMember) {
+		ast::Node *n = c->operand();
+		for (ast::ChildNodeIterator i = n->childNodesBegin(); i != n->childNodesEnd(); i++) {
+			(*i)->accept(this);
+		}
+	} else {
+		c->operand()->accept(this);
+	}
 }
 
 

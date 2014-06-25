@@ -33,6 +33,8 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void visit(ast::Label *c);
 		void visit(ast::Identifier *c);
 
+		void visit(ast::ExpressionNode *c);
+
 		bool createTypeDefinition(ast::Identifier *id);
 		bool createTypeFields(ast::TypeDefinition *def);
 		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);

@@ -1,4 +1,4 @@
-i% = 0
+i = 0
 Repeat
 	i = i + 1
 	If i == 100 Then Exit
