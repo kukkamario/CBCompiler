@@ -187,7 +187,7 @@ ast::Node *Parser::tryConstDefinition(Parser::TokIterator &i) {
 		i++;
 		ast::Variable *var = expectVariable(i);
 		if (mStatus == Error) return 0;
-		if (i->type() != Token::opEqual) {
+		if (i->type() != Token::opAssign) {
 			emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting '=' after the constant, got \"%1\"").arg(i->toString()), i->codePoint());
 			mStatus = Error;
 			return 0;
