@@ -197,30 +197,6 @@ bool CodeGenerator::generateGlobalVariables() {
 	return true;
 }
 
-bool CodeGenerator::generateTypes(ast::Program *program) {
-	bool valid = true;
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
-		ast::TypeDefinition *def = *i;
-		Symbol *sym = mGlobalScope.find(def->identifier()->name());
-		assert(sym && sym->type() == Symbol::stType);
-		TypeSymbol *type = static_cast<TypeSymbol*>(sym);
-
-		//Create an opaque member type so type pointers can be used in fields.
-		type->createOpaqueTypes(mBuilder);
-	}
-	if (!valid) return false;
-
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
-		ast::TypeDefinition *def = *i;
-		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->identifier()->name()));
-		type->createTypePointerValueType(mBuilder);
-		mTypes.append(type);
-	}
-
-
-	return valid;
-}
-
 bool CodeGenerator::generateFunctions(const QList<ast::FunctionDefinition*> &functions) {
 	bool valid = true;
 	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
@@ -248,8 +224,11 @@ void CodeGenerator::generateStringLiterals() {
 }
 
 void CodeGenerator::generateTypeInitializers() {
-	foreach(TypeSymbol *type, mTypes) {
-		type->initializeType(mBuilder);
+	for (Symbol *sym : mGlobalScope) {
+		if (sym->type() == Symbol::stType) {
+			TypeSymbol *type = static_cast<TypeSymbol*>(sym);
+			type->initializeType(mBuilder);
+		}
 	}
 }
 
@@ -279,6 +258,25 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("null", mRuntime.typePointerCommonValueType(), ConstantValue(ConstantValue::Null), CodePoint());
 	mGlobalScope.addSymbol(sym);
+}
+
+bool CodeGenerator::generateTypes(ast::Program *program) {
+	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
+		ast::TypeDefinition *def = *i;
+		Symbol *sym = mGlobalScope.find(def->identifier()->name());
+		assert(sym && sym->type() == Symbol::stType);
+		TypeSymbol *type = static_cast<TypeSymbol*>(sym);
+
+		//Create an opaque member type so type pointers can be used in fields.
+		type->createOpaqueTypes(mBuilder);
+	}
+
+	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
+		ast::TypeDefinition *def = *i;
+		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->identifier()->name()));
+		type->createTypePointerValueType(mBuilder);
+	}
+	return true;
 }
 
 

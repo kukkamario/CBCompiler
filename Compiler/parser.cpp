@@ -253,7 +253,13 @@ ast::Node *Parser::tryVariableTypeMark(Parser::TokIterator &i) {
 ast::Node *Parser::tryVariableAsType(Parser::TokIterator &i) {
 	if (i->type() == Token::kAs) {
 		i++;
-		return expectIdentifierAfter(i, (i - 1)->toString()); //expecting an identifier after "As"
+		CodePoint cp = i->codePoint();
+
+		ast::Identifier *id = expectIdentifierAfter(i, (i - 1)->toString());
+		if (!id) return 0;
+		ast::NamedType *namedType = new ast::NamedType(cp);
+		namedType->setIdentifier(id);
+		return namedType;
 	}
 	return 0;
 }

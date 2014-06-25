@@ -335,8 +335,6 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 		emit error(ErrorCodes::ecNotContainer, tr("For-Each-statement requires a container (an array or a type). Can't iterate \"%1\"").arg(valueType->name()), n->container()->codePoint());
 		return;
 	}
-
-	assert("UNIMPLEMENTED FUNCTION" && 0);
 }
 
 void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
@@ -518,6 +516,8 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 			}
 			else {
 				Value op2 = generate(exprNode->operand());
+				assert(op1.isValid());
+				assert(op2.isValid());
 
 				ValueType *valueType = op1.valueType();
 				OperationFlags opFlags;
@@ -531,7 +531,6 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 
 				if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
 					emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
-					return Value();
 				}
 				if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
 					emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), exprNode->codePoint());
@@ -554,7 +553,7 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 					return Value();
 				}
 
-				assert(op1.isValid());
+				assert(result.isValid());
 
 				mBuilder->destruct(op1);
 				mBuilder->destruct(op2);
@@ -580,6 +579,8 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 					op1.toLLVMValue(mBuilder);
 					op2.toLLVMValue(mBuilder);
 				}
+				assert(op1.isValid());
+				assert(op2.isValid());
 
 				Value result = valueType->generateOperation(mBuilder, op, op1, op2, opFlags);
 
@@ -609,6 +610,8 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 
 				op = (*i)->op();
 				cp = (*i)->codePoint();
+
+				assert(result.isValid());
 				op2 = result;
 			} while (i != n->operations().begin());
 		}
@@ -636,6 +639,7 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
 			throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
 		}
+		assert(result.isValid());
 
 		return result;
 	}
@@ -765,52 +769,55 @@ Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
 }
 
 Value FunctionCodeGenerator::generate(ast::Node *n) {
+	Value result;
 	switch (n->type()) {
 		case ast::Node::ntBlock:
-			return generate(n->cast<ast::Block>());
+			result = generate(n->cast<ast::Block>()); break;
 		case ast::Node::ntInteger:
-			return generate(n->cast<ast::Integer>());
+			result = generate(n->cast<ast::Integer>()); break;
 		case ast::Node::ntFloat:
-			return generate(n->cast<ast::Float>());
+			result = generate(n->cast<ast::Float>()); break;
 		case ast::Node::ntString:
-			return generate(n->cast<ast::String>());
+			result = generate(n->cast<ast::String>()); break;
 		case ast::Node::ntIdentifier:
-			return generate(n->cast<ast::Identifier>());
+			result = generate(n->cast<ast::Identifier>()); break;
 		case ast::Node::ntLabel:
-			return generate(n->cast<ast::Label>());
+			result = generate(n->cast<ast::Label>()); break;
 		case ast::Node::ntList:
-			return generate(n->cast<ast::List>());
+			result = generate(n->cast<ast::List>()); break;
 		case ast::Node::ntGoto:
-			return generate(n->cast<ast::Goto>());
+			result = generate(n->cast<ast::Goto>()); break;
 		case ast::Node::ntGosub:
-			return generate(n->cast<ast::Gosub>());
+			result = generate(n->cast<ast::Gosub>()); break;
 		case ast::Node::ntReturn:
-			return generate(n->cast<ast::Return>());
+			result = generate(n->cast<ast::Return>()); break;
 		case ast::Node::ntExit:
-			return generate(n->cast<ast::Exit>());
+			result = generate(n->cast<ast::Exit>()); break;
 
 
 		case ast::Node::ntExpression:
-			return generate(n->cast<ast::Expression>());
+			result = generate(n->cast<ast::Expression>()); break;
 		case ast::Node::ntExpressionNode:
-			return generate(n->cast<ast::ExpressionNode>());
+			result = generate(n->cast<ast::ExpressionNode>()); break;
 		case ast::Node::ntUnary:
-			return generate(n->cast<ast::Unary>());
+			result = generate(n->cast<ast::Unary>()); break;
 		case ast::Node::ntArraySubscript:
-			return generate(n->cast<ast::ArraySubscript>());
+			result = generate(n->cast<ast::ArraySubscript>()); break;
 		case ast::Node::ntFunctionCall:
-			return generate(n->cast<ast::FunctionCall>());
+			result = generate(n->cast<ast::FunctionCall>()); break;
 		case ast::Node::ntKeywordFunctionCall:
-			return generate(n->cast<ast::KeywordFunctionCall>());
+			result = generate(n->cast<ast::KeywordFunctionCall>()); break;
 		case ast::Node::ntDefaultValue:
-			return generate(n->cast<ast::DefaultValue>());
+			result = generate(n->cast<ast::DefaultValue>()); break;
 		case ast::Node::ntVariable:
-			return generate(n->cast<ast::Variable>());
+			result = generate(n->cast<ast::Variable>()); break;
 
 		default:
 			assert("Invalid ast::Node for generate(ast::Node*)" && 0);
 			return Value();
 	}
+	assert(result.isValid());
+	return result;
 }
 
 Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &functions, const QList<Value> &parameters, bool command, const CodePoint &cp) {
@@ -818,7 +825,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 	if (functions.size() == 1) {
 		Function *f = functions.first();
 
-		if (f->isCommand() != command) {
+		if (!(f->isCommand() == command || (command == false && parameters.size() == 1))) {
 			if (command) {
 				emit error(ErrorCodes::ecNotCommand, tr("There is no command \"%1\" (but there is a function with same name)").arg(f->name()), cp);
 				throw CodeGeneratorError(ErrorCodes::ecNotCommand);
@@ -869,7 +876,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 
 	for (QList<Function*>::ConstIterator fi = functions.begin(); fi != functions.end(); fi++) {
 		Function *f = *fi;
-		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size() && f->isCommand() == command) {
+		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size() && (f->isCommand() == command || (command == false && parameters.size() == 1))) {
 			QList<ValueType*>::ConstIterator p1i = f->paramTypes().begin();
 			CastCostCalculator totalCost;
 			for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {

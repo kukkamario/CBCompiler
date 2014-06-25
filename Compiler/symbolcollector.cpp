@@ -79,7 +79,7 @@ void SymbolCollector::visit(ast::Const *c) {
 		valType = resolveValueType(valueTypeNode);
 	}
 
-	addConstantSymbol(id, valType, mCurrentScope);
+	addConstantSymbol(id, valType, (mCurrentScope == mMainScope) ? mGlobalScope : mCurrentScope);
 }
 
 void SymbolCollector::visit(ast::Dim *c) {
@@ -123,6 +123,13 @@ void SymbolCollector::visit(ast::Variable *c) {
 		}
 		return;
 	}
+	if (existingSymbol->type() == Symbol::stType) {
+		if (c->valueType()->type() != ast::Node::ntDefaultType) {
+			emit error(ErrorCodes::ecTypeCantHaveValueType, tr("\%1\" is a type. It can't have a value type"), c->codePoint());
+		}
+		return;
+	}
+
 
 	emit error(ErrorCodes::ecNotVariable, tr("Symbol \"%1\" is not a variable").arg(c->identifier()->name()), c->codePoint());
 }
@@ -154,16 +161,9 @@ void SymbolCollector::visit(ast::Identifier *n) {
 
 
 void SymbolCollector::visit(ast::Expression *c) {
-	if (c->associativity() == ast::Expression::RightToLeft) { // Assignment or member
+	if (c->associativity() == ast::Expression::RightToLeft) { // Assignment
 		ast::Node *before = c->firstOperand();
 		for (ast::ExpressionNode *n : c->operations()) {
-			if (n->op() == ast::ExpressionNode::opMember) {
-				ast::Node *oprd = n->operand();
-				for (ast::ChildNodeIterator i = oprd->childNodesBegin(); i != oprd->childNodesEnd(); i++) {
-					(*i)->accept(this);
-				}
-				before = 0;
-			}
 			if (before) {
 				if (before->type() == ast::Node::ntIdentifier) {
 					ast::Identifier *id = before->cast<ast::Identifier>();
@@ -177,6 +177,9 @@ void SymbolCollector::visit(ast::Expression *c) {
 						addVariableSymbol(id, valType, mCurrentScope);
 					}
 				}
+				else {
+					before->accept(this);
+				}
 			}
 			before = n->operand();
 		}
@@ -184,13 +187,7 @@ void SymbolCollector::visit(ast::Expression *c) {
 	else {
 		c->firstOperand()->accept(this);
 		for (ast::ExpressionNode *n : c->operations()) {
-			if (n->op() == ast::ExpressionNode::opMember) {
-				ast::Node *oprd = n->operand();
-				for (ast::ChildNodeIterator i = oprd->childNodesBegin(); i != oprd->childNodesEnd(); i++) {
-					(*i)->accept(this);
-				}
-			}
-			else {
+			if (n->op() != ast::ExpressionNode::opMember) {
 				n->accept(this);
 			}
 		}
@@ -289,6 +286,7 @@ void SymbolCollector::functionAlreadyDefinedError(const CodePoint &cp, Function 
 }
 
 
+
 QList<VariableSymbol *> SymbolCollector::variableDefinitionList(ast::Node *node, Scope *scope) {
 	QList<VariableSymbol*> result;
 	if (node->type() == ast::Node::ntList || node->type() == ast::Node::ntGlobal || node->type() == ast::Node::ntDim) {
@@ -369,7 +367,9 @@ ConstantSymbol *SymbolCollector::addConstantSymbol(ast::Identifier *identifier, 
 		symbolAlreadyDefinedError(identifier->codePoint(), existingSymbol);
 		return 0;
 	}
-	return new ConstantSymbol(identifier->name(), type, identifier->codePoint());
+	ConstantSymbol *sym = new ConstantSymbol(identifier->name(), type, identifier->codePoint());
+	scope->addSymbol(sym);
+	return sym;
 }
 
 

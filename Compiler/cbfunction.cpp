@@ -16,7 +16,7 @@ CBFunction::CBFunction(const QString &name, ValueType *retValue, const QList<CBF
 		if (!param.mDefaultValue.isValid()) mRequiredParams++;
 		mParamTypes.append(param.mVariableSymbol->valueType());
 	}
-	mFunctionValueType = new FunctionValueType(retValue->runtime(), retValue, mParamTypes);
+
 }
 
 CBFunction::~CBFunction() {
@@ -24,6 +24,7 @@ CBFunction::~CBFunction() {
 }
 
 void CBFunction::generateFunction(Runtime *runtime) {
+	mFunctionValueType = new FunctionValueType(mReturnValue->runtime(), mReturnValue, mParamTypes);
 	mFunction = llvm::Function::Create(llvm::cast<llvm::FunctionType>(mFunctionValueType->llvmType()), llvm::Function::PrivateLinkage, "CBF_user_" + mName.toStdString(), runtime->module());
 }
 

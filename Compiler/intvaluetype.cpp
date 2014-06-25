@@ -14,10 +14,10 @@ ValueType::CastCost IntValueType::castingCostToOtherValueType(const ValueType *t
 	switch (to->basicType()) {
 		case ValueType::Integer:
 			return ccNoCost;
+		case ValueType::Float:
+			return ccCastToBigger;
 		case ValueType::Boolean:
 			return ccCastToBoolean;
-		case ValueType::Float:
-			return ccCastToSmaller;
 		case ValueType::Short:
 			return ccCastToSmaller;
 		case ValueType::Byte:

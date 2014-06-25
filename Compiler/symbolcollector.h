@@ -43,6 +43,8 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);
 		void functionAlreadyDefinedError(const CodePoint &cp, Function *oldFunctionDef);
 
+
+
 		QList<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
 		QList<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope);
 
