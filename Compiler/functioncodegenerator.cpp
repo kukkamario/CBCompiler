@@ -10,6 +10,7 @@
 #include "runtime.h"
 #include "functionselectorvaluetype.h"
 #include "functionvaluetype.h"
+#include "typepointervaluetype.h"
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
 #include "cbfunction.h"
@@ -195,6 +196,7 @@ void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
 	mUnreachableBasicBlock = false;
 	mExitStack.pop();
 
+	mBuilder->setInsertPoint(wendBB);
 }
 
 void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
@@ -207,6 +209,7 @@ void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
 	mBuilder->setInsertPoint(block);
 	mExitStack.push(endBlock);
 	n->block()->accept(this);
+	mExitStack.pop();
 	if (!mUnreachableBasicBlock)
 		mBuilder->branch(block);
 	mUnreachableBasicBlock = false;
@@ -226,6 +229,7 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 	mBuilder->setInsertPoint(block);
 	mExitStack.push(endBlock);
 	n->block()->accept(this);
+	mExitStack.pop();
 	Value cond = generate(n->condition());
 	if (!mUnreachableBasicBlock) {
 		mBuilder->branch(cond, block, endBlock);
@@ -238,7 +242,51 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 
 void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 	CHECK_UNREACHABLE(n->codePoint());
-	assert("UNIMPLEMENTED FUNCTION" && 0);
+
+	llvm::BasicBlock *condBB = createBasicBlock("ForToCondBB");
+	llvm::BasicBlock *blockBB = createBasicBlock("forBodyBB");
+	llvm::BasicBlock *endBB = createBasicBlock("endForBB");
+
+	Value value = generate(n->from());
+	if (!value.isReference()) {
+		emit error(ErrorCodes::ecReferenceRequired, tr("Expression should return a reference to a variable"), n->from()->codePoint());
+		return;
+	}
+	ConstantValue step = 1;
+	if (n->step()) {
+		step = mConstEval.evaluate(n->step());
+		if (!step.isValid()) {
+			emit error(ErrorCodes::ecNotConstant, tr("\"Step\" has to be a constant value"), n->step()->codePoint());
+			return;
+		}
+	}
+
+	OperationFlags flags;
+	bool positiveStep = ConstantValue::greaterEqual(step, ConstantValue(0), flags).toBool();
+
+	mBuilder->branch(condBB);
+	mBuilder->setInsertPoint(condBB);
+
+	Value to = generate(n->to());
+	Value cond;
+	if (positiveStep) {
+		cond = mBuilder->lessEqual(value, to);
+	} else {
+		cond = mBuilder->greaterEqual(value, to);
+	}
+
+	mBuilder->branch(cond, blockBB, endBB);
+
+	mExitStack.push(endBB);
+	mBuilder->setInsertPoint(blockBB);
+	mExitStack.pop();
+	n->block()->accept(this);
+	if (!mUnreachableBasicBlock) {
+		mBuilder->store(value, mBuilder->add(value, Value(step, mRuntime)));
+		mBuilder->branch(condBB);
+	}
+	mUnreachableBasicBlock = false;
+	mBuilder->setInsertPoint(endBB);
 }
 
 void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
@@ -512,16 +560,33 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 	}
 }
 
+Value FunctionCodeGenerator::generate(ast::Unary *n) {
+	Value val = generate(n->operand());
+	OperationFlags flags;
+	ValueType *valueType = val.valueType();
+	Value result = val.valueType()->generateOperation(mBuilder, n->op(), val, flags);
+	if (flags.testFlag(OperationFlag::MayLosePrecision)) {
+		emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operand of type \"%2\"").arg(ast::Unary::opToString(n->op()), valueType->name()), n->codePoint());
+	}
+
+	if (flags.testFlag(OperationFlag::CastFromString)) {
+		emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), n->codePoint());
+	}
+
+	if (flags.testFlag(OperationFlag::NoSuchOperation)) {
+		emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" for operand of type \"%2\"").arg(ast::Unary::opToString(n->op()), valueType->name()), n->codePoint());
+		throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
+	}
+
+	return result;
+}
+
 Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 	Value functionValue = generate(n->function());
 	ValueType *valueType = functionValue.valueType();
-	if (!valueType->isCallable()) {
-		emit error(ErrorCodes::ecCantFindFunction, tr("%1 is not a function and can't be called").arg(valueType->name()), n->codePoint());
-		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
-	}
 	QList<Value> paramValues = generateParameterList(n->parameters());
 
-	if (valueType->isFunctionSelector()) {
+	if (functionValue.isFunctionSelectorValueType()) {
 		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(valueType);
 		QList<Function*> functions = funcSelector->overloads();
 
@@ -530,7 +595,27 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 
 		return mBuilder->call(func, paramValues);
 	}
+	else if (functionValue.isValueType()) {
+		//Cast function
+		if (paramValues.size() != 1) {
+			emit error(ErrorCodes::ecCastFunctionRequiresOneParameter, tr("Cast functions take one parameter"), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecCastFunctionRequiresOneParameter);
+		}
+
+		Value val = paramValues.first();
+		ValueType::CastCost cc = val.valueType()->castingCostToOtherValueType(valueType);
+		if (cc == ValueType::ccNoCast) {
+			emit error(ErrorCodes::ecCantCastValue, tr("Can't cast \"%1\" to \"%2\"").arg(val.valueType()->name(), valueType->name()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecCantCastValue);
+		}
+
+		return valueType->cast(mBuilder, val);
+	}
 	else {
+		if (!valueType->isCallable()) {
+			emit error(ErrorCodes::ecCantFindFunction, tr("%1 is not a function and can't be called").arg(valueType->name()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+		}
 		FunctionValueType *functionValueType = static_cast<FunctionValueType*>(valueType);
 		llvm::Value *llvmFunction = functionValue.value();
 		return mBuilder->call(functionValueType, llvmFunction, paramValues);
@@ -538,6 +623,59 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 }
 
 Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
+	QList<Value> paramValues = generateParameterList(n->parameters());
+	if (paramValues.size() != 1) {
+		emit error(ErrorCodes::ecWrongNumberOfParameters, tr("This function takes one parameter"), n->codePoint());
+		throw CodeGeneratorError(ErrorCodes::ecWrongNumberOfParameters);
+	}
+	const Value &param = paramValues.first();
+	switch (n->keyword()) {
+		case ast::KeywordFunctionCall::New: {
+			if (!param.isValueType() || !param.valueType()->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypeName, tr("\"New\" is expecting a type as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypeName);
+			}
+			TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(param.valueType());
+			return mBuilder->newTypeMember(typePointerValueType->typeSymbol());
+		}
+
+		case ast::KeywordFunctionCall::First: {
+			if (!param.isValueType() || !param.valueType()->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypeName, tr("\"First\" is expecting a type as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypeName);
+			}
+			TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(param.valueType());
+			return mBuilder->firstTypeMember(typePointerValueType->typeSymbol());
+		}
+		case ast::KeywordFunctionCall::Last: {
+			if (!param.isValueType() || !param.valueType()->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypeName, tr("\"First\" is expecting a type as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypeName);
+			}
+			TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(param.valueType());
+			return mBuilder->lastTypeMember(typePointerValueType->typeSymbol());
+		}
+
+		case ast::KeywordFunctionCall::Before: {
+			ValueType *valueType = param.valueType();
+			if (!valueType->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypePointer, tr("\"Before\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
+			}
+			return mBuilder->beforeTypeMember(param);
+		}
+		case ast::KeywordFunctionCall::After: {
+			ValueType *valueType = param.valueType();
+			if (!valueType->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypePointer, tr("\"After\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
+			}
+			return mBuilder->afterTypeMember(param);
+		}
+		default:
+			assert("Invalid ast::KeywordFunctionCall::KeywordFunction" && 0);
+	}
+
 	assert("UNIMPLEMENTED FUNCTION " && 0);
 }
 

@@ -28,6 +28,9 @@ class Value {
 		void toLLVMValue(Builder *builder);
 		bool isReference() const { return mType == tReference; }
 		void dump() const;
+		bool isValueType() const;
+		bool isFunctionSelectorValueType() const;
+
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;

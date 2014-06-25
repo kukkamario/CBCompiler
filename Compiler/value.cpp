@@ -75,3 +75,11 @@ void Value::dump() const {
 	if (isConstant())
 		qDebug() << "\t = " << constant().valueInfo();
 }
+
+bool Value::isValueType() const {
+	return mType == tValueType;
+}
+
+bool Value::isFunctionSelectorValueType() const {
+	return mType == tFunctionSelectorValueType;
+}

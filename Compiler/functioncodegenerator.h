@@ -46,6 +46,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Value generate(ast::Variable *n);
 		Value generate(ast::Identifier *n);
 		Value generate(ast::Expression *n);
+		Value generate(ast::Unary *n);
 		Value generate(ast::FunctionCall *n);
 		Value generate(ast::KeywordFunctionCall *n);
 		Value generate(ast::ArraySubscript *n);

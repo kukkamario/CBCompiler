@@ -116,6 +116,9 @@ enum ErrorCode {
 	ecSymbolNotValueType,
 	ecIntegerDividedByZero,
 	ecOperationNotAllowedInConstantExpression,
+	ecWrongNumberOfParameters,
+	ecNotTypeName,
+	ecReferenceRequired,
 
 	ecCantWriteBitcodeFile,
 

@@ -1644,7 +1644,7 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 		ast::Node *part1 = expectLogicalOrExpression(i);
 		if (mStatus == Error) { return 0;}
 
-		if (i->type() == Token::opEqual) {
+		if (i->type() == Token::opAssign) {
 			i++;
 			if (i->type() == Token::kEach) { //For-Each
 				i++;

@@ -142,30 +142,52 @@ void SymbolCollector::visit(ast::Label *c) {
 	mCurrentScope->addSymbol(new LabelSymbol(c->name(), c->codePoint()));
 }
 
-void SymbolCollector::visit(ast::Identifier *c) {
-	Symbol *existingSymbol = mCurrentScope->find(c->name());
-	ValueType *valType = mRuntime->intValueType();
-	if (!valType) return;
-	if (!existingSymbol) {
-		if (mSettings->forceVariableDeclaration()) {
-			emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(c->name()), c->codePoint());
-			return;
-		}
-		addVariableSymbol(c, valType, mCurrentScope);
-		return;
+void SymbolCollector::visit(ast::Identifier *n) {
+	Symbol *symbol = mCurrentScope->find(n->name());
+	if (!symbol) {
+		QString info = mSettings->forceVariableDeclaration() ? tr("You should declare variables with Dim-statement before using") : tr("First usage of a variable should be a assignment.");
+		emit error(ErrorCodes::ecCantFindSymbol, tr("Can't find symbol \"%1\". (%2)").arg(n->name(), info), n->codePoint());
 	}
 }
 
 
-void SymbolCollector::visit(ast::ExpressionNode *c) {
-	if (c->op() == ast::ExpressionNode::opMember) {
-		ast::Node *n = c->operand();
-		for (ast::ChildNodeIterator i = n->childNodesBegin(); i != n->childNodesEnd(); i++) {
+
+
+void SymbolCollector::visit(ast::Expression *c) {
+	if (c->associativity() == ast::Expression::RightToLeft) { // Assignment or member
+		ast::Node *before = c->firstOperand();
+		for (ast::ExpressionNode *n : c->operations()) {
+			if (n->op() == ast::ExpressionNode::opMember) {
+				ast::Node *oprd = n->operand();
+				for (ast::ChildNodeIterator i = oprd->childNodesBegin(); i != oprd->childNodesEnd(); i++) {
+					(*i)->accept(this);
+				}
+				before = 0;
+			} else { //Assignment
+				if (before) {
+					if (before->type() == ast::Node::ntIdentifier) {
+						ast::Identifier *id = before->cast<ast::Identifier>();
+						Symbol *existingSymbol = mCurrentScope->find(id->name());
+						ValueType *valType = mRuntime->intValueType();
+						if (!existingSymbol) {
+							if (mSettings->forceVariableDeclaration()) {
+								emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(id->name()), id->codePoint());
+								return;
+							}
+							addVariableSymbol(id, valType, mCurrentScope);
+						}
+					}
+				}
+				before = n->operand();
+			}
+		}
+	}
+	else {
+		for (ast::ChildNodeIterator i = c->childNodesBegin(); i != c->childNodesEnd(); i++) {
 			(*i)->accept(this);
 		}
-	} else {
-		c->operand()->accept(this);
 	}
+
 }
 
 

@@ -530,6 +530,8 @@ class KeywordFunctionCall : public Node {
 		Node *childNode(int n) const { assert((n == 0) && "Invalid child node id"); return mParameters; }
 		Node *parameters() const { return mParameters; }
 		void setParameters(Node *p) { mParameters = p; }
+		KeywordFunction keyword() const { return mKeyword; }
+		void setKeyword(KeywordFunction key) { mKeyword = key; }
 	protected:
 		KeywordFunction mKeyword;
 		Node *mParameters;
