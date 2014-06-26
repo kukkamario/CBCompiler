@@ -74,6 +74,7 @@ class Parser : public QObject {
 		ast::Node *expectPowExpression(TokIterator &i);
 		ast::Node *expectUnaryExpession(TokIterator &i);
 		ast::Node *expectCallOrArraySubscriptExpression(TokIterator &i);
+		ast::Node *tryNegativeLiteral(TokIterator &i);
 		ast::Node *expectPrimaryExpression(TokIterator &i);
 		ast::Identifier *expectIdentifier(TokIterator &i);
 		ast::Identifier *expectIdentifierAfter(TokIterator &i, const QString &after);

@@ -44,8 +44,8 @@ OperationFlags ValueType::castCostOperationFlags(ValueType::CastCost cc) {
 			return OperationFlag::CastToString; break;
 		case ccCastFromString:
 			return OperationFlag::CastFromString; break;
-		case ccCastToSmaller:
-			return OperationFlag::MayLosePrecision; break;
+		/*case ccCastToSmaller:
+			return OperationFlag::MayLosePrecision; break;*/
 		default:
 			return OperationFlag::NoFlags;
 	}
@@ -169,13 +169,14 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			return Value();
 		}
 		case ast::ExpressionNode::opLessEqual:{
-			if (operand2.valueType()->isNumber()) {
-				CastCost cc = this->castingCostToOtherValueType(operand2.valueType());
+			if (operand2.valueType()->isBasicType()) {
+				Value op1 = operand1;
+				Value op2 = operand2;
+				CastCost cc = castToSameType(builder, op1, op2);
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				Value op1 = operand2.valueType()->cast(builder, operand1);
-				return builder->lessEqual(op1, operand2);
+				return builder->lessEqual(op1, op2);
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();

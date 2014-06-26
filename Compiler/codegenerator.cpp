@@ -126,7 +126,7 @@ bool CodeGenerator::createExecutable(const QString &path) {
 	QString p = QDir::currentPath();
 	QDir::setCurrent(QCoreApplication::applicationDirPath());
 
-	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::raw_fd_ostream::F_Binary);
+	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::sys::fs::F_Binary);
 	if (fileOpenErrorInfo.empty()) {
 		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
 		bitcodeFile.close();

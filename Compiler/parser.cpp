@@ -107,7 +107,7 @@ ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 		case Token::Identifier: {
 			Parser::TokIterator begin = i;
 			ast::Variable *var = tryVariable(i);
-			if (var->valueType()->type() == ast::Node::ntDefaultType && (i->type() < Token::OperatorsBegin || i->type() > Token::OperatorsEnd) && i->type() != Token::LeftSquareBracket && isCommandParameterList(i)) { //Probably a command
+			if (var->valueType()->type() == ast::Node::ntDefaultType && (i->type() < Token::OperatorsBegin || i->type() > Token::OperatorsEnd || i->type() == Token::opNot || i->type() == Token::opMinus || i->type() == Token::opPlus) && i->type() != Token::LeftSquareBracket && isCommandParameterList(i)) { //Probably a command
 				i = begin;
 				delete var;
 				return expectCommandCall(i);
@@ -1277,9 +1277,14 @@ ast::Node *Parser::expectUnaryExpession(Parser::TokIterator &i) {
 		case Token::opPlus:
 			op = ast::Unary::opPositive;
 			break;
-		case Token::opMinus:
+		case Token::opMinus: {
 			op = ast::Unary::opNegative;
+			++i;
+			ast::Node *n = tryNegativeLiteral(i);
+			if (n) return n;
+			--i;
 			break;
+		}
 		case Token::opNot:
 			op = ast::Unary::opNot;
 			break;
@@ -1377,6 +1382,59 @@ ast::Node *Parser::expectCallOrArraySubscriptExpression(Parser::TokIterator &i) 
 			default:
 				return base;
 		}
+	}
+}
+
+ast::Node *Parser::tryNegativeLiteral(Parser::TokIterator &i) {
+	switch (i->type()) {
+		case Token::Integer: {
+			bool success;
+			int val = ('-' + i->toString()).toInt(&success);
+			if (!success) {
+				emit error(ErrorCodes::ecCantParseInteger, tr("Cannot parse an integer \"%1\"").arg('-' + i->toString()), i->codePoint());
+				mStatus = Error;
+				return 0;
+			}
+			ast::Integer *intN = new ast::Integer(val, i->codePoint());
+			i++;
+			return intN;
+		}
+		case Token::IntegerHex: {
+			bool success;
+			int val = ('-' + i->toString()).toInt(&success,16);
+			if (!success) {
+				emit error(ErrorCodes::ecCantParseInteger, tr("Cannot parse integer \"%1\"").arg('-' + i->toString()), i->codePoint());
+				mStatus = Error;
+				return 0;
+			}
+			ast::Integer *intN = new ast::Integer(val, i->codePoint());
+			i++;
+			return intN;
+		}
+
+		case Token::Float: {
+			bool success;
+			float val;
+			if (*i->begin() == '.') { //leading dot .13123
+				val = ("-0" + i->toString()).toFloat(&success);
+			}
+			else if (*(i->end() - 1) == '.') { //Ending dot 1231.
+				val = ('-' + i->toString() + '0').toFloat(&success);
+			}
+			else {
+				val = ('-' + i->toString()).toFloat(&success);
+			}
+			if (!success) {
+				emit error(ErrorCodes::ecCantParseFloat, tr("Cannot parse float \"%1\"").arg('-' + i->toString()), i->codePoint());
+				mStatus = Error;
+				return 0;
+			}
+			ast::Float *f = new ast::Float(val, i->codePoint());
+			i++;
+			return f;
+		}
+		default:
+			return 0;
 	}
 }
 

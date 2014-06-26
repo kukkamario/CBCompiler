@@ -9,8 +9,8 @@
 #include "builder.h"
 #include "constantexpressionevaluator.h"
 #include "typeresolver.h"
+#include "cbfunction.h"
 
-class CBFunction;
 class LabelSymbol;
 
 class FunctionCodeGenerator : public QObject, protected ast::Visitor {
@@ -63,6 +63,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		llvm::BasicBlock *createBasicBlock(const llvm::Twine &name = llvm::Twine(), llvm::BasicBlock *insertBefore = 0);
 
 		bool checkUnreachable(CodePoint cp);
+		void generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters);
 
 		Settings *mSettings;
 		Scope *mLocalScope;

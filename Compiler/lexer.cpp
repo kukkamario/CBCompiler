@@ -403,7 +403,7 @@ Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterat
 	++i;
 	while (i != end) {
 		if (*i == '"') {
-			addToken(Token(Token::String, begin, i, codePoint(begin, lineStart, line, file)));
+			addToken(Token(Token::String, begin + 1, i, codePoint(begin, lineStart, line, file)));
 			i++;
 			return Success;
 		}

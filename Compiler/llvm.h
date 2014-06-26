@@ -5,7 +5,6 @@
 #include <llvm/Support/MathExtras.h>
 #include <llvm/Pass.h>
 #include <llvm/PassManager.h>
-#include <llvm/PassManagers.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Assembly/PrintModulePass.h>

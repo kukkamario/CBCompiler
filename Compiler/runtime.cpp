@@ -44,7 +44,8 @@ Runtime::~Runtime() {
 bool Runtime::load(StringPool *strPool, const Settings &settings) {
 	llvm::InitializeNativeTarget();
 	llvm::SMDiagnostic diagnostic;
-	mModule = llvm::ParseIRFile(settings.runtimeLibraryPath().toStdString(), diagnostic, llvm::getGlobalContext());
+	std::string path = settings.runtimeLibraryPath().toStdString();
+	mModule = llvm::ParseIRFile(path, diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
 		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), CodePoint());
 		return false;
@@ -165,7 +166,7 @@ bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
 	if (!defs.parse(customDataTypes)) return false;
 
 	bool valid = true;
-	foreach (const CustomDataTypeDefinitions::CustomDataType &dt, defs.dataTypes()) {
+	for (const CustomDataTypeDefinitions::CustomDataType &dt : defs.dataTypes()) {
 		int pointerLevel = 0;
 		QString dtName = dt.mDataType;
 		while (dtName.endsWith('*')) {
@@ -173,7 +174,8 @@ bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
 			pointerLevel++;
 		}
 
-		llvm::Type *type = mModule->getTypeByName(dtName.toStdString());
+		std::string dtNameStd = dtName.toStdString();
+		llvm::Type *type = mModule->getTypeByName(dtNameStd);
 		if (!type) {
 			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), CodePoint(0, 0, customDataTypes));
 			valid = false;

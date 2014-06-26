@@ -103,7 +103,7 @@ Value Builder::toString(const Value &v) {
 		case ValueType::Short:
 		case ValueType::Byte: {
 			Value i = toInt(v);
-			llvm::Value *val = mRuntime->stringValueType()->intToStringCast(&mIRBuilder, llvmValue(v));
+			llvm::Value *val = mRuntime->stringValueType()->intToStringCast(&mIRBuilder, llvmValue(i));
 			return Value(mRuntime->stringValueType(), val, false);
 		}
 		case ValueType::Float: {
@@ -1554,7 +1554,7 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 				case ValueType::Short:
 				case ValueType::Byte:
 				case ValueType::Boolean:
-					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpONE(llvmValue(a), llvmValue(toInt(b))));
+					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateFCmpONE(llvmValue(a), llvmValue(toFloat(b))));
 				case ValueType::String: {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));

@@ -756,7 +756,7 @@ class SingleConditionBlockStatement : public BlockNode {
 		static Type staticType() { return NT; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
-		Node *childNode(int n) const {assert((n == 0 || n == 1) && "Invalid child node id"); return (n == CondBeforeBlock) ? mBlock : mCondition;}
+		Node *childNode(int n) const {assert((n == 0 || n == 1) && "Invalid child node id"); return (n == (int)CondBeforeBlock) ? mBlock : mCondition;}
 
 		Node *condition() const { return mCondition; }
 		void setCondition(Node *n) { mCondition = n; }

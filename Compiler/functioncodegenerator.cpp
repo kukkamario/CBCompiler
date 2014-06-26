@@ -50,6 +50,7 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", mFunction);
 	mBuilder->setInsertPoint(firstBasicBlock);
 	generateAllocas();
+	generateFunctionParameterAssignments(func->parameters());
 
 	try {
 		block->accept(this);
@@ -132,7 +133,13 @@ void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
 		init = generate(n->value());
 	}
 
-	mBuilder->store(ref, init);
+	OperationFlags flags = ValueType::castCostOperationFlags(init.valueType()->castingCostToOtherValueType(ref.valueType()));
+	if (operationFlagsContainFatalFlags(flags)) {
+		emit error(ErrorCodes::ecCantCastValue, tr("Can't cast %1 to %2").arg(init.valueType()->name(), ref.valueType()->name()), n->identifier()->codePoint());
+		return;
+	}
+
+	mBuilder->store(ref, ref.valueType()->cast(mBuilder, init));
 }
 
 void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
@@ -762,10 +769,12 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 	}
 
 	assert("UNIMPLEMENTED FUNCTION " && 0);
+	return Value();
 }
 
 Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
 	assert("UNIMPLEMENTED FUNCTION " && 0);
+	return Value();
 }
 
 Value FunctionCodeGenerator::generate(ast::Node *n) {
@@ -975,6 +984,14 @@ bool FunctionCodeGenerator::checkUnreachable(CodePoint cp) {
 		return true;
 	}
 	return false;
+}
+
+void FunctionCodeGenerator::generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters) {
+	QList<CBFunction::Parameter>::ConstIterator pi = parameters.begin();
+	for (llvm::Function::arg_iterator i = mFunction->arg_begin(); i != mFunction->arg_end(); ++i) {
+		mBuilder->store(pi->mVariableSymbol, i);
+		pi++;
+	}
 }
 
 

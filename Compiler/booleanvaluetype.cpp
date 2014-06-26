@@ -11,7 +11,7 @@ BooleanValueType::BooleanValueType(Runtime *r, llvm::Module *mod) :
 }
 
 ValueType::CastCost BooleanValueType::castingCostToOtherValueType(const ValueType *to) const {
-	if (to == this) return ccNoCost;
+	if (to == this || to->basicType() == ValueType::Integer) return ccNoCost;
 	if (to->isNumber()) {
 		return ccCastToBigger;
 	}

@@ -51,12 +51,28 @@ int CBF_max(int a, int b) {
 	return max(a, b);
 }
 
+float CBF_max(float a, int b) {
+	return max(a, (float)b);
+}
+
+float CBF_max(int a, float b) {
+	return max((float)a, b);
+}
+
 float CBF_min(float a, float b) {
 	return min(a, b);
 }
 
 int CBF_min(int a, int b) {
 	return min(a, b);
+}
+
+float CBF_min(int a, float b) {
+	return min((float)a, b);
+}
+
+float CBF_min(float a, int b) {
+	return min(a, (float)b);
 }
 
 float CBF_wrapAngle(float a) {

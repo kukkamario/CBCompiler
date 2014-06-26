@@ -4,7 +4,7 @@ Const screenw% = 300 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fi
 Const screenh% = 300
 
 fov=35
-maxiters=20
+maxiters=8
 
 SCREEN screenw, screenh
 
@@ -64,7 +64,10 @@ Repeat
     For x#=0 To screenw-1
         For y#=0 To screenh-1
             a as transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
-            Color  Min(255,a.r), Min(255,a.g), Min(255,a.b)
+			r = Min(255.0,a.r)
+			g = Min(255.0,a.g)
+			b = Min(255.0,a.b)
+            Color  r, g, b
 			Dot x,y
 			Delete a
         Next y#
@@ -76,22 +79,21 @@ Forever
 Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
     col=0
     For obj as sphere=Each sphere 
-            'remstart
-            Q# = Sqrt(vx#^2 + vy#^2 + vz#^2)
-            dx = dx / Q: dy = dy / Q: dz = dz / Q
-           
-            a# = vx#^2 + vy#^2 + vz#^2
-            b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
-            c# = obj.x#^2 + obj.y#^2 + obj.z#^2 + x^2 + y^2 + z^2 -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#^2
-            d# = b#^2 - 4*a#*c#
-            'remend
-            'd#=Sqrt((x-obj.x)^2+(y-obj.y)^2+(y-obj.y)^2)
-       
+		'remstart
+		Q# = Sqrt(vx#^2 + vy#^2 + vz#^2)
+		dx = dx / Q: dy = dy / Q: dz = dz / Q
+	   
+		a# = vx#^2 + vy#^2 + vz#^2
+		b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
+		c# = obj.x#^2 + obj.y#^2 + obj.z#^2 + x^2 + y^2 + z^2 -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#^2
+		d# = b#^2 - 4*a#*c#
+		'remend
+		'd#=Sqrt((x-obj.x)^2+(y-obj.y)^2+(y-obj.y)^2)
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/(2*a#)',(-b#+Sqrt(d#))/(2*a#))
             'If tt<=0 Then tt# = (-b#-Sqrt(d#))/(2*a#)
             'SetWindow str(tt#)
-            If (col=0 Or dist#>tt) And tt>0.0001
+            If (col==0 Or dist#>tt) And tt>0.0001
                 dist#=tt
                 nearest As sphere=obj
                 col=1
@@ -100,10 +102,10 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
     Next obj
     
     If col Then
-        obj as sphere=nearest
+        obj As sphere=nearest
         //valaistus
         'remstart
-        For valo as light=Each light
+        For valo As light=Each light
             pvx#=obj.x-x-vx*dist
             vvx#=valo.x-x-vx*dist
             pvy#=obj.y-y-vy*dist
@@ -119,13 +121,13 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
             pvz#=pvz/pvl
             vvz#=-vvz/vvl
             dp#=pvx*vvx+pvy*vvy+pvz*vvz
-            lightness#=lightness+Max(0,dp)
-            specular#=specular+Max(0,dp)^5/3
+            lightness#=lightness+Max(0.0,dp)
+            specular#=specular+Max(0.0,dp)^5/3
             dp#=pvx*vx+pvy*vy+pvz*vz
             svx#=(2*dp*pvx-vx)
             svy#=(2*dp*pvy-vy)
             svz#=(2*dp*pvz-vz)
-            specular#=min(255,Max(0,((vvx*svx+vvy*svy+vvz*svz))))^2/2+specular
+            specular#=Min(255.0, Max(0.0, vvx*svx+vvy*svy+vvz*svz))^2/2+specular
         Next valo
         'remend
         //heijastukset
@@ -146,7 +148,7 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
         Else
             ref as transmitter=New(transmitter)
         EndIf
-        t as transmitter= New(transmitter)
+        t As transmitter= New(transmitter)
         t.r=(obj.r*lightness+ref.r)/2+specular*255 //+20'*dotp
         t.g=(obj.g*lightness+ref.g)/2+specular*255 //+20'*dotp
         t.b=(obj.b*lightness+ref.b)/2+specular*255 //+20'*dotp

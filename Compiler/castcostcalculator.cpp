@@ -1,9 +1,9 @@
 #include "castcostcalculator.h"
 
 CastCostCalculator::CastCostCalculator() :
-	mCostArray{0},
 	mNoCast(false)
 {
+	std::fill_n(mCostArray, (int)ValueType::ccNoCast, 0);
 }
 
 CastCostCalculator::CastCostCalculator(const CastCostCalculator &o) :
@@ -17,7 +17,7 @@ CastCostCalculator::~CastCostCalculator() {
 
 CastCostCalculator CastCostCalculator::maxCastCost() {
 	CastCostCalculator cc;
-	std::fill_n(cc.mCostArray, ValueType::ccNoCast, 100000);
+	std::fill_n(cc.mCostArray, (int)ValueType::ccNoCast, 100000);
 	cc.mNoCast = true;
 	return cc;
 }
@@ -49,7 +49,7 @@ bool CastCostCalculator::operator <(const CastCostCalculator &o) const {
 	if (this->mNoCast && !o.mNoCast) return false;
 	if (!this->mNoCast && o.mNoCast) return true;
 
-	for (int i = ValueType::ccNoCast - 1; i > 1; i++) {
+	for (int i = ValueType::ccNoCast - 1; i > 1; --i) {
 		if (this->mCostArray[i] < o.mCostArray[i]) return true;
 		if (this->mCostArray[i] > o.mCostArray[i]) return false;
 	}
@@ -60,7 +60,7 @@ bool CastCostCalculator::operator >(const CastCostCalculator &o) const {
 	if (!this->mNoCast && o.mNoCast) return false;
 	if (this->mNoCast && !o.mNoCast) return true;
 
-	for (int i = ValueType::ccNoCast - 1; i > 1; i++) {
+	for (int i = ValueType::ccNoCast - 1; i > 1; --i) {
 		if (this->mCostArray[i] > o.mCostArray[i]) return true;
 		if (this->mCostArray[i] < o.mCostArray[i]) return false;
 
@@ -72,7 +72,7 @@ bool CastCostCalculator::operator <=(const CastCostCalculator &o) const {
 	if (this->mNoCast && !o.mNoCast) return false;
 	if (!this->mNoCast && o.mNoCast) return true;
 
-	for (int i = ValueType::ccNoCast - 1; i > 1; i++) {
+	for (int i = ValueType::ccNoCast - 1; i > 1; --i) {
 		if (this->mCostArray[i] < o.mCostArray[i]) return true;
 		if (this->mCostArray[i] > o.mCostArray[i]) return false;
 	}
@@ -83,7 +83,7 @@ bool CastCostCalculator::operator >=(const CastCostCalculator &o) const {
 	if (!this->mNoCast && o.mNoCast) return false;
 	if (this->mNoCast && !o.mNoCast) return true;
 
-	for (int i = ValueType::ccNoCast - 1; i > 1; i++) {
+	for (int i = ValueType::ccNoCast - 1; i > 1; --i) {
 		if (this->mCostArray[i] > o.mCostArray[i]) return true;
 		if (this->mCostArray[i] < o.mCostArray[i]) return false;
 
@@ -92,6 +92,6 @@ bool CastCostCalculator::operator >=(const CastCostCalculator &o) const {
 }
 
 void CastCostCalculator::reset() {
-	std::fill_n(mCostArray, ValueType::ccNoCast, 0);
+	std::fill_n(mCostArray, (int)ValueType::ccNoCast, 0);
 	mNoCast = false;
 }
