@@ -7,13 +7,14 @@
 #include "gfxinterface.h"
 #include "textinterface.h"
 #include "inputinterface.h"
+#include <cstdio>
 
 extern "C" void CB_main();
 extern "C" void CB_initialize();
 
 
 int main(int argc, char **argv) {
-
+	printf("Hello\n");
 	info(U"Initializing types and strings");
 	CB_initialize();
 

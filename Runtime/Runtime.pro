@@ -65,7 +65,8 @@ HEADERS += \
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
-QMAKE_CXXFLAGS = -emit-llvm -std=c++0x
+QMAKE_CXXFLAGS = -emit-llvm -std=c++11 -static-libstdc++
+QMAKE_CXXFLAGS_EXCEPTIONS_ON -= -mthreads
 
 unix {
 	QMAKE_LIB = llvm-link -o
@@ -84,6 +85,7 @@ QMAKE_EXT_RES           = _res.bc
 
 #QMAKE_PREFIX_STATICLIB  = lib
 QMAKE_EXTENSION_STATICLIB = bc
+
 
 #llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
 #llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}

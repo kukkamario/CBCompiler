@@ -31,6 +31,8 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		void visit(ast::Dim *c);
 		void visit(ast::Variable *c);
 		void visit(ast::Label *c);
+		void visit(ast::Gosub *c);
+		void visit(ast::Goto *c);
 
 		void visit(ast::Identifier *c);
 

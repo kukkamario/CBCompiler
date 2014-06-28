@@ -71,6 +71,7 @@ void SymbolCollector::visit(ast::Global *c) {
 	variableDefinitionList(c, mGlobalScope);
 }
 
+
 void SymbolCollector::visit(ast::Const *c) {
 	ast::Node *valueTypeNode = c->variable()->valueType();
 	ast::Identifier *id = c->variable()->identifier();
@@ -147,6 +148,15 @@ void SymbolCollector::visit(ast::Label *c) {
 	}
 
 	mCurrentScope->addSymbol(new LabelSymbol(c->name(), c->codePoint()));
+}
+
+void SymbolCollector::visit(ast::Gosub *c) {
+
+}
+
+
+void SymbolCollector::visit(ast::Goto *c) {
+
 }
 
 void SymbolCollector::visit(ast::Identifier *n) {

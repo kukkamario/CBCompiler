@@ -78,16 +78,26 @@ bool Settings::loadDefaults() {
 }
 
 bool Settings::callOpt(const QString &inputFile, const QString &outputFile) const {
-	int ret = QProcess::execute(mOpt.arg(mOptFlags, inputFile, outputFile));
+	QString cmd = mOpt.arg(mOptFlags, inputFile, outputFile);
+	qDebug() << cmd;
+	qDebug() << QDir::currentPath();
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }
 
 bool Settings::callLLC(const QString &inputFile, const QString &outputFile) const {
-	int ret = QProcess::execute(mLLC.arg(mLLCFlags, inputFile, outputFile));
+	QString cmd = mLLC.arg(mLLCFlags, inputFile, outputFile);
+	qDebug() << cmd;
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }
 
 bool Settings::callLinker(const QString &inputFile, const QString &outputFile) const {
-	int ret = QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, "\"" + outputFile + "\""));
+	QString cmd = mLinker.arg(mLinkerFlags, inputFile, "\"" + outputFile + "\"");
+	qDebug() << cmd;
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }

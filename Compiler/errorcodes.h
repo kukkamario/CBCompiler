@@ -122,6 +122,9 @@ enum ErrorCode {
 	ecNotContainer,
 
 	ecCantWriteBitcodeFile,
+	ecOptimizingFailed,
+	ecCantCreateObjectFile,
+	ecNativeLinkingFailed,
 
 	ecCodeGenerationFailed,
 

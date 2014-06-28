@@ -157,7 +157,8 @@ int main(int argc, char *argv[]) {
 
 	QList<QByteArray> mangledNames;
 	for (llvm::Module::FunctionListType::iterator i = module->getFunctionList().begin(); i != module->getFunctionList().end(); i++) {
-		mangledNames.append(QByteArray(i->getName().data()));
+		QByteArray n = QByteArray(i->getName().data());
+		mangledNames.append(n);
 	}
 
 	QProcess process;
@@ -168,7 +169,12 @@ int main(int argc, char *argv[]) {
 	}
 	cout << "c++filt started" << endl;
 	for (QByteArray s : mangledNames) {
-		process.write(s + '\n');
+		if (s.startsWith('_')) {
+			process.write('_' + s + '\n');
+		}
+		else {
+			process.write(s + '\n');
+		}
 	}
 	cout << "Waiting for writing" << endl;
 	process.waitForBytesWritten();
@@ -184,9 +190,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	QList<QByteArray> demangledNames = s.split('\n');
+	qDebug() << "Demangled items: "  << demangledNames.size();
 	int index = -1;
 	for (QByteArray name : demangledNames) {
 		index++;
+		qDebug() << name;
 		if (!onlyStartingWith.isEmpty()) {
 			if (!name.startsWith(onlyStartingWith)) {
 				continue;

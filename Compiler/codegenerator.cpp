@@ -137,15 +137,24 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		return false;
 	}
 	qDebug() << "Optimizing bitcode...\n";
-	if (!mSettings.callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) return false;
+	if (!mSettings.callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
+		emit error(ErrorCodes::ecOptimizingFailed, tr("Failed to execute optimizing command"), CodePoint());
+		return false;
+	}
 	qDebug() << "Creating native assembly...\n";
-	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) return false;
+	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) {
+		emit error(ErrorCodes::ecCantCreateObjectFile, tr("Creating a object file failed"), CodePoint());
+		return false;
+	}
 	qDebug() << "Building binary...\n";
 
 	QFileInfo fi;
 	fi.setFile(QDir(p), path);
 
-	if (!mSettings.callLinker("llc", fi.absoluteFilePath())) return false;
+	if (!mSettings.callLinker("llc", fi.absoluteFilePath())) {
+		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
+		return false;
+	}
 	qDebug() << "Success\n";
 	QDir::setCurrent(p);
 	return true;
