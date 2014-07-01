@@ -8,6 +8,7 @@
 #include "booleanvaluetype.h"
 #include "typepointervaluetype.h"
 #include "typevaluetype.h"
+#include "genericarrayvaluetype.h"
 #include "errorcodes.h"
 #include "settings.h"
 #include "customdatatypedefinitions.h"
@@ -98,6 +99,12 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 		return false;
 	}
 
+	mGenericArrayLLVMType = mModule->getTypeByName("struct.CB_GenericArrayDataHeader");
+	if (!mGenericArrayLLVMType) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericArrayDataHeader\" in runtime library bitcode"), CodePoint());
+		return false;
+	}
+
 	mStringValueType->setStringType(str->getPointerTo());
 	mValueTypeCollection.addValueType(mStringValueType);
 
@@ -118,6 +125,9 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 
 	mTypeValueType = new TypeValueType(this, typeLLVMType()->getPointerTo());
 	mValueTypeCollection.addValueType(mTypeValueType);
+
+	mGenericArrayValueType = new GenericArrayValueType(mGenericArrayLLVMType->getPointerTo(), this);
+	mValueTypeCollection.addValueType(mGenericArrayValueType);
 	return true;
 }
 
@@ -288,7 +298,31 @@ bool Runtime::loadDefaultRuntimeFunctions() {
 	func = mModule->getFunction("CB_StringRef");
 	if (!func || !mStringValueType->setRefFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_RefString"), CodePoint());
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringRef"), CodePoint());
+	}
+
+	func = mModule->getFunction("CB_ArrayRef");
+	if (!func || !mGenericArrayValueType->setRefFunction(func)) {
+		mValid = false;
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayRef"), CodePoint());
+	}
+
+	func = mModule->getFunction("CB_ArrayConstruct");
+	if (!func || !mGenericArrayValueType->setConstructFunction(func)) {
+		mValid = false;
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayConstruct"), CodePoint());
+	}
+
+	func = mModule->getFunction("CB_ArrayDestruct");
+	if (!func || !mGenericArrayValueType->setDestructFunction(func)) {
+		mValid = false;
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayDestruct"), CodePoint());
+	}
+
+	func = mModule->getFunction("CB_ArrayAssign");
+	if (!func || !mGenericArrayValueType->setAssignmentFunction(func)) {
+		mValid = false;
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayAssign"), CodePoint());
 	}
 
 	mAllocatorFunction = mModule->getFunction("CB_Allocate");

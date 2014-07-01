@@ -432,8 +432,8 @@ ast::Node *Parser::expectVariableDefinitionOrArrayInitialization(Parser::TokIter
 		}
 		i++;
 		ast::Node *varType2 = tryVariableAsType(i);
-		if (varType == 0) {
-			if (varType2 == 0) {
+		if (varType != 0) {
+			if (varType2 != 0) {
 				if (variableTypesAreEqual(varType, varType2)) {
 					emit error(ErrorCodes::ecVariableTypeDefinedTwice, tr("Variable \"%1\" type defined twice"), i->codePoint());
 					mStatus = ErrorButContinue;

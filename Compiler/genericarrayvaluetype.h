@@ -21,10 +21,25 @@ public:
 	bool canBeCastedToValueType(ValueType *to) const;
 	CastCost castingCostToOtherValueType(const ValueType *to) const;
 
-	virtual Value cast(Builder *builder, const Value &v) const = 0;
+	Value cast(Builder *builder, const Value &v) const;
 
 	llvm::LLVMContext &context();
 	Runtime *runtime() const { return mRuntime; }
+
+	bool setConstructFunction(llvm::Function *f);
+	bool setDestructFunction(llvm::Function *f);
+	bool setRefFunction(llvm::Function *f);
+	bool setAssignmentFunction(llvm::Function *f);
+	llvm::Function *constructFunction() const { return mConstructFunction; }
+	llvm::Function *destructFunction() const { return mDestructFunction; }
+	llvm::Function *refFunction() const { return mRefFunction; }
+	llvm::Function *assignmentFunction() const { return mAssignmentFunction; }
+
+private:
+	llvm::Function *mConstructFunction;
+	llvm::Function *mRefFunction;
+	llvm::Function *mDestructFunction;
+	llvm::Function *mAssignmentFunction;
 };
 
 #endif // GENERICARRAYVALUETYPE_H

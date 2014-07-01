@@ -8,6 +8,7 @@
 #include "booleanvaluetype.h"
 #include "stringvaluetype.h"
 #include "typepointervaluetype.h"
+#include "genericarrayvaluetype.h"
 #include "runtime.h"
 
 ValueTypeCollection::ValueTypeCollection(Runtime *r) :
@@ -24,7 +25,22 @@ void ValueTypeCollection::addValueType(ValueType *valType) {
 }
 
 ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
-	return mLLVMTypeMapping.value(type, 0);
+	ValueType *valType = mLLVMTypeMapping.value(type, 0);
+	if (valType) return valType;
+
+	//Check if type is ArrayValueType
+	if (type->isPointerTy()) {
+		llvm::PointerType *ptrType = llvm::cast<llvm::PointerType>(type);
+		llvm::Type *elementType = ptrType->getElementType();
+		if (elementType->isStructTy()) {
+			llvm::StructType *structType = llvm::cast<llvm::StructType>(elementType);
+			if (structType->getName().startswith("struct.CB_ArrayData")) {
+				return generateArrayValueType(structType);
+			}
+		}
+	}
+
+	return 0;
 }
 
 ValueType *ValueTypeCollection::findNamedType(const QString &name) {
@@ -36,8 +52,14 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 	if (i != mArrayMapping.end()) {
 		return i.value();
 	}
+	llvm::StructType *genericArrayHeaderType = mRuntime->genericArrayValueType()->structType();
+	llvm::Type *intT = llvm::IntegerType::get(mRuntime->module()->getContext(), mRuntime->dataLayout().getPointerSizeInBits());
+	llvm::Type *dimType = llvm::ArrayType::get(intT, dimensions);
 
-	ArrayValueType *valTy = new ArrayValueType(baseValueType, llvm::IntegerType::getInt8PtrTy(mRuntime->module()->getContext()), dimensions);
+	llvm::StructType *arrayDataHeaderType = llvm::StructType::get(genericArrayHeaderType, dimType, dimType, 0);
+
+	llvm::StructType *arrayType = llvm::StructType::get(arrayDataHeaderType, baseValueType->llvmType(), 0);
+	ArrayValueType *valTy = new ArrayValueType(baseValueType, arrayType->getPointerTo(), dimensions);
 	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
 	return valTy;
 }
@@ -66,4 +88,27 @@ ValueType *ValueTypeCollection::constantValueType(ConstantValue::Type type) cons
 
 QList<ValueType *> ValueTypeCollection::namedTypes() const {
 	return mNamedType.values();
+}
+
+ValueType *ValueTypeCollection::generateArrayValueType(llvm::StructType *arrayDataType) {
+	assert(arrayDataType->getStructNumElements() == 2);
+
+	llvm::Type *element1 = arrayDataType->getStructElementType(0);
+	llvm::Type *element2 = arrayDataType->getStructElementType(1);
+	ValueType *baseType = valueTypeForLLVMType(element2);
+	if (!baseType) {
+		return 0;
+	}
+
+	llvm::StructType *arrayHeaderType = llvm::cast<llvm::StructType>(element1);
+	assert(arrayHeaderType->getStructNumElements() == 3);
+
+	assert(llvm::cast<llvm::StructType>(arrayHeaderType->getStructElementType(0))->getName() == "struct.CB_GenericArrayDataHeader");
+	llvm::ArrayType *dimSizes = llvm::cast<llvm::ArrayType>(arrayHeaderType->getStructElementType(1));
+	llvm::ArrayType *mults = llvm::cast<llvm::ArrayType>(arrayHeaderType->getStructElementType(2));
+	assert(dimSizes->getArrayNumElements() == mults->getArrayNumElements());
+	int dims = dimSizes->getArrayNumElements();
+
+	ArrayValueType *arrayValueType = new ArrayValueType(baseType, arrayDataType->getPointerTo(), dims);
+	mLLVMTypeMapping[arrayDataType->getPointerTo()] = arrayValueType;
 }

@@ -11,6 +11,8 @@
 #include "typesymbol.h"
 #include "typevaluetype.h"
 #include "functionvaluetype.h"
+#include "genericarrayvaluetype.h"
+#include "arrayvaluetype.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
@@ -217,7 +219,7 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 
 	assert(v.value());
 	if (v.isReference()) {
-		return mIRBuilder.CreateLoad(v.value());
+		return load(v).value();
 	}
 	return v.value();
 }
@@ -270,6 +272,16 @@ llvm::Value *Builder::llvmValue(const ConstantValue &v) {
 	}
 	assert("Invalid constant value" && 0);
 	return 0;
+}
+
+llvm::Value *Builder::intPtrTypeValue(const Value &v) {
+	Value i = toInt(v);
+	llvm::Type *targetType = mIRBuilder.getIntPtrTy(&mRuntime->dataLayout());
+	if (i.isConstant()) {
+		return llvm::ConstantInt::get(targetType, i.constant().toInt());
+	}
+
+	return mIRBuilder.CreateSExt(llvmValue(i), targetType);
 }
 
 llvm::Value *Builder::bitcast(llvm::Type *type, llvm::Value *val) {
@@ -345,22 +357,21 @@ void Builder::construct(VariableSymbol *var) {
 void Builder::store(const Value &ref, const Value &value) {
 	assert(ref.isReference());
 	assert(ref.valueType() == value.valueType());
-	mIRBuilder.CreateStore(llvmValue(value), ref.value());
+	if (ref.valueType() == mRuntime->stringValueType()) {
+		mRuntime->stringValueType()->assignString(&mIRBuilder, ref.value(), llvmValue(value));
+	}
+	else if (ref.valueType()->isArray()) {
+		ArrayValueType *arrayValueType = static_cast<ArrayValueType*>(ref.valueType());
+		arrayValueType->assignArray(this, ref.value(), llvmValue(value));
+	}
+	else {
+		mIRBuilder.CreateStore(llvmValue(value), ref.value());
+	}
 }
 
 void Builder::store(llvm::Value *ptr, llvm::Value *val) {
 	assert(ptr->getType() == val->getType()->getPointerTo());
 	mIRBuilder.CreateStore(val, ptr);
-}
-
-void Builder::store(llvm::Value *ptr, const Value &v) {
-	assert(ptr->getType() == v.valueType()->llvmType()->getPointerTo());
-	if (v.valueType()->basicType() == ValueType::String) {
-		mRuntime->stringValueType()->assignString(&mIRBuilder, ptr, llvmValue(v));
-	}
-	else {
-		mIRBuilder.CreateStore(llvmValue(v), ptr);
-	}
 }
 
 void Builder::store(VariableSymbol *var, const Value &v) {
@@ -371,6 +382,9 @@ void Builder::store(VariableSymbol *var, llvm::Value *val) {
 	assert(var->valueType()->llvmType() == val->getType());
 	if (var->valueType()->basicType() == ValueType::String) {
 		mRuntime->stringValueType()->assignString(&mIRBuilder, var->alloca_(), val);
+	} else if (var->valueType()->isArray()) {
+		ArrayValueType *arrayValueType = static_cast<ArrayValueType*>(var->valueType());
+		arrayValueType->assignArray(this, var->alloca_(), llvmValue(val));
 	}
 	else {
 		store(var->alloca_(), val);
@@ -391,8 +405,22 @@ Value Builder::load(const VariableSymbol *var) {
 	llvm::Value *val = mIRBuilder.CreateLoad(var->alloca_(), false);
 	if (var->valueType()->basicType() == ValueType::String) {
 		mRuntime->stringValueType()->refString(&mIRBuilder, val);
+	} else if (var->valueType()->isArray()) {
+		static_cast<ArrayValueType*>(var->valueType())->refArray(this, val);
 	}
 	return Value(var->valueType(), val, false);
+}
+
+Value Builder::load(const Value &var) {
+	assert(var.isReference());
+	llvm::Value *v = mIRBuilder.CreateLoad(var.value());
+	if (var.valueType()->basicType() == ValueType::String) {
+		mRuntime->stringValueType()->refString(&mIRBuilder, v);
+	}
+	else if (var.valueType()->isArray()){
+		static_cast<ArrayValueType*>(var.valueType())->refArray(this, v);
+	}
+	return Value(var.valueType(), v, false);
 }
 
 /*Value Builder::load(const Value &ref, const Value &index) {
@@ -407,15 +435,25 @@ void Builder::destruct(VariableSymbol *var) {
 	if (var->valueType()->basicType() == ValueType::String) {
 		llvm::Value *str = mIRBuilder.CreateLoad(var->alloca_(), false);
 		mRuntime->stringValueType()->destructString(&mIRBuilder, str);
+	} else if (var->valueType()->isArray()) {
+		llvm::Value *arr = mIRBuilder.CreateLoad(var->alloca_(), false);
+		ArrayValueType *arrValueType = static_cast<ArrayValueType*>(var->valueType());
+		arrValueType->destructArray(this, arr);
 	}
 }
 
 void Builder::destruct(const Value &a) {
 	if (!a.isValid()) return;
 	if (a.isReference()) return;
-	if (a.isConstant() || a.valueType()->basicType() != ValueType::String) return;
+	if (a.isConstant()) return;
 	assert(a.value());
-	mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
+	if (a.valueType()->basicType() == ValueType::String) {
+		mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
+	}
+	else if (a.valueType()->isArray()){
+		ArrayValueType *arrValueType = static_cast<ArrayValueType*>(a.valueType());
+		arrValueType->destructArray(this, llvmValue(a));
+	}
 }
 
 Value Builder::nullTypePointer() {

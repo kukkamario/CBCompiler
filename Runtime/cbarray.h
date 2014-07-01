@@ -111,24 +111,7 @@ class CBArray {
 		typedef T *const_iterator;
 
 		CBArray() : mData(0) { }
-		CBArray(std::array<ArraySizeType, D> dims) {
-			ArraySizeType totalElements = array_priv::multDimArraySize<D - 1>(dims.data());
-			size_t size = CB_ArrayDataHeader<D>::headerSize() + totalElements * sizeof(T);
-			char *buffer = new char[size];
-			memset(buffer, 0, size);
-			CB_ArrayData<T, D> *arrData = reinterpret_cast<CB_ArrayData<T, D>*>(buffer);
-			arrData->mDimensions = D;
-			arrData->mFullSize = totalElements;
-			ArraySizeType mult = 1;
-			for (int i = D - 1; i >= 0; i--) {
-				arrData->mSizes[i] = dims[i];
-				arrData->mMults[i] = mult;
-				mult *= dims[i];
-			}
-			arrData->mRefCounter = 1;
-			arrData->mOffset = arrData->sizeOfCompleteHeader();
-			mData = arrData;
-		}
+		CBArray(std::array<ArraySizeType, D> dims);
 
 		CBArray(CB_ArrayData<T, D> *d) : mData(d) { if (d) atomicIncrease(mData->mRefCounter); }
 		CBArray(const CBArray &o) : mData(o.mData) { if (mData) atomicIncrease(mData->mRefCounter); }
@@ -162,11 +145,36 @@ class CBArray {
 			return ArraySubscript<T, D, D - 1>(mData->begin(), mData->mSizes)[i];
 		}
 
+		typename ArraySubscript<const T, D, D - 1>::RetType operator[] (int i) const {
+			return ArraySubscript<T, D, D - 1>(mData->begin(), mData->mSizes)[i];
+		}
+
 
 	private:
 
 		CB_ArrayData<T, D> *mData;
 };
+
+template <class T, size_t D>
+CBArray<T, D>::CBArray(std::array<ArraySizeType, D> dims) {
+	ArraySizeType totalElements = array_priv::multDimArraySize<D - 1>(dims.data());
+	size_t size = CB_ArrayDataHeader<D>::headerSize() + totalElements * sizeof(T);
+	char *buffer = new char[size];
+	memset(buffer, 0, size);
+	CB_ArrayData<T, D> *arrData = reinterpret_cast<CB_ArrayData<T, D>*>(buffer);
+	arrData->mDimensions = D;
+	arrData->mFullSize = totalElements;
+	ArraySizeType mult = 1;
+	for (int i = D - 1; i >= 0; i--) {
+		arrData->mSizes[i] = dims[i];
+		arrData->mMults[i] = mult;
+		mult *= dims[i];
+	}
+	arrData->mRefCounter = 1;
+	arrData->mOffset = arrData->sizeOfCompleteHeader();
+	mData = arrData;
+}
+
 
 template <class T, size_t D>
 CBArray<T, D>::~CBArray() {

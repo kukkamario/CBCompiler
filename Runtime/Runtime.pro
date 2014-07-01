@@ -65,7 +65,7 @@ HEADERS += \
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
-QMAKE_CXXFLAGS = -emit-llvm -std=c++11 -static-libstdc++
+QMAKE_CXXFLAGS = -emit-llvm -std=c++11
 QMAKE_CXXFLAGS_EXCEPTIONS_ON -= -mthreads
 
 unix {

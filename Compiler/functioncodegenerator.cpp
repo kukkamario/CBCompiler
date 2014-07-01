@@ -10,6 +10,10 @@
 #include "runtime.h"
 #include "functionselectorvaluetype.h"
 #include "functionvaluetype.h"
+#include "arrayvaluetype.h"
+#include "intvaluetype.h"
+#include "shortvaluetype.h"
+#include "bytevaluetype.h"
 #include "typepointervaluetype.h"
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
@@ -144,6 +148,32 @@ void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
 
 void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
 	CHECK_UNREACHABLE(n->codePoint());
+
+	Value arr = generate(n->identifier());
+	assert(arr.isReference());
+
+	if (arr.isNormalValue() && arr.valueType()->isArray()) {
+		ArrayValueType *valType = static_cast<ArrayValueType*>(arr.valueType());
+		QList<Value> params = generateParameterList(n->dimensions());
+		if (params.size() != valType->dimensions()) {
+			emit error(ErrorCodes::ecArrayDimensionCountDoesntMatch, tr("Invalid number of dimensions %1. The array has %n dimensions.", 0, valType->dimensions()).arg(params.size()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecArrayDimensionCountDoesntMatch);
+		}
+		int index = 1;
+		for (const Value &v : params) {
+			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType())) {
+				emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array initialization parameter %1 is not an integer").arg(index), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecArraySubscriptNotInteger);
+			}
+			index++;
+
+		}
+		Value val = valType->constructArray(mBuilder, params);
+		valType->assignArray(mBuilder, arr.value(), mBuilder->llvmValue(val));
+	} else {
+		assert("Shouldn't this be checked else where?" && 0);
+	}
+
 }
 
 void FunctionCodeGenerator::visit(ast::FunctionCall *n) {
@@ -540,7 +570,7 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 					emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(exprNode->op()), valueType->name(), op2.valueType()->name()), exprNode->codePoint());
 				}
 				if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
-					emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by zero"), exprNode->codePoint());
+					emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by Zero"), exprNode->codePoint());
 					throw CodeGeneratorError(ErrorCodes::ecIntegerDividedByZero);
 					return Value();
 				}
@@ -768,13 +798,33 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 			assert("Invalid ast::KeywordFunctionCall::KeywordFunction" && 0);
 	}
 
-	assert("UNIMPLEMENTED FUNCTION " && 0);
 	return Value();
 }
 
 Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
-	assert("UNIMPLEMENTED FUNCTION " && 0);
-	return Value();
+	Value arr = generate(n->array());
+
+	if (arr.isNormalValue() && arr.valueType()->isArray()) {
+		ArrayValueType *valType = static_cast<ArrayValueType*>(arr.valueType());
+		QList<Value> params = generateParameterList(n->subscript());
+		if (params.size() != valType->dimensions()) {
+			emit error(ErrorCodes::ecArrayDimensionCountDoesntMatch, tr("Invalid number of dimensions %1. The array has %n dimensions.", 0, valType->dimensions()).arg(params.size()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecArrayDimensionCountDoesntMatch);
+		}
+		int index = 1;
+		for (const Value &v : params) {
+			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType())) {
+				emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array initialization parameter %1 is not an integer").arg(index), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecArraySubscriptNotInteger);
+			}
+			index++;
+
+		}
+		return valType->arraySubscript(mBuilder, arr, params);
+	} else {
+		emit error(ErrorCodes::ecNotArray, tr("Value isn't an array and  it doesn't have subscript operator"), n->codePoint());
+		throw CodeGeneratorError(ErrorCodes::ecNotArray);
+	}
 }
 
 Value FunctionCodeGenerator::generate(ast::Node *n) {

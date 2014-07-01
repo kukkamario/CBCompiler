@@ -3,9 +3,9 @@ themap As Image = LoadImage("Media/map.bmp")
 angle=0
 
 
+moment = 0
 
-
-While Not EscapeKey()
+Repeat
     DrawImage themap,Cos(angle) * 100,Sin(angle) * 100
 
     If Timer()>moment+20 Then
@@ -30,7 +30,4 @@ While Not EscapeKey()
 	Text 10, 10, FPS()
     DrawScreen
 
-Wend
-
-End
-
+Forever

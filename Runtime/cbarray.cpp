@@ -3,9 +3,15 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include "common.h"
+#include <cstdio>
 
-void *CB_createArray(int dimCount, ArraySizeType *arrSizes, ArraySizeType dataTypeSize) {
-	size_t size = CB_GenericArrayDataHeader::sizeOfCompleteHeader(dimCount) + dataTypeSize;
+CBEXPORT CB_GenericArrayDataHeader *CB_ArrayConstruct(ArraySizeType dimCount, ArraySizeType *arrSizes, ArraySizeType dataTypeSize) {
+	ArraySizeType elements = 1;
+	for (ArraySizeType i = 0; i < dimCount; i++) {
+		elements *= arrSizes[i];
+	}
+	size_t size = CB_GenericArrayDataHeader::sizeOfCompleteHeader(dimCount) + dataTypeSize * elements;
 	char *buffer = new char[size];
 	memset(buffer, 0, size);
 	CB_GenericArrayDataHeader *arrData = reinterpret_cast<CB_GenericArrayDataHeader*>(buffer);
@@ -21,23 +27,24 @@ void *CB_createArray(int dimCount, ArraySizeType *arrSizes, ArraySizeType dataTy
 	arrData->mSizeOfDataType = dataTypeSize;
 	arrData->mRefCounter = 1;
 	arrData->mOffset = arrData->sizeOfCompleteHeader();
-	return arrData;
+	arrData->mFullSize = elements;
+	return reinterpret_cast<CB_GenericArrayDataHeader*>(arrData);
 }
 
-void CB_refArray(CB_GenericArrayDataHeader *arr) {
+CBEXPORT void CB_ArrayRef(CB_GenericArrayDataHeader *arr) {
 	if (arr) atomicIncrease(arr->mRefCounter);
 }
 
-void CB_destructArray(CB_GenericArrayDataHeader *arr) {
+CBEXPORT void CB_ArrayDestruct(CB_GenericArrayDataHeader *arr) {
 	if (arr && atomicDecrease(arr->mRefCounter)) {
 		atomicThreadFenceAcquire();
 		delete[] reinterpret_cast<char*>(arr);
 	}
 }
 
-void CB_assignArray(CB_GenericArrayDataHeader **target, CB_GenericArrayDataHeader *source) {
-	CB_refArray(source); //increase reference counter
-	CB_destructArray(*target); //decrease reference counter
+CBEXPORT void CB_ArrayAssign(CB_GenericArrayDataHeader **target, CB_GenericArrayDataHeader *source) {
+	CB_ArrayRef(source); //increase reference counter
+	CB_ArrayRef(*target); //decrease reference counter
 	*target = source;
 }
 

@@ -543,7 +543,7 @@ class ArraySubscript : public Node {
 	public:
 		ArraySubscript(const CodePoint &cp) : Node (cp), mArray(0), mSubscript(0) {}
 		~ArraySubscript() { delete mArray; delete mSubscript; }
-		static Type staticType() { return ntFunctionCall; }
+		static Type staticType() { return ntArraySubscript; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 2; }
 		Node *childNode(int n) const { assert((n == 0 || n == 1) && "Invalid child node id"); if (n == 0) return mArray; return mSubscript; }

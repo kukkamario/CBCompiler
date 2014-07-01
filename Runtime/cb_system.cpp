@@ -63,3 +63,4 @@ void CBF_end() {
 int CBF_fps() {
 	return Window::instance()->fps();
 }
+

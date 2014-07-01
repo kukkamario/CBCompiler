@@ -14,7 +14,6 @@ extern "C" void CB_initialize();
 
 
 int main(int argc, char **argv) {
-	printf("Hello\n");
 	info(U"Initializing types and strings");
 	CB_initialize();
 

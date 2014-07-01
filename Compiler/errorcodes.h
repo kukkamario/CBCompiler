@@ -79,7 +79,7 @@ enum ErrorCode {
 	ecCantFindTypeField,
 	ecForEachInvalidContainer,
 	ecForcingType,
-	ecNotArrayOrFunction,
+	ecNotArray,
 	ecInvalidArraySubscript,
 	ecMathematicalOperationOperandTypeMismatch,
 	ecCantCreateTypePointerLLVMStructType,

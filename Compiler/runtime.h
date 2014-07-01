@@ -18,6 +18,7 @@ class ByteValueType;
 class BooleanValueType;
 class StringPool;
 class TypePointerCommonValueType;
+class GenericArrayValueType;
 class TypeValueType;
 class Scope;
 class Settings;
@@ -52,6 +53,7 @@ class Runtime : public QObject {
 		BooleanValueType *booleanValueType() const {return mBooleanValueType;}
 		TypePointerCommonValueType *typePointerCommonValueType() const {return mTypePointerCommonValueType;}
 		TypeValueType *typeValueType() const { return mTypeValueType; }
+		GenericArrayValueType *genericArrayValueType() const { return mGenericArrayValueType; }
 
 		llvm::Function *allocatorFunction() const { return mAllocatorFunction; }
 		llvm::Function *freeFunction() const { return mFreeFunction; }
@@ -86,6 +88,7 @@ class Runtime : public QObject {
 		BooleanValueType *mBooleanValueType;
 		TypeValueType *mTypeValueType;
 		TypePointerCommonValueType *mTypePointerCommonValueType;
+		GenericArrayValueType *mGenericArrayValueType;
 
 		ValueTypeCollection mValueTypeCollection;
 
@@ -96,6 +99,7 @@ class Runtime : public QObject {
 
 		llvm::Type *mTypeLLVMType;
 		llvm::Type *mTypeMemberLLVMType;
+		llvm::Type *mGenericArrayLLVMType;
 
 		QMultiMap<QString, QString> mFunctionMapping;
 	signals:

@@ -39,6 +39,8 @@ class Builder {
 		llvm::Value *llvmValue(bool t);
 		llvm::Value *llvmValue(const ConstantValue &v);
 
+		llvm::Value *intPtrTypeValue(const Value &v);
+
 		llvm::Value *bitcast(llvm::Type *type, llvm::Value *val);
 
 		Value call(Function *func, QList<Value> &params);
@@ -51,18 +53,18 @@ class Builder {
 		Value defaultValue(ValueType *valType);
 
 		void construct(VariableSymbol *var);
+
 		void store(const Value &ref, const Value &value);
 		void store(llvm::Value *ptr, llvm::Value *val);
-		void store(llvm::Value *ptr, const Value &v);
 		void store(VariableSymbol *var, const Value &v);
 		void store(VariableSymbol *var, llvm::Value *val);
 		/*void store(const Value &ref, const Value &index, const Value &val);
 		void store(const Value &ref, const QList<Value> &dims, const Value &val);*/
 		void store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v);
 		Value load(const VariableSymbol *var);
+		Value load(const Value &var);
 		/*Value load(const Value &ref, const Value &index);
 		Value load(const Value &ref, const QList<Value> &dims);*/
-		Value load(VariableSymbol *typePtrVar, const QString &fieldName);
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
@@ -155,6 +157,9 @@ class Builder {
 		llvm::Value *pointerToBytePointer(llvm::Value *ptr);
 
 		llvm::BasicBlock *currentBasicBlock() const;
+
+
+
 
 		//Dont work. Dont use
 		void pushInsertPoint();

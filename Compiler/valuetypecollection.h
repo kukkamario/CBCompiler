@@ -20,6 +20,8 @@ class ValueTypeCollection {
 		ValueType *constantValueType(ConstantValue::Type type) const;
 		QList<ValueType*> namedTypes() const;
 	private:
+		ValueType *generateArrayValueType(llvm::StructType *arrayDataType);
+
 		QMap<QPair<ValueType*, int> , ArrayValueType *> mArrayMapping;
 		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
 		QMap<QString, ValueType *> mNamedType;
