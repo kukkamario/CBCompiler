@@ -153,27 +153,27 @@ Value Builder::toShort(const Value &v) {
 Value Builder::toByte(const Value &v) {
 	if (v.valueType()->basicType() == ValueType::Byte) return v;
 	if (v.isConstant()) {
-		return Value(ConstantValue(v.constant().toShort()), mRuntime);
+		return Value(ConstantValue(v.constant().toByte()), mRuntime);
 	}
 	assert(v.value());
 	switch (v.valueType()->basicType()) {
 		case ValueType::Float: {
 			llvm::Value *r = mIRBuilder.CreateAdd(llvmValue(v), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
-			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt16Ty()), false);
+			return Value(mRuntime->intValueType(), mIRBuilder.CreateFPToUI(r,mIRBuilder.getInt8Ty()), false);
 		}
 		case ValueType::Boolean: {
-			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::ZExt, llvmValue(v), mIRBuilder.getInt16Ty());
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::ZExt, llvmValue(v), mIRBuilder.getInt8Ty());
 			return Value(mRuntime->intValueType(), r, false);
 		}
 		case ValueType::Integer:
 		case ValueType::Short: {
-			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::Trunc, llvmValue(v), mIRBuilder.getInt16Ty());
+			llvm::Value *r = mIRBuilder.CreateCast(llvm::CastInst::Trunc, llvmValue(v), mIRBuilder.getInt8Ty());
 			return Value(mRuntime->intValueType(), r, false);
 		}
 
 		case ValueType::String: {
 			llvm::Value *i = mRuntime->stringValueType()->stringToIntCast(&mIRBuilder, llvmValue(v));
-			return toShort(Value(mRuntime->intValueType(), i, false));
+			return toByte(Value(mRuntime->intValueType(), i, false));
 		}
 		default: break;
 	}

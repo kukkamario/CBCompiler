@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <locale>
-
+#include "error.h"
 
 std::string LString::sNullStdString;
 
@@ -136,6 +136,24 @@ LString::~LString() {
 LString LString::fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
 	assert(stringLength < bufferSize);
 	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize));
+}
+
+
+LString LString::fromUtf8(const std::string &s) {
+	if (s.size() == 0) return LString();
+	const uint8_t *begin = reinterpret_cast<const uint8_t*>(s.c_str());
+	const uint8_t *end = begin + s.size();
+	LString ret;
+	ret.reserve(s.size());
+
+	LChar *destBegin = ret.begin();
+	LChar *destEnd = ret.end();
+	if (!utf8ToUtf32(&begin, end, &destBegin, destEnd)) {
+		error("Failed conversion utf8 -> utf32");
+	}
+
+	ret.resize(destBegin - ret.begin());
+	return ret;
 }
 
 LString LString::fromBuffer(LChar *buffer) {
@@ -591,6 +609,23 @@ void LString::reserve(size_t size) {
 	}
 }
 
+void LString::resize(size_t size) {
+	if (this->size() == size) return;
+	if (isNull()) {
+		mData = LStringData::create(size + 1);
+		mData->mLength = size;
+		return;
+	}
+	else if (size < this->size()) {
+		mData->mLength = size;
+	}
+	else {
+		LStringData *newData = LStringData::create(size + 1);
+		memcpy(newData->mData, this->mData->mData, this->mData->mLength * sizeof(LChar));
+		this->mData = newData;
+	}
+}
+
 std::u32string LString::toU32String() const {
 	return std::u32string(cbegin(), cend());
 }
@@ -663,6 +698,115 @@ bool LString::ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&
 	return true;
 }
 
+static const int halfShift  = 10; /* used for shifting by 10 bits */
+
+static const char32_t halfBase = 0x0010000UL;
+static const char32_t halfMask = 0x3FFUL;
+
+#define UNI_SUR_HIGH_START  (char32_t)0xD800
+#define UNI_SUR_HIGH_END    (char32_t)0xDBFF
+#define UNI_SUR_LOW_START   (char32_t)0xDC00
+#define UNI_SUR_LOW_END     (char32_t)0xDFFF
+
+#define UNI_REPLACEMENT_CHAR (char32_t)0x0000FFFD
+#define UNI_MAX_BMP (char32_t)0x0000FFFF
+#define UNI_MAX_UTF16 (char32_t)0x0010FFFF
+#define UNI_MAX_UTF32 (char32_t)0x7FFFFFFF
+#define UNI_MAX_LEGAL_UTF32 (char32_t)0x0010FFFF
+
+static const char trailingBytesForUTF8[256] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
+};
+
+static const char32_t offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL,
+			 0x03C82080UL, 0xFA082080UL, 0x82082080UL };
+
+
+static bool isLegalUTF8(const uint8_t *source, int length) {
+	uint8_t a;
+	const uint8_t *srcptr = source+length;
+	switch (length) {
+		default: return false;
+		/* Everything else falls through when "true"... */
+		case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+		case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+		case 2: if ((a = (*--srcptr)) > 0xBF) return false;
+
+		switch (*source) {
+			/* no fall-through in this inner switch */
+			case 0xE0: if (a < 0xA0) return false; break;
+			case 0xED: if (a > 0x9F) return false; break;
+			case 0xF0: if (a < 0x90) return false; break;
+			case 0xF4: if (a > 0x8F) return false; break;
+			default:   if (a < 0x80) return false;
+		}
+
+		case 1: if (*source >= 0x80 && *source < 0xC2) return false;
+	}
+	if (*source > 0xF4) return false;
+	return true;
+}
+
+bool LString::utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd, LChar **targetStart, LChar *targetEnd) {
+	const uint8_t* source = *sourceStart;
+	LChar* target = *targetStart;
+	bool result = true;
+	while (source < sourceEnd) {
+		LChar ch = 0;
+		unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
+		if (source + extraBytesToRead >= sourceEnd) {
+			result = false; break;
+		}
+		/* Do this check whether lenient or strict */
+		if (! isLegalUTF8(source, extraBytesToRead+1)) {
+			result = false;
+			break;
+		}
+		/*
+		 * The cases all fall through. See "Note A" below.
+		 */
+		switch (extraBytesToRead) {
+			case 5: ch += *source++; ch <<= 6;
+			case 4: ch += *source++; ch <<= 6;
+			case 3: ch += *source++; ch <<= 6;
+			case 2: ch += *source++; ch <<= 6;
+			case 1: ch += *source++; ch <<= 6;
+			case 0: ch += *source++;
+		}
+		ch -= offsetsFromUTF8[extraBytesToRead];
+
+		if (target >= targetEnd) {
+			source -= (extraBytesToRead+1); /* Back up the source pointer! */
+			result = false; break;
+		}
+		if (ch <= UNI_MAX_LEGAL_UTF32) {
+			/*
+			 * UTF-16 surrogate values are illegal in UTF-32, and anything
+			 * over Plane 17 (> 0x10FFFF) is illegal.
+			 */
+			if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END) {
+				*target++ = UNI_REPLACEMENT_CHAR;
+			} else {
+				*target++ = ch;
+			}
+		} else { /* i.e., ch > UNI_MAX_LEGAL_UTF32 */
+			result = false;
+			*target++ = UNI_REPLACEMENT_CHAR;
+		}
+
+	}
+	*sourceStart = source;
+	*targetStart = target;
+	return result;
+}
+
 int LString::indexOfIterator(LString::ConstIterator i) const {
 	return i - cbegin();
 }
@@ -676,9 +820,8 @@ LString LString::arg(const LString &v1) {
 	str.reserve(this->length() + v1.length());
 	for (ConstIterator i = cbegin(); i != cend(); i++) {
 		if (*i == U'%') {
-			i++;
-			if (*i == U'1') {
-				i++;
+			if (*(i + 1) == U'1') {
+				i += 2;
 				str += v1;
 				continue;
 			}
@@ -693,12 +836,11 @@ LString LString::arg(const LString &v1, const LString &v2) {
 	str.reserve(this->length() + v1.length() + v2.length());
 	for (ConstIterator i = cbegin(); i != cend(); i++) {
 		if (*i == U'%') {
-			i++;
-			if (*i == U'1') {
+			if (*(i + 1) == U'1') {
 				i++;
 				str += v1;
 				continue;
-			} else if (*i == U'2') {
+			} else if (*(i + 1) == U'2') {
 				i++;
 				str += v2;
 				continue;
@@ -714,16 +856,15 @@ LString LString::arg(const LString &v1, const LString &v2, const LString &v3) {
 	str.reserve(this->length() + v1.length() + v2.length() + v3.length());
 	for (ConstIterator i = cbegin(); i != cend(); i++) {
 		if (*i == U'%') {
-			i++;
-			if (*i == U'1') {
+			if (*(i + 1) == U'1') {
 				i++;
 				str += v1;
 				continue;
-			} else if (*i == U'2') {
+			} else if (*(i + 1) == U'2') {
 				i++;
 				str += v1;
 				continue;
-			} else if (*i == U'3') {
+			} else if (*(i + 1) == U'3') {
 				i++;
 				str += v3;
 				continue;

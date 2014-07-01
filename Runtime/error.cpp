@@ -17,3 +17,8 @@ void info(const LString &string) {
 	std::wcout << string.toWString() << '\n';
 #endif
 }
+
+
+void error(const std::string &txt) {
+	std::cout << txt << '\n';
+}

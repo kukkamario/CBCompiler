@@ -2,5 +2,9 @@
 	{
 		"name" : "Image",
 		"type" : "class.Image*"
+	},
+	{
+		"name" : "File",
+		"type" : "struct.ALLEGRO_FILE*"
 	}
 ]

@@ -51,10 +51,12 @@ class LString {
 		LString(ConstIterator begin, ConstIterator end);
 		LString(const LString &o);
 		LString(CBString cbString);
+
 		~LString();
 
 		static LString fromBuffer(LChar *buffer);
 		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
+		static LString fromUtf8(const std::string &s);
 		static LString number(int i);
 		static LString number(float f);
 
@@ -115,6 +117,7 @@ class LString {
 		size_t size() const { return length(); }
 		size_t capacity() const;
 		void reserve(size_t size);
+		void resize(size_t size);
 
 		std::u32string toU32String() const;
 		std::wstring toWString() const;
@@ -122,6 +125,8 @@ class LString {
 		ALLEGRO_USTR *toAllegroUStr() const;
 
 		static bool ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&fromNext, uint8_t *to, uint8_t *toEnd, uint8_t *&toNext);
+
+		static bool utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd, LChar **targetStart, LChar *targetEnd);
 
 		int indexOfIterator(ConstIterator i) const;
 		bool isValidIterator(ConstIterator i) const;

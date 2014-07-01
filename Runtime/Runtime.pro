@@ -33,7 +33,9 @@ SOURCES += \
     cb_input.cpp \
     cbarray.cpp \
     atomicint.cpp \
-    cb_array.cpp
+    cb_array.cpp \
+    cb_file.cpp \
+    fileinterface.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -50,7 +52,8 @@ HEADERS += \
     image.h \
     inputinterface.h \
     cbarray.h \
-    atomicint.h
+    atomicint.h \
+    fileinterface.h
 
 #win32 {
 #    LLVM_FILES += atomic_operations_mingw.ll

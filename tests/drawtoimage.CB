@@ -8,7 +8,7 @@ moment = 0
 Repeat
     DrawImage themap,Cos(angle) * 100,Sin(angle) * 100
 
-    If Timer()>moment+20 Then
+    If Timer()>moment+200 Then
 
         DrawToImage themap
 
