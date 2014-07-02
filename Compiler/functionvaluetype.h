@@ -4,7 +4,7 @@
 class Function;
 class FunctionValueType : public ValueType {
 	public:
-		FunctionValueType(Runtime *r, ValueType *returnValue, const QList<ValueType*> paramTypes);
+		FunctionValueType(Runtime *r, Function *function);
 		~FunctionValueType() {}
 		QString name() const;
 		virtual bool isNamedValueType() const { return false; }
@@ -21,11 +21,13 @@ class FunctionValueType : public ValueType {
 		
 		virtual bool isCallable() const { return true; }
 		
-		QList<ValueType*> paramTypes() const { return mParamTypes; }
+		const QList<ValueType*> &paramTypes() const { return mParamTypes; }
 		ValueType *returnType() const { return mReturnType; }
+		Function *function() const { return mFunction;  }
 	protected:
 		ValueType *mReturnType;
 		QList<ValueType*> mParamTypes;
+		Function *mFunction;
 };
 
 #endif // FUNCTIONVALUETYPE_H

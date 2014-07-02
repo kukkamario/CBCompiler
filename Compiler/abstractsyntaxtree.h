@@ -145,6 +145,7 @@ class Node {
 			ntArrayInitialization,
 			ntFunctionDefinition,
 			ntTypeDefinition,
+			ntClassDefinition,
 
 			ntProgram,
 
@@ -705,6 +706,27 @@ class TypeDefinition : public BlockNode {
 		QList<Node*> mFields;
 };
 
+
+class ClassDefinition : public BlockNode {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		ClassDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
+		~ClassDefinition() { delete mIdentifier; qDeleteAll(mFields); }
+		static Type staticType() { return ntClassDefinition; }
+		Type type() const { return staticType(); }
+		int childNodeCount() const { return 1 + mFields.size(); }
+		Node *childNode(int n) const { if (n == 0) return mIdentifier; return mFields.at(n - 1); }
+
+		Identifier *identifier() const { return mIdentifier; }
+		void setIdentifier(Identifier *n) { mIdentifier = n; }
+		const QList<Node*> &fields() const { return mFields; }
+		void setFields(const QList<Node*> &fields) { mFields = fields; }
+		void appendField(Node *n) { mFields.append(n); }
+	protected:
+		Identifier *mIdentifier;
+		QList<Node*> mFields;
+};
+
 //Blocks
 //--------------------------------
 class Block : public BlockNode {
@@ -954,23 +976,26 @@ NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(GotoT<Node::ntGosub>)
 class Program : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		Program() : Node() { }
+		Program() : Node(), mMainBlock(0) { }
 		~Program();
 		static Type staticType() { return ntProgram; }
 		Type type() const { return staticType(); }
-		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + 1; }
+		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + mClassDefinitions.size() + 1; }
 		Node *childNode(int n) const;
 
 
 		Block *mainBlock() const { return mMainBlock; }
 		void setMainBlock(Block *n) { mMainBlock = n; }
 		const QList<FunctionDefinition*> &functionDefinitions() const { return mFunctionDefinitions; }
-		void setFunctionDefinitions(const QList<FunctionDefinition*> funcDefs) { mFunctionDefinitions = funcDefs; }
-		const QList<TypeDefinition*> &typeDefitions() const { return mTypeDefinitions; }
-		void setTypeDefinitions(const QList<TypeDefinition*> typeDefs) { mTypeDefinitions = typeDefs; }
+		void setFunctionDefinitions(const QList<FunctionDefinition*> &funcDefs) { mFunctionDefinitions = funcDefs; }
+		const QList<TypeDefinition*> &typeDefinitions() const { return mTypeDefinitions; }
+		void setTypeDefinitions(const QList<TypeDefinition*> &typeDefs) { mTypeDefinitions = typeDefs; }
+		const QList<ClassDefinition*> &classDefinitions() const { return mClassDefinitions; }
+		void setClassDefinitions(const QList<ClassDefinition*> &classDefs) { mClassDefinitions = classDefs; }
 	private:
-		QList<FunctionDefinition*> mFunctionDefinitions;
 		QList<TypeDefinition*> mTypeDefinitions;
+		QList<ClassDefinition*> mClassDefinitions;
+		QList<FunctionDefinition*> mFunctionDefinitions;
 		Block *mMainBlock;
 };
 

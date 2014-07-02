@@ -8,6 +8,7 @@
 #include "arrayvaluetype.h"
 #include "intvaluetype.h"
 #include "labelsymbol.h"
+#include "classvaluetype.h"
 
 #include "runtime.h"
 #include "typepointervaluetype.h"
@@ -35,16 +36,26 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 	mFunctions.clear();
 
 	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
-	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefitions();
+	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
+	const QList<ast::ClassDefinition*> &classDefs = program->classDefinitions();
 
 	mValid = true;
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeDefinition(def->identifier());
 	}
 
+	for (ast::ClassDefinition *def : classDefs) {
+		mValid &= createClassDefinition(def->identifier());
+	}
+
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeFields(def);
 	}
+
+	for (ast::ClassDefinition *def : classDefs) {
+		mValid &= createClassFields(def);
+	}
+
 
 	for (ast::FunctionDefinition *def : funcDefs) {
 		mValid &= createFunctionDefinition(def);
@@ -205,6 +216,18 @@ void SymbolCollector::visit(ast::Expression *c) {
 
 }
 
+bool SymbolCollector::createClassDefinition(ast::Identifier *id) {
+	if (mGlobalScope->contains(id->name())) {
+		symbolAlreadyDefinedError(id->codePoint(), mGlobalScope->find(id->name()));
+		return false;
+	}
+
+	ClassValueType *classValueType = new ClassValueType(id->name(), id->codePoint(), mRuntime);
+
+	mRuntime->valueTypeCollection().addClassValueType(classValueType);
+	return true;
+}
+
 
 
 bool SymbolCollector::createTypeDefinition(ast::Identifier *id) {
@@ -214,7 +237,7 @@ bool SymbolCollector::createTypeDefinition(ast::Identifier *id) {
 	}
 	TypeSymbol *typeSymbol = new TypeSymbol(id->name(), mRuntime, id->codePoint());
 	mGlobalScope->addSymbol(typeSymbol);
-	mRuntime->valueTypeCollection().addValueType(typeSymbol->typePointerValueType());
+	mRuntime->valueTypeCollection().addTypePointerValueType(typeSymbol->typePointerValueType());
 	return true;
 }
 
@@ -237,6 +260,33 @@ bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
 				assert("Invalid ast::TypeDefinition" && 0);
 		}
 	}
+	return true;
+}
+
+bool SymbolCollector::createClassFields(ast::ClassDefinition *def) {
+
+	ValueType *valueType = mRuntime->valueTypeCollection().findNamedType(def->identifier()->name());
+	assert(valueType && valueType->isClass());
+
+	ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
+
+	QList<ClassField> fields;
+	for (ast::Node *node : def->fields()) {
+		switch(node->type()) {
+			case ast::Node::ntVariable: {
+				ast::Variable *varDef = node->cast<ast::Variable>();
+				QString name = varDef->identifier()->name();
+				ValueType *valType = resolveValueType(varDef->valueType());
+				if (!valType) return false;
+				fields.append(ClassField(name, valType, node->codePoint()));
+				break;
+			}
+			default:
+				assert("Invalid ast::TypeDefinition" && 0);
+		}
+	}
+
+	classValueType->setFields(fields);
 	return true;
 }
 

@@ -4,23 +4,24 @@
 #include "function.h"
 #include "builder.h"
 
-FunctionValueType::FunctionValueType(Runtime *r, ValueType *returnValue, const QList<ValueType *> paramTypes) :
+
+FunctionValueType::FunctionValueType(Runtime *r, Function *function) :
 	ValueType(r),
-	mReturnType(returnValue),
-	mParamTypes(paramTypes) {
+	mReturnType(function->returnValue()),
+	mParamTypes(function->paramTypes()),
+	mFunction(function) {
+
 	std::vector<llvm::Type*> params;
-	params.reserve(paramTypes.size());
-	for (ValueType *vt : paramTypes) {
+	params.reserve(mParamTypes.size());
+	for (ValueType *vt : mParamTypes) {
 		params.push_back(vt->llvmType());
 	}
-	if (returnValue == 0) {
+	if (mReturnType == 0) {
 		mType = llvm::FunctionType::get(llvm::Type::getVoidTy(r->module()->getContext()), params, false);
 	} else {
-		mType = llvm::FunctionType::get(returnValue->llvmType(), params, false);
+		mType = llvm::FunctionType::get(mReturnType->llvmType(), params, false);
 	}
-
 }
-
 
 QString FunctionValueType::name() const {
 	if (mReturnType) {

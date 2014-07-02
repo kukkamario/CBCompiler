@@ -72,6 +72,7 @@ const char *Node::typeAsString() const {
 		"ntArrayInitialization",
 		"ntFunctionDefinition",
 		"ntTypeDefinition",
+		"ntClassDefinition",
 
 		"ntProgram",
 
@@ -130,6 +131,7 @@ template<>
 NODE_ACCEPT_VISITOR_DEF(Global)
 NODE_ACCEPT_VISITOR_DEF(Redim)
 NODE_ACCEPT_VISITOR_DEF(TypeDefinition)
+NODE_ACCEPT_VISITOR_DEF(ClassDefinition)
 NODE_ACCEPT_VISITOR_DEF(Block)
 NODE_ACCEPT_VISITOR_DEF(IfStatement)
 template<>
@@ -340,13 +342,18 @@ Node *SelectStatement::childNode(int n) const {
 Program::~Program() {
 	qDeleteAll(mFunctionDefinitions);
 	qDeleteAll(mTypeDefinitions);
+	qDeleteAll(mClassDefinitions);
+	delete mMainBlock;
 }
 
 Node *Program::childNode(int n) const {
 	assert("Invalid child node id" && (n >= 0 && n < childNodeCount()));
 	if (n < mTypeDefinitions.size()) return mTypeDefinitions.at(n);
 	n -= mTypeDefinitions.size();
+	if (n < mClassDefinitions.size()) return mClassDefinitions.at(n);
+	n -= mClassDefinitions.size();
 	if (n < mFunctionDefinitions.size()) return mFunctionDefinitions.at(n);
+
 	return mMainBlock;
 }
 

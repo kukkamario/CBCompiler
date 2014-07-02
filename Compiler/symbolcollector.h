@@ -38,8 +38,10 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 
 		void visit(ast::Expression *c);
 
+		bool createClassDefinition(ast::Identifier *id);
 		bool createTypeDefinition(ast::Identifier *id);
 		bool createTypeFields(ast::TypeDefinition *def);
+		bool createClassFields(ast::ClassDefinition *def);
 		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);
 
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);

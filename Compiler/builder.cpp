@@ -13,6 +13,7 @@
 #include "functionvaluetype.h"
 #include "genericarrayvaluetype.h"
 #include "arrayvaluetype.h"
+#include "classvaluetype.h"
 #include <QDebug>
 
 Builder::Builder(llvm::LLVMContext &context) :
@@ -588,6 +589,12 @@ Value Builder::beforeTypeMember(const Value &ptr) {
 Value Builder::typePointerNotNull(const Value &ptr) {
 	assert(ptr.valueType()->isTypePointer());
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(ptr)), false);
+}
+
+Value Builder::newClassMember(ClassValueType *classValueType) {
+	int size = mRuntime->dataLayout().getTypeAllocSize(classValueType->structType());
+	llvm::Value *data = allocate(mIRBuilder.getInt32(size));
+	return Value(classValueType, bitcast(classValueType->llvmType(), data));
 }
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {

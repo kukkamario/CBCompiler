@@ -18,6 +18,8 @@
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
 #include "cbfunction.h"
+#include "classvaluetype.h"
+
 #define CHECK_UNREACHABLE(codePoint) if (checkUnreachable(codePoint)) return;
 
 struct CodeGeneratorError {
@@ -545,8 +547,8 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 				}
 
 				if (!valueType->hasMember(memberName)) {
-					emit error(ErrorCodes::ecCantFindTypeField, tr("Can't find type field \"%1\"").arg(memberName), memberId->codePoint());
-					throw CodeGeneratorError(ErrorCodes::ecCantFindTypeField);
+					emit error(ErrorCodes::ecCantFindField, tr("Can't find field \"%1\"").arg(memberName), memberId->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecCantFindField);
 				}
 
 				op1 = valueType->member(mBuilder, op1, memberName);
@@ -739,8 +741,12 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
 		}
 		FunctionValueType *functionValueType = static_cast<FunctionValueType*>(valueType);
-		llvm::Value *llvmFunction = functionValue.value();
-		return mBuilder->call(functionValueType, llvmFunction, paramValues);
+
+		QList<Function*> funcs;
+		funcs.append(functionValueType->function());
+		Function *func = findBestOverload(funcs, paramValues, n->isCommand(), n->codePoint());
+
+		return mBuilder->call(func, paramValues);
 	}
 }
 
@@ -753,8 +759,13 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 	const Value &param = paramValues.first();
 	switch (n->keyword()) {
 		case ast::KeywordFunctionCall::New: {
+			if (param.isValueType() && param.valueType()->isClass()) {
+				ClassValueType *classValueType = static_cast<ClassValueType*>(param.valueType());
+				return mBuilder->newClassMember(classValueType);
+			}
+
 			if (!param.isValueType() || !param.valueType()->isTypePointer()) {
-				emit error(ErrorCodes::ecNotTypeName, tr("\"New\" is expecting a type as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
+				emit error(ErrorCodes::ecNotTypeName, tr("\"New\" is expecting a type or a class as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecNotTypeName);
 			}
 			TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(param.valueType());
@@ -1038,6 +1049,7 @@ bool FunctionCodeGenerator::checkUnreachable(CodePoint cp) {
 
 void FunctionCodeGenerator::generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters) {
 	QList<CBFunction::Parameter>::ConstIterator pi = parameters.begin();
+	mFunction->dump();
 	for (llvm::Function::arg_iterator i = mFunction->arg_begin(); i != mFunction->arg_end(); ++i) {
 		mBuilder->store(pi->mVariableSymbol, i);
 		pi++;

@@ -9,6 +9,7 @@
 #include "stringvaluetype.h"
 #include "typepointervaluetype.h"
 #include "genericarrayvaluetype.h"
+#include "classvaluetype.h"
 #include "runtime.h"
 
 ValueTypeCollection::ValueTypeCollection(Runtime *r) :
@@ -22,6 +23,16 @@ void ValueTypeCollection::addValueType(ValueType *valType) {
 	mLLVMTypeMapping[valType->llvmType()] = valType;
 	if (valType->isNamedValueType())
 		mNamedType[valType->name().toLower()] = valType;
+}
+
+void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePointer) {
+	mTypes.append(typePointer);
+	addValueType(typePointer);
+}
+
+void ValueTypeCollection::addClassValueType(ClassValueType *classValueType) {
+	mClasses.append(classValueType);
+	addValueType(classValueType);
 }
 
 ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {

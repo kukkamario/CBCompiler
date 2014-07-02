@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <QtGlobal>
 #include <QFile>
 #include <QDebug>
 #include <llvm/Config/llvm-config.h>
@@ -159,6 +160,7 @@ int main(int argc, char *argv[]) {
 	for (llvm::Module::FunctionListType::iterator i = module->getFunctionList().begin(); i != module->getFunctionList().end(); i++) {
 		QByteArray n = QByteArray(i->getName().data());
 		mangledNames.append(n);
+		//cout << n.data() << '\n';
 	}
 
 	QProcess process;
@@ -168,33 +170,53 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	cout << "c++filt started" << endl;
-	for (QByteArray s : mangledNames) {
-		if (s.startsWith('_')) {
-			process.write('_' + s + '\n');
+	int counter = 0;
+	QList<QByteArray> demangledNames;
+	for (QList<QByteArray>::ConstIterator i = mangledNames.begin(); i != mangledNames.end(); i++) {
+#ifdef Q_OS_WIN32
+		if (i->startsWith('_')) {
+			process.write('_' + *i + '\n');
 		}
 		else {
-			process.write(s + '\n');
+			process.write(*i + '\n');
 		}
+#else
+		process.write(*i + '\n');
+#endif
+		if (counter == 100) {
+			cout << "Waiting for writing" << endl;
+			process.waitForBytesWritten();
+			cout << "Waiting for reading" << endl;
+			process.waitForReadyRead();
+			QByteArray s = process.readAll();
+			demangledNames.append(s.split('\n'));
+			counter = 0;
+		}
+		counter++;
 	}
 	cout << "Waiting for writing" << endl;
 	process.waitForBytesWritten();
 	process.closeWriteChannel();
-	cout << "Waiting for reading" << endl;
-	process.waitForReadyRead();
+	if (counter > 0) {
+		cout << "Waiting for reading" << endl;
+		process.waitForReadyRead();
+	}
 	process.waitForFinished();
 	QByteArray s = process.readAll();
+	demangledNames.append(s.split('\n'));
 	QFile file(output);
 	if (!file.open(QFile::WriteOnly)) {
 		cerr << "Can't open output file " << qPrintable(output) << endl;
 		return -1;
 	}
 
-	QList<QByteArray> demangledNames = s.split('\n');
-	qDebug() << "Demangled items: "  << demangledNames.size();
+
+	cout << "Demangled items: "  << demangledNames.size();
 	int index = -1;
 	for (QByteArray name : demangledNames) {
+		if (name.isEmpty()) continue;
 		index++;
-		qDebug() << name;
+		//cout <<  name.data();
 		if (!onlyStartingWith.isEmpty()) {
 			if (!name.startsWith(onlyStartingWith)) {
 				continue;

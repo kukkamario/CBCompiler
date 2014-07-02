@@ -21,6 +21,7 @@
 #include "variablesymbol.h"
 #include "valuetypesymbol.h"
 #include "customvaluetype.h"
+#include "classvaluetype.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 
@@ -52,7 +53,6 @@ bool CodeGenerator::initialize(const Settings &settings) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), CodePoint());
 		return false;
 	}
-	addValueTypesToGlobalScope();
 
 	createBuilder();
 	return addRuntimeFunctions();
@@ -65,8 +65,11 @@ bool CodeGenerator::generate(ast::Program *program) {
 		qDebug() << "Failed";
 		return false;
 	}
+
+	addValueTypesToGlobalScope();
+
 	qDebug() << "Generating types...";
-	if (!generateTypes(program)) {
+	if (!generateTypesAndClasses(program)) {
 		qDebug() << "Failed";
 		return false;
 	}
@@ -250,7 +253,8 @@ void CodeGenerator::createBuilder() {
 void CodeGenerator::addValueTypesToGlobalScope() {
 	QList<ValueType*> valueTypes = mRuntime.valueTypeCollection().namedTypes();
 	for (ValueType* valueType : valueTypes) {
-		mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valueType));
+		if (!valueType->isTypePointer())
+			mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valueType));
 	}
 }
 
@@ -269,9 +273,8 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 }
 
-bool CodeGenerator::generateTypes(ast::Program *program) {
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
-		ast::TypeDefinition *def = *i;
+bool CodeGenerator::generateTypesAndClasses(ast::Program *program) {
+	for (ast::TypeDefinition* def : program->typeDefinitions()) {
 		Symbol *sym = mGlobalScope.find(def->identifier()->name());
 		assert(sym && sym->type() == Symbol::stType);
 		TypeSymbol *type = static_cast<TypeSymbol*>(sym);
@@ -279,12 +282,36 @@ bool CodeGenerator::generateTypes(ast::Program *program) {
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
 	}
+	for (ast::ClassDefinition* def : program->classDefinitions()) {
+		Symbol *sym = mGlobalScope.find(def->identifier()->name());
+		assert(sym && sym->type() == Symbol::stValueType);
+		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
+		ValueType *valueType = type->valueType();
+		assert(valueType->isClass());
+		ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
 
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefitions().begin(); i != program->typeDefitions().end(); i++) {
+		//Create an opaque member type so class pointers can be used in fields.
+		classValueType->createOpaqueType(mBuilder);
+	}
+
+
+	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefinitions().begin(); i != program->typeDefinitions().end(); i++) {
 		ast::TypeDefinition *def = *i;
 		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->identifier()->name()));
 		type->createTypePointerValueType(mBuilder);
 	}
+
+	for (ast::ClassDefinition* def : program->classDefinitions()) {
+		Symbol *sym = mGlobalScope.find(def->identifier()->name());
+		assert(sym && sym->type() == Symbol::stValueType);
+		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
+		ValueType *valueType = type->valueType();
+		assert(valueType->isClass());
+		ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
+
+		classValueType->generateLLVMType();
+	}
+
 	return true;
 }
 

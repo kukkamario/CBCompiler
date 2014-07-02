@@ -34,7 +34,7 @@ class CodeGenerator : public QObject{
 
 		void addPredefinedConstantSymbols();
 
-		bool generateTypes(ast::Program *program);
+		bool generateTypesAndClasses(ast::Program *program);
 
 
 		Settings mSettings;

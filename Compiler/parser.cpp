@@ -129,6 +129,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 
 	QList<ast::TypeDefinition*> typeDefs;
 	QList<ast::FunctionDefinition*> funcDefs;
+	QList<ast::ClassDefinition*> classDefs;
 	ast::Block *block = new ast::Block(tokens.first().codePoint(), tokens.last().codePoint());
 	TokIterator i = tokens.begin();
 	while (i->type() != Token::EndOfTokens) {
@@ -140,6 +141,15 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 		if (mStatus == Error) return 0;
 		if (type) {
 			typeDefs.append(type);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+			continue;
+		}
+
+		ast::ClassDefinition *classDef = tryClassDefinition(i);
+		if (mStatus == Error) return 0;
+		if (classDef) {
+			classDefs.append(classDef);
 			expectEndOfStatement(i);
 			if (mStatus == Error) return 0;
 			continue;
@@ -176,6 +186,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 	ast::Program *program = new ast::Program;
 	program->setFunctionDefinitions(funcDefs);
 	program->setTypeDefinitions(typeDefs);
+	program->setClassDefinitions(classDefs);
 	program->setMainBlock(block);
 
 	return program;
@@ -311,6 +322,45 @@ ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
 
 
 		ast::TypeDefinition *ret = new ast::TypeDefinition(startCp, i->codePoint());
+		ret->setFields(fields);
+		ret->setIdentifier(id);
+		i++;
+		return ret;
+	}
+	return 0;
+}
+
+
+ast::ClassDefinition *Parser::tryClassDefinition(Parser::TokIterator &i) {
+	if (i->type() == Token::kClass) {
+		CodePoint startCp = i->codePoint();
+		i++;
+		ast::Identifier *id = expectIdentifier(i);
+		if (mStatus == Error) return 0;
+		expectEndOfStatement(i);
+		if (mStatus == Error) return 0;
+
+		QList<ast::Node *> fields;
+		while (i->isEndOfStatement()) i++;
+		while (i->type() == Token::kField) {
+			CodePoint fCp = i->codePoint();
+			i++;
+			ast::Node *field = expectVariable(i); // FIXME? expectDefinitionOfVariableOrArray(i);
+			if (mStatus == Error) return 0;
+			fields.append(field);
+			expectEndOfStatement(i);
+			if (mStatus == Error) return 0;
+
+			while (i->isEndOfStatement()) i++;
+		}
+		if (i->type() != Token::kEndClass) {
+			emit error(ErrorCodes::ecExpectingEndType, tr("Expecting \"EndClass\", got \"%1\"").arg(i->toString()), i->codePoint());
+			mStatus = Error;
+			return 0;
+		}
+
+
+		ast::ClassDefinition *ret = new ast::ClassDefinition(startCp, i->codePoint());
 		ret->setFields(fields);
 		ret->setIdentifier(id);
 		i++;

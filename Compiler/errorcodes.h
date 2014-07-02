@@ -76,7 +76,7 @@ enum ErrorCode {
 	ecSymbolAlreadyDefinedInRuntime,
 	ecSymbolAlreadyDefined,
 	ecCantFindType,
-	ecCantFindTypeField,
+	ecCantFindField,
 	ecForEachInvalidContainer,
 	ecForcingType,
 	ecNotArray,

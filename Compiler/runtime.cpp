@@ -13,6 +13,7 @@
 #include "settings.h"
 #include "customdatatypedefinitions.h"
 #include "customvaluetype.h"
+#include "genericclassvaluetype.h"
 #include <QStringList>
 #include <QTextStream>
 #include <time.h>
@@ -105,6 +106,12 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 		return false;
 	}
 
+	mGenericClassLLVMType = mModule->getTypeByName("struct.CB_GenericClass");
+	if (!mGenericClassLLVMType) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericClass\" in runtime library bitcode"), CodePoint());
+		return false;
+	}
+
 	mStringValueType->setStringType(str->getPointerTo());
 	mValueTypeCollection.addValueType(mStringValueType);
 
@@ -128,6 +135,9 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 
 	mGenericArrayValueType = new GenericArrayValueType(mGenericArrayLLVMType->getPointerTo(), this);
 	mValueTypeCollection.addValueType(mGenericArrayValueType);
+
+	mGenericClassValueType = new GenericClassValueType(mGenericClassLLVMType->getPointerTo(), this);
+	mValueTypeCollection.addValueType(mGenericClassValueType);
 	return true;
 }
 

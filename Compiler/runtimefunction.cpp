@@ -44,7 +44,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		}
 	}
 	mRequiredParams = mParamTypes.size();
-	mFunctionValueType = new FunctionValueType(mRuntime, mReturnValue, mParamTypes);
+	mFunctionValueType = new FunctionValueType(mRuntime, this);
 	return true;
 }
 
