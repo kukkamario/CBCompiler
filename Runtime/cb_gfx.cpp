@@ -110,7 +110,7 @@ void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char 
 }
 
 void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-	al_put_pixel(x, y, al_map_rgb(r, g, b));
+	al_put_pixel(x, y, al_map_rgba(r, g, b, a));
 }
 
 void CBF_putpixel(int x, int y, unsigned int pixel) {
