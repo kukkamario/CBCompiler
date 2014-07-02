@@ -480,7 +480,12 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 	}
 	else {
 		if (n->value()) {
-			mBuilder->returnValue(mReturnType, generate(n->value()));
+			Value v = generate(n->value());
+			if (v.isReference()) {
+				v = mBuilder->load(v);
+			}
+			generateDestructors();
+			mBuilder->returnValue(mReturnType, v);
 		}
 		else {
 			mBuilder->returnValue(mReturnType, mBuilder->defaultValue(mReturnType));

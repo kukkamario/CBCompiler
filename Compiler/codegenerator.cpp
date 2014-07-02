@@ -66,8 +66,6 @@ bool CodeGenerator::generate(ast::Program *program) {
 		return false;
 	}
 
-	addValueTypesToGlobalScope();
-
 	qDebug() << "Generating types...";
 	if (!generateTypesAndStructes(program)) {
 		qDebug() << "Failed";
@@ -250,13 +248,6 @@ void CodeGenerator::createBuilder() {
 	mBuilder->setStringPool(&mStringPool);
 }
 
-void CodeGenerator::addValueTypesToGlobalScope() {
-	QList<ValueType*> valueTypes = mRuntime.valueTypeCollection().namedTypes();
-	for (ValueType* valueType : valueTypes) {
-		if (!valueType->isTypePointer())
-			mGlobalScope.addSymbol(new DefaultValueTypeSymbol(valueType));
-	}
-}
 
 void CodeGenerator::addPredefinedConstantSymbols() {
 	ConstantSymbol *sym = new ConstantSymbol("pi", mRuntime.floatValueType(), ConstantValue(M_PI), CodePoint());

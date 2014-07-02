@@ -30,7 +30,6 @@ class CodeGenerator : public QObject{
 		void generateStringLiterals();
 		void generateTypeInitializers();
 		void createBuilder();
-		void addValueTypesToGlobalScope();
 
 		void addPredefinedConstantSymbols();
 
