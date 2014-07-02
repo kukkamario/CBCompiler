@@ -46,6 +46,7 @@ Value TypePointerValueType::member(Builder *builder, const Value &a, const QStri
 }
 
 ValueType *TypePointerValueType::memberType(const QString &memberName) const {
+	if (!mTypeSymbol->hasField(memberName)) return 0;
 	const TypeField &field = mTypeSymbol->field(memberName);
 	return field.valueType();
 }

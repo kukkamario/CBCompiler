@@ -50,6 +50,11 @@ Value ArrayValueType::generateOperation(Builder *builder, int opType, const Valu
 	return Value();
 }
 
+void ArrayValueType::generateDestructor(Builder *builder, const Value &value) {
+	if (value.isReference() || value.isConstant()) return;
+	destructArray(builder, value.value());
+}
+
 void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value *array) {
 	builder->irBuilder().CreateCall2(
 				mRuntime->genericArrayValueType()->assignmentFunction(),

@@ -120,6 +120,7 @@ enum ErrorCode {
 	ecNotTypeName,
 	ecReferenceRequired,
 	ecNotContainer,
+	ecEmptySelect,
 
 	ecCantWriteBitcodeFile,
 	ecOptimizingFailed,

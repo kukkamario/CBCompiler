@@ -445,16 +445,7 @@ void Builder::destruct(VariableSymbol *var) {
 
 void Builder::destruct(const Value &a) {
 	if (!a.isValid()) return;
-	if (a.isReference()) return;
-	if (a.isConstant()) return;
-	assert(a.value());
-	if (a.valueType()->basicType() == ValueType::String) {
-		mRuntime->stringValueType()->destructString(&mIRBuilder, a.value());
-	}
-	else if (a.valueType()->isArray()){
-		ArrayValueType *arrValueType = static_cast<ArrayValueType*>(a.valueType());
-		arrValueType->destructArray(this, llvmValue(a));
-	}
+	a.valueType()->generateDestructor(this, a);
 }
 
 Value Builder::nullTypePointer() {
@@ -594,6 +585,7 @@ Value Builder::typePointerNotNull(const Value &ptr) {
 Value Builder::newClassMember(ClassValueType *classValueType) {
 	int size = mRuntime->dataLayout().getTypeAllocSize(classValueType->structType());
 	llvm::Value *data = allocate(mIRBuilder.getInt32(size));
+	memSet(data, mIRBuilder.getInt32(size), mIRBuilder.getInt8(0));
 	return Value(classValueType, bitcast(classValueType->llvmType(), data));
 }
 

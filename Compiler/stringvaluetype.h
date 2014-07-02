@@ -33,7 +33,7 @@ class StringValueType : public ValueType {
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
-
+		void generateDestructor(Builder *builder, const Value &value);
 		bool isValid() const;
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */

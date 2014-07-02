@@ -31,6 +31,10 @@ Value ValueType::generateOperation(Builder *, int , const Value &, OperationFlag
 	return Value();
 }
 
+void ValueType::generateDestructor(Builder *, const Value &) {
+
+}
+
 llvm::LLVMContext &ValueType::context() {
 	assert(mType);
 	return mType->getContext();

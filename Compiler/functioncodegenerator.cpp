@@ -378,12 +378,99 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 
 void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 	CHECK_UNREACHABLE(n->codePoint());
-	assert("UNIMPLEMENTED FUNCTION" && 0);
-}
 
-void FunctionCodeGenerator::visit(ast::SelectCase *n) {
-	CHECK_UNREACHABLE(n->codePoint());
-	assert("UNIMPLEMENTED FUNCTION" && 0);
+	Value value = generate(n->variable());
+	if (n->cases().size() == 0) {
+		if (n->defaultCase()) {
+			n->defaultCase()->accept(this);
+			return;
+		}
+		else {
+			emit error(ErrorCodes::ecEmptySelect, tr("Empty select statement"), n->codePoint());
+			return;
+		}
+	}
+
+
+	value.toLLVMValue(mBuilder);
+	llvm::BasicBlock *beginBlock = mBuilder->currentBasicBlock();
+	llvm::BasicBlock *endBlock = createBasicBlock("selectEndBB");
+
+	bool switchPossible = value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType();
+	QList<QPair<Value, llvm::BasicBlock*> > values;
+	for (ast::SelectCase *c : n->cases()) {
+		Value value = generate(c->value());
+		switchPossible &= value.isConstant() && (value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType());
+		llvm::BasicBlock *basicBlock = createBasicBlock("caseBB");
+		mBuilder->setInsertPoint(basicBlock);
+		c->block()->accept(this);
+		if (!mUnreachableBasicBlock) {
+			mBuilder->branch(endBlock);
+		}
+		mUnreachableBasicBlock = false;
+		values.append(QPair<Value, llvm::BasicBlock*>(value, basicBlock));
+	}
+	llvm::BasicBlock *defaultBlock = endBlock;
+	if (n->defaultCase()) {
+		defaultBlock = createBasicBlock("defaultBB");
+		mBuilder->setInsertPoint(defaultBlock);
+		n->defaultCase()->accept(this);
+		if (!mUnreachableBasicBlock) {
+			mBuilder->branch(endBlock);
+		}
+		mUnreachableBasicBlock = false;
+	}
+
+	mBuilder->setInsertPoint(beginBlock);
+	if (switchPossible) {
+		llvm::SwitchInst *switchInst = mBuilder->irBuilder().CreateSwitch(
+					mBuilder->llvmValue(mBuilder->toInt(value)),
+					defaultBlock,
+					values.size());
+		for (const QPair<Value, llvm::BasicBlock*> &pairs : values) {
+			llvm::ConstantInt *caseVal = llvm::cast<llvm::ConstantInt>(mBuilder->llvmValue(mBuilder->toInt(pairs.first)));
+			switchInst->addCase(caseVal, pairs.second);
+		}
+	}
+	else {
+		ValueType *valueType = value.valueType();
+		int index = 0;
+		Value caseTrue;
+		llvm::BasicBlock *trueBlock = 0;
+		for (QList<QPair<Value, llvm::BasicBlock*> >::ConstIterator i = values.begin(); i != values.end(); i++) {
+			if (trueBlock) {
+				llvm::BasicBlock *caseCondBB = createBasicBlock("caseCondBB");
+				mBuilder->branch(caseTrue, trueBlock, caseCondBB);
+				mBuilder->setInsertPoint(caseCondBB);
+			}
+			OperationFlags opFlags;
+			ast::ExpressionNode::Op op = ast::ExpressionNode::opEqual;
+			caseTrue = valueType->generateOperation(mBuilder, op, value, i->first, opFlags);
+			mBuilder->destruct(i->first);
+			if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
+				emit warning(WarningCodes::wcMayLosePrecision, tr("Operation \"%1\" may lose precision with operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), i->first.valueType()->name()), n->cases().value(index)->codePoint());
+			}
+			if (opFlags.testFlag(OperationFlag::IntegerDividedByZero)) {
+				emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by Zero"), n->cases().value(index)->codePoint());
+				return;
+			}
+			if (opFlags.testFlag(OperationFlag::CastFromString)) {
+				emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), n->cases().value(index)->codePoint());
+			}
+
+			if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
+				emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), i->first.valueType()->name()), n->cases().value(index)->codePoint());
+				return;
+			}
+			trueBlock = i->second;
+
+
+			index++;
+		}
+		mBuilder->branch(caseTrue, trueBlock, endBlock);
+	}
+	mBuilder->setInsertPoint(endBlock);
+	mBuilder->destruct(value);
 }
 
 void FunctionCodeGenerator::visit(ast::Return *n) {
@@ -1049,7 +1136,6 @@ bool FunctionCodeGenerator::checkUnreachable(CodePoint cp) {
 
 void FunctionCodeGenerator::generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters) {
 	QList<CBFunction::Parameter>::ConstIterator pi = parameters.begin();
-	mFunction->dump();
 	for (llvm::Function::arg_iterator i = mFunction->arg_begin(); i != mFunction->arg_end(); ++i) {
 		mBuilder->store(pi->mVariableSymbol, i);
 		pi++;

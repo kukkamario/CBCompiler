@@ -34,7 +34,6 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		void visit(ast::ForToStatement *n);
 		void visit(ast::ForEachStatement *n);
 		void visit(ast::SelectStatement *n);
-		void visit(ast::SelectCase *n);
 		void visit(ast::Return *n);
 		void visit(ast::Goto *n);
 		void visit(ast::Gosub *n);

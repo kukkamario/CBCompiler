@@ -225,6 +225,11 @@ Value StringValueType::generateOperation(Builder *builder, int opType, const Val
 	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
 }
 
+void StringValueType::generateDestructor(Builder *builder, const Value &value) {
+	if (value.isConstant() || value.isReference()) return;
+	destructString(&builder->irBuilder(), value.value());
+}
+
 
 bool StringValueType::isValid() const {
 	return mAdditionFunction && mAssignmentFunction && mType && mIntToStringFunction && mFloatToStringFunction && mStringToFloatFunction && mStringToIntFunction;
