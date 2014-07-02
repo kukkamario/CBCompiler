@@ -213,7 +213,7 @@ llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::V
 	return builder->CreateCall2(mEqualityFunction, a, b);
 }
 
-void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) {
+void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) const {
 	builder->CreateCall(mRefFunction, a);
 }
 
@@ -228,6 +228,13 @@ Value StringValueType::generateOperation(Builder *builder, int opType, const Val
 void StringValueType::generateDestructor(Builder *builder, const Value &value) {
 	if (value.isConstant() || value.isReference()) return;
 	destructString(&builder->irBuilder(), value.value());
+}
+
+Value StringValueType::generateLoad(Builder *builder, const Value &var) const {
+	assert(var.isReference());
+	llvm::Value *v = builder->irBuilder().CreateLoad(var.value());
+	refString(&builder->irBuilder(), v);
+	return Value(var.valueType(), v, false);
 }
 
 

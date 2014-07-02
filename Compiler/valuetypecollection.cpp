@@ -30,9 +30,9 @@ void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePoin
 	addValueType(typePointer);
 }
 
-void ValueTypeCollection::addStructValueType(StructValueType *classValueType) {
-	mStructes.append(classValueType);
-	addValueType(classValueType);
+void ValueTypeCollection::addStructValueType(StructValueType *structValueType) {
+	mStructes.append(structValueType);
+	addValueType(structValueType);
 }
 
 ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {

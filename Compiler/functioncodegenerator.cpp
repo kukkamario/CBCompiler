@@ -846,11 +846,6 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 	const Value &param = paramValues.first();
 	switch (n->keyword()) {
 		case ast::KeywordFunctionCall::New: {
-			if (param.isValueType() && param.valueType()->isStruct()) {
-				StructValueType *classValueType = static_cast<StructValueType*>(param.valueType());
-				return mBuilder->newStructMember(classValueType);
-			}
-
 			if (!param.isValueType() || !param.valueType()->isTypePointer()) {
 				emit error(ErrorCodes::ecNotTypeName, tr("\"New\" is expecting a type or a class as a parameter. Invalid parameter type \"%1\"").arg(param.valueType()->name()), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecNotTypeName);

@@ -29,11 +29,12 @@ class StringValueType : public ValueType {
 		llvm::Value *floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f);
 		llvm::Value *stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2);
 		llvm::Value *stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b);
-		void refString(llvm::IRBuilder<> *builder, llvm::Value *a);
+		void refString(llvm::IRBuilder<> *builder, llvm::Value *a) const;
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
 		void generateDestructor(Builder *builder, const Value &value);
+		Value generateLoad(Builder *builder, const Value &var) const;
 		bool isValid() const;
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */

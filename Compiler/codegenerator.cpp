@@ -288,10 +288,10 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
 		ValueType *valueType = type->valueType();
 		assert(valueType->isStruct());
-		StructValueType *classValueType = static_cast<StructValueType*>(valueType);
+		StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
 		//Create an opaque member type so class pointers can be used in fields.
-		classValueType->createOpaqueType(mBuilder);
+		structValueType->createOpaqueType(mBuilder);
 	}
 
 
@@ -307,9 +307,9 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
 		ValueType *valueType = type->valueType();
 		assert(valueType->isStruct());
-		StructValueType *classValueType = static_cast<StructValueType*>(valueType);
+		StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
-		classValueType->generateLLVMType();
+		structValueType->generateLLVMType();
 	}
 
 	return true;

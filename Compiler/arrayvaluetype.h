@@ -24,11 +24,12 @@ class ArrayValueType : public ValueType {
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		void generateDestructor(Builder *builder, const Value &value);
+		Value generateLoad(Builder *builder, const Value &var) const;
 
 		void assignArray(Builder *builder, llvm::Value *var, llvm::Value *array);
 		Value constructArray(Builder *builder, const QList<Value> &dims);
 		Value arraySubscript(Builder *builder, const Value &array, const QList<Value> &dims);
-		void refArray(Builder *builder, llvm::Value *array);
+		void refArray(Builder *builder, llvm::Value *array) const;
 		void destructArray(Builder *builder, llvm::Value *array);
 
 		int dimensions() const { return mDimensions; }

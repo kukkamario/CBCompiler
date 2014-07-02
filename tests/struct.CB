@@ -1,38 +1,21 @@
-Struct TestClass
+Struct TestStruct
 	Field x
 	Field y
 	Field z#
 	Field name$
-	Field hasFriend
-	Field friend As TestClass
 EndStruct
 
 
-a As TestClass = New(TestClass)
+Dim a As TestStruct
 a.x = 2
 a.y = 23
 a.z = 23.5
-a.hasFriend = False
-a.name = "Pertti"
 
-b As TestClass = New(TestClass)
-b.x = 23
-b.y = 2
-b.z = 3.4
-b.hasFriend = True
-b.name = "Teppo"
+printTestStruct(a)
 
-printTestClass(a)
-
-Delete a
-Delete b
-Function printTestClass(a As TestClass) As Integer
-	Print "TestClass: Name: " + a.name
+Function printTestStruct(a As TestStruct) As Integer
+	Print "TestStruct: Name: " + a.name
 	Print "x: " + a.x
 	Print "y: " + a.y
 	Print "z: " + a.z
-	If a.hasFriend Then
-		Print "Friend: "
-		printTestClass(a.friend)
-	EndIf
 EndFunction

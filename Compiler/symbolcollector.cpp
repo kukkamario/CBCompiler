@@ -222,9 +222,9 @@ bool SymbolCollector::createStructDefinition(ast::Identifier *id) {
 		return false;
 	}
 
-	StructValueType *classValueType = new StructValueType(id->name(), id->codePoint(), mRuntime);
+	StructValueType *structValueType = new StructValueType(id->name(), id->codePoint(), mRuntime);
 
-	mRuntime->valueTypeCollection().addStructValueType(classValueType);
+	mRuntime->valueTypeCollection().addStructValueType(structValueType);
 	return true;
 }
 
@@ -268,7 +268,7 @@ bool SymbolCollector::createStructFields(ast::StructDefinition *def) {
 	ValueType *valueType = mRuntime->valueTypeCollection().findNamedType(def->identifier()->name());
 	assert(valueType && valueType->isStruct());
 
-	StructValueType *classValueType = static_cast<StructValueType*>(valueType);
+	StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
 	QList<StructField> fields;
 	for (ast::Node *node : def->fields()) {
@@ -286,7 +286,11 @@ bool SymbolCollector::createStructFields(ast::StructDefinition *def) {
 		}
 	}
 
-	classValueType->setFields(fields);
+	structValueType->setFields(fields);
+	if (structValueType->containsItself()) {
+		emit error(ErrorCodes::ecStructContainsItself, tr("Struct \"%1\" contains itself which isn't allowed (infinite recursion)").arg(def->identifier()->name()), def->codePoint());
+		return false;
+	}
 	return true;
 }
 

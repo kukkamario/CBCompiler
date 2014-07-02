@@ -64,9 +64,6 @@ void Value::toLLVMValue(Builder *builder) {
 		mConstant = ConstantValue();
 		mType = tNormalValue;
 	}
-	if (isReference()) {
-		*this = builder->load(*this);
-	}
 }
 
 void Value::dump() const {

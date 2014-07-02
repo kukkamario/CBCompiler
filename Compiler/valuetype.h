@@ -70,6 +70,7 @@ class ValueType {
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
 		virtual void generateDestructor(Builder *builder, const Value &value);
+		virtual Value generateLoad(Builder *builder, const Value &var) const;
 
 		virtual Value member(Builder *, const Value &, const QString &) const { return Value(); }
 		virtual ValueType *memberType(const QString &) const { return 0; }

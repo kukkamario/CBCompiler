@@ -220,7 +220,7 @@ llvm::Value *Builder::llvmValue(const Value &v) {
 
 	assert(v.value());
 	if (v.isReference()) {
-		return load(v).value();
+		return mIRBuilder.CreateLoad(v.value(), false);
 	}
 	return v.value();
 }
@@ -403,25 +403,13 @@ void Builder::store(const Value &ref, const QList<Value> &dims, const Value &val
 
 
 Value Builder::load(const VariableSymbol *var) {
-	llvm::Value *val = mIRBuilder.CreateLoad(var->alloca_(), false);
-	if (var->valueType()->basicType() == ValueType::String) {
-		mRuntime->stringValueType()->refString(&mIRBuilder, val);
-	} else if (var->valueType()->isArray()) {
-		static_cast<ArrayValueType*>(var->valueType())->refArray(this, val);
-	}
-	return Value(var->valueType(), val, false);
+	Value ref(var->valueType(), var->alloca_(), true);
+	return var->valueType()->generateLoad(this, ref);
 }
 
 Value Builder::load(const Value &var) {
 	assert(var.isReference());
-	llvm::Value *v = mIRBuilder.CreateLoad(var.value());
-	if (var.valueType()->basicType() == ValueType::String) {
-		mRuntime->stringValueType()->refString(&mIRBuilder, v);
-	}
-	else if (var.valueType()->isArray()){
-		static_cast<ArrayValueType*>(var.valueType())->refArray(this, v);
-	}
-	return Value(var.valueType(), v, false);
+	return var.valueType()->generateLoad(this, var);
 }
 
 /*Value Builder::load(const Value &ref, const Value &index) {
@@ -582,12 +570,6 @@ Value Builder::typePointerNotNull(const Value &ptr) {
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(ptr)), false);
 }
 
-Value Builder::newStructMember(StructValueType *classValueType) {
-	int size = mRuntime->dataLayout().getTypeAllocSize(classValueType->structType());
-	llvm::Value *data = allocate(mIRBuilder.getInt32(size));
-	memSet(data, mIRBuilder.getInt32(size), mIRBuilder.getInt8(0));
-	return Value(classValueType, bitcast(classValueType->llvmType(), data));
-}
 
 llvm::GlobalVariable *Builder::createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name) {
 	return createGlobalVariable(type->llvmType(), isConstant, linkage, initializer, name);

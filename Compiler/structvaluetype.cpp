@@ -25,6 +25,22 @@ StructValueType::~StructValueType() {
 
 }
 
+bool StructValueType::containsValueType(const ValueType *valueType) const {
+	for (const StructField &f : mFields) {
+		if (f.valueType() == valueType) return true;
+		if (f.valueType()->isStruct()) {
+			StructValueType *structValueType = static_cast<StructValueType*>(f.valueType());
+			if (containsValueType(structValueType)) return true;
+		}
+	}
+	return false;
+}
+
+bool StructValueType::containsItself() const {
+	return containsValueType(this);
+}
+
+
 QString StructValueType::name() const {
 	return mName;
 }
@@ -41,7 +57,7 @@ Value StructValueType::cast(Builder *builder, const Value &v) const {
 }
 
 llvm::Constant *StructValueType::defaultValue() const {
-	return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(mType));
+	return llvm::Constant::getNullValue(mType);
 }
 
 int StructValueType::size() const {
@@ -57,7 +73,7 @@ void StructValueType::setFields(const QList<StructField> &fields) {
 
 void StructValueType::createOpaqueType(Builder *builder) {
 	mStructType = llvm::StructType::create(builder->context(), mName.toStdString());
-	mType = mStructType->getPointerTo();
+	mType = mStructType;
 }
 
 void StructValueType::generateLLVMType() {
@@ -79,19 +95,79 @@ Value StructValueType::generateOperation(Builder *builder, int opType, const Val
 					operationFlags |= OperationFlag::ReferenceRequired;
 					return Value();
 				}
-				builder->store(operand1, operand2);
+				for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
+					Value f1 = this->field(builder, operand1, fieldIndex);
+					Value f2 = this->field(builder, operand2, fieldIndex);
+					f1.valueType()->generateOperation(builder, ast::ExpressionNode::opAssign, f1, f2, operationFlags);
+					if (operationFlagsContainFatalFlags(operationFlags)) {
+						return Value();
+					}
+				}
 				return operand1;
 			}
 			case ast::ExpressionNode::opEqual: {
-				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+				Value result;
+				for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
+					Value f1 = this->field(builder, operand1, fieldIndex);
+					Value f2 = this->field(builder, operand2, fieldIndex);
+					Value r = f1.valueType()->generateOperation(builder, ast::ExpressionNode::opEqual, f1, f2, operationFlags);
+					if (operationFlagsContainFatalFlags(operationFlags)) {
+						return Value();
+					}
+					if (result.isValid()) {
+						result = builder->and_(result, r);
+					}
+					else {
+						result = r;
+					}
+				}
+				return result;
 			}
 			case ast::ExpressionNode::opNotEqual: {
-				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+				Value result;
+				for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
+					Value f1 = this->field(builder, operand1, fieldIndex);
+					Value f2 = this->field(builder, operand2, fieldIndex);
+					Value r = f1.valueType()->generateOperation(builder, ast::ExpressionNode::opNotEqual, f1, f2, operationFlags);
+					if (operationFlagsContainFatalFlags(operationFlags)) {
+						return Value();
+					}
+					if (result.isValid()) {
+						result = builder->or_(result, r);
+					}
+					else {
+						result = r;
+					}
+				}
+				return result;
 			}
 		}
 	}
 	operationFlags |= OperationFlag::NoSuchOperation;
 	return Value();
+}
+
+void StructValueType::generateDestructor(Builder *builder, const Value &v) {
+	for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
+		Value f = this->field(builder, v, fieldIndex);
+		if (f.isReference()) {
+			f = Value(f.valueType(), builder->irBuilder().CreateLoad(f.value()), false);
+		}
+		builder->destruct(f);
+	}
+}
+
+Value StructValueType::generateLoad(Builder *builder, const Value &var) const {
+	assert(var.isReference());
+	llvm::Value *ret = llvm::UndefValue::get(llvmType());
+	for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
+		Value f = field(builder, var, fieldIndex);
+		Value fLoaded = f.valueType()->generateLoad(builder, f);
+		unsigned idx[1];
+		idx[0] = fieldIndex;
+		ret = builder->irBuilder().CreateInsertValue(ret, fLoaded.value(), idx);
+	}
+	return Value(var.valueType(), ret, false);
 }
 
 Value StructValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
@@ -101,9 +177,7 @@ Value StructValueType::member(Builder *builder, const Value &a, const QString &m
 		return Value();
 	}
 	int fieldIndex = fieldI - mFields.begin();
-
-	llvm::Value *structPtr = builder->llvmValue(a);
-	return Value(fieldI->valueType(), builder->irBuilder().CreateStructGEP(structPtr, fieldIndex), true);
+	return field(builder, a, fieldIndex);
 }
 
 ValueType *StructValueType::memberType(const QString &memberName) const {
@@ -112,6 +186,22 @@ ValueType *StructValueType::memberType(const QString &memberName) const {
 		return fieldI->valueType();
 	}
 	return 0;
+}
+
+Value StructValueType::field(Builder *builder, const Value &a, int fieldIndex) const {
+	assert(a.valueType() == this);
+	if (a.isReference()) {
+		return Value(mFields.at(fieldIndex).valueType(),
+					 builder->irBuilder().CreateStructGEP(a.value(), fieldIndex),
+					 true);
+	}
+	else {
+		unsigned ids[1] = {fieldIndex};
+		return Value(mFields.at(fieldIndex).valueType(),
+					 builder->irBuilder().CreateExtractValue(a.value(), ids),
+					 false);
+	}
+
 }
 
 

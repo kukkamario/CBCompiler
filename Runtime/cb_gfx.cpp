@@ -105,6 +105,26 @@ void CBF_lock2(int state) {
 	RenderTarget::activated()->lock(flags);
 }
 
+void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b) {
+	al_put_pixel(x, y, al_map_rgb(r, g, b));
+}
+
+void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+	al_put_pixel(x, y, al_map_rgb(r, g, b));
+}
+
+void CBF_putpixel(int x, int y, unsigned int pixel) {
+	al_put_pixel(x, y, al_map_rgba((pixel >> 24) & 0xFF, (pixel >> 16) & 0xFF, (pixel >> 16) & 0xFF, pixel & 0xFF));
+}
+
+void CBF_putpixel(int x, int y, float r, float g, float b) {
+	al_put_pixel(x, y, al_map_rgb_f(r, g, b));
+}
+
+void CBF_putpixel(int x, int y, float r, float g, float b, float a) {
+	al_put_pixel(x, y, al_map_rgba_f(r, g, b, a));
+}
+
 void CBF_unlock() {
 	RenderTarget::activated()->unlock();
 }

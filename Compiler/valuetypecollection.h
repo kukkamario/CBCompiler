@@ -15,7 +15,7 @@ class ValueTypeCollection {
 		~ValueTypeCollection();
 		void addValueType(ValueType *valType);
 		void addTypePointerValueType(TypePointerValueType *typePointer);
-		void addStructValueType(StructValueType *classValueType);
+		void addStructValueType(StructValueType *structValueType);
 		ValueType *valueTypeForLLVMType(llvm::Type *type);
 		ValueType *findNamedType(const QString &name);
 

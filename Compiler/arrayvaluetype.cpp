@@ -55,6 +55,13 @@ void ArrayValueType::generateDestructor(Builder *builder, const Value &value) {
 	destructArray(builder, value.value());
 }
 
+Value ArrayValueType::generateLoad(Builder *builder, const Value &var) const {
+	assert(var.isReference());
+	llvm::Value *v = builder->irBuilder().CreateLoad(var.value());
+	refArray(builder, v);
+	return Value(var.valueType(), v, false);
+}
+
 void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value *array) {
 	builder->irBuilder().CreateCall2(
 				mRuntime->genericArrayValueType()->assignmentFunction(),
@@ -138,7 +145,7 @@ Value ArrayValueType::arraySubscript(Builder *builder, const Value &array, const
 
 }
 
-void ArrayValueType::refArray(Builder *builder, llvm::Value *array) {
+void ArrayValueType::refArray(Builder *builder, llvm::Value *array) const {
 	builder->irBuilder().CreateCall(
 				mRuntime->genericArrayValueType()->refFunction(),
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType(), array));
