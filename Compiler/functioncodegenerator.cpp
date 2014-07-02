@@ -18,7 +18,7 @@
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
 #include "cbfunction.h"
-#include "classvaluetype.h"
+#include "structvaluetype.h"
 
 #define CHECK_UNREACHABLE(codePoint) if (checkUnreachable(codePoint)) return;
 
@@ -846,9 +846,9 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 	const Value &param = paramValues.first();
 	switch (n->keyword()) {
 		case ast::KeywordFunctionCall::New: {
-			if (param.isValueType() && param.valueType()->isClass()) {
-				ClassValueType *classValueType = static_cast<ClassValueType*>(param.valueType());
-				return mBuilder->newClassMember(classValueType);
+			if (param.isValueType() && param.valueType()->isStruct()) {
+				StructValueType *classValueType = static_cast<StructValueType*>(param.valueType());
+				return mBuilder->newStructMember(classValueType);
 			}
 
 			if (!param.isValueType() || !param.valueType()->isTypePointer()) {

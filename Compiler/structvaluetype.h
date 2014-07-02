@@ -5,9 +5,9 @@
 #include <QMap>
 #include <QList>
 
-class ClassField {
+class StructField {
 	public:
-		ClassField(const QString &name, ValueType *valueType, const CodePoint &cp);
+		StructField(const QString &name, ValueType *valueType, const CodePoint &cp);
 		QString name()const{return mName;}
 		ValueType *valueType()const{return mValueType;}
 		QString info() const;
@@ -22,20 +22,20 @@ class ClassField {
 };
 
 
-class ClassValueType : public ValueType {
+class StructValueType : public ValueType {
 	public:
-		ClassValueType(const QString &name, const CodePoint &cp, Runtime *runtime);
-		ClassValueType(const QString &name, const CodePoint &cp, const QList<ClassField> &fields, Runtime *runtime);
-		~ClassValueType();
+		StructValueType(const QString &name, const CodePoint &cp, Runtime *runtime);
+		StructValueType(const QString &name, const CodePoint &cp, const QList<StructField> &fields, Runtime *runtime);
+		~StructValueType();
 		virtual QString name() const;
 		virtual CastCost castingCostToOtherValueType(const ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return false;}
-		bool isClass() const { return true; }
+		bool isStruct() const { return true; }
 		llvm::Constant *defaultValue() const;
 		int size() const;
-		void setFields(const QList<ClassField> &fields);
+		void setFields(const QList<StructField> &fields);
 		const CodePoint &codePoint() const { return mCodePoint; }
 		void createOpaqueType(Builder *builder);
 		void generateLLVMType();
@@ -48,8 +48,8 @@ class ClassValueType : public ValueType {
 		QString mName;
 		CodePoint mCodePoint;
 		llvm::StructType *mStructType;
-		QList<ClassField> mFields;
-		QMap<QString, QList<ClassField>::ConstIterator> mFieldSearch;
+		QList<StructField> mFields;
+		QMap<QString, QList<StructField>::ConstIterator> mFieldSearch;
 };
 
 #endif // CLASSVALUETYPE_H

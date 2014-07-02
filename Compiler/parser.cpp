@@ -129,7 +129,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 
 	QList<ast::TypeDefinition*> typeDefs;
 	QList<ast::FunctionDefinition*> funcDefs;
-	QList<ast::ClassDefinition*> classDefs;
+	QList<ast::StructDefinition*> classDefs;
 	ast::Block *block = new ast::Block(tokens.first().codePoint(), tokens.last().codePoint());
 	TokIterator i = tokens.begin();
 	while (i->type() != Token::EndOfTokens) {
@@ -146,7 +146,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 			continue;
 		}
 
-		ast::ClassDefinition *classDef = tryClassDefinition(i);
+		ast::StructDefinition *classDef = tryStructDefinition(i);
 		if (mStatus == Error) return 0;
 		if (classDef) {
 			classDefs.append(classDef);
@@ -186,7 +186,7 @@ ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings
 	ast::Program *program = new ast::Program;
 	program->setFunctionDefinitions(funcDefs);
 	program->setTypeDefinitions(typeDefs);
-	program->setClassDefinitions(classDefs);
+	program->setStructDefinitions(classDefs);
 	program->setMainBlock(block);
 
 	return program;
@@ -331,8 +331,8 @@ ast::TypeDefinition *Parser::tryTypeDefinition(Parser::TokIterator &i) {
 }
 
 
-ast::ClassDefinition *Parser::tryClassDefinition(Parser::TokIterator &i) {
-	if (i->type() == Token::kClass) {
+ast::StructDefinition *Parser::tryStructDefinition(Parser::TokIterator &i) {
+	if (i->type() == Token::kStruct) {
 		CodePoint startCp = i->codePoint();
 		i++;
 		ast::Identifier *id = expectIdentifier(i);
@@ -353,14 +353,14 @@ ast::ClassDefinition *Parser::tryClassDefinition(Parser::TokIterator &i) {
 
 			while (i->isEndOfStatement()) i++;
 		}
-		if (i->type() != Token::kEndClass) {
-			emit error(ErrorCodes::ecExpectingEndType, tr("Expecting \"EndClass\", got \"%1\"").arg(i->toString()), i->codePoint());
+		if (i->type() != Token::kEndStruct) {
+			emit error(ErrorCodes::ecExpectingEndType, tr("Expecting \"EndStruct\", got \"%1\"").arg(i->toString()), i->codePoint());
 			mStatus = Error;
 			return 0;
 		}
 
 
-		ast::ClassDefinition *ret = new ast::ClassDefinition(startCp, i->codePoint());
+		ast::StructDefinition *ret = new ast::StructDefinition(startCp, i->codePoint());
 		ret->setFields(fields);
 		ret->setIdentifier(id);
 		i++;

@@ -13,7 +13,7 @@
 #include "settings.h"
 #include "customdatatypedefinitions.h"
 #include "customvaluetype.h"
-#include "genericclassvaluetype.h"
+#include "genericstructvaluetype.h"
 #include <QStringList>
 #include <QTextStream>
 #include <time.h>
@@ -106,9 +106,9 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 		return false;
 	}
 
-	mGenericClassLLVMType = mModule->getTypeByName("struct.CB_GenericClass");
-	if (!mGenericClassLLVMType) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericClass\" in runtime library bitcode"), CodePoint());
+	mGenericStructLLVMType = mModule->getTypeByName("struct.CB_GenericStruct");
+	if (!mGenericStructLLVMType) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericStruct\" in runtime library bitcode"), CodePoint());
 		return false;
 	}
 
@@ -136,8 +136,8 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mGenericArrayValueType = new GenericArrayValueType(mGenericArrayLLVMType->getPointerTo(), this);
 	mValueTypeCollection.addValueType(mGenericArrayValueType);
 
-	mGenericClassValueType = new GenericClassValueType(mGenericClassLLVMType->getPointerTo(), this);
-	mValueTypeCollection.addValueType(mGenericClassValueType);
+	mGenericStructValueType = new GenericStructValueType(mGenericStructLLVMType->getPointerTo(), this);
+	mValueTypeCollection.addValueType(mGenericStructValueType);
 	return true;
 }
 

@@ -21,7 +21,7 @@
 #include "variablesymbol.h"
 #include "valuetypesymbol.h"
 #include "customvaluetype.h"
-#include "classvaluetype.h"
+#include "structvaluetype.h"
 #include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 
@@ -69,7 +69,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	addValueTypesToGlobalScope();
 
 	qDebug() << "Generating types...";
-	if (!generateTypesAndClasses(program)) {
+	if (!generateTypesAndStructes(program)) {
 		qDebug() << "Failed";
 		return false;
 	}
@@ -273,7 +273,7 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 }
 
-bool CodeGenerator::generateTypesAndClasses(ast::Program *program) {
+bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 	for (ast::TypeDefinition* def : program->typeDefinitions()) {
 		Symbol *sym = mGlobalScope.find(def->identifier()->name());
 		assert(sym && sym->type() == Symbol::stType);
@@ -282,13 +282,13 @@ bool CodeGenerator::generateTypesAndClasses(ast::Program *program) {
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
 	}
-	for (ast::ClassDefinition* def : program->classDefinitions()) {
+	for (ast::StructDefinition* def : program->classDefinitions()) {
 		Symbol *sym = mGlobalScope.find(def->identifier()->name());
 		assert(sym && sym->type() == Symbol::stValueType);
 		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
 		ValueType *valueType = type->valueType();
-		assert(valueType->isClass());
-		ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
+		assert(valueType->isStruct());
+		StructValueType *classValueType = static_cast<StructValueType*>(valueType);
 
 		//Create an opaque member type so class pointers can be used in fields.
 		classValueType->createOpaqueType(mBuilder);
@@ -301,13 +301,13 @@ bool CodeGenerator::generateTypesAndClasses(ast::Program *program) {
 		type->createTypePointerValueType(mBuilder);
 	}
 
-	for (ast::ClassDefinition* def : program->classDefinitions()) {
+	for (ast::StructDefinition* def : program->classDefinitions()) {
 		Symbol *sym = mGlobalScope.find(def->identifier()->name());
 		assert(sym && sym->type() == Symbol::stValueType);
 		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
 		ValueType *valueType = type->valueType();
-		assert(valueType->isClass());
-		ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
+		assert(valueType->isStruct());
+		StructValueType *classValueType = static_cast<StructValueType*>(valueType);
 
 		classValueType->generateLLVMType();
 	}

@@ -8,7 +8,7 @@
 #include "arrayvaluetype.h"
 #include "intvaluetype.h"
 #include "labelsymbol.h"
-#include "classvaluetype.h"
+#include "structvaluetype.h"
 
 #include "runtime.h"
 #include "typepointervaluetype.h"
@@ -37,23 +37,23 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 
 	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
 	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
-	const QList<ast::ClassDefinition*> &classDefs = program->classDefinitions();
+	const QList<ast::StructDefinition*> &classDefs = program->classDefinitions();
 
 	mValid = true;
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeDefinition(def->identifier());
 	}
 
-	for (ast::ClassDefinition *def : classDefs) {
-		mValid &= createClassDefinition(def->identifier());
+	for (ast::StructDefinition *def : classDefs) {
+		mValid &= createStructDefinition(def->identifier());
 	}
 
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeFields(def);
 	}
 
-	for (ast::ClassDefinition *def : classDefs) {
-		mValid &= createClassFields(def);
+	for (ast::StructDefinition *def : classDefs) {
+		mValid &= createStructFields(def);
 	}
 
 
@@ -216,15 +216,15 @@ void SymbolCollector::visit(ast::Expression *c) {
 
 }
 
-bool SymbolCollector::createClassDefinition(ast::Identifier *id) {
+bool SymbolCollector::createStructDefinition(ast::Identifier *id) {
 	if (mGlobalScope->contains(id->name())) {
 		symbolAlreadyDefinedError(id->codePoint(), mGlobalScope->find(id->name()));
 		return false;
 	}
 
-	ClassValueType *classValueType = new ClassValueType(id->name(), id->codePoint(), mRuntime);
+	StructValueType *classValueType = new StructValueType(id->name(), id->codePoint(), mRuntime);
 
-	mRuntime->valueTypeCollection().addClassValueType(classValueType);
+	mRuntime->valueTypeCollection().addStructValueType(classValueType);
 	return true;
 }
 
@@ -263,14 +263,14 @@ bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
 	return true;
 }
 
-bool SymbolCollector::createClassFields(ast::ClassDefinition *def) {
+bool SymbolCollector::createStructFields(ast::StructDefinition *def) {
 
 	ValueType *valueType = mRuntime->valueTypeCollection().findNamedType(def->identifier()->name());
-	assert(valueType && valueType->isClass());
+	assert(valueType && valueType->isStruct());
 
-	ClassValueType *classValueType = static_cast<ClassValueType*>(valueType);
+	StructValueType *classValueType = static_cast<StructValueType*>(valueType);
 
-	QList<ClassField> fields;
+	QList<StructField> fields;
 	for (ast::Node *node : def->fields()) {
 		switch(node->type()) {
 			case ast::Node::ntVariable: {
@@ -278,7 +278,7 @@ bool SymbolCollector::createClassFields(ast::ClassDefinition *def) {
 				QString name = varDef->identifier()->name();
 				ValueType *valType = resolveValueType(varDef->valueType());
 				if (!valType) return false;
-				fields.append(ClassField(name, valType, node->codePoint()));
+				fields.append(StructField(name, valType, node->codePoint()));
 				break;
 			}
 			default:

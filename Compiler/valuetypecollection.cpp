@@ -9,7 +9,7 @@
 #include "stringvaluetype.h"
 #include "typepointervaluetype.h"
 #include "genericarrayvaluetype.h"
-#include "classvaluetype.h"
+#include "structvaluetype.h"
 #include "runtime.h"
 
 ValueTypeCollection::ValueTypeCollection(Runtime *r) :
@@ -30,8 +30,8 @@ void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePoin
 	addValueType(typePointer);
 }
 
-void ValueTypeCollection::addClassValueType(ClassValueType *classValueType) {
-	mClasses.append(classValueType);
+void ValueTypeCollection::addStructValueType(StructValueType *classValueType) {
+	mStructes.append(classValueType);
 	addValueType(classValueType);
 }
 

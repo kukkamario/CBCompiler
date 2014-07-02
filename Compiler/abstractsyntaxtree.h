@@ -145,7 +145,7 @@ class Node {
 			ntArrayInitialization,
 			ntFunctionDefinition,
 			ntTypeDefinition,
-			ntClassDefinition,
+			ntStructDefinition,
 
 			ntProgram,
 
@@ -707,12 +707,12 @@ class TypeDefinition : public BlockNode {
 };
 
 
-class ClassDefinition : public BlockNode {
+class StructDefinition : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		ClassDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
-		~ClassDefinition() { delete mIdentifier; qDeleteAll(mFields); }
-		static Type staticType() { return ntClassDefinition; }
+		StructDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
+		~StructDefinition() { delete mIdentifier; qDeleteAll(mFields); }
+		static Type staticType() { return ntStructDefinition; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mFields.size(); }
 		Node *childNode(int n) const { if (n == 0) return mIdentifier; return mFields.at(n - 1); }
@@ -980,7 +980,7 @@ class Program : public Node {
 		~Program();
 		static Type staticType() { return ntProgram; }
 		Type type() const { return staticType(); }
-		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + mClassDefinitions.size() + 1; }
+		int childNodeCount() const { return mFunctionDefinitions.size() + mTypeDefinitions.size() + mStructDefinitions.size() + 1; }
 		Node *childNode(int n) const;
 
 
@@ -990,11 +990,11 @@ class Program : public Node {
 		void setFunctionDefinitions(const QList<FunctionDefinition*> &funcDefs) { mFunctionDefinitions = funcDefs; }
 		const QList<TypeDefinition*> &typeDefinitions() const { return mTypeDefinitions; }
 		void setTypeDefinitions(const QList<TypeDefinition*> &typeDefs) { mTypeDefinitions = typeDefs; }
-		const QList<ClassDefinition*> &classDefinitions() const { return mClassDefinitions; }
-		void setClassDefinitions(const QList<ClassDefinition*> &classDefs) { mClassDefinitions = classDefs; }
+		const QList<StructDefinition*> &classDefinitions() const { return mStructDefinitions; }
+		void setStructDefinitions(const QList<StructDefinition*> &classDefs) { mStructDefinitions = classDefs; }
 	private:
 		QList<TypeDefinition*> mTypeDefinitions;
-		QList<ClassDefinition*> mClassDefinitions;
+		QList<StructDefinition*> mStructDefinitions;
 		QList<FunctionDefinition*> mFunctionDefinitions;
 		Block *mMainBlock;
 };

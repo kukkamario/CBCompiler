@@ -1,11 +1,11 @@
-Class TestClass
+Struct TestClass
 	Field x
 	Field y
 	Field z#
 	Field name$
 	Field hasFriend
 	Field friend As TestClass
-EndClass
+EndStruct
 
 
 a As TestClass = New(TestClass)

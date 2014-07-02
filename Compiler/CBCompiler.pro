@@ -102,8 +102,8 @@ SOURCES += main.cpp \
     functioncodegenerator.cpp \
     castcostcalculator.cpp \
     constantexpressionevaluator.cpp \
-    classvaluetype.cpp \
-    genericclassvaluetype.cpp
+    genericstructvaluetype.cpp \
+    structvaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -158,5 +158,5 @@ HEADERS += \
     functioncodegenerator.h \
     castcostcalculator.h \
     constantexpressionevaluator.h \
-    classvaluetype.h \
-    genericclassvaluetype.h
+    structvaluetype.h \
+    genericstructvaluetype.h

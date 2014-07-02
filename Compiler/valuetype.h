@@ -49,7 +49,7 @@ class ValueType {
 		virtual bool isArray() const { return false; }
 		virtual bool isNumber() const = 0;
 		virtual bool isFunctionSelector() const { return false; }
-		virtual bool isClass() const { return false; }
+		virtual bool isStruct() const { return false; }
 		virtual llvm::Constant *defaultValue() const = 0;
 
 		virtual BasicType basicType() const { return Unknown; }

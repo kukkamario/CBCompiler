@@ -1,11 +1,11 @@
-#include "classvaluetype.h"
+#include "structvaluetype.h"
 #include "builder.h"
 #include "operationflags.h"
 #include "booleanvaluetype.h"
 #include "abstractsyntaxtree.h"
-#include "genericclassvaluetype.h"
+#include "genericstructvaluetype.h"
 
-ClassValueType::ClassValueType(const QString &name, const CodePoint &cp, Runtime *runtime) :
+StructValueType::StructValueType(const QString &name, const CodePoint &cp, Runtime *runtime) :
 	ValueType(runtime),
 	mName(name),
 	mCodePoint(cp),
@@ -13,7 +13,7 @@ ClassValueType::ClassValueType(const QString &name, const CodePoint &cp, Runtime
 
 }
 
-ClassValueType::ClassValueType(const QString &name, const CodePoint &cp, const QList<ClassField> &fields, Runtime *runtime) :
+StructValueType::StructValueType(const QString &name, const CodePoint &cp, const QList<StructField> &fields, Runtime *runtime) :
 	ValueType(runtime),
 	mName(name),
 	mCodePoint(cp),
@@ -21,57 +21,57 @@ ClassValueType::ClassValueType(const QString &name, const CodePoint &cp, const Q
 	setFields(fields);
 }
 
-ClassValueType::~ClassValueType() {
+StructValueType::~StructValueType() {
 
 }
 
-QString ClassValueType::name() const {
+QString StructValueType::name() const {
 	return mName;
 }
 
-ValueType::CastCost ClassValueType::castingCostToOtherValueType(const ValueType *to) const {
+ValueType::CastCost StructValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to == this) return ccNoCost;
-	if (to == mRuntime->genericClassValueType()) return ccCastToBigger;
+	if (to == mRuntime->genericStructValueType()) return ccCastToBigger;
 	return ccNoCast;
 }
 
-Value ClassValueType::cast(Builder *builder, const Value &v) const {
+Value StructValueType::cast(Builder *builder, const Value &v) const {
 	if (v.valueType() == this) return v;
 	return Value();
 }
 
-llvm::Constant *ClassValueType::defaultValue() const {
+llvm::Constant *StructValueType::defaultValue() const {
 	return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(mType));
 }
 
-int ClassValueType::size() const {
+int StructValueType::size() const {
 	return mRuntime->dataLayout().getPointerSize();
 }
 
-void ClassValueType::setFields(const QList<ClassField> &fields) {
+void StructValueType::setFields(const QList<StructField> &fields) {
 	mFields = fields;
-	for (QList<ClassField>::Iterator i = mFields.begin(); i != mFields.end(); ++i) {
+	for (QList<StructField>::Iterator i = mFields.begin(); i != mFields.end(); ++i) {
 		mFieldSearch[i->name()] = i;
 	}
 }
 
-void ClassValueType::createOpaqueType(Builder *builder) {
+void StructValueType::createOpaqueType(Builder *builder) {
 	mStructType = llvm::StructType::create(builder->context(), mName.toStdString());
 	mType = mStructType->getPointerTo();
 }
 
-void ClassValueType::generateLLVMType() {
+void StructValueType::generateLLVMType() {
 	std::vector<llvm::Type*> body;
 	body.reserve(mFields.size());
 
-	for (const ClassField &f : mFields) {
+	for (const StructField &f : mFields) {
 		body.push_back(f.valueType()->llvmType());
 	}
 
 	mStructType->setBody(body);
 }
 
-Value ClassValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+Value StructValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
 	if (operand1.valueType() == this && operand2.valueType() == this) {
 		switch (opType) {
 			case ast::ExpressionNode::opAssign: {
@@ -94,9 +94,9 @@ Value ClassValueType::generateOperation(Builder *builder, int opType, const Valu
 	return Value();
 }
 
-Value ClassValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
+Value StructValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
 	assert(a.valueType() == this);
-	QList<ClassField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
+	QList<StructField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
 	if (fieldI == mFields.end()) {
 		return Value();
 	}
@@ -106,8 +106,8 @@ Value ClassValueType::member(Builder *builder, const Value &a, const QString &me
 	return Value(fieldI->valueType(), builder->irBuilder().CreateStructGEP(structPtr, fieldIndex), true);
 }
 
-ValueType *ClassValueType::memberType(const QString &memberName) const {
-	QList<ClassField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
+ValueType *StructValueType::memberType(const QString &memberName) const {
+	QList<StructField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
 	if (fieldI != mFields.end()) {
 		return fieldI->valueType();
 	}
@@ -115,7 +115,7 @@ ValueType *ClassValueType::memberType(const QString &memberName) const {
 }
 
 
-ClassField::ClassField(const QString &name, ValueType *valueType, const CodePoint &cp) :
+StructField::StructField(const QString &name, ValueType *valueType, const CodePoint &cp) :
 	mName(name),
 	mValueType(valueType),
 	mCodePoint(cp) {

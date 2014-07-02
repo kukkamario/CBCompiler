@@ -6,7 +6,7 @@
 class ValueType;
 class ArrayValueType;
 class Runtime;
-class ClassValueType;
+class StructValueType;
 class TypePointerValueType;
 namespace llvm { class Type; }
 class ValueTypeCollection {
@@ -15,7 +15,7 @@ class ValueTypeCollection {
 		~ValueTypeCollection();
 		void addValueType(ValueType *valType);
 		void addTypePointerValueType(TypePointerValueType *typePointer);
-		void addClassValueType(ClassValueType *classValueType);
+		void addStructValueType(StructValueType *classValueType);
 		ValueType *valueTypeForLLVMType(llvm::Type *type);
 		ValueType *findNamedType(const QString &name);
 
@@ -29,7 +29,7 @@ class ValueTypeCollection {
 		QMap<QPair<ValueType*, int> , ArrayValueType *> mArrayMapping;
 		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
 		QMap<QString, ValueType *> mNamedType;
-		QList<ClassValueType*> mClasses;
+		QList<StructValueType*> mStructes;
 		QList<TypePointerValueType*> mTypes;
 		Runtime *mRuntime;
 };

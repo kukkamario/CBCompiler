@@ -23,7 +23,7 @@ class TypeValueType;
 class Scope;
 class Settings;
 class CustomValueType;
-class GenericClassValueType;
+class GenericStructValueType;
 
 /**
  * @brief The Runtime class Loads LLVM-IR runtime from a bitcode file and creates the basic ValueTypes.
@@ -55,7 +55,7 @@ class Runtime : public QObject {
 		TypePointerCommonValueType *typePointerCommonValueType() const {return mTypePointerCommonValueType;}
 		TypeValueType *typeValueType() const { return mTypeValueType; }
 		GenericArrayValueType *genericArrayValueType() const { return mGenericArrayValueType; }
-		GenericClassValueType *genericClassValueType() const { return mGenericClassValueType; }
+		GenericStructValueType *genericStructValueType() const { return mGenericStructValueType; }
 
 		llvm::Function *allocatorFunction() const { return mAllocatorFunction; }
 		llvm::Function *freeFunction() const { return mFreeFunction; }
@@ -91,7 +91,7 @@ class Runtime : public QObject {
 		TypeValueType *mTypeValueType;
 		TypePointerCommonValueType *mTypePointerCommonValueType;
 		GenericArrayValueType *mGenericArrayValueType;
-		GenericClassValueType *mGenericClassValueType;
+		GenericStructValueType *mGenericStructValueType;
 
 		ValueTypeCollection mValueTypeCollection;
 
@@ -103,7 +103,7 @@ class Runtime : public QObject {
 		llvm::Type *mTypeLLVMType;
 		llvm::Type *mTypeMemberLLVMType;
 		llvm::Type *mGenericArrayLLVMType;
-		llvm::Type *mGenericClassLLVMType;
+		llvm::Type *mGenericStructLLVMType;
 
 		QMultiMap<QString, QString> mFunctionMapping;
 	signals:

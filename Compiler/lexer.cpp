@@ -27,10 +27,10 @@ Lexer::Lexer()
 	mKeywords["return"] = Token::kReturn;
 	mKeywords["endfunction"] = Token::kEndFunction;
 	mKeywords["type"] = Token::kType;
-	mKeywords["class"] = Token::kClass;
+	mKeywords["struct"] = Token::kStruct;
 	mKeywords["field"] = Token::kField;
 	mKeywords["endtype"] = Token::kEndType;
-	mKeywords["endclass"] = Token::kEndClass;
+	mKeywords["endstruct"] = Token::kEndStruct;
 	mKeywords["while"] = Token::kWhile;
 	mKeywords["wend"] = Token::kWend;
 	mKeywords["repeat"] = Token::kRepeat;
@@ -544,12 +544,12 @@ void Lexer::combineTokens() {
 					i++;
 					continue;
 				}
-				if (i->type() == Token::kClass) {
+				if (i->type() == Token::kStruct) {
 					QString::ConstIterator begin = last->begin();
 					QString::ConstIterator end = i->end();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndClass, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndStruct, begin, end, last->codePoint()));
 					i++;
 					continue;
 				}

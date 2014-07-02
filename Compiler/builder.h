@@ -88,7 +88,7 @@ class Builder {
 		Value beforeTypeMember(const Value &ptr);
 		Value typePointerNotNull(const Value &ptr);
 
-		Value newClassMember(ClassValueType *classValueType);
+		Value newStructMember(StructValueType *classValueType);
 
 		llvm::GlobalVariable *createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
 		llvm::GlobalVariable *createGlobalVariable(llvm::Type *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());
