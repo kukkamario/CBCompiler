@@ -134,7 +134,7 @@ void Window::drawscreen() {
 	mFPSCounter++;
 	double sysTime = sys::timeInSec();
 	if (sysTime >= mLastFPSUpdate + 1.0) {
-		mLastFPSUpdate = sysTime;
+		mLastFPSUpdate = mLastFPSUpdate + 1.0;
 		mFPS = mFPSCounter;
 		mFPSCounter = 0;
 	}
