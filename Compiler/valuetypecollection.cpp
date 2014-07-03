@@ -10,6 +10,7 @@
 #include "typepointervaluetype.h"
 #include "genericarrayvaluetype.h"
 #include "structvaluetype.h"
+#include "nullvaluetype.h"
 #include "runtime.h"
 
 ValueTypeCollection::ValueTypeCollection(Runtime *r) :
@@ -90,7 +91,7 @@ ValueType *ValueTypeCollection::constantValueType(ConstantValue::Type type) cons
 		case ConstantValue::String:
 			return mRuntime->stringValueType();
 		case ConstantValue::Null:
-			return mRuntime->typePointerCommonValueType();
+			return mRuntime->nullValueType();
 		default:
 			assert("Invalid ConstantValue::Type" && 0);
 			return 0;

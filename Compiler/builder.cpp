@@ -345,8 +345,8 @@ void Builder::returnVoid() {
 	mIRBuilder.CreateRetVoid();
 }
 
-Value Builder::defaultValue(ValueType *valType) {
-	return Value(valType, valType->defaultValue(), false);
+Value Builder::defaultValue(const ValueType *valType) {
+	return Value(const_cast<ValueType*>(valType), valType->defaultValue(), false);
 }
 
 void Builder::construct(VariableSymbol *var) {

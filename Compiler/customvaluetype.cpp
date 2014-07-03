@@ -2,7 +2,10 @@
 #include "runtime.h"
 #include "value.h"
 #include "abstractsyntaxtree.h"
+#include "nullvaluetype.h"
 #include "builder.h"
+
+
 CustomValueType::CustomValueType(const QString &name, llvm::Type *type, Runtime *r) :
 	ValueType(r, type),
 	mName(name) {
@@ -27,6 +30,9 @@ int CustomValueType::size() const {
 }
 
 Value CustomValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	if (operand2.valueType() == mRuntime->nullValueType()) {
+		return generateOperation(builder, opType, operand1, builder->defaultValue(this), operationFlags);
+	}
 	switch (opType) {
 		case ast::ExpressionNode::opAssign: {
 			if (!operand1.isReference()) {

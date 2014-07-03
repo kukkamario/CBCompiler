@@ -1,0 +1,23 @@
+Type Tyyppi
+	Field x
+	Field txt$
+EndType
+
+Struct Structure
+	Field txt$
+EndStruct
+
+a As Tyyppi = NULL
+b As Structure = NULL
+c As Image = NULL
+If a == NULL Then
+	Print "Type pointer is NULL"
+EndIf
+
+If b == NULL Then
+	Print "Structure is NULL"
+EndIf
+
+If c == NULL Then
+	Print "Image is NULL"
+EndIf

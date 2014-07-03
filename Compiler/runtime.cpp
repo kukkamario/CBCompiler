@@ -14,6 +14,7 @@
 #include "customdatatypedefinitions.h"
 #include "customvaluetype.h"
 #include "genericstructvaluetype.h"
+#include "nullvaluetype.h"
 #include <QStringList>
 #include <QTextStream>
 #include <time.h>
@@ -138,6 +139,8 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 
 	mGenericStructValueType = new GenericStructValueType(mGenericStructLLVMType->getPointerTo(), this);
 	mValueTypeCollection.addValueType(mGenericStructValueType);
+
+	mNullValueType = new NullValueType(this);
 	return true;
 }
 

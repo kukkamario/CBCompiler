@@ -52,7 +52,7 @@ class Builder {
 		void returnValue(ValueType *retType, const Value &v);
 		void returnVoid();
 
-		Value defaultValue(ValueType *valType);
+		Value defaultValue(const ValueType *valType);
 
 		void construct(VariableSymbol *var);
 

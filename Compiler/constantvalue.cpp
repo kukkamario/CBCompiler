@@ -1402,11 +1402,11 @@ float ConstantValue::toFloat() const{
 		case Boolean:
 			return mData.mBool;
 		case Byte:
-			return mData.mByte;
+			return mData.mByte + 0.5;
 		case Short:
-			return mData.mShort;
+			return mData.mShort + 0.5;
 		case Integer:
-			return mData.mInt;
+			return mData.mInt + 0.5;
 		case Float:
 			return mData.mFloat;
 		case String:

@@ -3,6 +3,9 @@
 #include "value.h"
 #include "runtime.h"
 #include "builder.h"
+#include "booleanvaluetype.h"
+#include "nullvaluetype.h"
+#include "abstractsyntaxtree.h"
 #include "llvm.h"
 
 TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
@@ -21,8 +24,9 @@ ValueType::CastCost TypePointerValueType::castingCostToOtherValueType(const Valu
 	return ccNoCast;
 }
 
-Value TypePointerValueType::cast(Builder *, const Value &v) const {
+Value TypePointerValueType::cast(Builder *b, const Value &v) const {
 	if (v.valueType() == this) return v;
+	if (v.valueType() == mRuntime->nullValueType()) return b->defaultValue(this);
 	assert("Invalid cast" && 0);
 	return Value();
 }
@@ -36,7 +40,53 @@ int TypePointerValueType::size() const {
 }
 
 Value TypePointerValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
-	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+	assert(operand1.valueType() == this);
+	switch (opType) {
+		case ast::ExpressionNode::opAssign: {
+			if (!operand1.isReference()) {
+				operationFlags = OperationFlag::ReferenceRequired;
+				return Value();
+			}
+			CastCost cc = operand2.valueType()->castingCostToOtherValueType(this);
+			operationFlags = castCostOperationFlags(cc);
+			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
+			Value op2 = this->cast(builder, operand2);
+			builder->store(operand1, op2);
+			return operand1;
+		}
+		case ast::ExpressionNode::opEqual: {
+			if (operand1.valueType() == operand2.valueType()) {
+				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+			} else if (operand2.valueType() == mRuntime->typePointerCommonValueType()) {
+				return Value(mRuntime->booleanValueType(),
+							 builder->irBuilder().CreateICmpEQ(
+								 builder->bitcast(mRuntime->typePointerCommonValueType()->llvmType(), builder->llvmValue(operand1)),
+								 builder->llvmValue(operand2)), false);
+			} else if (operand2.valueType() == mRuntime->nullValueType()) {
+				return Value(mRuntime->booleanValueType(),
+							 builder->irBuilder().CreateIsNull(builder->llvmValue(operand1)),
+							 false);
+			}
+			break;
+		}
+		case ast::ExpressionNode::opNotEqual: {
+			if (operand1.valueType() == operand2.valueType()) {
+				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+			} else if (operand2.valueType() == mRuntime->typePointerCommonValueType()) {
+				return Value(mRuntime->booleanValueType(),
+							 builder->irBuilder().CreateICmpNE(
+								 builder->bitcast(mRuntime->typePointerCommonValueType()->llvmType(), builder->llvmValue(operand1)),
+								 builder->llvmValue(operand2)), false);
+			} else if (operand2.valueType() == mRuntime->nullValueType()) {
+				return Value(mRuntime->booleanValueType(),
+							 builder->irBuilder().CreateIsNotNull(builder->llvmValue(operand1)),
+							 false);
+			}
+			break;
+		}
+	}
+	operationFlags |= OperationFlag::NoSuchOperation;
+	return Value();
 }
 
 Value TypePointerValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
@@ -87,6 +137,7 @@ int TypePointerCommonValueType::size() const {
 }
 
 Value TypePointerCommonValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
-	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+	operationFlags |= OperationFlag::NoSuchOperation;
+	return Value();
 }
 

@@ -5,6 +5,7 @@
 #include "builder.h"
 #include "floatvaluetype.h"
 #include "booleanvaluetype.h"
+#include "nullvaluetype.h"
 
 ValueType::ValueType(Runtime *r):
 	mType(0),
@@ -62,6 +63,13 @@ OperationFlags ValueType::castCostOperationFlags(ValueType::CastCost cc) {
 
 ValueType::CastCost ValueType::castToSameType(Builder *builder, Value &a, Value &b) {
 	if (a.valueType() == b.valueType()) return ccNoCost;
+
+	if (a.valueType() == builder->runtime()->nullValueType()) {
+		a = builder->defaultValue(b.valueType());
+	}
+	if (b.valueType() == builder->runtime()->nullValueType()) {
+		b = builder->defaultValue(a.valueType());
+	}
 
 	if (!a.valueType()->isBasicType() && !b.valueType()->isBasicType()) {
 		CastCost cc = b.valueType()->castingCostToOtherValueType(a.valueType());

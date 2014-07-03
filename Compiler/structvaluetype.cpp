@@ -4,6 +4,7 @@
 #include "booleanvaluetype.h"
 #include "abstractsyntaxtree.h"
 #include "genericstructvaluetype.h"
+#include "nullvaluetype.h"
 
 StructValueType::StructValueType(const QString &name, const CodePoint &cp, Runtime *runtime) :
 	ValueType(runtime),
@@ -93,6 +94,10 @@ bool StructValueType::isGenerated() const {
 }
 
 Value StructValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	if (operand2.valueType() == mRuntime->nullValueType()) {
+		return generateOperation(builder, opType, operand1, builder->defaultValue(this), operationFlags);
+	}
+
 	if (operand1.valueType() == this && operand2.valueType() == this) {
 		switch (opType) {
 			case ast::ExpressionNode::opAssign: {
