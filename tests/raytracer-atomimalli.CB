@@ -50,16 +50,44 @@ function vecLength(v as Vec) as Float
     return Sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
 endfunction
 
-function mulVec(v1 as Vec, v2 as Vec) as Vec
+function vecDot(v as Vec) as Float
+    return v.x+v.y+v.z
+endFunction
+
+function vecMul(v1 as Vec, v2 as Vec) as Vec
     return newVec(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z)
 endFunction
 
-function mulVec(v1 as Vec, s as Float) as Vec
+function vecMul(v1 as Vec, s as Float) as Vec
     return newVec(v1.x*s, v1.y*s, v1.z*s)
 endFunction
 
+function vecMul(s as Float,v1 as Vec) as Vec
+    return newVec(v1.x*s, v1.y*s, v1.z*s)
+endFunction
+
+function vecSum(v1 as Vec, v2 as Vec) as Vec
+    return newVec(v1.x+v2.x, v1.y+v2.y, v1.z+v2.z)
+endFunction
+
+function vecSub(v1 as Vec, v2 as Vec) as Vec
+    return newVec(v1.x-v2.x, v1.y-v2.y, v1.z-v2.z)
+endFunction
+
+function vecSub(v1 as Vec, s as Integer) as Vec
+    return newVec(v1.x-s, v1.y-s, v1.z-s)
+endFunction
+
+function vecSub(s as Integer, v1 as Vec) as Vec
+    return newVec(s-v1.x, s-v1.y, s-v1.z)
+endFunction
+
+function vecNegate(v as Vec) as Vec
+    return newVec(-v.x, -v.y, -v.z)
+endFunction
+
 function normalize(v as Vec) as Vec
-    return mulVec(v,1.0/vecLength(v))
+    return vecMul(v,1.0/vecLength(v))
 endfunction
 
 
@@ -91,7 +119,7 @@ global ambient as ColorVec = newColorVec(40,100,100)
 lastUpdate=0
 
 Repeat
-    Tim=Timer() 
+    Tim=Timer()
     fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
 
     t# = t# + (Timer() - lastUpdate) / 100.0
@@ -105,7 +133,11 @@ Repeat
         t2# = t2# + t#
         s.specularity#=sin(timer()/20.0)*0.4+0.5
     Next s
-    lock2(2) //writeonly
+
+    l as light = first(light)
+    l.pos.x=sin(t*9.0)*10
+
+    lock2(2) //writeonly lock
     For x#=0 To screenw-1
         For y#=0 To screenh-1
             campos as Vec = newVec(0,0,0)
@@ -120,15 +152,15 @@ Repeat
     Next
     unlock
     DrawScreen
-    Print (Timer()-Tim)
+    Print (Timer()-Tim)+" "+FPS()
 Forever
 
 Function trace(cv as ColorVec, ray as Vec, dir as Vec, iters) As ColorVec
     coll=0
     dir=normalize(dir)
     For obj as sphere=Each sphere
-        b# = 2*dir.x#*(ray.x#-obj.pos.x#) + 2*dir.y#*(ray.y#-obj.pos.y) + 2*dir.z#*(ray.z#-obj.pos.z#)
-        c# = obj.pos.x#*obj.pos.x# + obj.pos.y#*obj.pos.y# + obj.pos.z#*obj.pos.z# + ray.x*ray.x + ray.y*ray.y + ray.z*ray.z -2*(obj.pos.x# * ray.x# + obj.pos.y# * ray.y# + obj.pos.z# * ray.z#) - obj.size#*obj.size#
+        b# = 2*vecDot(vecMul(dir,vecSub(ray,obj.pos)))
+        c# = vecDot(vecMul(obj.pos,obj.pos)) + vecDot(vecMul(ray,ray)) -2*vecDot(vecMul(obj.pos,ray)) - obj.size#*obj.size#
         d# = b#*b# - 4*c#
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/2
@@ -142,56 +174,30 @@ Function trace(cv as ColorVec, ray as Vec, dir as Vec, iters) As ColorVec
 
     If coll Then
         obj As sphere=nearest
+        camdir as Vec = normalize(vecSub(vecSub(obj.pos,ray),vecMul(dir,dist)))
+        specularDir as Vec = vecSub(vecMul(2*vecDot(vecMul(camDir,dir)),camDir),dir)
         //valaistus
-        'remstart
+        specular#=0
+        diffuse#=0
         For valo As light=Each light
-            pvx#=obj.pos.x-ray.x-dir.x*dist
-            vvx#=valo.pos.x-ray.x-dir.x*dist
-            pvy#=obj.pos.y-ray.y-dir.y*dist
-            vvy#=valo.pos.y-ray.y-dir.y*dist
-            pvz#=obj.pos.z-ray.z-dir.z*dist
-            vvz#=valo.pos.z-ray.z-dir.z*dist
-            pvl#=Sqrt(pvx*pvx+pvy*pvy+pvz*pvz)
-            vvl#=Sqrt(vvx*vvx+vvy*vvy+vvz*vvz)
-            pvx#=pvx/pvl
-            vvx#=-vvx/vvl
-            pvy#=pvy/pvl
-            vvy#=-vvy/vvl
-            pvz#=pvz/pvl
-            vvz#=-vvz/vvl
-            dp#=pvx*vvx+pvy*vvy+pvz*vvz
-            lightness#=lightness+Max(0.0,dp)
-            specular#=specular+Max(0.0,dp)^8*0.5 //a hack for more interresting specular
-            dp#=pvx*dir.x+pvy*dir.y+pvz*dir.z
-            svx#=(2*dp*pvx-dir.x)
-            svy#=(2*dp*pvy-dir.y)
-            svz#=(2*dp*pvz-dir.z)
-            specular#=max(0.0,(vvx*svx+vvy*svy+vvz*svz))^2/2.0+specular
+            lightdir as Vec = vecNegate(normalize(vecSub(vecSub(valo.pos,ray),vecMul(dir,dist))))
+            diffuCos#=vecDot(vecMul(camDir,lightDir))
+            diffuse#=diffuse+Max(0.0,diffuCos)
+            specular#=specular+Max(0.0,diffuCos)^8*0.5 //a hack for more interresting specular
+            specular#=max(0.0,vecDot(vecMul(lightdir,specularDir)))^12/2.0+specular
         Next valo
-        'remend
         //heijastukset
         If iters>0 Then
-            pvx#=obj.pos.x-ray.x-dir.x*dist
-            pvy#=obj.pos.y-ray.y-dir.y*dist
-            pvz#=obj.pos.z-ray.z-dir.z*dist
-            pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
-            pvx#=pvx/pvl
-            pvy#=pvy/pvl
-            pvz#=pvz/pvl
-            dp#=pvx*dir.x+pvy*dir.y+pvz*dir.z
-            svx#=-(2*dp*pvx-dir.x)
-            svy#=-(2*dp*pvy-dir.y)
-            svz#=-(2*dp*pvz-dir.z)
-            pos as Vec = newVec(ray.x#+dir.x*dist,ray.y#+dir.y*dist,ray.z#+dir.z*dist)
-            dir as Vec = newVec(svx,svy,svz)
+            pos as Vec = vecSum(ray,vecMul(dir,dist))
+            dir as Vec = vecNegate(speculardir)
             cv=trace(cv,pos,dir,iters-1)
         Else
             cv=ambient
         EndIf
-        diffuse#=(1.0-obj.specularity)*obj.diffuse
-        cv.r=(obj.c.r*lightness+ambient.r)*diffuse+(cv.r+specular*255)*obj.specularity //+20'*dotp
-        cv.g=(obj.c.g*lightness+ambient.g)*diffuse+(cv.g+specular*255)*obj.specularity //+20'*dotp
-        cv.b=(obj.c.b*lightness+ambient.b)*diffuse+(cv.b+specular*255)*obj.specularity //+20'*dotp
+        diffuseAmount#=(1.0-obj.specularity)*obj.diffuse
+        cv.r=(obj.c.r*diffuse+ambient.r)*diffuseAmount+(cv.r+specular*255)*obj.specularity
+        cv.g=(obj.c.g*diffuse+ambient.g)*diffuseAmount+(cv.g+specular*255)*obj.specularity
+        cv.b=(obj.c.b*diffuse+ambient.b)*diffuseAmount+(cv.b+specular*255)*obj.specularity
     Else
         cv=ambient
     EndIf
