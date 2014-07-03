@@ -1,100 +1,137 @@
 //http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
- 
-Const screenw% = 1000
-Const screenh% = 600
+
+Const screenw% = 300
+Const screenh% = 300
  
 fov=35
 maxiters=8
  
 SCREEN screenw, screenh
  
-Type sphere
-    Field x#
-    Field y#
-    Field z#
-    Field ox#
-    Field oy#
-    Field oz#
-    Field w#
-    Field r#
-    Field g#
-    Field b#
-    Field specularity#
-    Field diffuse#
-EndType
- 
-struct ColorVec
+Struct ColorVec
     Field r#
     Field g#
     Field b#
 EndStruct
- 
-Type light
+
+Struct Vec
     Field x#
     Field y#
     Field z#
+EndStruct
+
+Type sphere
+    Field pos as Vec
+    Field origin as Vec
+    Field size#
+    Field c as ColorVec
+    Field specularity#
+    Field diffuse#
 EndType
- 
-s As sphere = New(sphere)
-s.ox# = -1: s.oy# = -1: s.oz# = 7: s.w# = 1.5: s.r# = 255: s.g#= 0: s.b# = 0:s.diffuse#=0.9
- 
-s as sphere = New(sphere)
-s.ox# = 2: s.oy# = 1: s.oz# = 6: s.w# = 1: s.r# = 5: s.g# = 0: s.b# = 255:s.diffuse#=0.8
- 
-s as sphere = New(sphere)
-s.ox# = 0: s.oy# = 1.5: s.oz# = 7: s.w# = 1: s.r# = 5: s.g# = 255: s.b# = 0:s.diffuse#=0.8
- 
- 
-l As light = New(light)
-l.x = -3: l.y = 0: l.z = 0
- 
+
+Type light
+    Field pos As Vec
+EndType
+
+
+function newColorVec(r#,g#,b#) as ColorVec
+    cv as ColorVec
+    cv.r#=r#:cv.g#=g#:cv.b#=b#
+    return cv
+endfunction
+
+function newVec(x#,y#,z#) as Vec
+    v as Vec
+    v.x#=x#:v.y#=y#:v.z#=z#
+    return v
+endfunction
+
+function vecLength(v as Vec) as Float
+    return Sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
+endfunction
+
+function mulVec(v1 as Vec, v2 as Vec) as Vec
+    return newVec(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z)
+endFunction
+
+function mulVec(v1 as Vec, s as Float) as Vec
+    return newVec(v1.x*s, v1.y*s, v1.z*s)
+endFunction
+
+function normalize(v as Vec) as Vec
+    return mulVec(v,1.0/vecLength(v))
+endfunction
+
+
+function newSphere(x#,y#,z#,size#,r#,g#,b#,diffuse#) as Sphere
+    s As sphere = New(sphere)
+    s.origin=newVec(x#,y#,z#)
+    s.size# = size#
+    s.c=newColorVec(r#,g#,b#)
+    s.diffuse#=diffuse
+    return s
+endfunction
+
+function newLight(x#,y#,z#) as Light
+    l As Light = New(Light)
+    l.pos=newVec(x#,y#,z#)
+    return l
+endfunction
+
+
+newSphere(-1,-1,7,  1.5,    255,0,0, 0.9)
+newSphere(2,1,6,    1,      5,0,255, 0.8)
+newSphere(0,1.5,7,  1,      5,205,0, 0.8)
+newLight(-3,0,0)
+
+
 cv as ColorVec// use single struct
- 
-global ambient as ColorVec
-ambient.r=40:ambient.g=100:ambient.b=100
- 
+global ambient as ColorVec = newColorVec(40,100,100)
+
+lastUpdate=0
+
 Repeat
-    Tim=Timer()
+    Tim=Timer() 
     fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
- 
+
     t# = t# + (Timer() - lastUpdate) / 100.0
     lastUpdate = Timer()
     t2# = t#
+
     For s As sphere = Each sphere
-        s.x# = s.ox# + Sin(t2# * 2.0) * 0.7
-        s.y# = s.oy# + Sin(t2# * 1.4 +124124) * 0.3
-        s.z# = s.oz# + Sin(t2# + 343) * 0.6
+        s.pos.x# = s.origin.x# + Sin(t2# * 2.0) * 0.7
+        s.pos.y# = s.origin.y# + Sin(t2# * 1.4 +124124) * 0.3
+        s.pos.z# = s.origin.z# + Sin(t2# + 343) * 0.6
         t2# = t2# + t#
         s.specularity#=sin(timer()/20.0)*0.4+0.5
     Next s
     lock2(2) //writeonly
     For x#=0 To screenw-1
         For y#=0 To screenh-1
-            col As ColorVec=trace(cv,0,0,0,fovc*(x/screenh-0.5*screenw/screenh)*2.0,fovc*(y/screenh-0.5)*2.0,1,maxiters)
-            r as Byte = Min(255.0,col.r)
-            g as Byte = Min(255.0,col.g)
-            b as Byte= Min(255.0,col.b)
-            //Color  r, g, 
-            PutPixel Int(x),Int(y),r,g,b
-        Next y#
-    Next x#
+            campos as Vec = newVec(0,0,0)
+            raydir as Vec = newVec(fovc*(float(x)/screenh-0.5*screenw/screenh)*2.0,fovc*(float(y)/screenh-0.5)*2.0,1)
+            col as ColorVec=trace(cv,campos,raydir,maxiters)
+            r as Byte = min(255,col.r)
+            g as Byte = min(255,col.g)
+            b as Byte = min(255,col.b)
+
+            putpixel x,y,r,g,b
+        Next
+    Next
     unlock
     DrawScreen
     Print (Timer()-Tim)
 Forever
- 
-Function trace(cv as ColorVec,x#,y#,z#,vx#,vy#,vz#,iters) As ColorVec
+
+Function trace(cv as ColorVec, ray as Vec, dir as Vec, iters) As ColorVec
     coll=0
+    dir=normalize(dir)
     For obj as sphere=Each sphere
-        Q# = Sqrt(vx#*vx# + vy#*vy# + vz#*vz#)
-        dx = dx / Q: dy = dy / Q: dz = dz / Q
-       
-        a# = vx#*vx# + vy#*vy# + vz#*vz#
-        b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
-        c# = obj.x#*obj.x# + obj.y#*obj.y# + obj.z#*obj.z# + x*x + y*y + z*z -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#*obj.w#
-        d# = b#*b# - 4*a#*c#
+        b# = 2*dir.x#*(ray.x#-obj.pos.x#) + 2*dir.y#*(ray.y#-obj.pos.y) + 2*dir.z#*(ray.z#-obj.pos.z#)
+        c# = obj.pos.x#*obj.pos.x# + obj.pos.y#*obj.pos.y# + obj.pos.z#*obj.pos.z# + ray.x*ray.x + ray.y*ray.y + ray.z*ray.z -2*(obj.pos.x# * ray.x# + obj.pos.y# * ray.y# + obj.pos.z# * ray.z#) - obj.size#*obj.size#
+        d# = b#*b# - 4*c#
         If d>0 Then
-            tt# = (-b#-Sqrt(d#))/(2*a#)
+            tt# = (-b#-Sqrt(d#))/2
             If (coll==0 Or dist#>tt) And tt>0.0001
                 dist#=tt
                 nearest As sphere=obj
@@ -102,18 +139,18 @@ Function trace(cv as ColorVec,x#,y#,z#,vx#,vy#,vz#,iters) As ColorVec
             EndIf
         EndIf
     Next obj
-   
+
     If coll Then
         obj As sphere=nearest
         //valaistus
         'remstart
         For valo As light=Each light
-            pvx#=obj.x-x-vx*dist
-            vvx#=valo.x-x-vx*dist
-            pvy#=obj.y-y-vy*dist
-            vvy#=valo.y-y-vy*dist
-            pvz#=obj.z-z-vz*dist
-            vvz#=valo.z-z-vz*dist
+            pvx#=obj.pos.x-ray.x-dir.x*dist
+            vvx#=valo.pos.x-ray.x-dir.x*dist
+            pvy#=obj.pos.y-ray.y-dir.y*dist
+            vvy#=valo.pos.y-ray.y-dir.y*dist
+            pvz#=obj.pos.z-ray.z-dir.z*dist
+            vvz#=valo.pos.z-ray.z-dir.z*dist
             pvl#=Sqrt(pvx*pvx+pvy*pvy+pvz*pvz)
             vvl#=Sqrt(vvx*vvx+vvy*vvy+vvz*vvz)
             pvx#=pvx/pvl
@@ -125,36 +162,38 @@ Function trace(cv as ColorVec,x#,y#,z#,vx#,vy#,vz#,iters) As ColorVec
             dp#=pvx*vvx+pvy*vvy+pvz*vvz
             lightness#=lightness+Max(0.0,dp)
             specular#=specular+Max(0.0,dp)^8*0.5 //a hack for more interresting specular
-            dp#=pvx*vx+pvy*vy+pvz*vz
-            svx#=(2*dp*pvx-vx)
-            svy#=(2*dp*pvy-vy)
-            svz#=(2*dp*pvz-vz)
+            dp#=pvx*dir.x+pvy*dir.y+pvz*dir.z
+            svx#=(2*dp*pvx-dir.x)
+            svy#=(2*dp*pvy-dir.y)
+            svz#=(2*dp*pvz-dir.z)
             specular#=max(0.0,(vvx*svx+vvy*svy+vvz*svz))^2/2.0+specular
         Next valo
         'remend
         //heijastukset
         If iters>0 Then
-            pvx#=obj.x-x-vx*dist
-            pvy#=obj.y-y-vy*dist
-            pvz#=obj.z-z-vz*dist
+            pvx#=obj.pos.x-ray.x-dir.x*dist
+            pvy#=obj.pos.y-ray.y-dir.y*dist
+            pvz#=obj.pos.z-ray.z-dir.z*dist
             pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
             pvx#=pvx/pvl
             pvy#=pvy/pvl
             pvz#=pvz/pvl
-            dp#=pvx*vx+pvy*vy+pvz*vz
-            svx#=-(2*dp*pvx-vx)
-            svy#=-(2*dp*pvy-vy)
-            svz#=-(2*dp*pvz-vz)
-            cv=trace(cv,x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
+            dp#=pvx*dir.x+pvy*dir.y+pvz*dir.z
+            svx#=-(2*dp*pvx-dir.x)
+            svy#=-(2*dp*pvy-dir.y)
+            svz#=-(2*dp*pvz-dir.z)
+            pos as Vec = newVec(ray.x#+dir.x*dist,ray.y#+dir.y*dist,ray.z#+dir.z*dist)
+            dir as Vec = newVec(svx,svy,svz)
+            cv=trace(cv,pos,dir,iters-1)
         Else
-            cv=ambient//cv.r=0:cv.g=0:cv.b=0
+            cv=ambient
         EndIf
         diffuse#=(1.0-obj.specularity)*obj.diffuse
-        cv.r=(obj.r*lightness+ambient.r)*diffuse+(cv.r+specular*255)*obj.specularity //+20'*dotp
-        cv.g=(obj.g*lightness+ambient.g)*diffuse+(cv.g+specular*255)*obj.specularity //+20'*dotp
-        cv.b=(obj.b*lightness+ambient.b)*diffuse+(cv.b+specular*255)*obj.specularity //+20'*dotp
+        cv.r=(obj.c.r*lightness+ambient.r)*diffuse+(cv.r+specular*255)*obj.specularity //+20'*dotp
+        cv.g=(obj.c.g*lightness+ambient.g)*diffuse+(cv.g+specular*255)*obj.specularity //+20'*dotp
+        cv.b=(obj.c.b*lightness+ambient.b)*diffuse+(cv.b+specular*255)*obj.specularity //+20'*dotp
     Else
-        cv=ambient//cv.r=ambient.r:cv.g=100:cv.b=100
+        cv=ambient
     EndIf
     Return cv
 EndFunction
