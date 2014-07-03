@@ -345,6 +345,53 @@ LString LString::right(int chars) const {
 	return LString(begin() + (length() - chars), (length() - chars));
 }
 
+LString LString::trimmed() const {
+	LString::ConstIterator start = end();
+	for (LString::ConstIterator i = begin(); i != end(); i++) {
+		if (!isWhitespace(*i)) {
+			start = i;
+			break;
+		}
+	}
+	if (start == end()) return *this;
+
+	LString::ConstIterator e = end();
+	for (LString::ConstIterator i = end() - 1;i != begin(); --i) {
+		if (!isWhitespace(*i)) {
+			e = i + 1;
+			break;
+		}
+	}
+
+	return LString(start, e);
+}
+
+LString LString::toUpper() const {
+	LString ret;
+	ret.resize(size());
+	LString::Iterator out = ret.begin();
+	for (LString::ConstIterator i = begin(); i != end(); i++) {
+		char32_t ch = *i;
+		ch = std::use_facet<std::ctype<char32_t>>(std::locale()).toupper(ch);
+		*out = ch;
+		++out;
+	}
+	return ret;
+}
+
+LString LString::toLower() const {
+	LString ret;
+	ret.resize(size());
+	LString::Iterator out = ret.begin();
+	for (LString::ConstIterator i = begin(); i != end(); i++) {
+		char32_t ch = *i;
+		ch = std::use_facet<std::ctype<char32_t>>(std::locale()).tolower(ch);
+		*out = ch;
+		++out;
+	}
+	return ret;
+}
+
 LString::Iterator LString::find(LChar c) {
 	return find(c, begin());
 }
@@ -805,6 +852,10 @@ bool LString::utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd,
 	*sourceStart = source;
 	*targetStart = target;
 	return result;
+}
+
+bool LString::isWhitespace(LChar c) {
+	return c == U' ' || c == U'\t';
 }
 
 int LString::indexOfIterator(LString::ConstIterator i) const {

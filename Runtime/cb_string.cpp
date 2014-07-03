@@ -56,6 +56,25 @@ CBString CBF_strRemove(CBString cbstr, int begin, int len) {
 	return str;
 }
 
+CBString CBF_trim(CBString cbstr) {
+	LString str(cbstr);
+	return str.trimmed();
+}
+
+CBString CBF_lower(CBString cbstr) {
+	LString str(cbstr);
+	return str.toLower();
+}
+
+CBString CBF_upper(CBString cbstr) {
+	LString str(cbstr);
+	return str.toUpper();
+}
+
+int CBF_len(CBString cbstr) {
+	return LString(cbstr).size();
+}
+
  CBEXPORT CBString CB_StringConstruct(char32_t *txt) {
 	if (txt) {
 		return reinterpret_cast<CBString>(LStringData::createFromBuffer(txt));

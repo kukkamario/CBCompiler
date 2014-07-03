@@ -872,12 +872,18 @@ ast::Node *Parser::expectIfStatementNoKeyword(const CodePoint &startCp, Parser::
 		i++;
 		elseBlock = expectBlock(i);
 		if (mStatus == Error) return 0;
+		if (i->type() != Token::kEndIf) {
+			emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begins at %1,").arg(startCp.toString()), i->codePoint());
+			mStatus = Error;
+			return 0;
+		}
 	}
-	if (i->type() != Token::kEndIf) {
+	else if (i->type() != Token::kEndIf) {
 		emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begins at %1,").arg(startCp.toString()), i->codePoint());
 		mStatus = Error;
 		return 0;
 	}
+
 
 	ast::IfStatement *ret = new ast::IfStatement(startCp, i->codePoint());
 	ret->setElseBlock(elseBlock);

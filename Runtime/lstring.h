@@ -77,6 +77,10 @@ class LString {
 		LString substr(int start, int len) const;
 		LString left(int chars) const;
 		LString right(int chars) const;
+		LString trimmed() const;
+
+		LString toUpper() const;
+		LString toLower() const;
 
 		Iterator find(LChar c);
 		Iterator find(LChar c, Iterator start);
@@ -125,8 +129,9 @@ class LString {
 		ALLEGRO_USTR *toAllegroUStr() const;
 
 		static bool ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&fromNext, uint8_t *to, uint8_t *toEnd, uint8_t *&toNext);
-
 		static bool utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd, LChar **targetStart, LChar *targetEnd);
+
+		static bool isWhitespace(LChar c);
 
 		int indexOfIterator(ConstIterator i) const;
 		bool isValidIterator(ConstIterator i) const;

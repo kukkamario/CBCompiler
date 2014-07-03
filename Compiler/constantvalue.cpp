@@ -1370,7 +1370,7 @@ quint16 ConstantValue::toShort() const{
 		case Integer:
 			return mData.mInt;
 		case Float:
-			return mData.mFloat;
+			return mData.mFloat + 0.5;
 		case String:
 			return mData.mString.toUShort();
 		default:
@@ -1389,7 +1389,7 @@ quint8 ConstantValue::toByte() const {
 		case Integer:
 			return mData.mInt;
 		case Float:
-			return mData.mFloat;
+			return mData.mFloat + 0.5;
 		case String:
 			return (quint8)mData.mString.toUShort();
 		default:
@@ -1402,11 +1402,11 @@ float ConstantValue::toFloat() const{
 		case Boolean:
 			return mData.mBool;
 		case Byte:
-			return mData.mByte + 0.5;
+			return mData.mByte;
 		case Short:
-			return mData.mShort + 0.5;
+			return mData.mShort;
 		case Integer:
-			return mData.mInt + 0.5;
+			return mData.mInt;
 		case Float:
 			return mData.mFloat;
 		case String:
@@ -1427,7 +1427,7 @@ int ConstantValue::toInt() const{
 		case Integer:
 			return mData.mInt;
 		case Float:
-			return mData.mFloat;
+			return mData.mFloat + 0.5;
 		case String:
 			return mData.mString.toInt();
 		default:

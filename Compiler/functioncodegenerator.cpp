@@ -322,13 +322,14 @@ void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 
 	mExitStack.push(endBB);
 	mBuilder->setInsertPoint(blockBB);
-	mExitStack.pop();
 	n->block()->accept(this);
+
 	if (!mUnreachableBasicBlock) {
 		mBuilder->store(value, mBuilder->add(value, Value(step, mRuntime)));
 		mBuilder->branch(condBB);
 	}
 	mUnreachableBasicBlock = false;
+	mExitStack.pop();
 	mBuilder->setInsertPoint(endBB);
 }
 
@@ -549,7 +550,7 @@ void FunctionCodeGenerator::visit(ast::Exit *n) {
 		return;
 	}
 
-	llvm::BasicBlock *bb = mExitStack.pop();
+	llvm::BasicBlock *bb = mExitStack.top();
 	mBuilder->branch(bb);
 	mUnreachableBasicBlock = true;
 }
