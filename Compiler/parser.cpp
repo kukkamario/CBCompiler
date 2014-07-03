@@ -118,6 +118,11 @@ ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 		case Token::Float:
 		case Token::Integer:
 		case Token::String:
+		case Token::kFirst:
+		case Token::kLast:
+		case Token::kAfter:
+		case Token::kBefore:
+		case Token::kArraySize:
 			return expectExpression(i);
 		default:
 			return 0;

@@ -601,6 +601,12 @@ void FunctionCodeGenerator::visit(ast::Exit *n) {
 	mUnreachableBasicBlock = true;
 }
 
+void FunctionCodeGenerator::visit(ast::KeywordFunctionCall *n) {
+	CHECK_UNREACHABLE(n->codePoint());
+
+	emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored expression because it doesn't affect anything"), n->codePoint());
+}
+
 
 Value FunctionCodeGenerator::generate(ast::Integer *n) {
 	return Value(ConstantValue(n->value()), mRuntime);
