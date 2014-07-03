@@ -33,7 +33,11 @@ class ArrayValueType : public ValueType {
 		void refArray(Builder *builder, llvm::Value *array) const;
 		void destructArray(Builder *builder, llvm::Value *array);
 
+		llvm::Value *dataArray(Builder *builder, const Value &array);
+		llvm::Value *totalSize(Builder *builder, const Value &array);
+
 		int dimensions() const { return mDimensions; }
+		ValueType *baseType() const { return mBaseValueType; }
 	private:
 		ValueType *mBaseValueType;
 		llvm::Function *mConstructFunction;

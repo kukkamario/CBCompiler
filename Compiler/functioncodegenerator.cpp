@@ -370,7 +370,45 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 		mBuilder->setInsertPoint(endBB);
 	}
 	else if (container.isNormalValue() && valueType->isArray()) {
-		assert("Array For-Each isn't implemented yet" && 0);
+		VariableSymbol *varSym = searchVariableSymbol(n->variable());
+		ArrayValueType *array = static_cast<ArrayValueType*>(valueType);
+		valueType = array->baseType();
+		if (var.valueType() != valueType) {
+			emit error(ErrorCodes::ecInvalidAssignment, tr("The type of the variable \"%1\" doesn't match the container item type \"%2\"").arg(var.valueType()->name(), valueType->name()), n->codePoint());
+			return;
+		}
+
+		llvm::Value *alloc = varSym->alloca_();
+
+
+		llvm::Value *arrayData = array->dataArray(mBuilder, container);
+		llvm::Value *arrayDataPtr = mBuilder->irBuilder().CreateAlloca(arrayData->getType());
+		llvm::Value *totalSize = array->totalSize(mBuilder, container);
+		llvm::Value *arrayEndPtr = mBuilder->irBuilder().CreateGEP(arrayData, totalSize);
+		mBuilder->irBuilder().CreateStore(arrayData, arrayDataPtr);
+		mBuilder->branch(condBB);
+
+		mBuilder->setInsertPoint(condBB);
+		arrayData = mBuilder->irBuilder().CreateLoad(arrayDataPtr);
+		llvm::Value *cond = mBuilder->irBuilder().CreateICmpNE(arrayData, arrayEndPtr);
+		mBuilder->irBuilder().CreateCondBr(cond, blockBB, endBB);
+
+		mBuilder->setInsertPoint(blockBB);
+		arrayData = mBuilder->irBuilder().CreateLoad(arrayDataPtr);
+		varSym->setAlloca(arrayData);
+		mExitStack.push(endBB);
+
+		n->block()->accept(this);
+		if (!mUnreachableBasicBlock) {
+			arrayData = mBuilder->irBuilder().CreateGEP(arrayData, mBuilder->irBuilder().getInt32(1));
+			mBuilder->irBuilder().CreateStore(arrayData, arrayDataPtr);
+			mBuilder->branch(condBB);
+		}
+		mUnreachableBasicBlock = false;
+		mExitStack.pop();
+
+		mBuilder->setInsertPoint(endBB);
+		varSym->setAlloca(alloc);
 	}
 	else {
 		emit error(ErrorCodes::ecNotContainer, tr("For-Each-statement requires a container (an array or a type). Can't iterate \"%1\"").arg(valueType->name()), n->container()->codePoint());
@@ -1203,6 +1241,22 @@ void FunctionCodeGenerator::generateFunctionParameterAssignments(const QList<CBF
 		mBuilder->store(pi->mVariableSymbol, i);
 		pi++;
 	}
+}
+
+VariableSymbol *FunctionCodeGenerator::searchVariableSymbol(ast::Node *n) {
+	ast::Identifier *id = 0;
+	switch (n->type()) {
+		case ast::Node::ntIdentifier:
+			id = n->cast<ast::Identifier>(); break;
+		case ast::Node::ntVariable:
+			id = n->cast<ast::Variable>()->identifier(); break;
+		default:
+			assert("ast::Node not variable" && 0);
+	}
+
+	Symbol *symbol = mLocalScope->find(id->name());
+	assert(symbol && symbol->type() == Symbol::stVariable);
+	return static_cast<VariableSymbol*>(symbol);
 }
 
 

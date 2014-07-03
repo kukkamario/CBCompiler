@@ -64,6 +64,8 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		bool checkUnreachable(CodePoint cp);
 		void generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters);
 
+		VariableSymbol *searchVariableSymbol(ast::Node *n);
+
 		Settings *mSettings;
 		Scope *mLocalScope;
 		Scope *mGlobalScope;

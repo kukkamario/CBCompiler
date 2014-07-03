@@ -122,7 +122,7 @@ void SymbolCollector::visit(ast::Variable *c) {
 
 	if (existingSymbol->type() == Symbol::stVariable) {
 		VariableSymbol *varSym = static_cast<VariableSymbol*>(existingSymbol);
-		if (varSym->valueType() != valType) {
+		if (varSym->valueType() != valType && c->valueType()->type() != ast::Node::ntDefaultType) {
 			emit error(ErrorCodes::ecVariableAlreadyDefinedWithAnotherType, tr("Variable \"%1\" has already been declared as another type in %2").arg(c->identifier()->name(), varSym->codePoint().toString()), c->codePoint());
 		}
 		return;

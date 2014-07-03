@@ -1770,7 +1770,7 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 		i++;
 
 		Parser::TokIterator start = i;
-		ast::Node *part1 = expectLogicalOrExpression(i);
+		ast::Node *part1 = expectVariable(i);
 		if (mStatus == Error) { return 0;}
 
 		if (i->type() == Token::opAssign) {

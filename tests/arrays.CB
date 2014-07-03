@@ -15,4 +15,8 @@ For x = 0 to 9
 Next x
 
 Print array2[1]
- 
+
+Print "For-Each:"
+For a As String = Each array
+	Print a
+Next
