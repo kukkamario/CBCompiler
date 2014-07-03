@@ -1,0 +1,32 @@
+Struct Vec3
+	Field x#
+	Field y#
+	Field z#
+EndStruct
+
+
+vec As Vec3 = newVec3(20, 10, 5)
+x# = 23
+Print vec
+
+Function newVec3(x# = 0.0, y# = 0.0, z# = 0.0) As Vec3
+	Dim vec As Vec3
+	vec.x = x#
+	vec.y = y#
+	vec.z = z#
+	Return vec
+EndFunction
+
+Function normalize(vec As Vec3) As Vec3
+	Dim lenSq# = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z
+	If lenSq == 0 Then Return vec
+	Dim vec_len = Sqrt(lenSq#)
+	vec.x = vec.x / vec_len
+	vec.y = vec.y / vec_len
+	vec.z = vec.z / vec_len
+	Return vec
+EndFunction
+
+Function printVec(vec As Vec3) As Integer
+	Print vec.x + ", " + vec.y + ", " + vec.z
+EndFunction

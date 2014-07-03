@@ -292,7 +292,7 @@ llvm::Value *Builder::bitcast(llvm::Type *type, llvm::Value *val) {
 
 Value Builder::call(Function *func, QList<Value> &params) {
 	Function::ParamList paramTypes = func->paramTypes();
-	assert(func->requiredParams() >= params.size() && params.size() <= paramTypes.size());
+	assert(func->requiredParams() <= params.size() && params.size() <= paramTypes.size());
 	Function::ParamList::ConstIterator pi = paramTypes.begin();
 	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
 		//Cast to the right value type

@@ -1711,7 +1711,7 @@ ast::Node *Parser::expectVariableDefinition(Parser::TokIterator &i) {
 	if (mStatus == Error) return 0;
 	if (!varType) varType = new ast::DefaultType(id->codePoint());
 	ast::Node *value = 0;
-	if (i->type() == Token::opEqual) {
+	if (i->type() == Token::opAssign) {
 		i++;
 		value = expectExpression(i);
 		if (mStatus == Error) return 0;

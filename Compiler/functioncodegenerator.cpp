@@ -458,6 +458,10 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 			if (opFlags.testFlag(OperationFlag::CastFromString)) {
 				emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), n->cases().value(index)->codePoint());
 			}
+			if (opFlags.testFlag(OperationFlag::OperandBCantBeCastedToA)) {
+				emit error(ErrorCodes::ecCantCastValue, tr("Can't cast \"%1\" to \"%2\"").arg(valueType->name(), i->first.valueType()->name()), n->cases().value(index)->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecCantCastValue);
+			}
 
 			if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
 				emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), i->first.valueType()->name()), n->cases().value(index)->codePoint());
@@ -677,6 +681,11 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 				}
 				if (opFlags.testFlag(OperationFlag::CastFromString)) {
 					emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), exprNode->codePoint());
+				}
+
+				if (opFlags.testFlag(OperationFlag::OperandBCantBeCastedToA)) {
+					emit error(ErrorCodes::ecCantCastValue, tr("Can't cast \"%1\" to \"%2\"").arg(op2.valueType()->name(), op1.valueType()->name()), exprNode->codePoint());
+					throw CodeGeneratorError(ErrorCodes::ecCantCastValue);
 				}
 
 				if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {
@@ -1097,7 +1106,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 			}
 		}
 	}
-	if (bestFunc == 0) {
+	if (bestFunc == 0 || !bestCost.isCastPossible()) {
 		if (command) {
 			emit error(ErrorCodes::ecCantFindCommand, tr("Can't find a command overload which would accept given parameters (%1)").arg(
 						   listStringJoin(parameters, [](const Value &val) {
