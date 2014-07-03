@@ -132,6 +132,8 @@ class LString {
 		static bool utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd, LChar **targetStart, LChar *targetEnd);
 
 		static bool isWhitespace(LChar c);
+		static char32_t toUpper(char32_t c);
+		static char32_t toLower(char32_t c);
 
 		int indexOfIterator(ConstIterator i) const;
 		bool isValidIterator(ConstIterator i) const;

@@ -491,6 +491,14 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 				v = mBuilder->load(v);
 			}
 			generateDestructors();
+			ValueType::CastCost cc = v.valueType()->castingCostToOtherValueType(mReturnType);
+			OperationFlags opFlags = ValueType::castCostOperationFlags(cc);
+
+			if (opFlags.testFlag(OperationFlag::OperandBCantBeCastedToA)) {
+				emit error(ErrorCodes::ecCantCastValue, tr("Can't cast \"%1\" to \"%2\"").arg(v.valueType()->name(), mReturnType->name()), n->value()->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecCantCastValue);
+			}
+
 			mBuilder->returnValue(mReturnType, v);
 		}
 		else {

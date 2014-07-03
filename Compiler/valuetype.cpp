@@ -49,7 +49,7 @@ llvm::LLVMContext &ValueType::context() {
 OperationFlags ValueType::castCostOperationFlags(ValueType::CastCost cc) {
 	switch (cc) {
 		case ccNoCast:
-			return OperationFlag::NoSuchOperation;
+			return OperationFlag::OperandBCantBeCastedToA;
 		case ccCastToString:
 			return OperationFlag::CastToString; break;
 		case ccCastFromString:

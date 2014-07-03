@@ -372,7 +372,7 @@ LString LString::toUpper() const {
 	LString::Iterator out = ret.begin();
 	for (LString::ConstIterator i = begin(); i != end(); i++) {
 		char32_t ch = *i;
-		ch = std::use_facet<std::ctype<char32_t>>(std::locale()).toupper(ch);
+		ch = toUpper(ch);
 		*out = ch;
 		++out;
 	}
@@ -385,7 +385,7 @@ LString LString::toLower() const {
 	LString::Iterator out = ret.begin();
 	for (LString::ConstIterator i = begin(); i != end(); i++) {
 		char32_t ch = *i;
-		ch = std::use_facet<std::ctype<char32_t>>(std::locale()).tolower(ch);
+		ch = toLower(ch);
 		*out = ch;
 		++out;
 	}
@@ -855,7 +855,48 @@ bool LString::utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd,
 }
 
 bool LString::isWhitespace(LChar c) {
-	return c == U' ' || c == U'\t';
+	switch (c) {
+		case U'\t':
+		case U'\n':
+		case U'\f':
+		case U'\r':
+		case U' ':
+			return true;
+		default:
+			return false;
+	}
+}
+
+char32_t LString::toUpper(char32_t c) {
+	if (c >= U'a' && c <= U'z') {
+		return U'A' + (c - U'a');
+	}
+	switch (c) {
+		case U'ä':
+			return U'Ä';
+		case U'å':
+			return U'Å';
+		case U'ö':
+			return U'Ö';
+		default:
+			return c;
+	}
+}
+
+char32_t LString::toLower(char32_t c) {
+	if (c >= U'A' && c <= U'Z') {
+		return U'a' + (c - U'A');
+	}
+	switch (c) {
+		case U'Ä':
+			return U'ä';
+		case U'Å':
+			return U'å';
+		case U'Ö':
+			return U'ö';
+		default:
+			return c;
+	}
 }
 
 int LString::indexOfIterator(LString::ConstIterator i) const {
