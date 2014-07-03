@@ -101,6 +101,7 @@ class Token {
 			kLast,
 			kBefore,
 			kAfter,
+			kArraySize,
 
 			KeywordsEnd,
 			TypeCount

@@ -3,6 +3,7 @@
 #include "builder.h"
 #include "runtime.h"
 #include "abstractsyntaxtree.h"
+#include "intvaluetype.h"
 
 ArrayValueType::ArrayValueType(ValueType *baseType, llvm::Type *llvmType, int dimensions):
 	ValueType(baseType->runtime(), llvmType),
@@ -60,6 +61,21 @@ Value ArrayValueType::generateLoad(Builder *builder, const Value &var) const {
 	llvm::Value *v = builder->irBuilder().CreateLoad(var.value());
 	refArray(builder, v);
 	return Value(var.valueType(), v, false);
+}
+
+Value ArrayValueType::dimensionSize(Builder *builder, const Value &array, const Value &dimNum) {
+	llvm::IRBuilder<> &irBuilder = builder->irBuilder();
+	llvm::Value * arr = builder->llvmValue(array);
+	llvm::Value *arrayDataHeader = irBuilder.CreateStructGEP(arr, 0);
+	llvm::Value *sizes = irBuilder.CreateStructGEP(arrayDataHeader, 1);
+	llvm::Value *gepParams[2];
+	gepParams[0] = irBuilder.getInt32(0);
+	gepParams[1] = builder->llvmValue(builder->toInt(dimNum));
+	llvm::Value *size = irBuilder.CreateLoad(irBuilder.CreateGEP(sizes, gepParams));
+	if (size->getType() != irBuilder.getInt32Ty()) {
+		size = irBuilder.CreateTrunc(size, irBuilder.getInt32Ty());
+	}
+	return Value(mRuntime->intValueType(), size, false);
 }
 
 void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value *array) {

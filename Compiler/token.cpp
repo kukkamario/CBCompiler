@@ -100,6 +100,7 @@ static const char *const tokenNames[] = {
 	"kLast",
 	"kBefore",
 	"kAfter",
+	"kArraySize"
 
 	"KeywordsEnd",
 	"TypeCount"

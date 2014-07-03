@@ -1573,7 +1573,8 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		case Token::kFirst:
 		case Token::kLast:
 		case Token::kBefore:
-		case Token::kAfter: {
+		case Token::kAfter:
+		case Token::kArraySize: {
 			ast::KeywordFunctionCall *ret;
 			switch (i->type()) {
 				case Token::kNew:
@@ -1586,6 +1587,8 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 					ret = new ast::KeywordFunctionCall(ast::KeywordFunctionCall::Before, i->codePoint()); break;
 				case Token::kAfter:
 					ret = new ast::KeywordFunctionCall(ast::KeywordFunctionCall::After, i->codePoint()); break;
+				case Token::kArraySize:
+					ret = new ast::KeywordFunctionCall(ast::KeywordFunctionCall::ArraySize, i->codePoint()); break;
 				default:
 					assert("WTF assertion");
 					ret = 0;

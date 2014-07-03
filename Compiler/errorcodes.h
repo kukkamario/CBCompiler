@@ -122,6 +122,8 @@ enum ErrorCode {
 	ecNotContainer,
 	ecEmptySelect,
 	ecStructContainsItself,
+	ecNotInteger,
+	ecInvalidParameter,
 
 	ecCantWriteBitcodeFile,
 	ecOptimizingFailed,

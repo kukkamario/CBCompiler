@@ -15,6 +15,7 @@
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
+#include "booleanvaluetype.h"
 #include "liststringjoin.h"
 #include "castcostcalculator.h"
 #include "cbfunction.h"
@@ -163,7 +164,7 @@ void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
 		}
 		int index = 1;
 		for (const Value &v : params) {
-			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType())) {
+			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType() || v.valueType() == mRuntime->booleanValueType())) {
 				emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array initialization parameter %1 is not an integer").arg(index), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecArraySubscriptNotInteger);
 			}
@@ -844,6 +845,50 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 
 Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 	QList<Value> paramValues = generateParameterList(n->parameters());
+	if (n->keyword() == ast::KeywordFunctionCall::ArraySize) {
+		if (paramValues.size() == 0 || paramValues.size() > 2) {
+			emit error(ErrorCodes::ecWrongNumberOfParameters, tr("ArraySize takes 1 or 2 parameters"), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecWrongNumberOfParameters);
+		}
+		const Value &array = paramValues.first();
+		if (!array.valueType()->isArray()) {
+			emit error(ErrorCodes::ecNotArray, tr("The first parameter of ArraySize should be an array"), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecNotArray);
+		}
+		ArrayValueType *valType = static_cast<ArrayValueType*>(array.valueType());
+		if (valType->dimensions() == 1) {
+			if (paramValues.size() != 1) {
+				emit error(ErrorCodes::ecWrongNumberOfParameters, tr("ArraySize takes only 1 parameter when first parameter is one dimensional array"), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecWrongNumberOfParameters);
+			}
+			Value result = valType->dimensionSize(mBuilder, array, Value(ConstantValue(0), mRuntime));
+			mBuilder->destruct(array);
+			return result;
+		}
+
+		if (paramValues.size() != 2) {
+			emit error(ErrorCodes::ecWrongNumberOfParameters, tr("ArraySize takes 2 parameters (an array and a dimension index) when first parameter is multidimensional array"), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecWrongNumberOfParameters);
+		}
+		Value dimIndex = paramValues.last();
+		if (!(dimIndex.valueType() == mRuntime->intValueType() || dimIndex.valueType() == mRuntime->shortValueType() || dimIndex.valueType() == mRuntime->byteValueType() || dimIndex.valueType() == mRuntime->booleanValueType())) {
+			emit error(ErrorCodes::ecNotInteger, tr("ArraySize second parameter should be an integer. Given \"%1\"").arg(dimIndex.valueType()->name()), n->codePoint());
+			throw CodeGeneratorError(ErrorCodes::ecNotInteger);
+		}
+		dimIndex = mBuilder->toInt(dimIndex);
+		if (dimIndex.isConstant()) {
+			int i = dimIndex.constant().toInt();
+			if (i < 0 || i >= valType->dimensions()) {
+				emit error(ErrorCodes::ecInvalidParameter, tr("Invalid array dimension index %1. Array has %2 dimensions so index should be between 1 and %3").arg(i).arg(valType->dimensions()).arg(valType->dimensions() - 1), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecInvalidParameter);
+			}
+		}
+		Value result = valType->dimensionSize(mBuilder, array, dimIndex);
+		mBuilder->destruct(array);
+		return result;
+	}
+
+
 	if (paramValues.size() != 1) {
 		emit error(ErrorCodes::ecWrongNumberOfParameters, tr("This function takes one parameter"), n->codePoint());
 		throw CodeGeneratorError(ErrorCodes::ecWrongNumberOfParameters);
@@ -911,7 +956,7 @@ Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
 		}
 		int index = 1;
 		for (const Value &v : params) {
-			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType())) {
+			if (!(v.valueType() == mRuntime->intValueType()  || v.valueType() == mRuntime->shortValueType() || v.valueType() == mRuntime->byteValueType() || v.valueType() == mRuntime->booleanValueType())) {
 				emit error(ErrorCodes::ecArraySubscriptNotInteger, tr("Array initialization parameter %1 is not an integer").arg(index), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecArraySubscriptNotInteger);
 			}

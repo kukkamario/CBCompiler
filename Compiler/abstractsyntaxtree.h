@@ -520,7 +520,8 @@ class KeywordFunctionCall : public Node {
 			First,
 			Last,
 			Before,
-			After
+			After,
+			ArraySize
 		};
 
 		KeywordFunctionCall(KeywordFunction type, const CodePoint &cp) : Node (cp), mKeyword(type), mParameters(0) {}
