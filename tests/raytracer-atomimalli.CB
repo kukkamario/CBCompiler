@@ -1,7 +1,7 @@
 //http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
  
-Const screenw% = 300
-Const screenh% = 300
+Const screenw% = 1000
+Const screenh% = 600
  
 fov=35
 maxiters=8
@@ -51,7 +51,7 @@ l.x = -3: l.y = 0: l.z = 0
 cv as ColorVec// use single struct
  
 global ambient as ColorVec
-ambient.r=100:ambient.g=100:ambient.b=100
+ambient.r=40:ambient.g=100:ambient.b=100
  
 Repeat
     Tim=Timer()
@@ -70,12 +70,12 @@ Repeat
     lock2(2) //writeonly
     For x#=0 To screenw-1
         For y#=0 To screenh-1
-            col as ColorVec=trace(cv,0,0,0,fovc*(x/screenh-0.5*screenw/screenh)*2.0,fovc*(y/screenh-0.5)*2.0,1,maxiters)
-            r as Byte = int(Min(255.0,col.r))
-            g as Byte = int(Min(255.0,col.g))
-            b as Byte= int(Min(255.0,col.b))
-            //Color  r, g, b
-            putpixel int(x),int(y),r,g,b
+            col As ColorVec=trace(cv,0,0,0,fovc*(x/screenh-0.5*screenw/screenh)*2.0,fovc*(y/screenh-0.5)*2.0,1,maxiters)
+            r as Byte = Min(255.0,col.r)
+            g as Byte = Min(255.0,col.g)
+            b as Byte= Min(255.0,col.b)
+            //Color  r, g, 
+            PutPixel Int(x),Int(y),r,g,b
         Next y#
     Next x#
     unlock

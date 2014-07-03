@@ -212,6 +212,7 @@ void SymbolCollector::visit(ast::Expression *c) {
 			}
 			before = n->operand();
 		}
+		before->accept(this);
 	}
 	else {
 		c->firstOperand()->accept(this);
