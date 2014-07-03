@@ -1046,7 +1046,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 			}
 		}
 
-		if (f->requiredParams() > parameters.size()) {
+		if (f->requiredParams() > parameters.size() || parameters.size() > f->paramTypes().size()) {
 			emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
 						   f->functionValueType()->name(),
 						   listStringJoin(parameters, [](const Value &val) {
