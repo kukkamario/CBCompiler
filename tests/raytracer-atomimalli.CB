@@ -1,107 +1,109 @@
 //http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
-
-Const screenw% = 300 'käytä samoja jos et halua venynyttä kuvaa, en jaksa nyt fiksata.
+ 
+Const screenw% = 300
 Const screenh% = 300
-
+ 
 fov=35
 maxiters=8
-
+ 
 SCREEN screenw, screenh
-
+ 
 Type sphere
-	Field x#
-	Field y#
-	Field z#
-	Field ox#
-	Field oy#
-	Field oz#
-	Field w#
-	Field r#
-	Field g#
-	Field b#
+    Field x#
+    Field y#
+    Field z#
+    Field ox#
+    Field oy#
+    Field oz#
+    Field w#
+    Field r#
+    Field g#
+    Field b#
+    Field specularity#
+    Field diffuse#
 EndType
-
-Type transmitter
-	Field r#
-	Field g#
-	Field b#
-EndType
-
+ 
+struct ColorVec
+    Field r#
+    Field g#
+    Field b#
+EndStruct
+ 
 Type light
-	Field x#
-	Field y#
-	Field z#
+    Field x#
+    Field y#
+    Field z#
 EndType
-
+ 
 s As sphere = New(sphere)
-s.ox# = -1: s.oy# = -1: s.oz# = 7: s.w# = 1.5: s.r# = 255: s.g#= 0: s.b# = 0 
-
+s.ox# = -1: s.oy# = -1: s.oz# = 7: s.w# = 1.5: s.r# = 255: s.g#= 0: s.b# = 0:s.diffuse#=0.9
+ 
 s as sphere = New(sphere)
-s.ox# = 2: s.oy# = 1: s.oz# = 6: s.w# = 1: s.r# = 5: s.g# = 0: s.b# = 255
-
+s.ox# = 2: s.oy# = 1: s.oz# = 6: s.w# = 1: s.r# = 5: s.g# = 0: s.b# = 255:s.diffuse#=0.8
+ 
 s as sphere = New(sphere)
-s.ox# = 0: s.oy# = 1.5: s.oz# = 7: s.w# = 1: s.r# = 5: s.g# = 255: s.b# = 0
-
-
+s.ox# = 0: s.oy# = 1.5: s.oz# = 7: s.w# = 1: s.r# = 5: s.g# = 255: s.b# = 0:s.diffuse#=0.8
+ 
+ 
 l As light = New(light)
 l.x = -3: l.y = 0: l.z = 0
-
+ 
+cv as ColorVec// use single struct
+ 
+global ambient as ColorVec
+ambient.r=100:ambient.g=100:ambient.b=100
+ 
 Repeat
     Tim=Timer()
-    xfov#=Tan(fov/2)/Cos(fov/2)'kalansilmän poistoa varten.(sama kulma joka resolla)
-    yfov#=xfov'*screenh/screenw'pitänee fiksata vielä :P
-
-	t# = t# + (Timer() - lastUpdate) / 100.0
-	lastUpdate = Timer()
-	t2# = t#
-	For s As sphere = Each sphere
-		s.x# = s.ox# + Sin(t2# * 2.0) * 0.7
-		s.y# = s.oy# + Sin(t2# * 1.4 +124124) * 0.3
-		s.z# = s.oz# + Sin(t2# + 343) * 0.6
-		t2# = t2# + t#
-	Next s
-
+    fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
+ 
+    t# = t# + (Timer() - lastUpdate) / 100.0
+    lastUpdate = Timer()
+    t2# = t#
+    For s As sphere = Each sphere
+        s.x# = s.ox# + Sin(t2# * 2.0) * 0.7
+        s.y# = s.oy# + Sin(t2# * 1.4 +124124) * 0.3
+        s.z# = s.oz# + Sin(t2# + 343) * 0.6
+        t2# = t2# + t#
+        s.specularity#=sin(timer()/20.0)*0.4+0.5
+    Next s
+    lock2(2) //writeonly
     For x#=0 To screenw-1
         For y#=0 To screenh-1
-            a as transmitter=trace(0,0,0,xfov*(x/screenw-0.5)*2.0,yfov*(y/screenw-0.5)*2.0,1,maxiters)
-			r = Min(255.0,a.r)
-			g = Min(255.0,a.g)
-			b = Min(255.0,a.b)
-            Color  r, g, b
-			Dot x,y
-			Delete a
+            col as ColorVec=trace(cv,0,0,0,fovc*(x/screenh-0.5*screenw/screenh)*2.0,fovc*(y/screenh-0.5)*2.0,1,maxiters)
+            r as Byte = int(Min(255.0,col.r))
+            g as Byte = int(Min(255.0,col.g))
+            b as Byte= int(Min(255.0,col.b))
+            //Color  r, g, b
+            putpixel int(x),int(y),r,g,b
         Next y#
     Next x#
+    unlock
     DrawScreen
     Print (Timer()-Tim)
 Forever
-
-Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
-    col=0
-    For obj as sphere=Each sphere 
-		'remstart
-		Q# = Sqrt(vx#^2 + vy#^2 + vz#^2)
-		dx = dx / Q: dy = dy / Q: dz = dz / Q
-	   
-		a# = vx#^2 + vy#^2 + vz#^2
-		b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
-		c# = obj.x#^2 + obj.y#^2 + obj.z#^2 + x^2 + y^2 + z^2 -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#^2
-		d# = b#^2 - 4*a#*c#
-		'remend
-		'd#=Sqrt((x-obj.x)^2+(y-obj.y)^2+(y-obj.y)^2)
+ 
+Function trace(cv as ColorVec,x#,y#,z#,vx#,vy#,vz#,iters) As ColorVec
+    coll=0
+    For obj as sphere=Each sphere
+        Q# = Sqrt(vx#*vx# + vy#*vy# + vz#*vz#)
+        dx = dx / Q: dy = dy / Q: dz = dz / Q
+       
+        a# = vx#*vx# + vy#*vy# + vz#*vz#
+        b# = 2*vx#*(x#-obj.x#) + 2*vy#*(y#-obj.y) + 2*vz#*(z#-obj.z#)
+        c# = obj.x#*obj.x# + obj.y#*obj.y# + obj.z#*obj.z# + x*x + y*y + z*z -2*(obj.x# * x# + obj.y# * y# + obj.z#*z#) - obj.w#*obj.w#
+        d# = b#*b# - 4*a#*c#
         If d>0 Then
-            tt# = (-b#-Sqrt(d#))/(2*a#)',(-b#+Sqrt(d#))/(2*a#))
-            'If tt<=0 Then tt# = (-b#-Sqrt(d#))/(2*a#)
-            'SetWindow str(tt#)
-            If (col==0 Or dist#>tt) And tt>0.0001
+            tt# = (-b#-Sqrt(d#))/(2*a#)
+            If (coll==0 Or dist#>tt) And tt>0.0001
                 dist#=tt
                 nearest As sphere=obj
-                col=1
+                coll=1
             EndIf
         EndIf
     Next obj
-    
-    If col Then
+   
+    If coll Then
         obj As sphere=nearest
         //valaistus
         'remstart
@@ -112,8 +114,8 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
             vvy#=valo.y-y-vy*dist
             pvz#=obj.z-z-vz*dist
             vvz#=valo.z-z-vz*dist
-            pvl#=Sqrt(pvx^2+pvy^2+pvz^2)
-            vvl#=Sqrt(vvx^2+vvy^2+vvz^2)
+            pvl#=Sqrt(pvx*pvx+pvy*pvy+pvz*pvz)
+            vvl#=Sqrt(vvx*vvx+vvy*vvy+vvz*vvz)
             pvx#=pvx/pvl
             vvx#=-vvx/vvl
             pvy#=pvy/pvl
@@ -122,16 +124,16 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
             vvz#=-vvz/vvl
             dp#=pvx*vvx+pvy*vvy+pvz*vvz
             lightness#=lightness+Max(0.0,dp)
-            specular#=specular+Max(0.0,dp)^5/3
+            specular#=specular+Max(0.0,dp)^8*0.5 //a hack for more interresting specular
             dp#=pvx*vx+pvy*vy+pvz*vz
             svx#=(2*dp*pvx-vx)
             svy#=(2*dp*pvy-vy)
             svz#=(2*dp*pvz-vz)
-            specular#=Min(255.0, Max(0.0, vvx*svx+vvy*svy+vvz*svz))^2/2+specular
+            specular#=max(0.0,(vvx*svx+vvy*svy+vvz*svz))^2/2.0+specular
         Next valo
         'remend
         //heijastukset
-        If iters>0 Then 
+        If iters>0 Then
             pvx#=obj.x-x-vx*dist
             pvy#=obj.y-y-vy*dist
             pvz#=obj.z-z-vz*dist
@@ -143,18 +145,16 @@ Function trace(x#,y#,z#,vx#,vy#,vz#,iters) As transmitter
             svx#=-(2*dp*pvx-vx)
             svy#=-(2*dp*pvy-vy)
             svz#=-(2*dp*pvz-vz)
-            ref as transmitter=trace(x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
-            'SetWindow ""+dotp
+            cv=trace(cv,x#+vx*dist,y#+vy*dist,z#+vz*dist,svx,svy,svz,iters-1)
         Else
-            ref as transmitter=New(transmitter)
+            cv=ambient//cv.r=0:cv.g=0:cv.b=0
         EndIf
-        t As transmitter= New(transmitter)
-        t.r=(obj.r*lightness+ref.r)/2+specular*255 //+20'*dotp
-        t.g=(obj.g*lightness+ref.g)/2+specular*255 //+20'*dotp
-        t.b=(obj.b*lightness+ref.b)/2+specular*255 //+20'*dotp
-        Delete ref
+        diffuse#=(1.0-obj.specularity)*obj.diffuse
+        cv.r=(obj.r*lightness+ambient.r)*diffuse+(cv.r+specular*255)*obj.specularity //+20'*dotp
+        cv.g=(obj.g*lightness+ambient.g)*diffuse+(cv.g+specular*255)*obj.specularity //+20'*dotp
+        cv.b=(obj.b*lightness+ambient.b)*diffuse+(cv.b+specular*255)*obj.specularity //+20'*dotp
     Else
-        t As transmitter= New(transmitter)    
+        cv=ambient//cv.r=ambient.r:cv.g=100:cv.b=100
     EndIf
-    Return t
+    Return cv
 EndFunction

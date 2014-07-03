@@ -31,7 +31,7 @@ void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePoin
 }
 
 void ValueTypeCollection::addStructValueType(StructValueType *structValueType) {
-	mStructes.append(structValueType);
+	mStructs.append(structValueType);
 	addValueType(structValueType);
 }
 

@@ -37,7 +37,7 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 
 	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
 	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
-	const QList<ast::StructDefinition*> &classDefs = program->classDefinitions();
+	const QList<ast::StructDefinition*> &classDefs = program->structDefinitions();
 
 	mValid = true;
 	for (ast::TypeDefinition *def : typeDefs) {
@@ -54,13 +54,15 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 			mGlobalScope->addSymbol(new DefaultValueTypeSymbol(valueType));
 	}
 
+	for (ast::StructDefinition *def : classDefs) {
+		mValid &= createStructFields(def);
+	}
+
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeFields(def);
 	}
 
-	for (ast::StructDefinition *def : classDefs) {
-		mValid &= createStructFields(def);
-	}
+
 
 
 	for (ast::FunctionDefinition *def : funcDefs) {

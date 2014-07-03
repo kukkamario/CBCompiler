@@ -73,6 +73,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		ConstantExpressionEvaluator mConstEval;
 
 		QMap<ast::FunctionDefinition*, CBFunction*> mFunctions;
+
 	private slots:
 		void errorOccured(int, QString, CodePoint);
 	signals:

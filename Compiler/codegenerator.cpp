@@ -273,16 +273,17 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
 	}
-	for (ast::StructDefinition* def : program->classDefinitions()) {
-		Symbol *sym = mGlobalScope.find(def->identifier()->name());
-		assert(sym && sym->type() == Symbol::stValueType);
-		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
-		ValueType *valueType = type->valueType();
-		assert(valueType->isStruct());
-		StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
-		//Create an opaque member type so class pointers can be used in fields.
-		structValueType->createOpaqueType(mBuilder);
+	QList<StructValueType*> notGeneratedValueTypes = mRuntime.valueTypeCollection().structValueTypes();
+	while (!notGeneratedValueTypes.isEmpty()) {
+		for (QList<StructValueType*>::Iterator i = notGeneratedValueTypes.begin(); i != notGeneratedValueTypes.end();) {
+			StructValueType *structValueType = *i;
+			if (structValueType->generateLLVMType()) {
+				i = notGeneratedValueTypes.erase(i);
+			} else {
+				++i;
+			}
+		}
 	}
 
 
@@ -292,16 +293,7 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		type->createTypePointerValueType(mBuilder);
 	}
 
-	for (ast::StructDefinition* def : program->classDefinitions()) {
-		Symbol *sym = mGlobalScope.find(def->identifier()->name());
-		assert(sym && sym->type() == Symbol::stValueType);
-		ValueTypeSymbol *type = static_cast<ValueTypeSymbol*>(sym);
-		ValueType *valueType = type->valueType();
-		assert(valueType->isStruct());
-		StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
-		structValueType->generateLLVMType();
-	}
 
 	return true;
 }

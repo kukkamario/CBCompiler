@@ -40,8 +40,9 @@ class StructValueType : public ValueType {
 		int size() const;
 		void setFields(const QList<StructField> &fields);
 		const CodePoint &codePoint() const { return mCodePoint; }
-		void createOpaqueType(Builder *builder);
-		void generateLLVMType();
+		bool generateLLVMType();
+		bool isGenerated() const;
+
 		bool isNamedValueType() const { return true; }
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		void generateDestructor(Builder *builder, const Value &v);

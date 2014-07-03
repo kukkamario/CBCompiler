@@ -990,7 +990,7 @@ class Program : public Node {
 		void setFunctionDefinitions(const QList<FunctionDefinition*> &funcDefs) { mFunctionDefinitions = funcDefs; }
 		const QList<TypeDefinition*> &typeDefinitions() const { return mTypeDefinitions; }
 		void setTypeDefinitions(const QList<TypeDefinition*> &typeDefs) { mTypeDefinitions = typeDefs; }
-		const QList<StructDefinition*> &classDefinitions() const { return mStructDefinitions; }
+		const QList<StructDefinition*> &structDefinitions() const { return mStructDefinitions; }
 		void setStructDefinitions(const QList<StructDefinition*> &classDefs) { mStructDefinitions = classDefs; }
 	private:
 		QList<TypeDefinition*> mTypeDefinitions;

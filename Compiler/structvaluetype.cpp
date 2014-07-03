@@ -30,7 +30,7 @@ bool StructValueType::containsValueType(const ValueType *valueType) const {
 		if (f.valueType() == valueType) return true;
 		if (f.valueType()->isStruct()) {
 			StructValueType *structValueType = static_cast<StructValueType*>(f.valueType());
-			if (containsValueType(structValueType)) return true;
+			if (structValueType->containsValueType(valueType)) return true;
 		}
 	}
 	return false;
@@ -71,20 +71,25 @@ void StructValueType::setFields(const QList<StructField> &fields) {
 	}
 }
 
-void StructValueType::createOpaqueType(Builder *builder) {
-	mStructType = llvm::StructType::create(builder->context(), mName.toStdString());
-	mType = mStructType;
-}
 
-void StructValueType::generateLLVMType() {
+bool StructValueType::generateLLVMType() {
 	std::vector<llvm::Type*> body;
 	body.reserve(mFields.size());
 
 	for (const StructField &f : mFields) {
+		if (f.valueType()->isStruct()) {
+			if (!static_cast<StructValueType*>(f.valueType())->isGenerated()) return false;
+		}
 		body.push_back(f.valueType()->llvmType());
 	}
 
-	mStructType->setBody(body);
+	mStructType = llvm::StructType::create(body, mName.toStdString());
+	mType = mStructType;
+	return true;
+}
+
+bool StructValueType::isGenerated() const {
+	return mStructType != 0;
 }
 
 Value StructValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {

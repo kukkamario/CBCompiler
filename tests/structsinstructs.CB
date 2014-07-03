@@ -1,0 +1,15 @@
+Struct Vector
+	Field x#
+	Field y#
+	Field z#
+EndStruct
+
+Struct Hello
+	Field pos As Vector
+EndStruct
+
+
+Dim h As Hello
+h.pos.x = 23
+
+Print h.pos.x

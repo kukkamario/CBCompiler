@@ -128,7 +128,7 @@ Value Builder::toShort(const Value &v) {
 	assert(v.value());
 	switch (v.valueType()->basicType()) {
 		case ValueType::Float: {
-			llvm::Value *r = mIRBuilder.CreateAdd(llvmValue(v), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
+			llvm::Value *r = mIRBuilder.CreateFAdd(llvmValue(v), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
 			return Value(mRuntime->shortValueType(), mIRBuilder.CreateFPToSI(r,mIRBuilder.getInt16Ty()), false);
 		}
 		case ValueType::Boolean:
@@ -159,7 +159,7 @@ Value Builder::toByte(const Value &v) {
 	assert(v.value());
 	switch (v.valueType()->basicType()) {
 		case ValueType::Float: {
-			llvm::Value *r = mIRBuilder.CreateAdd(llvmValue(v), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
+			llvm::Value *r = mIRBuilder.CreateFAdd(llvmValue(v), llvm::ConstantFP::get(mIRBuilder.getFloatTy(), 0.5));
 			return Value(mRuntime->byteValueType(), mIRBuilder.CreateFPToUI(r,mIRBuilder.getInt8Ty()), false);
 		}
 		case ValueType::Boolean: {
