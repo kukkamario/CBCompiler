@@ -187,7 +187,6 @@ LString LString::fromBuffer(LChar *buffer) {
 }
 
 LString LString::number(int i, int base) {
-	int orig = i;
 	assert(base >= 2 && base <= 16);
 	if (i == 0) return LString(U"0");
 	static const char32_t nums[] = {U'0', U'1', U'2', U'3', U'4', U'5', U'6', U'7', U'8', U'9', U'A', U'B', U'C', U'D', U'E', U'F'};
@@ -215,7 +214,31 @@ LString LString::number(int i, int base) {
 	}
 
 	data->mSize = size;
-	printf("1. %i = %x  Size: %i  Capacity: %i  Offset: %i\n", orig, orig, data->mSize, data->mCapacity, data->mOffset);
+	return LString(data);
+}
+
+LString LString::number(unsigned int i, int b) {
+	assert(b >= 2 && b <= 16);
+	unsigned int base = b;
+	if (i == 0) return LString(U"0");
+	static const char32_t nums[] = {U'0', U'1', U'2', U'3', U'4', U'5', U'6', U'7', U'8', U'9', U'A', U'B', U'C', U'D', U'E', U'F'};
+	LStringData *data = LStringData::create(6 + 64 / base);
+	LChar *str = data->begin();
+	int size = 0;
+	unsigned int shifter = i;
+	do{ //Move to where representation ends
+		++str;
+		shifter = shifter/base;
+	}while(shifter);
+
+	*str = 0;
+	while (i) {
+		*(--str) = nums[i % base];
+		++size;
+		i /= base;
+	}
+
+	data->mSize = size;
 	return LString(data);
 }
 
@@ -464,10 +487,9 @@ void LString::leftJustify(size_t width, LChar fill, bool truncate) {
 		return;
 	}
 	size_t oldSize = size();
-	printf("2. Size: %i  Capacity: %i  Offset: %i\n", this->mData.unsafePointer()->mSize, this->mData.unsafePointer()->mCapacity, this->mData.unsafePointer()->mOffset);
 	resize(width);
-	if (oldSize * 2 >= width)
-		std::copy(begin(), begin() + oldSize, begin() + (width - oldSize - 1));
+	if (oldSize * 2 <= width)
+		std::copy(begin(), begin() + oldSize, begin() + (width - oldSize));
 	else
 		std::reverse_copy(begin(), begin() + oldSize, begin() + (width - oldSize));
 	Iterator i = begin();
@@ -475,7 +497,6 @@ void LString::leftJustify(size_t width, LChar fill, bool truncate) {
 	for (; i != e; i++) {
 		*i = fill;
 	}
-	printf("3. Size: %i  Capacity: %i  Offset: %i\n", this->mData.unsafePointer()->mSize, this->mData.unsafePointer()->mCapacity, this->mData.unsafePointer()->mOffset);
 }
 
 LString::Iterator LString::find(LChar c) {

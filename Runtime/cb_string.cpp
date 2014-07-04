@@ -12,7 +12,7 @@
 }
 
  CBString CBF_hex(int i) {
-	 LString hex = LString::number(i, 16);
+	 LString hex = LString::number((unsigned int)i, 16);
 	 hex.leftJustify(8, U'0');
 	 return hex;
 }

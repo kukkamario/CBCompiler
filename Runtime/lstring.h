@@ -64,6 +64,7 @@ class LString {
 		static LString fromUtf8(const std::string &s);
 		static LString fromAscii(const std::string &s);
 		static LString number(int i, int base = 10);
+		static LString number(unsigned int i, int base = 10);
 		static LString number(float f);
 
 		LString & operator=(const LString &o);
