@@ -99,11 +99,11 @@ void CBF_randomize(int seed) {
 	randomize(seed);
 }
 
-float CBF_roundUp(float f) {
+int CBF_roundUp(float f) {
 	return ceilf(f);
 }
 
-float CBF_roundDown(float f) {
+int CBF_roundDown(float f) {
 	return floorf(f);
 }
 

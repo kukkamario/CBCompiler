@@ -275,7 +275,7 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 	mExitStack.pop();
 	Value cond = generate(n->condition());
 	if (!mUnreachableBasicBlock) {
-		mBuilder->branch(cond, block, endBlock);
+		mBuilder->branch(cond, endBlock, block);
 	}
 	mUnreachableBasicBlock = false;
 
@@ -827,6 +827,11 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 		}
 		if (opFlags.testFlag(OperationFlag::CastFromString)) {
 			emit warning(WarningCodes::wcMayLosePrecision, tr("Automatic cast from a string to a number."), cp);
+		}
+
+		if (opFlags.testFlag(OperationFlag::OperandBCantBeCastedToA)) {
+			emit error(ErrorCodes::ecCantCastValue, tr("Invalid operation \"%1\". Can't cast \"%3\" to \"%2\".").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
+			throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
 		}
 
 		if (opFlags.testFlag(OperationFlag::NoSuchOperation)) {

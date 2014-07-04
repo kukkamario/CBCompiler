@@ -882,19 +882,23 @@ ast::Node *Parser::expectIfStatementNoKeyword(const CodePoint &startCp, Parser::
 			mStatus = Error;
 			return 0;
 		}
+		i++;
 	}
-	else if (i->type() != Token::kEndIf) {
-		emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begins at %1,").arg(startCp.toString()), i->codePoint());
-		mStatus = Error;
-		return 0;
+	else {
+		if (i->type() != Token::kEndIf) {
+			emit error(ErrorCodes::ecExpectingEndIf, tr("Expecting \"EndIf\" for if-statement, which begins at %1,").arg(startCp.toString()), i->codePoint());
+			mStatus = Error;
+			return 0;
+		}
+		i++;
 	}
 
 
-	ast::IfStatement *ret = new ast::IfStatement(startCp, i->codePoint());
+	ast::IfStatement *ret = new ast::IfStatement(startCp, (i - 1)->codePoint());
 	ret->setElseBlock(elseBlock);
 	ret->setCondition(condition);
 	ret->setBlock(block);
-	i++;
+
 	return ret;
 }
 
@@ -1178,40 +1182,9 @@ ast::Node *Parser::expectEqualityExpression(Parser::TokIterator &i) {
 
 ast::Node *Parser::expectRelativeExpression(Parser::TokIterator &i) {
 	CodePoint cp1 = i->codePoint();
-	ast::Node *first = expectBitShiftExpression(i);
-	if (mStatus == Error) return 0;
-	if (i->type() == Token::opGreater || i->type() == Token::opLess || i->type() == Token::opGreaterEqual || i->type() == Token::opLessEqual) {
-		CodePoint cp2 = i->codePoint();
-		ast::ExpressionNode::Op op = tokenTypeToOperator(i->type());
-		i++;
-		ast::Node *second = expectBitShiftExpression(i);
-		if (mStatus == Error) return 0;
-		ast::Expression *expr = new ast::Expression(ast::Expression::LeftToRight, cp1);
-		expr->setFirstOperand(first);
-		ast::ExpressionNode *exprNode = new ast::ExpressionNode(op, cp2);
-		exprNode->setOperand(second);
-		expr->appendOperation(exprNode);
-		while (i->type() == Token::opGreater || i->type() == Token::opLess || i->type() == Token::opGreaterEqual || i->type() == Token::opLessEqual) {
-			op = tokenTypeToOperator(i->type());
-			exprNode = new ast::ExpressionNode(op, i->codePoint());
-			expr->appendOperation(exprNode);
-			i++;
-			ast::Node *ep = expectBitShiftExpression(i);
-			if (mStatus == Error) { delete expr; return 0; }
-			exprNode->setOperand(ep);
-		}
-		return expr;
-	}
-	else {
-		return first;
-	}
-}
-
-ast::Node *Parser::expectBitShiftExpression(Parser::TokIterator &i) {
-	CodePoint cp1 = i->codePoint();
 	ast::Node *first = expectAdditiveExpression(i);
 	if (mStatus == Error) return 0;
-	if (i->type() == Token::opShl || i->type() == Token::opShr || i->type() == Token::opSar) {
+	if (i->type() == Token::opGreater || i->type() == Token::opLess || i->type() == Token::opGreaterEqual || i->type() == Token::opLessEqual) {
 		CodePoint cp2 = i->codePoint();
 		ast::ExpressionNode::Op op = tokenTypeToOperator(i->type());
 		i++;
@@ -1222,7 +1195,7 @@ ast::Node *Parser::expectBitShiftExpression(Parser::TokIterator &i) {
 		ast::ExpressionNode *exprNode = new ast::ExpressionNode(op, cp2);
 		exprNode->setOperand(second);
 		expr->appendOperation(exprNode);
-		while (i->type() == Token::opShl || i->type() == Token::opShr || i->type() == Token::opSar) {
+		while (i->type() == Token::opGreater || i->type() == Token::opLess || i->type() == Token::opGreaterEqual || i->type() == Token::opLessEqual) {
 			op = tokenTypeToOperator(i->type());
 			exprNode = new ast::ExpressionNode(op, i->codePoint());
 			expr->appendOperation(exprNode);
@@ -1237,6 +1210,7 @@ ast::Node *Parser::expectBitShiftExpression(Parser::TokIterator &i) {
 		return first;
 	}
 }
+
 
 ast::Node *Parser::expectAdditiveExpression(Parser::TokIterator &i) {
 	CodePoint cp1 = i->codePoint();
@@ -1273,9 +1247,40 @@ ast::Node *Parser::expectAdditiveExpression(Parser::TokIterator &i) {
 
 ast::Node *Parser::expectMultiplicativeExpression(Parser::TokIterator &i) {
 	CodePoint cp1 = i->codePoint();
-	ast::Node *first = expectPowExpression(i);
+	ast::Node *first = expectBitShiftExpression(i);
 	if (mStatus == Error) return 0;
 	if (i->type() == Token::opMultiply || i->type() == Token::opDivide || i->type() == Token::opMod) {
+		CodePoint cp2 = i->codePoint();
+		ast::ExpressionNode::Op op = tokenTypeToOperator(i->type());
+		i++;
+		ast::Node *second = expectBitShiftExpression(i);
+		if (mStatus == Error) return 0;
+		ast::Expression *expr = new ast::Expression(ast::Expression::LeftToRight, cp1);
+		expr->setFirstOperand(first);
+		ast::ExpressionNode *exprNode = new ast::ExpressionNode(op, cp2);
+		exprNode->setOperand(second);
+		expr->appendOperation(exprNode);
+		while (i->type() == Token::opMultiply || i->type() == Token::opDivide || i->type() == Token::opMod) {
+			op = tokenTypeToOperator(i->type());
+			exprNode = new ast::ExpressionNode(op, i->codePoint());
+			expr->appendOperation(exprNode);
+			i++;
+			ast::Node *ep = expectBitShiftExpression(i);
+			if (mStatus == Error) { delete expr; return 0; }
+			exprNode->setOperand(ep);
+		}
+		return expr;
+	}
+	else {
+		return first;
+	}
+}
+
+ast::Node *Parser::expectBitShiftExpression(Parser::TokIterator &i) {
+	CodePoint cp1 = i->codePoint();
+	ast::Node *first = expectPowExpression(i);
+	if (mStatus == Error) return 0;
+	if (i->type() == Token::opShl || i->type() == Token::opShr || i->type() == Token::opSar) {
 		CodePoint cp2 = i->codePoint();
 		ast::ExpressionNode::Op op = tokenTypeToOperator(i->type());
 		i++;
@@ -1286,7 +1291,7 @@ ast::Node *Parser::expectMultiplicativeExpression(Parser::TokIterator &i) {
 		ast::ExpressionNode *exprNode = new ast::ExpressionNode(op, cp2);
 		exprNode->setOperand(second);
 		expr->appendOperation(exprNode);
-		while (i->type() == Token::opMultiply || i->type() == Token::opDivide || i->type() == Token::opMod) {
+		while (i->type() == Token::opShl || i->type() == Token::opShr || i->type() == Token::opSar) {
 			op = tokenTypeToOperator(i->type());
 			exprNode = new ast::ExpressionNode(op, i->codePoint());
 			expr->appendOperation(exprNode);
@@ -1528,9 +1533,9 @@ ast::Node *Parser::expectPrimaryExpression(TokIterator &i) {
 		}
 		case Token::IntegerHex: {
 			bool success;
-			int val = i->toString().toInt(&success,16);
+			int val = i->toString().toLower().toUInt(&success,16);
 			if (!success) {
-				emit error(ErrorCodes::ecCantParseInteger, tr("Cannot parse integer \"%1\"").arg(i->toString()), i->codePoint());
+				emit error(ErrorCodes::ecCantParseInteger, tr("Cannot parse hex integer \"%1\"").arg(i->toString()), i->codePoint());
 				mStatus = Error;
 				return 0;
 			}

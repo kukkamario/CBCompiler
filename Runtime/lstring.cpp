@@ -336,12 +336,14 @@ LString LString::substr(int start, int len) const {
 }
 
 LString LString::left(int chars) const {
-	assert(chars <= (int)length() && chars > 0);
+	assert(isEmpty() && "String is empty. Invalid Left function call");
+	assert(chars <= (int)length() && chars > 0 && "Invalid Left function call");
 	return LString(begin(), chars);
 }
 
 LString LString::right(int chars) const {
-	assert(chars <= (int)length() && chars > 0);
+	assert(isEmpty() && "String is empty. Invalid Left function call");
+	assert(chars <= (int)length() && chars > 0 && "Invalid Left function call");
 	return LString(begin() + (length() - chars), (length() - chars));
 }
 

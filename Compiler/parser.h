@@ -69,9 +69,9 @@ class Parser : public QObject {
 		ast::Node *expectLogicalAndExpression(TokIterator &i);
 		ast::Node *expectEqualityExpression(TokIterator &i);
 		ast::Node *expectRelativeExpression(TokIterator &i);
-		ast::Node *expectBitShiftExpression(TokIterator &i);
 		ast::Node *expectAdditiveExpression(TokIterator &i);
 		ast::Node *expectMultiplicativeExpression(TokIterator &i);
+		ast::Node *expectBitShiftExpression(TokIterator &i);
 		ast::Node *expectPowExpression(TokIterator &i);
 		ast::Node *expectUnaryExpession(TokIterator &i);
 		ast::Node *expectCallOrArraySubscriptExpression(TokIterator &i);

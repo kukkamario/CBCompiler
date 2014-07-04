@@ -1,6 +1,7 @@
 #include "lstring.h"
 #include "error.h"
 #include <algorithm>
+#include <iomanip>
 
  CBString CBF_str(int i) {
 	return LString::number(i);
@@ -8,6 +9,25 @@
 
  CBString CBF_str(float f) {
 	return LString::number(f);
+}
+
+ CBString CBF_hex(int i) {
+	 std::stringstream stream;
+
+	 stream << std::setfill ('0') << std::setw(8) << std::hex << i;
+	 std::string s = stream.str();
+	 LString ret;
+	 for (char c : s) {
+		 ret += (char32_t)c;
+	 }
+	 return ret;
+}
+
+CBString CBF_chr(int c) {
+	char32_t cc[2];
+	cc[0] = c;
+	cc[1] = c;
+	return LString(cc);
 }
 
  CBString CBF_left(CBString cbstr, int chars) {
