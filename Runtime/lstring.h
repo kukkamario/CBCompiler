@@ -22,11 +22,16 @@ class LStringData {
 		bool decrease();
 		bool isStaticData() const;
 
+		LChar *begin();
+		LChar *end();
+		const LChar *begin() const;
+		const LChar *end() const;
+
 		mutable AtomicInt mRefCount;
 		mutable std::string *mUtf8String;
-		size_t mLength;
 		size_t mSize;
-		LChar *mData;
+		size_t mCapacity;
+		intptr_t mOffset;
 
 		//LChar mRealData[mSize];
 	private:
@@ -57,7 +62,8 @@ class LString {
 		static LString fromBuffer(LChar *buffer);
 		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
 		static LString fromUtf8(const std::string &s);
-		static LString number(int i);
+		static LString fromAscii(const std::string &s);
+		static LString number(int i, int base = 10);
 		static LString number(float f);
 
 		LString & operator=(const LString &o);
@@ -78,9 +84,14 @@ class LString {
 		LString left(int chars) const;
 		LString right(int chars) const;
 		LString trimmed() const;
+		LString rightJustified(size_t width, LChar fill, bool truncate = false) const;
+		LString leftJustified(size_t width, LChar fill, bool truncate = false) const;
 
 		LString toUpper() const;
 		LString toLower() const;
+
+		void rightJustify(size_t width, LChar fill, bool truncate = false);
+		void leftJustify(size_t width, LChar fill, bool truncate = false);
 
 		Iterator find(LChar c);
 		Iterator find(LChar c, Iterator start);

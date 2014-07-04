@@ -12,15 +12,9 @@
 }
 
  CBString CBF_hex(int i) {
-	 std::stringstream stream;
-
-	 stream << std::setfill ('0') << std::setw(8) << std::hex << i;
-	 std::string s = stream.str();
-	 LString ret;
-	 for (char c : s) {
-		 ret += (char32_t)c;
-	 }
-	 return ret;
+	 LString hex = LString::number(i, 16);
+	 hex.leftJustify(8, U'0');
+	 return hex;
 }
 
 CBString CBF_chr(int c) {

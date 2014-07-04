@@ -18,10 +18,10 @@ LStringData *LStringData::create(size_t size) {
 	char *buffer = new char[sizeof(LStringData) + size * sizeof(LChar)];
 	LStringData *ret = reinterpret_cast<LStringData*>(buffer);
 	ret->mRefCount = 1;
-	ret->mLength = 0;
-	ret->mSize = size;
+	ret->mSize = 0;
+	ret->mCapacity = size;
 	ret->mUtf8String = 0;
-	ret->mData = reinterpret_cast<LChar*>(reinterpret_cast<char*>(ret) + sizeof(LStringData));
+	ret->mOffset = sizeof(LStringData);
 	return ret;
 }
 
@@ -32,16 +32,16 @@ LStringData *LStringData::create(const LChar *text) {
 	}
 
 	LStringData *d = create(len + 1);
-	d->mLength = len;
-	memcpy(d->mData, text, (len + 1) * sizeof(LChar));
+	d->mSize = len;
+	memcpy(d->begin(), text, (len + 1) * sizeof(LChar));
 	return d;
 }
 
 LStringData *LStringData::create(const LChar *text, size_t len) {
 	LStringData *d = create(len + 1);
-	d->mLength = len;
-	memcpy(d->mData, text, len * sizeof(LChar));
-	d->mData[len] = 0; //null
+	d->mSize = len;
+	memcpy(d->begin(), text, len * sizeof(LChar));
+	d->begin()[len] = 0; //null
 	return d;
 }
 
@@ -56,11 +56,11 @@ LStringData *LStringData::createFromBuffer(LChar *buffer) {
 LStringData *LStringData::createFromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
 	char *buf = new char[sizeof(LStringData)];
 	LStringData *ret = reinterpret_cast<LStringData*>(buf);
-	ret->mData = buffer;
-	ret->mLength = stringLength;
-	ret->mSize = bufferSize;
+	ret->mSize = stringLength;
+	ret->mCapacity = bufferSize;
 	ret->mUtf8String = 0;
 	ret->mRefCount = 1;
+	ret->mOffset = reinterpret_cast<char*>(buffer) - buf;
 	return ret;
 }
 
@@ -69,12 +69,13 @@ LStringData *LStringData::copy(LStringData *o) {
 		char *buffer = new char[sizeof(LStringData)];
 		LStringData *ret = reinterpret_cast<LStringData*>(buffer);
 		memcpy(o, ret, sizeof(LStringData));
+		ret->mUtf8String = 0;
 		ret->mRefCount = 1;
 		return ret;
 	}
-	char *buffer = new char[sizeof(LStringData) + o->mSize * sizeof(LChar)];
+	char *buffer = new char[sizeof(LStringData) + o->mCapacity * sizeof(LChar)];
 	LStringData *ret = reinterpret_cast<LStringData*>(buffer);
-	memcpy(o, ret, sizeof(LStringData) + o->mSize * sizeof(LChar));
+	memcpy(ret, o, sizeof(LStringData) + o->mCapacity * sizeof(LChar));
 	ret->mUtf8String = 0;
 	ret->mRefCount = 1;
 	return ret;
@@ -100,7 +101,23 @@ bool LStringData::decrease() {
 
 
 bool LStringData::isStaticData() const {
-	return mData != reinterpret_cast<const LChar*>(reinterpret_cast<const char*>(this) + sizeof(LStringData));
+	return mOffset != sizeof(LStringData);
+}
+
+LChar *LStringData::begin() {
+	return reinterpret_cast<LChar*>(reinterpret_cast<char*>(this) + this->mOffset);
+}
+
+LChar *LStringData::end() {
+	return reinterpret_cast<LChar*>(reinterpret_cast<char*>(this) + this->mOffset) + this->mSize;
+}
+
+const LChar *LStringData::begin() const {
+	return reinterpret_cast<const LChar*>(reinterpret_cast<const char*>(this) + this->mOffset);
+}
+
+const LChar *LStringData::end() const {
+	return reinterpret_cast<const LChar*>(reinterpret_cast<const char*>(this) + this->mOffset) + this->mSize;
 }
 
 
@@ -148,11 +165,20 @@ LString LString::fromUtf8(const std::string &s) {
 
 	LChar *destBegin = ret.begin();
 	LChar *destEnd = ret.end();
-	if (!utf8ToUtf32(&begin, end, &destBegin, destEnd)) {
-		error("Failed conversion utf8 -> utf32");
-	}
+	bool conversionSucceeded = utf8ToUtf32(&begin, end, &destBegin, destEnd);
+	assert(conversionSucceeded && "Failed conversion utf8 -> utf32");
 
 	ret.resize(destBegin - ret.begin());
+	return ret;
+}
+
+LString LString::fromAscii(const std::string &s) {
+	LString ret;
+	ret.resize(s.size());
+	LString::Iterator out = ret.begin();
+	for (std::string::const_iterator i = s.begin(); i != s.end(); ++i) {
+		*out = *i;
+	}
 	return ret;
 }
 
@@ -160,24 +186,36 @@ LString LString::fromBuffer(LChar *buffer) {
 	return LString(LStringData::createFromBuffer(buffer));
 }
 
-LString LString::number(int i) {
+LString LString::number(int i, int base) {
+	int orig = i;
+	assert(base >= 2 && base <= 16);
 	if (i == 0) return LString(U"0");
-	LStringData *data = LStringData::create(12);
-	LChar *str = data->mData;
+	static const char32_t nums[] = {U'0', U'1', U'2', U'3', U'4', U'5', U'6', U'7', U'8', U'9', U'A', U'B', U'C', U'D', U'E', U'F'};
+	LStringData *data = LStringData::create(6 + 64 / base);
+	LChar *str = data->begin();
+	int size = 0;
 	if (i < 0) {
 		*str = U'-';
 		i = -i;
 		str++;
+		++size;
 	}
-	LChar *begin = str;
-	while (i) {
-		*str = U'0' + i % 10;
-		i /= 10;
-		str++;
-	}
-	std::reverse(begin, str);
+
+	int shifter = i;
+	do{ //Move to where representation ends
+		++str;
+		shifter = shifter/base;
+	}while(shifter);
+
 	*str = 0;
-	data->mLength = str - data->mData;
+	while (i) {
+		*(--str) = nums[i % base];
+		++size;
+		i /= base;
+	}
+
+	data->mSize = size;
+	printf("1. %i = %x  Size: %i  Capacity: %i  Offset: %i\n", orig, orig, data->mSize, data->mCapacity, data->mOffset);
 	return LString(data);
 }
 
@@ -191,11 +229,11 @@ LString LString::number(float f) {
 	return LString(data);
 #else
 	char charBuf[bufferSize];
-	data->mLength = snprintf(charBuf, bufferSize, "%g", f);
-	for (size_t i = 0; i < data->mLength; ++i) {
-		data->mData[i] = static_cast<char32_t>(charBuf[i]);
+	data->mSize = snprintf(charBuf, bufferSize, "%g", f);
+	for (size_t i = 0; i < data->mSize; ++i) {
+		data->begin()[i] = static_cast<char32_t>(charBuf[i]);
 	}
-	data->mData[data->mLength] = 0;
+	data->begin()[data->mSize] = 0;
 	return LString(data);
 #endif
 }
@@ -272,11 +310,10 @@ LString LString::operator +(const LString &o) const {
 	if (o.isEmpty()) return *this;
 
 	LStringData *newStr = LStringData::create(this->length() + o.length() + 1);
-	memcpy(newStr->mData, this->mData->mData, this->length() * sizeof(LChar));
-	memcpy(newStr->mData + this->length(), o.mData->mData, o.length() * sizeof(LChar));
+	std::copy(this->mData->begin(), this->mData->end(), newStr->begin());
+	std::copy(o.mData->begin(), o.mData->end(), newStr->begin() + this->length());
 
-	newStr->mLength = this->length() + o.length();
-	newStr->mData[newStr->mLength] = 0;
+	newStr->mSize = this->length() + o.length();
 	return LString(newStr);
 }
 
@@ -295,30 +332,27 @@ LString &LString::operator +=(const LString &o) {
 			reserve(next);
 		}
 	}
-	memcpy(this->mData->mData + this->length(), o.mData->mData, o.length());
-
-	this->mData->mData[this->length() + o.length()] = 0;
+	std::copy(o.mData->begin(), o.mData->end(), this->mData->begin() + this->length());
 	return *this;
 }
 
 LString &LString::operator +=(LChar c) {
-	if (this->length() + 1 > this->size()) {
+	if (this->length() + 1 > this->capacity()) {
 		reserve(nextSize());
 	}
-	this->mData->mData[this->mData->mLength] = c;
-	this->mData->mData[this->mData->mLength + 1] = 0;
-	++this->mData->mLength;
+	this->mData->begin()[this->mData->mSize] = c;
+	++this->mData->mSize;
 	return *this;
 }
 
 LChar &LString::operator [](int i) {
 	assert(i < (int)length());
-	return this->mData->mData[i];
+	return this->mData->begin()[i];
 }
 
 const LChar &LString::operator [](int i) const {
 	assert(i < (int)length());
-	return this->mData->mData[i];
+	return this->mData->begin()[i];
 }
 
 LString::operator CBString() const {
@@ -368,6 +402,18 @@ LString LString::trimmed() const {
 	return LString(start, e);
 }
 
+LString LString::rightJustified(size_t width, LChar fill, bool truncate) const {
+	LString ret(*this);
+	ret.rightJustify(width, fill, truncate);
+	return ret;
+}
+
+LString LString::leftJustified(size_t width, LChar fill, bool truncate) const {
+	LString ret(*this);
+	ret.leftJustify(width, fill, truncate);
+	return ret;
+}
+
 LString LString::toUpper() const {
 	LString ret;
 	ret.resize(size());
@@ -392,6 +438,44 @@ LString LString::toLower() const {
 		++out;
 	}
 	return ret;
+}
+
+void LString::rightJustify(size_t width, LChar fill, bool truncate) {
+	if (size() >= width) {
+		if (truncate) {
+			resize(width);
+		}
+		return;
+	}
+	size_t oldSize = size();
+	resize(width);
+	Iterator i = begin() + oldSize;
+	Iterator e = begin() + width;
+	for (; i != e; i++) {
+		*i = fill;
+	}
+}
+
+void LString::leftJustify(size_t width, LChar fill, bool truncate) {
+	if (size() >= width) {
+		if (truncate) {
+			*this = right(width);
+		}
+		return;
+	}
+	size_t oldSize = size();
+	printf("2. Size: %i  Capacity: %i  Offset: %i\n", this->mData.unsafePointer()->mSize, this->mData.unsafePointer()->mCapacity, this->mData.unsafePointer()->mOffset);
+	resize(width);
+	if (oldSize * 2 >= width)
+		std::copy(begin(), begin() + oldSize, begin() + (width - oldSize - 1));
+	else
+		std::reverse_copy(begin(), begin() + oldSize, begin() + (width - oldSize));
+	Iterator i = begin();
+	Iterator e = begin() + (width - oldSize);
+	for (; i != e; i++) {
+		*i = fill;
+	}
+	printf("3. Size: %i  Capacity: %i  Offset: %i\n", this->mData.unsafePointer()->mSize, this->mData.unsafePointer()->mCapacity, this->mData.unsafePointer()->mOffset);
 }
 
 LString::Iterator LString::find(LChar c) {
@@ -540,14 +624,15 @@ void LString::clear() {
 void LString::remove(int start, int len) {
 	assert(start >= 0 && len > 0 && start + len <= (int)length());
 	detach();
+	LStringData *d = mData.unsafePointer();
 	if (start + len == (int)length()) {
-		mData.unsafePointer()->mLength -= len;
-		mData.unsafePointer()->mData[start + len] = 0;
+		d->mSize -= len;
+		d->begin()[start + len] = 0;
 	}
 	else {
-		memmove(mData.unsafePointer()->mData + start + len, mData.unsafePointer()->mData + start, length() - (start + len));
-		mData.unsafePointer()->mLength -= len;
-		mData.unsafePointer()->mData[start + len] = 0;
+		memmove(d->begin() + start + len, d->begin() + start, d->mSize - (start + len));
+		d->mSize -= len;
+		d->begin()[start + len] = 0;
 	}
 }
 
@@ -604,29 +689,29 @@ int LString::toFloat(bool *success) const {
 }
 
 LString::Iterator LString::begin() {
-	return isNull() ? 0 : mData->mData;
+	return isNull() ? 0 : mData->begin();
 }
 
 LString::ConstIterator LString::cbegin() const {
-	return isNull() ? 0 : mData->mData;
+	return isNull() ? 0 : mData->begin();
 }
 
 LString::Iterator LString::end() {
-	return isNull() ? 0 : mData->mData + mData->mLength;
+	return isNull() ? 0 : mData->end();
 }
 
 LString::ConstIterator LString::cend() const {
-	return isNull() ? 0 : mData->mData + mData->mLength;
+	return isNull() ? 0 : mData->end();
 }
 
 LString::Iterator LString::at(int i) {
 	assert(i >= 0 && i < (int)length());
-	return mData->mData + i;
+	return mData->begin() + i;
 }
 
 LString::ConstIterator LString::at(int i) const {
 	assert(i >= 0 && i < (int)length());
-	return mData->mData + i;
+	return mData->begin() + i;
 }
 
 bool LString::isNull() const {
@@ -634,15 +719,15 @@ bool LString::isNull() const {
 }
 
 bool LString::isEmpty() const {
-	return isNull() || mData->mLength == 0;
+	return isNull() || mData->mSize == 0;
 }
 
 size_t LString::length() const {
-	return isNull() ? 0 : mData->mLength;
+	return isNull() ? 0 : mData->mSize;
 }
 
 size_t LString::capacity() const {
-	return isNull() ? 0 : mData->mSize - 1;
+	return isNull() ? 0 : mData->mCapacity;
 }
 
 void LString::reserve(size_t size) {
@@ -653,7 +738,7 @@ void LString::reserve(size_t size) {
 	}
 	else {
 		LStringData *newData = LStringData::create(size + 1);
-		memcpy(newData->mData, this->mData->mData, this->mData->mLength * sizeof(LChar));
+		memcpy(newData->begin(), this->mData->begin(), this->mData->mSize * sizeof(LChar));
 		this->mData = newData;
 	}
 }
@@ -662,15 +747,18 @@ void LString::resize(size_t size) {
 	if (this->size() == size) return;
 	if (isNull()) {
 		mData = LStringData::create(size + 1);
-		mData->mLength = size;
+		mData->mSize = size;
 		return;
 	}
-	else if (size < this->size()) {
-		mData->mLength = size;
+	else if (size <= this->capacity()) {
+		mData->mSize = size;
+		return;
 	}
 	else {
+		LStringData *oldData = this->mData.unsafePointer();
 		LStringData *newData = LStringData::create(size + 1);
-		memcpy(newData->mData, this->mData->mData, this->mData->mLength * sizeof(LChar));
+		memcpy(newData->begin(), oldData->begin(), oldData->mSize * sizeof(LChar));
+		newData->mSize = size;
 		this->mData = newData;
 	}
 }
@@ -694,10 +782,11 @@ const std::string &LString::toUtf8() const {
 	if (isEmpty()) return sNullStdString;
 	if (mData->mUtf8String) return *mData->mUtf8String;
 
-	std::string *utf8 = new std::string(mData->mLength * 4, '\0');
+	std::string *utf8 = new std::string(mData->mSize * 4, '\0');
 	const LChar* fromNext;
 	uint8_t* toNext;
-	assert(ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext));
+	bool conversionValid = ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext);
+	assert(conversionValid);
 	utf8->resize((char*)toNext - &(*utf8)[0]);
 	mData->mUtf8String = utf8;
 	return *mData->mUtf8String;
@@ -708,6 +797,7 @@ ALLEGRO_USTR *LString::toAllegroUStr() const {
 	const std::string &utf8 = toUtf8();
 	return al_ustr_new_from_buffer(utf8.c_str(), utf8.size());
 }
+
 
 bool LString::ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&fromNext, uint8_t *to, uint8_t *toEnd, uint8_t *&toNext) {
 	const unsigned long Maxcode = 0x10FFFF;
@@ -1029,4 +1119,7 @@ std::ostream &operator <<(std::ostream &stream, const LString &str) {
 	stream << utf8;
 	return stream;
 }
+
+
+
 
