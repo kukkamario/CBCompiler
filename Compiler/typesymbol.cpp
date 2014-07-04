@@ -49,6 +49,7 @@ void TypeSymbol::initializeType(Builder *b) {
 
 void TypeSymbol::createOpaqueTypes(Builder *b) {
 	mMemberType = llvm::StructType::create(b->context());
+	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 
@@ -91,7 +92,6 @@ void TypeSymbol::createLLVMMemberType() {
 	mMemberType->setBody(elements);
 	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
 
-	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 
