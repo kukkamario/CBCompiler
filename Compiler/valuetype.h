@@ -21,6 +21,8 @@ class ValueType {
 			ccCastToBoolean,
 			ccCastToBigger,
 			ccCastToSmaller,
+			ccCastToFloat,
+			ccCastFromFloat,
 			ccCastToString,
 			ccCastFromString,
 

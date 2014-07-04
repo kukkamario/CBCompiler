@@ -15,7 +15,7 @@ ValueType::CastCost IntValueType::castingCostToOtherValueType(const ValueType *t
 		case ValueType::Integer:
 			return ccNoCost;
 		case ValueType::Float:
-			return ccCastToSmaller;
+			return ccCastToFloat;
 		case ValueType::Boolean:
 			return ccCastToBoolean;
 		case ValueType::Short:

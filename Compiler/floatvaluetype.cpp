@@ -15,13 +15,13 @@ ValueType::CastCost FloatValueType::castingCostToOtherValueType(const ValueType 
 		case Boolean:
 			return ccCastToBoolean;
 		case Integer:
-			return ccCastToSmaller;
+			return ccCastFromFloat;
 		case String:
 			return ccCastToString;
 		case Short:
-			return ccCastToSmaller;
+			return ccCastFromFloat;
 		case Byte:
-			return ccCastToSmaller;
+			return ccCastFromFloat;
 		default:
 			return ccNoCast;
 	}

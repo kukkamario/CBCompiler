@@ -13,7 +13,10 @@ BooleanValueType::BooleanValueType(Runtime *r, llvm::Module *mod) :
 ValueType::CastCost BooleanValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to == this || to->basicType() == ValueType::Integer) return ccNoCost;
 	if (to->isNumber()) {
-		return ccCastToBigger;
+		if (to->basicType() == ValueType::Float) {
+			return ccCastToFloat;
+		}
+		return ccCastToSmaller;
 	}
 	if (to == mRuntime->stringValueType()) {
 		return ccCastToString;

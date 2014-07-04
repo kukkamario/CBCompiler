@@ -16,7 +16,7 @@ ValueType::CastCost ShortValueType::castingCostToOtherValueType(const ValueType 
 		case Boolean:
 			return ccCastToBoolean;
 		case ValueType::Float:
-			return ccCastToBigger;
+			return ccCastToFloat;
 		case ValueType::Byte:
 			return ccCastToSmaller;
 		case ValueType::String:

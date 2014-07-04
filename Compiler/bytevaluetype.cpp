@@ -18,8 +18,9 @@ ValueType::CastCost ByteValueType::castingCostToOtherValueType(const ValueType *
 			return ccCastToBoolean;
 		case ValueType::Short:
 		case ValueType::Integer:
-		case ValueType::Float:
 			return ccCastToBigger;
+		case ValueType::Float:
+			return ccCastToFloat;
 		case ValueType::String:
 			return ccCastToString;
 		default:

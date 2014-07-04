@@ -153,7 +153,7 @@ ValueType::CastCost StringValueType::castingCostToOtherValueType(const ValueType
 		case Byte:
 			return ccCastFromString;
 		case Boolean:
-			return ccCastToSmaller;
+			return ccCastToBoolean;
 		default:
 			return ccNoCast;
 	}
