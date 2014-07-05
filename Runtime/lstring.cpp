@@ -248,7 +248,7 @@ LString LString::number(float f) {
 
 #ifndef _WIN32
 	assert(sizeof(wchar_t) == sizeof(char32_t));
-	data->mLength = swprintf(reinterpret_cast<wchar_t*>(data->mData), bufferSize, L"%g", f);
+	data->mSize = swprintf(reinterpret_cast<wchar_t*>(data->begin()), bufferSize, L"%g", f);
 	return LString(data);
 #else
 	char charBuf[bufferSize];
@@ -694,7 +694,7 @@ int LString::toFloat(bool *success) const {
 #ifndef _WIN32
 	assert(sizeof(wchar_t) == sizeof(char32_t));
 		float val = 0.0f;
-		if (swscanf(reinterpret_cast<const wchar_t*>(mData->mData), L"%f", &val) != 1) {
+		if (swscanf(reinterpret_cast<const wchar_t*>(mData->begin()), L"%f", &val) != 1) {
 			if (success) *success = false;
 			return 0;
 		}
