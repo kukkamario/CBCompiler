@@ -19,6 +19,7 @@ class RenderTarget {
 		int height() const { return mHeight; }
 		void setSize(int width, int height);
 
+
 		static RenderTarget *activated();
 		static void setFallbackRenderTarget(RenderTarget *t);
 	protected:

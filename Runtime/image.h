@@ -19,6 +19,8 @@ class Image : public RenderTarget {
 		void mask(const ALLEGRO_COLOR &color);
 
 		void draw(float x, float y);
+
+		ALLEGRO_COLOR getPixel(int x,int y);
 	private:
 		bool activateRenderContext();
 

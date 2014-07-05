@@ -3,6 +3,7 @@
 #include "error.h"
 #include <stdio.h>
 #include "common.h"
+#include "image.h"
 #include <allegro5/allegro_primitives.h>
 
 using namespace gfx;
@@ -105,6 +106,34 @@ void CBF_lock2(int state) {
 	RenderTarget::activated()->lock(flags);
 }
 
+void CBF_lock(Image *img) {
+	img->lock(ALLEGRO_LOCK_READWRITE);
+}
+
+void CBF_lock2(Image *img, int state) {
+	int flags = 0;
+	switch (state) {
+		case 1:
+			flags = ALLEGRO_LOCK_READONLY; break;
+		case 2:
+			flags = ALLEGRO_LOCK_WRITEONLY; break;
+		default:
+			flags = ALLEGRO_LOCK_READWRITE; break;
+	}
+
+	img->lock(flags);
+}
+
+void CBF_unlock() {
+	RenderTarget::activated()->unlock();
+}
+
+
+void CBF_unlock(Image *img) {
+	img->unlock();
+}
+
+
 void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b) {
 	al_put_pixel(x, y, al_map_rgb(r, g, b));
 }
@@ -125,9 +154,13 @@ void CBF_putpixel(int x, int y, float r, float g, float b, float a) {
 	al_put_pixel(x, y, al_map_rgba_f(r, g, b, a));
 }
 
-void CBF_unlock() {
-	RenderTarget::activated()->unlock();
+int CBF_getPixel(Image *img, int x, int y) {
+	ALLEGRO_COLOR color = img->getPixel(x, y);
+	uint8_t r, g, b, a;
+	al_unmap_rgba(color, &r, &g, &b, &a);
+	return ((int)a << 24) + ((int)r << 16) + ((int)g << 8) + (int)b;
 }
+
 
 
 void CBF_drawToScreen() {

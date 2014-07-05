@@ -29,3 +29,12 @@ void CBF_maskImage(Image *img, int r, int g, int b, int a) {
 void CBF_drawToImage(Image *img) {
 	img->activate();
 }
+
+int CBF_imageWidth(Image *img) {
+	return img->width();
+}
+
+int CBF_imageHeight(Image *img) {
+	return img->height();
+}
+

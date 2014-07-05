@@ -67,3 +67,7 @@ void Image::mask(const ALLEGRO_COLOR &color) {
 void Image::draw(float x, float y) {
 	al_draw_bitmap(mBitmap, x, y, 0);
 }
+
+ALLEGRO_COLOR Image::getPixel(int x, int y) {
+	return al_get_pixel(mBitmap, x, y);
+}
