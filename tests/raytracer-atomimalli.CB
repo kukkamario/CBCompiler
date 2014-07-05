@@ -5,8 +5,8 @@ include "coolVec.CB"
 Const screenw% = 300
 Const screenh% = 300
 
-fov=35
-maxiters=8
+Global fov=35
+Global maxiters=8
  
 SCREEN screenw, screenh
 
@@ -26,6 +26,11 @@ EndType
 Type light
     Field pos As Vec
 EndType
+
+Struct castData
+    field hit as rayHit
+    field shadow as float
+endStruct
 
 Struct rayHit
     Field pos as Vec
@@ -59,7 +64,6 @@ newSphere(2,1,6,    1,      5,0,255, 0.8,1)
 newSphere(0,1.5,7,  1,      5,205,0, 0.8,1)
 newLight(-3,0,0)
 
-cv as ColorVec// use single struct
 global ambient as ColorVec = newColorVec(40,100,100)
 
 
@@ -69,9 +73,11 @@ tim as Integer
 
 Repeat
     Tim=Timer()
-    fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
 
-    t# = t# + (Timer() - lastUpdate) / 500.0
+    if keydown(205) then t#=t+1.5
+    if keydown(203) then t=t-1.5
+
+    t# = t# + (Timer() - lastUpdate) / 860.0
     lastUpdate = Timer()
     t2# = t#
 
@@ -80,12 +86,22 @@ Repeat
         s.pos.y# = s.origin.y# + Sin(t2# * 1.4 +124124) * 0.3
         s.pos.z# = s.origin.z# + Sin(t2# + 343) * 0.6
         t2# = t2# + t#
-        s.m.specularity#=sin(timer()/20.0)*0.25+0.7
+        s.m.specularity#=sin(timer()/25.0)*0.25+0.5
     Next s
 
     l as light = first(light)
-    l.pos.x=sin(t*9.0)*10
-    l.pos.z=cos(t*9.0)*10+10.0
+    l.pos.x=sin(t*9.0+90)*10
+    l.pos.z=cos(t*9.0+90)*10+10.0
+
+    render()
+    DrawScreen
+    Print (Timer()-Tim)+" "+FPS()
+Forever
+
+function render() as integer
+    cv as ColorVec// use single struct for every pixel
+
+    fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
 
     lock2(2) //writeonly lock
     For x#=0 To screenw-1
@@ -101,12 +117,22 @@ Repeat
         Next
     Next
     unlock
-    DrawScreen
-    Print (Timer()-Tim)+" "+FPS()
-Forever
+endfunction
 
 function cast(pos as Vec, dir as Vec) as rayHit
+    d as castData = cast(pos as Vec, dir as Vec,0)
+    return d.hit
+endFunction
+
+function castShadow(pos as Vec, dir as Vec,lightDist as float) as Float
+    d as castData = cast(pos, dir, lightDist)
+    return d.shadow
+endFunction
+
+function cast(pos as Vec, dir as Vec, lightDist as float) as castData
     hit as rayHit
+    castD as castData
+    castD.shadow=1000
     hit.dist=0
     For obj as sphere=Each sphere
         b# = 2*vecDot(dir,vecSub(pos,obj.pos))
@@ -117,15 +143,25 @@ function cast(pos as Vec, dir as Vec) as rayHit
             If (hit.dist==0 or hit.dist#>tt) And tt>0.001
                 hit.dist#=tt
                 nearest As sphere=obj
-            EndIf
+                //castd.shadow=0
+            Endif
+        Else
+            //tt# = (-b#-Sqrt(-d#))/2
+            //objdist=vecLength(vecSub(obj.pos,pos))
+            //if tt>0 and objdist<lightDist then castD.shadow=min(castD.shadow,0.5-d*(1-objdist/lightDist))//*(lightDist-vecLength(vecProject(obj.pos,dir)))/lightDist)
         EndIf
+        tt# = (-b#-Sqrt(abs(d#)))/2
+        objdist=vecLength(vecSub(obj.pos,pos))
+         if tt>0 and objdist<lightDist then castD.shadow=min(castD.shadow,0.5-d*(1-objdist/lightDist))
+        
     Next 
     If hit.dist Then
         hit.pos=vecSum(pos,vecMul(dir,hit.dist))
         hit.m=nearest.m
         hit.normal as Vec = normalize(vecSub(nearest.pos,hit.pos))
     endif
-    return hit
+    castd.hit=hit
+    return castD
 endFunction
 
 Function trace(cv as ColorVec, pos as Vec, dir as Vec, iters) As ColorVec
@@ -140,13 +176,12 @@ Function trace(cv as ColorVec, pos as Vec, dir as Vec, iters) As ColorVec
         For valo As light=Each light
             lightVec as Vec = vecSub(valo.pos,hit.pos)
             lightDir as Vec = normalize(lightVec)
-            shadow as rayHit = cast(hit.pos,lightdir)
-            if shadow.dist==0 or shadow.dist>vecLength(lightVec) then
-                diffuCos#=vecDot(hit.normal,lightDir)
-                diffuse#=diffuse+Max(0.0,-diffuCos)
-                specular#=specular+Max(0.0,-diffuCos)^8*0.5 //a hack for more interresting specular
-                specular#=max(0.0,vecDot(lightdir,specularDir))^12/2.0+specular
-            endif
+            shadow as float = min(1,max(0,2*castShadow(hit.pos,lightdir,vecLength(lightvec))))
+            //print shadow
+            diffuCos#=vecDot(hit.normal,lightDir)
+            diffuse#=diffuse+Max(0.0,-diffuCos)*shadow
+            specular#=specular+Max(0.0,-diffuCos)^8*0.5*shadow //a hack for more interresting specular
+            specular#=max(0.0,vecDot(lightdir,specularDir))^12/2.0*shadow+specular
         Next valo
         //heijastukset
         If iters>0 Then
