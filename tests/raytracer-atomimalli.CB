@@ -1,102 +1,54 @@
 //http://www.coolbasic.com/phpBB3/viewtopic.php?f=12&t=697&start=320#p41458
 
+include "coolVec.CB"
+
 Const screenw% = 300
 Const screenh% = 300
- 
+
 fov=35
 maxiters=8
  
 SCREEN screenw, screenh
- 
-Struct ColorVec
-    Field r#
-    Field g#
-    Field b#
-EndStruct
 
-Struct Vec
-    Field x#
-    Field y#
-    Field z#
-EndStruct
+struct Material
+    Field cv as ColorVec
+    Field specularity#
+    Field diffusivity#
+endstruct
 
 Type sphere
     Field pos as Vec
     Field origin as Vec
     Field size#
-    Field c as ColorVec
-    Field specularity#
-    Field diffuse#
+    Field m as Material
+    //Field cv as ColorVec
+    //Field specularity#
+    //Field diffuse#
 EndType
 
 Type light
     Field pos As Vec
 EndType
 
+Struct rayHit
+    Field pos as Vec
+    Field normal as Vec
+    Field m as Material
+    //Field cv as ColorVec
+    Field dist as Float
+endStruct
 
-function newColorVec(r#,g#,b#) as ColorVec
-    cv as ColorVec
-    cv.r#=r#:cv.g#=g#:cv.b#=b#
-    return cv
+function newMaterial(cv As colorVec, diffusivity#, specularity#) as Material
+    m as Material// = new(Material)
+    m.cv=cv:m.specularity=specularity:m.diffusivity=diffusivity
+    return m
 endfunction
 
-function newVec(x#,y#,z#) as Vec
-    v as Vec
-    v.x#=x#:v.y#=y#:v.z#=z#
-    return v
-endfunction
-
-function vecLength(v as Vec) as Float
-    return Sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
-endfunction
-
-function vecDot(v as Vec) as Float
-    return v.x+v.y+v.z
-endFunction
-
-function vecMul(v1 as Vec, v2 as Vec) as Vec
-    return newVec(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z)
-endFunction
-
-function vecMul(v1 as Vec, s as Float) as Vec
-    return newVec(v1.x*s, v1.y*s, v1.z*s)
-endFunction
-
-function vecMul(s as Float,v1 as Vec) as Vec
-    return newVec(v1.x*s, v1.y*s, v1.z*s)
-endFunction
-
-function vecSum(v1 as Vec, v2 as Vec) as Vec
-    return newVec(v1.x+v2.x, v1.y+v2.y, v1.z+v2.z)
-endFunction
-
-function vecSub(v1 as Vec, v2 as Vec) as Vec
-    return newVec(v1.x-v2.x, v1.y-v2.y, v1.z-v2.z)
-endFunction
-
-function vecSub(v1 as Vec, s as Integer) as Vec
-    return newVec(v1.x-s, v1.y-s, v1.z-s)
-endFunction
-
-function vecSub(s as Integer, v1 as Vec) as Vec
-    return newVec(s-v1.x, s-v1.y, s-v1.z)
-endFunction
-
-function vecNegate(v as Vec) as Vec
-    return newVec(-v.x, -v.y, -v.z)
-endFunction
-
-function normalize(v as Vec) as Vec
-    return vecMul(v,1.0/vecLength(v))
-endfunction
-
-
-function newSphere(x#,y#,z#,size#,r#,g#,b#,diffuse#) as Sphere
+function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) as Sphere
     s As sphere = New(sphere)
     s.origin=newVec(x#,y#,z#)
     s.size# = size#
-    s.c=newColorVec(r#,g#,b#)
-    s.diffuse#=diffuse
+    s.m=newMaterial(newColorVec(r#,g#,b#),diffusivity,specularity)
     return s
 endfunction
 
@@ -106,23 +58,24 @@ function newLight(x#,y#,z#) as Light
     return l
 endfunction
 
-
-newSphere(-1,-1,7,  1.5,    255,0,0, 0.9)
-newSphere(2,1,6,    1,      5,0,255, 0.8)
-newSphere(0,1.5,7,  1,      5,205,0, 0.8)
+newSphere(-1,-1,7,  1.5,    255,0,0, 0.9,1)
+newSphere(2,1,6,    1,      5,0,255, 0.8,1)
+newSphere(0,1.5,7,  1,      5,205,0, 0.8,1)
 newLight(-3,0,0)
-
 
 cv as ColorVec// use single struct
 global ambient as ColorVec = newColorVec(40,100,100)
 
+
+
 lastUpdate=0
+tim=0
 
 Repeat
     Tim=Timer()
     fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
 
-    t# = t# + (Timer() - lastUpdate) / 100.0
+    t# = t# + (Timer() - lastUpdate) / 500.0
     lastUpdate = Timer()
     t2# = t#
 
@@ -131,11 +84,12 @@ Repeat
         s.pos.y# = s.origin.y# + Sin(t2# * 1.4 +124124) * 0.3
         s.pos.z# = s.origin.z# + Sin(t2# + 343) * 0.6
         t2# = t2# + t#
-        s.specularity#=sin(timer()/20.0)*0.4+0.5
+        s.m.specularity#=sin(timer()/20.0)*0.25+0.7
     Next s
 
     l as light = first(light)
     l.pos.x=sin(t*9.0)*10
+    l.pos.z=cos(t*9.0)*10+10.0
 
     lock2(2) //writeonly lock
     For x#=0 To screenw-1
@@ -155,49 +109,54 @@ Repeat
     Print (Timer()-Tim)+" "+FPS()
 Forever
 
+
+
 Function trace(cv as ColorVec, ray as Vec, dir as Vec, iters) As ColorVec
-    coll=0
     dir=normalize(dir)
+    //coll as Collision = cast(ray,dir)
+
+    hit as rayHit
+    hit.dist=0
     For obj as sphere=Each sphere
-        b# = 2*vecDot(vecMul(dir,vecSub(ray,obj.pos)))
-        c# = vecDot(vecMul(obj.pos,obj.pos)) + vecDot(vecMul(ray,ray)) -2*vecDot(vecMul(obj.pos,ray)) - obj.size#*obj.size#
+        b# = 2*vecDot(dir,vecSub(ray,obj.pos))
+        c# = vecDot(obj.pos,obj.pos) + vecDot(ray,ray) -2*vecDot(obj.pos,ray) - obj.size#*obj.size#
         d# = b#*b# - 4*c#
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/2
-            If (coll==0 Or dist#>tt) And tt>0.0001
-                dist#=tt
+            If (hit.dist==0 or hit.dist#>tt) And tt>0.0001
+                hit.dist#=tt
                 nearest As sphere=obj
-                coll=1
             EndIf
         EndIf
-    Next obj
+    Next 
 
-    If coll Then
+
+    If hit.dist Then
+        hit.pos=vecSum(ray,vecMul(dir,hit.dist))
+        hit.m=nearest.m
         obj As sphere=nearest
-        camdir as Vec = normalize(vecSub(vecSub(obj.pos,ray),vecMul(dir,dist)))
-        specularDir as Vec = vecSub(vecMul(2*vecDot(vecMul(camDir,dir)),camDir),dir)
+        normal as Vec = normalize(vecSub(obj.pos,hit.pos))
+        specularDir as Vec = normalize(vecProject(dir,normal))
         //valaistus
         specular#=0
         diffuse#=0
         For valo As light=Each light
-            lightdir as Vec = vecNegate(normalize(vecSub(vecSub(valo.pos,ray),vecMul(dir,dist))))
-            diffuCos#=vecDot(vecMul(camDir,lightDir))
+            lightdir as Vec = vecNegate(normalize(vecSub(vecSub(valo.pos,ray),hit.pos)))
+            diffuCos#=vecDot(normal,lightDir)
             diffuse#=diffuse+Max(0.0,diffuCos)
             specular#=specular+Max(0.0,diffuCos)^8*0.5 //a hack for more interresting specular
-            specular#=max(0.0,vecDot(vecMul(lightdir,specularDir)))^12/2.0+specular
+            specular#=max(0.0,-vecDot(lightdir,specularDir))^12/2.0+specular
         Next valo
         //heijastukset
         If iters>0 Then
-            pos as Vec = vecSum(ray,vecMul(dir,dist))
-            dir as Vec = vecNegate(speculardir)
-            cv=trace(cv,pos,dir,iters-1)
+            cv=trace(cv,hit.pos,speculardir,iters-1)
         Else
             cv=ambient
         EndIf
-        diffuseAmount#=(1.0-obj.specularity)*obj.diffuse
-        cv.r=(obj.c.r*diffuse+ambient.r)*diffuseAmount+(cv.r+specular*255)*obj.specularity
-        cv.g=(obj.c.g*diffuse+ambient.g)*diffuseAmount+(cv.g+specular*255)*obj.specularity
-        cv.b=(obj.c.b*diffuse+ambient.b)*diffuseAmount+(cv.b+specular*255)*obj.specularity
+        diffuseAmount#=(1.0-hit.m.specularity)*hit.m.diffusivity
+        cv.r=(hit.m.cv.r*diffuse+ambient.r)*diffuseAmount+(cv.r+specular*255)*hit.m.specularity
+        cv.g=(hit.m.cv.g*diffuse+ambient.g)*diffuseAmount+(cv.g+specular*255)*hit.m.specularity
+        cv.b=(hit.m.cv.b*diffuse+ambient.b)*diffuseAmount+(cv.b+specular*255)*hit.m.specularity
     Else
         cv=ambient
     EndIf
