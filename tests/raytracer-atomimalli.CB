@@ -21,9 +21,6 @@ Type sphere
     Field origin as Vec
     Field size#
     Field m as Material
-    //Field cv as ColorVec
-    //Field specularity#
-    //Field diffuse#
 EndType
 
 Type light
@@ -34,15 +31,14 @@ Struct rayHit
     Field pos as Vec
     Field normal as Vec
     Field m as Material
-    //Field cv as ColorVec
     Field dist as Float
 endStruct
 
 function newMaterial(cv As colorVec, diffusivity#, specularity#) as Material
-    m as Material// = new(Material)
+    m as Material
     m.cv=cv:m.specularity=specularity:m.diffusivity=diffusivity
     return m
-endfunction
+endFunction
 
 function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) as Sphere
     s As sphere = New(sphere)
@@ -50,13 +46,13 @@ function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) as Sphere
     s.size# = size#
     s.m=newMaterial(newColorVec(r#,g#,b#),diffusivity,specularity)
     return s
-endfunction
+endFunction
 
 function newLight(x#,y#,z#) as Light
     l As Light = New(Light)
     l.pos=newVec(x#,y#,z#)
     return l
-endfunction
+endFunction
 
 newSphere(-1,-1,7,  1.5,    255,0,0, 0.9,1)
 newSphere(2,1,6,    1,      5,0,255, 0.8,1)
@@ -67,9 +63,9 @@ cv as ColorVec// use single struct
 global ambient as ColorVec = newColorVec(40,100,100)
 
 
+lastUpdate as Integer
+tim as Integer
 
-lastUpdate=0
-tim=0
 
 Repeat
     Tim=Timer()
@@ -109,43 +105,48 @@ Repeat
     Print (Timer()-Tim)+" "+FPS()
 Forever
 
-
-
-Function trace(cv as ColorVec, ray as Vec, dir as Vec, iters) As ColorVec
-    dir=normalize(dir)
-    //coll as Collision = cast(ray,dir)
-
+function cast(pos as Vec, dir as Vec) as rayHit
     hit as rayHit
     hit.dist=0
     For obj as sphere=Each sphere
-        b# = 2*vecDot(dir,vecSub(ray,obj.pos))
-        c# = vecDot(obj.pos,obj.pos) + vecDot(ray,ray) -2*vecDot(obj.pos,ray) - obj.size#*obj.size#
+        b# = 2*vecDot(dir,vecSub(pos,obj.pos))
+        c# = vecDot(obj.pos,obj.pos) + vecDot(pos,pos) -2*vecDot(obj.pos,pos) - obj.size#*obj.size#
         d# = b#*b# - 4*c#
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/2
-            If (hit.dist==0 or hit.dist#>tt) And tt>0.0001
+            If (hit.dist==0 or hit.dist#>tt) And tt>0.001
                 hit.dist#=tt
                 nearest As sphere=obj
             EndIf
         EndIf
     Next 
+    If hit.dist Then
+        hit.pos=vecSum(pos,vecMul(dir,hit.dist))
+        hit.m=nearest.m
+        hit.normal as Vec = normalize(vecSub(nearest.pos,hit.pos))
+    endif
+    return hit
+endFunction
 
+Function trace(cv as ColorVec, pos as Vec, dir as Vec, iters) As ColorVec
+    dir=normalize(dir)
+    hit as rayHit = cast(pos,dir)
 
     If hit.dist Then
-        hit.pos=vecSum(ray,vecMul(dir,hit.dist))
-        hit.m=nearest.m
-        obj As sphere=nearest
-        normal as Vec = normalize(vecSub(obj.pos,hit.pos))
-        specularDir as Vec = normalize(vecProject(dir,normal))
+        specularDir as Vec = normalize(vecProject(dir,hit.normal))
         //valaistus
         specular#=0
         diffuse#=0
         For valo As light=Each light
-            lightdir as Vec = vecNegate(normalize(vecSub(vecSub(valo.pos,ray),hit.pos)))
-            diffuCos#=vecDot(normal,lightDir)
-            diffuse#=diffuse+Max(0.0,diffuCos)
-            specular#=specular+Max(0.0,diffuCos)^8*0.5 //a hack for more interresting specular
-            specular#=max(0.0,-vecDot(lightdir,specularDir))^12/2.0+specular
+            lightVec as Vec = vecSub(valo.pos,hit.pos)
+            lightDir as Vec = normalize(lightVec)
+            shadow as rayHit = cast(hit.pos,lightdir)
+            if shadow.dist==0 or shadow.dist>vecLength(lightVec) then
+                diffuCos#=vecDot(hit.normal,lightDir)
+                diffuse#=diffuse+Max(0.0,-diffuCos)
+                specular#=specular+Max(0.0,-diffuCos)^8*0.5 //a hack for more interresting specular
+                specular#=max(0.0,vecDot(lightdir,specularDir))^12/2.0+specular
+            endif
         Next valo
         //heijastukset
         If iters>0 Then
