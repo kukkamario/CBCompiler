@@ -1,0 +1,11 @@
+Dim array(10) as String
+
+Print "Init"
+For i = 0 to 9
+	array(i) = "array(" + i + ")"
+Next i
+
+Print "For-Each"
+For e as String = Each array
+	Print e
+Next e

@@ -1,8 +1,6 @@
 #include "symbol.h"
 
-Symbol::Symbol(const QString &name, const QString &f, int line):
+Symbol::Symbol(const QString &name, const CodePoint &cp):
 	mName(name),
-	mFile(f),
-	mLine(line)
-{
+	mCodePoint(cp) {
 }

@@ -1,0 +1,5 @@
+b = Byte(23)
+f = Float(23)
+s = Short(23)
+ss$ = String(23)
+i = Integer(23)

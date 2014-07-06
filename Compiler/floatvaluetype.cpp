@@ -8,22 +8,22 @@ FloatValueType::FloatValueType(Runtime *runtime, llvm::Module *mod) :
 	mType = llvm::Type::getFloatTy(mod->getContext());
 }
 
-ValueType::CastCostType FloatValueType::castingCostToOtherValueType(ValueType *to) const {
-	switch (to->type()) {
+ValueType::CastCost FloatValueType::castingCostToOtherValueType(const ValueType *to) const {
+	switch (to->basicType()) {
 		case Float:
-			return 0;
+			return ccNoCost;
 		case Boolean:
-			return 1;
+			return ccCastToBoolean;
 		case Integer:
-			return 5;
+			return ccCastFromFloat;
 		case String:
-			return 100;
+			return ccCastToString;
 		case Short:
-			return 10;
+			return ccCastFromFloat;
 		case Byte:
-			return 10;
+			return ccCastFromFloat;
 		default:
-			return sMaxCastCost;
+			return ccNoCast;
 	}
 }
 
@@ -39,3 +39,12 @@ llvm::Constant *FloatValueType::constant(float f) const {
 llvm::Constant *FloatValueType::defaultValue() const {
 	return constant(0.0f);
 }
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);
+}
+
+Value FloatValueType::generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const {
+	return generateBasicTypeOperation(builder, opType, operand, operationFlags);
+}
+

@@ -7,13 +7,22 @@
 #include "gfxinterface.h"
 #include "textinterface.h"
 #include "inputinterface.h"
+#include <cstdio>
 
 extern "C" void CB_main();
 extern "C" void CB_initialize();
 
-
+#ifdef _WIN32
+#include <window.h>
+int CALLBACK WinMain(
+  HINSTANCE hInstance,
+  HINSTANCE hPrevInstance,
+  LPSTR lpCmdLine,
+  int nCmdShow
+) {
+#else
 int main(int argc, char **argv) {
-
+#endif
 	info(U"Initializing types and strings");
 	CB_initialize();
 
@@ -26,6 +35,7 @@ int main(int argc, char **argv) {
 	info(U"Creating a window");
 	Window *window = new Window();
 	if (!window->create()) return 1;
+	RenderTarget::setFallbackRenderTarget(window);
 
 
 	info(U"Initializing interfaces");

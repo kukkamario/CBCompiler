@@ -108,16 +108,11 @@ bool Window::isValid() const {
 	return mDisplay != 0;
 }
 
-bool Window::activate() {
+bool Window::activateRenderContext() {
 	al_set_target_backbuffer(mDisplay);
-	sCurrentTarget = this;
-	setupDrawingState();
 	return true;
 }
 
-bool Window::deactivate() {
-	return true;
-}
 
 void Window::lock(int flags) {
 	al_lock_bitmap(al_get_backbuffer(mDisplay), ALLEGRO_PIXEL_FORMAT_ANY, flags);
@@ -139,7 +134,7 @@ void Window::drawscreen() {
 	mFPSCounter++;
 	double sysTime = sys::timeInSec();
 	if (sysTime >= mLastFPSUpdate + 1.0) {
-		mLastFPSUpdate = sysTime;
+		mLastFPSUpdate = mLastFPSUpdate + 1.0;
 		mFPS = mFPSCounter;
 		mFPSCounter = 0;
 	}

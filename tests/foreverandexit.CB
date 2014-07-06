@@ -1,6 +1,6 @@
 i = 0
 Repeat
-i = i + 1
-If i = 100 Then Exit
+	i = i + 1
+	If i == 100 Then Exit
 Forever
 Print i

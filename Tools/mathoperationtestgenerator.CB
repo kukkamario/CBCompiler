@@ -1,0 +1,294 @@
+Global f
+f = OpenToWrite("../tests/operations.CB")
+WriteLine f, "Dim i1, i2, i3, f1#, f2#, f3#"
+
+WriteLine f, "Print " + Chr(34) + "Integer tests:" + Chr(34)
+For i = 0 To 100
+	genInt()
+Next i
+WriteLine f, "Print " + Chr(34) + "Float tests:" + Chr(34)
+For i = 0 To 100
+	genFloat()
+Next i
+
+WriteLine f, "Print " + Chr(34) + "Float-Int tests:" + Chr(34)
+For i = 0 To 100
+	genFloatInt()
+Next i
+
+WriteLine f, "Print " + Chr(34) + "Int-Float tests:" + Chr(34)
+For i = 0 To 100
+	genIntFloat()
+Next i
+
+Function genFloat()
+	op = Rnd(2, 14)
+	op1# = Rnd(-3, 3)
+	op2# = Rnd(-3, 3)
+	
+	op1name$ = "f1"
+	op2name$ = "f2"
+	op3name$ = "f3"
+	result# = 0
+	WriteLine f, op1name$ + " = " + op1
+	WriteLine f, op2name$ + " = " + op2
+	Select op
+		Case 1
+			result = (op1 = op2)
+			ops$ = " == "
+		Case 2
+			result = (op1 <> op2)
+			ops$ = " <> "
+		Case 3
+			result = (op1 + op2)
+			ops$ = " + "
+		Case 4
+			result = (op1 - op2)
+			ops$ = " - "
+		Case 5
+			result = (op1 * op2)
+			ops$ = " * "
+		Case 6
+			result = (op1 / op2)
+			ops$ = " / "
+		Case 7
+			result = (op1 < op2)
+			ops$ = " < "
+		Case 8
+			result = (op1 > op2)
+			ops$ = " > "
+		Case 9
+			result = (op1 <= op2)
+			ops$ = " <= "
+		Case 10
+			result = (op1 >= op2)
+			ops$ = " >= "
+		Case 11
+			result = (op1 Mod op2)
+			ops$ = " Mod "
+		Case 12
+			result = (op1 Xor op2)
+			ops$ = " Xor "
+		Case 13
+			result = (op1 And op2)
+			ops$ = " And "
+		Case 14
+			result = (op1 Or op2)
+			ops$ = " Or "
+	EndSelect
+	WriteLine f, op3name$ + " = (" + op1name$ + ops$ + op2name$ + " )"
+	WriteLine f, "If " + op3name$ + " == " + result + " Then"
+	WriteLine f, "    Print " + Chr(34) + "Success" + Chr(34)
+	WriteLine f, "Else"
+	WriteLine f, "    Print " + Chr(34) + "(" + op1 +" " + ops + " " + op2 + ") == " + result + Chr(34)
+	WriteLine f, "    Print " + Chr(34) + "Failed " + Chr(34) + " + " + op3name$ + " + " + Chr(34) +" <> " + result + Chr(34)
+	WriteLine f, "EndIf"
+EndFunction
+
+Function genIntFloat()
+	op = Rand(1, 14)
+	op1 = Rand(-3, 3)
+	op2# = Rnd(-3, 3)
+	
+	op1name$ = "i1"
+	op2name$ = "f1"
+	op3name$ = "f3"
+	result# = 0
+	WriteLine f, op1name$ + " = " + op1
+	WriteLine f, op2name$ + " = " + op2
+	Select op
+		Case 1
+			result = (op1 = op2)
+			ops$ = " == "
+		Case 2
+			result = (op1 <> op2)
+			ops$ = " <> "
+		Case 3
+			result = (op1 + op2)
+			ops$ = " + "
+		Case 4
+			result = (op1 - op2)
+			ops$ = " - "
+		Case 5
+			result = (op1 * op2)
+			ops$ = " * "
+		Case 6
+			result = (op1 / op2)
+			ops$ = " / "
+		Case 7
+			result = (op1 < op2)
+			ops$ = " < "
+		Case 8
+			result = (op1 > op2)
+			ops$ = " > "
+		Case 9
+			result = (op1 <= op2)
+			ops$ = " <= "
+		Case 10
+			result = (op1 >= op2)
+			ops$ = " >= "
+		Case 11
+			result = (op1 Mod op2)
+			ops$ = " Mod "
+		Case 12
+			result = (op1 Xor op2)
+			ops$ = " Xor "
+		Case 13
+			result = (op1 And op2)
+			ops$ = " And "
+		Case 14
+			result = (op1 Or op2)
+			ops$ = " Or "
+	EndSelect
+	
+	WriteLine f, op3name$ + " = (" + op1name$ + ops$ + op2name$ + " )"
+	WriteLine f, "If " + op3name$ + " == " + result + " Then"
+	WriteLine f, "    Print " + Chr(34) + "Success" + Chr(34)
+	WriteLine f, "Else"
+	WriteLine f, "    Print " + Chr(34) + "(" + op1 +" " + ops + " " + op2 + ") == " + result + Chr(34)
+	WriteLine f, "    Print " + Chr(34) + "Failed " + Chr(34) + " + " + op3name$ + " + " + Chr(34) +" <> " + result + Chr(34)
+	WriteLine f, "EndIf"
+EndFunction
+
+Function genFloatInt()
+	op = Rand(1, 14)
+	op1# = Rnd(-3, 3)
+	While op2 = 0
+		op2 = Rand(-3, 3)
+	Wend
+	
+	op1name$ = "f1"
+	op2name$ = "i1"
+	op3name$ = "f3"
+	result# = 0
+	WriteLine f, op1name$ + " = " + op1
+	WriteLine f, op2name$ + " = " + op2
+	Select op
+		Case 1
+			result = (op1 = op2)
+			ops$ = " == "
+		Case 2
+			result = (op1 <> op2)
+			ops$ = " <> "
+		Case 3
+			result = (op1 + op2)
+			ops$ = " + "
+		Case 4
+			result = (op1 - op2)
+			ops$ = " - "
+		Case 5
+			result = (op1 * op2)
+			ops$ = " * "
+		Case 6
+			result = (op1 / op2)
+			ops$ = " / "
+		Case 7
+			result = (op1 < op2)
+			ops$ = " < "
+		Case 8
+			result = (op1 > op2)
+			ops$ = " > "
+		Case 9
+			result = (op1 <= op2)
+			ops$ = " <= "
+		Case 10
+			result = (op1 >= op2)
+			ops$ = " >= "
+		Case 11
+			result = (op1 Mod op2)
+			ops$ = " Mod "
+		Case 12
+			result = (op1 Xor op2)
+			ops$ = " Xor "
+		Case 13
+			result = (op1 And op2)
+			ops$ = " And "
+		Case 14
+			result = (op1 Or op2)
+			ops$ = " Or "
+	EndSelect
+	
+	WriteLine f, op3name$ + " = (" + op1name$ + ops$ + op2name$ + " )"
+	WriteLine f, "If " + op3name$ + " == " + result + " Then"
+	WriteLine f, "    Print " + Chr(34) + "Success" + Chr(34)
+	WriteLine f, "Else"
+	WriteLine f, "    Print " + Chr(34) + "(" + op1 +" " + ops + " " + op2 + ") == " + result + Chr(34)
+	WriteLine f, "    Print " + Chr(34) + "Failed " + Chr(34) + " + " + op3name$ + " + " + Chr(34) +" <> " + result + Chr(34)
+	WriteLine f, "EndIf"
+EndFunction
+
+Function genInt()
+	op = Rand(1, 17)
+	op1 = Rand(-3, 3)
+	While op2 = 0
+		op2 = Rand(-3, 3)
+	Wend
+	
+	op1name$ = "i1"
+	op2name$ = "i2"
+	op3name$ = "i3"
+	result = 0
+	WriteLine f, op1name$ + " = " + op1
+	WriteLine f, op2name$ + " = " + op2
+	Select op
+		Case 1
+			result = (op1 = op2)
+			ops$ = " == "
+		Case 2
+			result = (op1 <> op2)
+			ops$ = " <> "
+		Case 3
+			result = (op1 + op2)
+			ops$ = " + "
+		Case 4
+			result = (op1 - op2)
+			ops$ = " - "
+		Case 5
+			result = (op1 * op2)
+			ops$ = " * "
+		Case 6
+			result = (op1 / op2)
+			ops$ = " / "
+		Case 7
+			result = (op1 Shl op2)
+			ops$ = " Shl "
+		Case 8
+			result = (op1 Shr op2)
+			ops$ = " Shr "
+		Case 9
+			result = (op1 Sar op2)
+			ops$ = " Sar "
+		Case 10
+			result = (op1 < op2)
+			ops$ = " < "
+		Case 11
+			result = (op1 > op2)
+			ops$ = " > "
+		Case 12
+			result = (op1 <= op2)
+			ops$ = " <= "
+		Case 13
+			result = (op1 >= op2)
+			ops$ = " >= "
+		Case 14
+			result = (op1 Mod op2)
+			ops$ = " Mod "
+		Case 15
+			result = (op1 Xor op2)
+			ops$ = " Xor "
+		Case 16
+			result = (op1 And op2)
+			ops$ = " And "
+		Case 17
+			result = (op1 Or op2)
+			ops$ = " Or "
+	EndSelect
+	
+	WriteLine f, op3name$ + " = (" + op1name$ + ops$ + op2name$ + " )"
+	WriteLine f, "If " + op3name$ + " == " + result + " Then"
+	WriteLine f, "    Print " + Chr(34) + "Success" + Chr(34)
+	WriteLine f, "Else"
+	WriteLine f, "    Print " + Chr(34) + "(" + op1 +" " + ops + " " + op2 + ") == " + result + Chr(34)
+	WriteLine f, "    Print " + Chr(34) + "Failed " + Chr(34) + " + " + op3name$ + " + " + Chr(34) +" <> " + result + Chr(34)
+	WriteLine f, "EndIf"
+EndFunction

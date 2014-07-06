@@ -13,9 +13,9 @@ TypeValueType::TypeValueType(Runtime *r, llvm::Type *type) :
 	mType = type;
 }
 
-ValueType::CastCostType TypeValueType::castingCostToOtherValueType(ValueType *to) const {
-	if (to == this) return 0;
-	return sMaxCastCost;
+ValueType::CastCost TypeValueType::castingCostToOtherValueType(const ValueType *to) const {
+	if (to == this) return ccNoCost;
+	return ccNoCast;
 }
 
 Value TypeValueType::cast(Builder *, const Value &v) const {

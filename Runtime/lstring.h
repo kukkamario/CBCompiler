@@ -6,18 +6,7 @@
 #include <cstdint>
 #include <allegro5/allegro.h>
 #include "common.h"
-
-#ifdef USE_BOOST_ATOMIC
-	#include <boost/atomic.hpp>
-	typedef boost::atomic_int AtomicInt;
-#else
-	typedef int AtomicInt;
-#endif
-int atomicLoad(AtomicInt &i);
-void atomicIncrease(AtomicInt &i);
-bool atomicDecrease(AtomicInt &i);
-void atomicThreadFenceAcquire();
-
+#include "atomicint.h"
 typedef char32_t LChar;
 
 class LStringData {
@@ -33,11 +22,16 @@ class LStringData {
 		bool decrease();
 		bool isStaticData() const;
 
+		LChar *begin();
+		LChar *end();
+		const LChar *begin() const;
+		const LChar *end() const;
+
 		mutable AtomicInt mRefCount;
 		mutable std::string *mUtf8String;
-		size_t mLength;
 		size_t mSize;
-		LChar *mData;
+		size_t mCapacity;
+		intptr_t mOffset;
 
 		//LChar mRealData[mSize];
 	private:
@@ -62,11 +56,15 @@ class LString {
 		LString(ConstIterator begin, ConstIterator end);
 		LString(const LString &o);
 		LString(CBString cbString);
+
 		~LString();
 
 		static LString fromBuffer(LChar *buffer);
 		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
-		static LString number(int i);
+		static LString fromUtf8(const std::string &s);
+		static LString fromAscii(const std::string &s);
+		static LString number(int i, int base = 10);
+		static LString number(unsigned int i, int base = 10);
 		static LString number(float f);
 
 		LString & operator=(const LString &o);
@@ -86,6 +84,15 @@ class LString {
 		LString substr(int start, int len) const;
 		LString left(int chars) const;
 		LString right(int chars) const;
+		LString trimmed() const;
+		LString rightJustified(size_t width, LChar fill, bool truncate = false) const;
+		LString leftJustified(size_t width, LChar fill, bool truncate = false) const;
+
+		LString toUpper() const;
+		LString toLower() const;
+
+		void rightJustify(size_t width, LChar fill, bool truncate = false);
+		void leftJustify(size_t width, LChar fill, bool truncate = false);
 
 		Iterator find(LChar c);
 		Iterator find(LChar c, Iterator start);
@@ -126,6 +133,7 @@ class LString {
 		size_t size() const { return length(); }
 		size_t capacity() const;
 		void reserve(size_t size);
+		void resize(size_t size);
 
 		std::u32string toU32String() const;
 		std::wstring toWString() const;
@@ -133,6 +141,11 @@ class LString {
 		ALLEGRO_USTR *toAllegroUStr() const;
 
 		static bool ucs4ToUtf8(const LChar *from, const LChar *fromEnd, const LChar *&fromNext, uint8_t *to, uint8_t *toEnd, uint8_t *&toNext);
+		static bool utf8ToUtf32(const uint8_t **sourceStart, const uint8_t *sourceEnd, LChar **targetStart, LChar *targetEnd);
+
+		static bool isWhitespace(LChar c);
+		static char32_t toUpper(char32_t c);
+		static char32_t toLower(char32_t c);
 
 		int indexOfIterator(ConstIterator i) const;
 		bool isValidIterator(ConstIterator i) const;

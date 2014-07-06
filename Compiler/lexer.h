@@ -68,15 +68,17 @@ class Lexer: public QObject
 		void combineTokens();
 
 		ReturnState readToEOL(QString::iterator &i, const QString::iterator &end);
-		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
-		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
-		ReturnState readNum(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
-		ReturnState readHex(QString::iterator &i, const QString::iterator &end, int line, const QString &file);
-		ReturnState readString(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
-		ReturnState readIdentifier(QString::iterator &i, const QString::iterator &end, int &line, const QString &file);
+		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file);
+		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);
+		ReturnState readNum(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);
+		ReturnState readHex(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);
+		ReturnState readString(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file);
+		ReturnState readIdentifier(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file);
+
+		CodePoint codePoint(QString::Iterator i, QString::Iterator lineStart, int line, const QString &file);
 	signals:
-		void warning(int code, QString msg, int line, QString file);
-		void error(int code, QString msg, int line, QString file);
+		void warning(int code, QString msg, CodePoint codePoint);
+		void error(int code, QString msg, CodePoint codePoint);
 };
 
 #endif // LEXER_H

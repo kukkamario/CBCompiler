@@ -1,0 +1,27 @@
+'Create a file 
+f As File=OpenToWrite("Media\temp.dat")
+    lifes=8
+
+    WriteByte f,8
+    WriteShort f,lifes*9
+    WriteInt f, -8901
+    WriteFloat f,6.0
+    
+CloseFile f
+
+'Now read it 
+f =OpenToRead("Media\temp.dat")
+
+    mybyte=ReadByte(f)
+    myshort=ReadShort(f)
+    myint=ReadInt(f)
+    myfloat=ReadFloat(f)
+    
+    Print mybyte
+    Print myshort
+    Print myint
+    Print myfloat
+
+CloseFile f
+
+ 

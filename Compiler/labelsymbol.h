@@ -7,7 +7,7 @@ namespace llvm {
 class LabelSymbol : public Symbol
 {
 	public:
-		LabelSymbol(const QString &name, const QString &file, int line);
+		LabelSymbol(const QString &name, const CodePoint &cp);
 		Type type()const{return stLabel;}
 		QString info()const;
 		void setBasicBlock(llvm::BasicBlock *bb);

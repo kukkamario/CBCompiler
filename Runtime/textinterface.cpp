@@ -12,7 +12,7 @@ void text::initText() {
 #elif __MACH__
 	mDefaultFont = al_load_font("/Library/Fonts/Courier New.ttf", 12, ALLEGRO_TTF_MONOCHROME);
 #else
-	mDefaultFont = al_load_font("/usr/share/fonts/truetype/msttcorefonts/cour.ttf", 12, ALLEGRO_TTF_MONOCHROME);
+	mDefaultFont = al_load_font("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 12, ALLEGRO_TTF_MONOCHROME);
 #endif
 	mCurrentFont = mDefaultFont;
 

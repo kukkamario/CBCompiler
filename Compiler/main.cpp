@@ -41,14 +41,14 @@ int main(int argc, char *argv[]) {
 	bool success = false;
 	success = settings.loadDefaults();
 	if (!success) {
-		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), 0, QString());
+		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), CodePoint());
 		return ErrorCodes::ecSettingsLoadingFailed;
 	}
 
 
 	Lexer lexer;
-	errHandler.connect(&lexer, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
-	errHandler.connect(&lexer, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
+	QObject::connect(&lexer, &Lexer::error, &errHandler, &ErrorHandler::error);
+	QObject::connect(&lexer, &Lexer::warning, &errHandler, &ErrorHandler::warning);
 	QTime timer;
 	timer.start();
 	if (lexer.tokenizeFile(params[1], settings) == Lexer::Success) {
@@ -58,43 +58,43 @@ int main(int argc, char *argv[]) {
 #endif
 	}
 	else {
-		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), 0, lexer.files().first().first);
+		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), CodePoint(lexer.files().first().first));
 		return ErrorCodes::ecLexicalAnalysingFailed;
 	}
 
 	Parser parser;
-	errHandler.connect(&parser, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
-	errHandler.connect(&parser, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
+	QObject::connect(&parser, &Parser::error, &errHandler, &ErrorHandler::error);
+	QObject::connect(&parser, &Parser::warning, &errHandler, &ErrorHandler::warning);
 
 	timer.start();
 	ast::Program *program = parser.parse(lexer.tokens(), settings);
 	qDebug() << "Parsing took " << timer.elapsed() << "ms";
+	if (!parser.success()) {
+		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), CodePoint());
+		return ErrorCodes::ecParsingFailed;
+	}
 
 #ifdef DEBUG_OUTPUT
 	if (program) {
-		ast::Printer printer;
-		printer.printToFile("ast.txt");
-		printer.printProgram(program);
-
+		QFile file("ast.txt");
+		if (file.open(QFile::WriteOnly)) {
+			QTextStream stream(&file);
+			program->write(stream);
+			file.close();
+		}
 	}
 #endif
 
-	if (!parser.success()) {
-		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), 0, QString());
-		return ErrorCodes::ecParsingFailed;
-	}
+
 
 	CodeGenerator codeGenerator;
 	//QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
 	//QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
-	errHandler.connect(&codeGenerator, SIGNAL(error(int,QString,int,QString)), SLOT(error(int,QString,int,QString)));
-	errHandler.connect(&codeGenerator, SIGNAL(warning(int,QString,int,QString)), SLOT(warning(int,QString,int,QString)));
-
-	const QString runtimePath(QCoreApplication::applicationDirPath() + "/runtime/libRuntime.bc");
-	const QString functionMappingPath(QCoreApplication::applicationDirPath() + "/runtime/functionmapping.map");
+	QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
+	QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
 
 	timer.start();
-	if (!codeGenerator.initialize(runtimePath, functionMappingPath, settings)) {
+	if (!codeGenerator.initialize(settings)) {
 		return ErrorCodes::ecCodeGeneratorInitializationFailed;
 	}
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 	qDebug() << "Code generator initialization took " << timer.elapsed() << "ms";
 	timer.start();
 	if (!codeGenerator.generate(program)) {
-		errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), 0, QString());
+		errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), CodePoint());
 		return ErrorCodes::ecCodeGenerationFailed;
 	}
 

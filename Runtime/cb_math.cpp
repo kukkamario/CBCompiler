@@ -51,12 +51,28 @@ int CBF_max(int a, int b) {
 	return max(a, b);
 }
 
+float CBF_max(float a, int b) {
+	return max(a, (float)b);
+}
+
+float CBF_max(int a, float b) {
+	return max((float)a, b);
+}
+
 float CBF_min(float a, float b) {
 	return min(a, b);
 }
 
 int CBF_min(int a, int b) {
 	return min(a, b);
+}
+
+float CBF_min(int a, float b) {
+	return min((float)a, b);
+}
+
+float CBF_min(float a, int b) {
+	return min(a, (float)b);
 }
 
 float CBF_wrapAngle(float a) {
@@ -83,11 +99,11 @@ void CBF_randomize(int seed) {
 	randomize(seed);
 }
 
-float CBF_roundUp(float f) {
+int CBF_roundUp(float f) {
 	return ceilf(f);
 }
 
-float CBF_roundDown(float f) {
+int CBF_roundDown(float f) {
 	return floorf(f);
 }
 

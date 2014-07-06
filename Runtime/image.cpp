@@ -1,9 +1,6 @@
 #include "image.h"
 
-IdMap<Image> Image::sIdMap;
-
 Image::Image(int w, int h) {
-	mId = sIdMap.add(this);
 	mBitmap = al_create_bitmap(w, h);
 	mWidth = w;
 	mHeight = h;
@@ -13,7 +10,6 @@ Image::Image(ALLEGRO_BITMAP *bitmap) :
 	mBitmap(bitmap) {
 	mWidth = al_get_bitmap_width(bitmap);
 	mHeight = al_get_bitmap_height(bitmap);
-	mId = sIdMap.add(this);
 }
 
 
@@ -28,19 +24,13 @@ Image *Image::load(const LString &path) {
 	return img;
 }
 
-bool Image::activate() {
+bool Image::activateRenderContext() {
 	al_set_target_bitmap(mBitmap);
-	setupDrawingState();
-	sCurrentTarget = this;
 	return true;
 }
 
 bool Image::deactivate() {
 	return true;
-}
-
-Image *Image::get(int id) {
-	return sIdMap.get(id);
 }
 
 
@@ -72,4 +62,12 @@ void Image::resize(int w, int h) {
 
 void Image::mask(const ALLEGRO_COLOR &color) {
 	al_convert_mask_to_alpha(mBitmap, color);
+}
+
+void Image::draw(float x, float y) {
+	al_draw_bitmap(mBitmap, x, y, 0);
+}
+
+ALLEGRO_COLOR Image::getPixel(int x, int y) {
+	return al_get_pixel(mBitmap, x, y);
 }

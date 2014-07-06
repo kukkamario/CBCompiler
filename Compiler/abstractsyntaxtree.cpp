@@ -1,455 +1,384 @@
 #include "abstractsyntaxtree.h"
+#include "astvisitor.h"
+
 #include <QDebug>
 #include <QByteArray>
 #include <QFile>
 #include <QTextStream>
+#include <QObject>
 
 namespace ast {
 
-const char *const operatorStrings[] = {
-	"opEqual",
-	"opNotEqual",
-	"opGreater",
-	"opLess",
-	"opGreaterEqual",
-	"opLessEqual",
-	"opPlus",
-	"opMinus",
-	"opMultiply",
-	"opPower",
-	"opMod",
-	"opShl",
-	"opShr",
-	"opSar",
-	"opDivide",
-	"opAnd",
-	"opOr",
-	"opXor",
-	"opNot",
-	"opInvalid"
-};
 
-QString operatorToString(Operator op) {
-	if (op >= opEqual && op < opInvalid) {
-		return operatorStrings[op];
+void printTabs(QTextStream &s, int tabs) {
+	for (int i = 0; i < tabs; i++) {
+		s << '\t';
 	}
-	return operatorStrings[opInvalid];
 }
 
-void Printer::printNode(const Node *s, int tab) {
-	switch(s->type()) {
-		case Node::ntBlock:
-			printBlock((Block*)s, tab); return;
-		case Node::ntIfStatement:
-			printIfStatement((IfStatement*)s, tab); return;
-		case Node::ntTypeDefinition:
-			printTypeDefinition((TypeDefinition*)s, tab); return;
-		case Node::ntWhileStatement:
-			printWhileStatement((WhileStatement*)s, tab); return;
-		case Node::ntForToStatement:
-			printForToStatement((ForToStatement*)s, tab); return;
-		case Node::ntForEachStatement:
-			printForEachStatement((ForEachStatement*)s, tab); return;
-		case Node::ntRepeatForeverStatement:
-			printRepeatForeverStatement((RepeatForeverStatement*)s, tab); return;
-		case Node::ntRepeatUntilStatement:
-			printRepeatUntilStatement((RepeatUntilStatement*)s, tab); return;
-		case Node::ntSelectStatement:
-			printSelectStatement((SelectStatement*)s, tab); return;
-		case Node::ntGoto:
-			printGoto((Goto*)s, tab); return;
-		case Node::ntGosub:
-			printGosub((Gosub*)s, tab); return;
-		case Node::ntLabel:
-			printLabel((Label*)s, tab); return;
-		case Node::ntExpression:
-			printExpression((Expression*)s, tab); return;
-		case Node::ntCommandCall:
-			printCommandCall((CommandCall*)s, tab); return;
-		case Node::ntArrayDefinition:
-			printArrayDefinition((ArrayDefinition*)s, tab); return;
-		case Node::ntVariableDefinition:
-			printVariableDefinition((VariableDefinition*)s, tab); return;
-		case Node::ntConstDefinition:
-			printConstDefinition((ConstDefinition*)s, tab); return;
-		case Node::ntGlobalDefinition:
-			printGlobalDefinition((GlobalDefinition*)s, tab); return;
-		case Node::ntAssignmentExpression:
-			printAssignmentExpression((AssignmentExpression*)s, tab); return;
-		case Node::ntUnary:
-			printUnary((Unary*)s, tab); return;
-		case Node::ntReturn:
-			printReturn((Return*)s, tab); return;
-		case Node::ntExit:
-			printExit((Exit*)s, tab); return;
-		case Node::ntTypePtrField:
-			printTypePtrField((TypePtrField*)s, tab); return;
-		case Node::ntVariable:
-			printVariable((Variable*)s, tab); return;
-		case Node::ntInteger:
-			printInteger((Integer*)s, tab); return;
-		case Node::ntFloat:
-			printFloat((Float*)s, tab); return;
-		case Node::ntString:
-			printString((String*)s, tab); return;
-		case Node::ntFunctionCallOrArraySubscript:
-			printFunctionCallOrArraySubscript((FunctionCallOrArraySubscript*)s, tab); return;
-		case Node::ntArraySubscriptAssignmentExpression:
-			printArraySubscriptAssignmentExpression((ArraySubscriptAssignmentExpression*)s, tab); return;
-		case Node::ntFunctionDefinition:
-			printFunctionDefinition((FunctionDefinition*)s, tab); return;
-		case Node::ntCommandCallOrArraySubscriptAssignmentExpression:
-			printCommandCallOrArraySubscriptAssignmentExpression((CommandCallOrArraySubscriptAssignmentExpression*)s, tab); return;
-		case Node::ntSpecialFunctionCall:
-			printSpecialFunctionCall((SpecialFunctionCall*)s, tab); return;
-		case Node::ntDim:
-			printDim((Dim*)s, tab); return;
+void Node::write(QTextStream &s, int tabs) {
+	printTabs(s, tabs);
+	s << "Node:" << typeAsString() << " {\n";
+	for (int i = 0; i < childNodeCount(); i++) {
+		childNode(i)->write(s, tabs + 1);
+	}
+	printTabs(s, tabs);
+	s << "}\n";
+}
+
+
+const char *Node::typeAsString() const {
+	static const char * const types[] = {
+		"ntBlock",
+		"ntInteger",
+		"ntFloat",
+		"ntString",
+		"ntIdentifier",
+		"ntLabel",
+		"ntList",
+		"ntGoto",
+		"ntGosub",
+		"ntReturn",
+		"ntExit",
+
+		"ntDefaultType",
+		"ntBasicType",
+		"ntNamedType",
+		"ntArrayType",
+
+		"ntExpression",
+		"ntExpressionNode",
+		"ntUnary",
+		"ntArraySubscript",
+		"ntFunctionCall",
+		"ntKeywordFunctionCall",
+		"ntDefaultValue",
+		"ntVariable",
+
+		"ntIfStatement",
+		"ntWhileStatement",
+		"ntRepeatForeverStatement",
+		"ntRepeatUntilStatement",
+		"ntForToStatement",
+		"ntForEachStatement",
+		"ntSelectStatement",
+		"ntSelectCase",
+
+		"ntConst",
+		"ntDim",
+		"ntGlobal",
+		"ntRedim",
+		"ntVariableDefinition",
+		"ntArrayInitialization",
+		"ntFunctionDefinition",
+		"ntTypeDefinition",
+		"ntStructDefinition",
+
+		"ntProgram",
+
+
+
+
+		//Last
+		"ntInvalid" };
+	Type ty = type();
+	if (ty < 0 || ty >= ntInvalid) return types[ntInvalid];
+	return types[ty];
+
+}
+
+Node *Variable::childNode(int n) const {
+	switch (n) {
+		case 0:
+			return mIdentifier;
+		case 1:
+			return mType;
 		default:
-			printLine("Unknown AST node " + QString::number(s->type())); return;
+			assert("Invalid child node id" && 0);
+			return 0;
+	}
+}
+template<>
+NODE_ACCEPT_VISITOR_DEF(Integer)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Float)
+template<>
+NODE_ACCEPT_VISITOR_DEF(String)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Identifier)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Label)
+NODE_ACCEPT_VISITOR_DEF(Return)
+NODE_ACCEPT_VISITOR_DEF(Exit)
+NODE_ACCEPT_VISITOR_DEF(DefaultType)
+NODE_ACCEPT_VISITOR_DEF(BasicType)
+NODE_ACCEPT_VISITOR_DEF(NamedType)
+NODE_ACCEPT_VISITOR_DEF(ArrayType)
+NODE_ACCEPT_VISITOR_DEF(Variable)
+NODE_ACCEPT_VISITOR_DEF(ExpressionNode)
+NODE_ACCEPT_VISITOR_DEF(Expression)
+NODE_ACCEPT_VISITOR_DEF(List)
+NODE_ACCEPT_VISITOR_DEF(FunctionCall)
+NODE_ACCEPT_VISITOR_DEF(KeywordFunctionCall)
+NODE_ACCEPT_VISITOR_DEF(ArraySubscript)
+NODE_ACCEPT_VISITOR_DEF(DefaultValue)
+NODE_ACCEPT_VISITOR_DEF(Unary)
+NODE_ACCEPT_VISITOR_DEF(VariableDefinition)
+NODE_ACCEPT_VISITOR_DEF(ArrayInitialization)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Dim)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Global)
+NODE_ACCEPT_VISITOR_DEF(Redim)
+NODE_ACCEPT_VISITOR_DEF(TypeDefinition)
+NODE_ACCEPT_VISITOR_DEF(StructDefinition)
+NODE_ACCEPT_VISITOR_DEF(Block)
+NODE_ACCEPT_VISITOR_DEF(IfStatement)
+template<>
+NODE_ACCEPT_VISITOR_DEF(WhileStatement)
+template<>
+NODE_ACCEPT_VISITOR_DEF(RepeatUntilStatement)
+NODE_ACCEPT_VISITOR_DEF(RepeatForeverStatement)
+NODE_ACCEPT_VISITOR_DEF(ForToStatement)
+NODE_ACCEPT_VISITOR_DEF(ForEachStatement)
+NODE_ACCEPT_VISITOR_DEF(SelectStatement)
+NODE_ACCEPT_VISITOR_DEF(SelectCase)
+NODE_ACCEPT_VISITOR_DEF(Const)
+NODE_ACCEPT_VISITOR_DEF(FunctionDefinition)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Goto)
+template<>
+NODE_ACCEPT_VISITOR_DEF(Gosub)
+NODE_ACCEPT_VISITOR_DEF(Program)
+
+
+
+
+
+QString ExpressionNode::opToString(ExpressionNode::Op op) {
+	const static QString ops[] = {
+		QT_TRANSLATE_NOOP("ExpressionNode", "assign"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "equal"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "not equal"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "greater"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "less"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "greater or equal"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "less or equal"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "add"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "subtract"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "multiply"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "power"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "modulo"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "shl"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "shr"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "sar"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "divide"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "logical and"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "logical or"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "logical xor"),
+		QT_TRANSLATE_NOOP("ExpressionNode", "comma"), // ,
+		QT_TRANSLATE_NOOP("ExpressionNode", "member"), // .
+		QT_TRANSLATE_NOOP("ExpressionNode", "invalid"),
+	};
+	if (op >= ExpressionNode::opAssign && op < ExpressionNode::opInvalid) {
+		return ops[op];
+	}
+	return ops[ExpressionNode::opInvalid];
+}
+
+void ExpressionNode::write(QTextStream &s, int tabs) {
+	printTabs(s, tabs);
+	s << "Node:" << typeAsString() << " " << opToString(mOp) << " {\n";
+	for (int i = 0; i < childNodeCount(); i++) {
+		childNode(i)->write(s, tabs + 1);
+	}
+	printTabs(s, tabs);
+	s << "}\n";
+}
+
+
+QString Unary::opToString(Unary::Op op) {
+	static QString ops[] = {
+		QT_TRANSLATE_NOOP("Unary", "not"),
+		QT_TRANSLATE_NOOP("Unary", "positive"),
+		QT_TRANSLATE_NOOP("Unary", "negative"),
+		QT_TRANSLATE_NOOP("Unary", "invalid")
+	};
+	if (op >= Unary::opNot && op < Unary::opInvalid) {
+		return ops[op];
+	}
+	return ops[Unary::opInvalid];
+}
+
+IfStatement::~IfStatement() {
+	delete mCondition;
+	delete mBlock;
+	delete mElse;
+}
+
+Node *IfStatement::childNode(int n) const {
+	switch (n) {
+		case 0: return mCondition;
+		case 1: return mBlock;
+		case 2: return mElse;
+		default: assert("Invalid child node id" && 0);
+	}
+	return 0;
+}
+
+ForToStatement::~ForToStatement() {
+	delete mFrom;
+	delete mTo;
+	delete mStep;
+	delete mBlock;
+}
+
+Node *ForToStatement::childNode(int n) const {
+	switch(n) {
+		case 0:
+			return mFrom;
+		case 1:
+			return mTo;
+		case 2:
+			if (mStep != 0) return mStep;
+			return mBlock;
+		case 3:
+			if (mStep != 0) return mBlock;
+		default:
+			assert("Invalid child node id" && 0);
+			return 0;
 	}
 }
 
-void Printer::printBlock(const Block *s, int tab){
-	for (Block::ConstIterator i = s->begin(); i != s->end(); i++) {
-		printNode(*i, tab);
+ForEachStatement::~ForEachStatement() {
+	delete mVariable;
+	delete mContainer;
+	delete mBlock;
+}
+
+Node *ForEachStatement::childNode(int n) const {
+	switch (n) {
+		case 0:
+			return mVariable;
+		case 1:
+			return mContainer;
+		case 2:
+			return mBlock;
+		default:
+			assert("Invalid child node id" && 0);
+			return 0;
 	}
 }
 
-void Printer::printTypeDefinition(const TypeDefinition *s, int tab) {
-	printLine("Type " + s->mName, tab);
-	for (QList<QPair<int, Variable*> >::ConstIterator i = s->mFields.begin(); i != s->mFields.end(); i++) {
-		printVariable(i->second, tab + 1);
-	}
-	printLine("EndType");
+FunctionDefinition::~FunctionDefinition() {
+	delete mIdentifier;
+	delete mParameterList;
+	delete mReturnType;
+	delete mBlock;
 }
 
-void Printer::printIfStatement(const IfStatement *s, int tab) {
-	printLine("If", tab);
-	printNode(s->mCondition, tab + 1);
-	printLine("Then", tab);
-	printBlock(&s->mIfTrue, tab + 1);
-	if (!s->mElse.empty()) {
-		printLine("Else", tab);
-		printBlock(&s->mElse, tab + 1);
-	}
-	printLine("EndIf", tab);
-}
-
-void Printer::printWhileStatement(const WhileStatement *s, int tab) {
-	printLine("While", tab);
-	printNode(s->mCondition, tab + 1);
-	printBlock(&s->mBlock, tab + 1);
-	printLine("Wend", tab);
-}
-
-void Printer::printForToStatement(const ForToStatement *s, int tab) {
-	printLine("For " + s->mVarName + " as " + s->mVarType+ " = ", tab);
-	printNode(s->mFrom, tab + 1);
-	printLine("To", tab);
-	printNode(s->mTo, tab + 1);
-	if (s->mStep) {
-		printLine("Step", tab);
-		printNode(s->mStep, tab + 1);
-	}
-	printBlock(&s->mBlock, tab + 1);
-	printLine("Next " + s->mVarName, tab);
-}
-
-void Printer::printForEachStatement(const ForEachStatement *s, int tab) {
-	printLine("For " + s->mVarName + " as " + s->mVarType + " = Each " + s->mContainer, tab);
-	printBlock(&s->mBlock, tab + 1);
-	printLine("Next " + s->mVarName);
-}
-
-void Printer::printRepeatForeverStatement(const RepeatForeverStatement *s, int tab) {
-	printLine("Repeat", tab);
-	printBlock(&s->mBlock, tab + 1);
-	printLine("Forever", tab);
-}
-
-void Printer::printRepeatUntilStatement(const RepeatUntilStatement *s, int tab) {
-	printLine("Repeat", tab);
-	printBlock(&s->mBlock, tab + 1);
-	printLine("Until", tab);
-	printNode(s->mCondition, tab + 1);
-
-}
-
-void Printer::printSelectStatement(const SelectStatement *s, int tab) {
-	printLine("Select", tab);
-	printVariable(s->mVariable, tab + 1);
-	for (QList<Case>::ConstIterator i = s->mCases.begin(); i != s->mCases.end(); i++) {
-		printLine("Case", tab);
-		printNode(i->mCase, tab + 1);
-		printBlock(&i->mBlock, tab + 1);
-	}
-	if (!s->mDefault.isEmpty()) {
-		printLine("Default", tab);
-		printBlock(&s->mDefault, tab + 1);
+Node *FunctionDefinition::childNode(int n) const {
+	switch(n) {
+		case 0:
+			return mIdentifier;
+		case 1:
+			return mParameterList;
+		case 2:
+			return mReturnType;
+		case 3:
+			return mBlock;
+		default:
+			assert("Invalid child node id" && 0);
+			return 0;
 	}
 }
 
-void Printer::printGoto(const Goto *s, int tab) {
-	printLine("Goto " + s->mLabel, tab);
+ArrayInitialization::~ArrayInitialization() {
+	if (mIdentifier) delete mIdentifier;
+	if (mType) delete mType;
+	if (mDimensions) delete mDimensions;
 }
 
-void Printer::printGosub(const Gosub *s, int tab) {
-	printLine("Goto " + s->mLabel, tab);
-}
-
-void Printer::printLabel(const Label *s, int tab) {
-	printLine(s->mName + ":", tab);
-}
-
-void Printer::printExpression(const Expression *s, int tab) {
-	printNode(s->mFirst, tab + 1);
-	for (QList<Operation>::ConstIterator i = s->mRest.begin(); i != s->mRest.end(); i++) {
-		printLine(operatorToString(i->mOperator), tab);
-		printNode(i->mOperand, tab + 1);
+Node *ArrayInitialization::childNode(int n) const {
+	switch (n) {
+		case 0:
+			return mIdentifier;
+		case 1:
+			return mType;
+		case 2:
+			return mDimensions;
+		default:
+			assert("Invalid child node id" && 0);
+			return 0;
 	}
 }
 
-void Printer::printFunctionDefinition(const FunctionDefinition *s, int tab) {
-	printLine("Function " + s->mName + "( ", tab);
-	if (!s->mParams.isEmpty()) {
-		QList<FunctionParametreDefinition>::ConstIterator i = s->mParams.begin();
-		printVariable(&i->mVariable, tab + 1);
-		if (i->mDefaultValue) {
-			printLine("=", tab + 1);
-			printNode(i->mDefaultValue, tab + 1);
-		}
-		i++;
-		while (i != s->mParams.end()) {
-			printLine(",", tab);
-			printVariable(&i->mVariable, tab + 1);
-			if (i->mDefaultValue) {
-				printLine("=", tab + 1);
-				printNode(i->mDefaultValue, tab + 1);
-			}
-			i++;
-		}
-	}
-	printLine(") as " + s->mRetType, tab);
-	printBlock(&s->mBlock, tab + 1);
-	printLine("EndFunction", tab);
-}
-
-void Printer::printCommandCall(const CommandCall *s, int tab) {
-	printLine(s->mName, tab);
-	tab++;
-	for (QList<Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
-		printNode(*i, tab);
+Node *Const::childNode(int n) const {
+	switch (n) {
+		case 0:
+			return mVariable;
+		case 1:
+			return mValue;
+		default:
+			assert("Invalid child node id" && 0);
+			return 0;
 	}
 }
 
-void Printer::printArrayDefinition(const ArrayDefinition *s, int tab) {
-	printLine("Dim " + s->mName + " as " + s->mType + "(", tab);
-	tab++;
-	QList<Node*>::ConstIterator i = s->mDimensions.begin();
-	printNode(*i, tab);
-	i++;
-	while (i != s->mDimensions.end()) {
-		printLine(",", tab - 1);
-		printNode(*i, tab);
-		i++;
+SelectStatement::~SelectStatement() {
+	delete mVariable;
+	qDeleteAll(mCases);
+	delete mDefault;
+}
+
+Node *SelectStatement::childNode(int n) const {
+	if (n == 0) return mVariable;
+	if (n > 0 && n <= mCases.size()) return mCases.at(n - 1);
+	if (n == mCases.size() + 1 && mDefault) return mDefault;
+	assert("Invalid child node id" && 0);
+	return 0;
+}
+
+Program::~Program() {
+	qDeleteAll(mFunctionDefinitions);
+	qDeleteAll(mTypeDefinitions);
+	qDeleteAll(mStructDefinitions);
+	delete mMainBlock;
+}
+
+Node *Program::childNode(int n) const {
+	assert("Invalid child node id" && (n >= 0 && n < childNodeCount()));
+	if (n < mTypeDefinitions.size()) return mTypeDefinitions.at(n);
+	n -= mTypeDefinitions.size();
+	if (n < mStructDefinitions.size()) return mStructDefinitions.at(n);
+	n -= mStructDefinitions.size();
+	if (n < mFunctionDefinitions.size()) return mFunctionDefinitions.at(n);
+
+	return mMainBlock;
+}
+
+
+
+
+VariableDefinition::~VariableDefinition() {
+	delete mIdentifier;
+	delete mValueType;
+	delete mValue;
+}
+
+Node *VariableDefinition::childNode(int n) const {
+	assert(n >= 0 && n < childNodeCount() && "Invalid child node id");
+	switch (n) {
+		case 0: return mIdentifier;
+		case 1: return mValueType;
+		case 2: return mValue;
 	}
-	printLine(")", tab - 1);
+	return 0;
 }
 
-void Printer::printVariableDefinition(const VariableDefinition *s, int tab) {
-	printVariable(&s->mVariable, tab);
-	if (s->mValue) printNode(s->mValue, tab + 1);
-}
-
-void Printer::printConstDefinition(const ConstDefinition *s, int tab) {
-	printLine("Const " + s->mName + " " + s->mVarType + "=", tab);
-	tab++;
-	printNode(s->mValue, tab);
-}
-
-void Printer::printGlobalDefinition(const GlobalDefinition *s, int tab) {
-	printLine("Global", tab);
-	tab++;
-	for (QList<Variable*>::ConstIterator i = s->mDefinitions.begin(); i != s->mDefinitions.end(); i++) {
-		printVariable(*i, tab);
-	}
-}
-
-void Printer::printAssignmentExpression(const AssignmentExpression *s, int tab) {
-	printLine("Assign", tab);
-	tab++;
-	printNode(s->mVariable, tab);
-	printNode(s->mExpression, tab);
-}
-
-void Printer::printArraySubscriptAssignmentExpression(const ArraySubscriptAssignmentExpression *s, int tab) {
-	printLine("Assign (array)", tab);
-	tab++;
-	printLine(s->mArrayName + " (", tab);
-	tab++;
-	QList<Node*>::ConstIterator p = s->mSubscripts.begin();
-	printNode(*p, tab);
-	p++;
-	while (p != s->mSubscripts.end()) {
-		printLine(",", tab - 1);
-		printNode(*p, tab);
-		p++;
-	}
-	printLine(") =", tab - 1);
-	printNode(s->mValue, tab);
-}
-
-void Printer::printCommandCallOrArraySubscriptAssignmentExpression(const CommandCallOrArraySubscriptAssignmentExpression *s, int tab) {
-	printLine ("Command call or array subscript assignment", tab);
-	printLine (s->mName, tab);
-	printLine("(", tab);
-	tab++;
-	printNode( s->mIndexOrExpressionInParentheses, tab);
-	printLine (") = ", tab - 1);
-	printNode( s->mEqualTo, tab);
-}
-
-void Printer::printUnary(const Unary *s, int tab) {
-	printLine(operatorToString(s->mOperator), tab);
-	tab++;
-	printNode(s->mOperand, tab);
-}
-
-void Printer::printReturn(const Return *s, int tab) {
-	printLine("Return", tab);
-	if (s->mValue) {
-		tab++;
-		printNode(s->mValue, tab);
-	}
-}
-
-void Printer::printExit(const Exit *, int tab) {
-	printLine("Exit", tab);
-}
-
-void Printer::printSpecialFunctionCall(const SpecialFunctionCall *s, int tab) {
-	switch(s->mSpecialFunction) {
-		case SpecialFunctionCall::New:
-			printLine("New (", tab); break;
-		case SpecialFunctionCall::First:
-			printLine("First (", tab); break;
-		case SpecialFunctionCall::Last:
-			printLine("Last (", tab); break;
-		case SpecialFunctionCall::Before:
-			printLine("Before (", tab); break;
-		case SpecialFunctionCall::After:
-			printLine("After (", tab); break;
-	}
-	printNode(s->mParam, tab + 1);
-	printLine(")", tab);
-}
-
-void Printer::printTypePtrField(const TypePtrField *s, int tab) {
-	printLine(s->mVariableName + "\\" + s->mFieldName + " as " + s->mFieldType, tab);
-}
-
-void Printer::printVariable(const Variable *s, int tab) {
-	QString txt(s->mName + " As " + s->mTypeName);
-	printLine(txt, tab);
-}
-
-void Printer::printInteger(const Integer *s, int tab) {
-	printLine(QString::number(s->mValue), tab);
-}
-
-void Printer::printFloat(const Float *s, int tab) {
-	printLine(QString::number(s->mValue), tab);
-}
-
-void Printer::printString(const String *s, int tab) {
-	QString txt;
-	txt.reserve(s->mValue.size() + 3);
-	txt += '"';
-	txt += s->mValue;
-	txt += '"';
-	printLine(txt, tab);
-}
-
-void Printer::printFunctionCallOrArraySubscript(const FunctionCallOrArraySubscript *s, int tab) {
-	printLine(s->mName+ "(", tab);
-	tab++;
-	for (QList<Node*>::ConstIterator i = s->mParams.begin(); i != s->mParams.end(); i++) {
-		printNode(*i, tab);
-	}
-	tab--;
-	printLine(")", tab);
-}
-
-void Printer::printDim(const Dim *s, int tab) {
-	printLine("Dim", tab);
-	foreach(Node *n, s->mDefinitions) printNode(n, tab + 1);
-}
-
-void Printer::printProgram(const Program *s) {
-	printLine("Constants:");
-	for (QList<ConstDefinition*>::ConstIterator i = s->mConstants.begin(); i != s->mConstants.end(); i++) {
-		printConstDefinition(*i, 1);
-	}
-
-	printLine("\n\nTypes:");
-	for (QList<TypeDefinition*>::ConstIterator i = s->mTypes.begin(); i != s->mTypes.end(); i++) {
-		printTypeDefinition(*i);
-	}
-
-	printLine("\n\nGlobals:");
-	for (QList<GlobalDefinition*>::ConstIterator i = s->mGlobals.begin(); i != s->mGlobals.end(); i++) {
-		printGlobalDefinition(*i, 1);
-	}
-
-	printLine("\n\nFunctions:");
-	for (QList<FunctionDefinition*>::ConstIterator i = s->mFunctions.begin(); i != s->mFunctions.end(); i++) {
-		printFunctionDefinition(*i, 1);
-	}
-
-	printLine("\n\nMain block:");
-	printBlock(&s->mMainBlock, 1);
-}
-
-bool Printer::printToFile(const QString &file) {
-	if (mDestFile) {
-		delete mDestFile;
-	}
-	mDestFile = new QFile(file);
-	if (!mDestFile->open(QFile::WriteOnly | QFile::Text)) {
-		delete mDestFile;
-		mDestFile = 0;
-		printLine("Cant open file " + file);
-		return false;
-	}
-	return true;
-}
-
-
-void Printer::printLine(const QString &txt, int tab) {
-	if (mDestFile) {
-		QTextStream out(mDestFile);
-		if (tab) {
-			QByteArray spaces(tab * 2, ' ');
-			out << spaces << txt << '\n';
-		}
-		else {
-			out << txt << '\n';
-		}
-	}
-	else {
-		if (tab) {
-			QByteArray spaces(tab, ' ');
-			qDebug("%s%s", spaces.data(), qPrintable(txt));
-			return;
-		}
-		qDebug("%s", qPrintable(txt));
-	}
-}
-
-TypeDefinition::~TypeDefinition() {
-	for (QList<QPair<int, Variable*> >::Iterator i = mFields.begin(); i != mFields.end(); i++) {
-		delete (*i).second;
-	}
+SelectCase::~SelectCase() {
+	delete mValue;
+	delete mBlock;
 }
 
 }

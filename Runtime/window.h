@@ -3,7 +3,7 @@
 #include <allegro5/allegro5.h>
 #include "rendertarget.h"
 #include "common.h"
-class Window : RenderTarget{
+class Window : public RenderTarget{
 	public:
 		enum WindowMode {
 			Windowed,
@@ -20,8 +20,7 @@ class Window : RenderTarget{
 		void close();
 
 		bool isValid() const;
-		bool activate();
-		bool deactivate();
+
 		void lock(int flags);
 		void unlock();
 		void drawscreen();
@@ -36,6 +35,8 @@ class Window : RenderTarget{
 		void setBackgroundColor(const ALLEGRO_COLOR &color);
 		const ALLEGRO_COLOR &backgroundColor() const { return mBackgroundColor; }
 	private:
+		bool activateRenderContext();
+
 		ALLEGRO_DISPLAY *mDisplay;
 		ALLEGRO_EVENT_QUEUE *mEventQueue;
 		ALLEGRO_COLOR mBackgroundColor;

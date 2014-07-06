@@ -6,12 +6,12 @@
 #include "typevaluetype.h"
 
 
-TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const QString &file, int line):
-	ValueTypeSymbol(name, file, line),
+TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp):
+	ValueTypeSymbol(name, cp),
 	mGlobalTypeVariable(0),
+	mTypePointerValueType(new TypePointerValueType(r, this)),
 	mFirstFieldIndex(0),
-	mMemberSize(0),
-	mTypePointerValueType(new TypePointerValueType(r, this)) {
+	mMemberSize(0) {
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
@@ -28,7 +28,7 @@ bool TypeSymbol::hasField(const QString &name) {
 }
 
 const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
+	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name.toLower());
 	assert(i != mFieldSearch.end());
 	return mFields.at(i.value());
 }
@@ -49,14 +49,14 @@ void TypeSymbol::initializeType(Builder *b) {
 
 void TypeSymbol::createOpaqueTypes(Builder *b) {
 	mMemberType = llvm::StructType::create(b->context());
+	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType, const QString &file, int line) :
+TypeField::TypeField(const QString &name, ValueType *valueType, const CodePoint &cp) :
 	mName(name),
 	mValueType(valueType),
-	mLine(line),
-	mFile(file){
+	mCodePoint(cp) {
 }
 
 QString TypeField::info() const {
@@ -71,7 +71,7 @@ void TypeSymbol::createTypePointerValueType(Builder *b) {
 }
 
 Value TypeSymbol::typeValue() {
-	return Value(mRuntime->typeValueType(), mGlobalTypeVariable);
+	return Value(mRuntime->typeValueType(), mGlobalTypeVariable, false);
 }
 
 void TypeSymbol::createLLVMMemberType() {
@@ -92,7 +92,6 @@ void TypeSymbol::createLLVMMemberType() {
 	mMemberType->setBody(elements);
 	mMemberSize = mRuntime->dataLayout().getTypeAllocSize(mMemberType);
 
-	mTypePointerValueType->setLLVMType(mMemberType->getPointerTo());
 }
 
 

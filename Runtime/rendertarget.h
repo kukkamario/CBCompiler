@@ -6,8 +6,8 @@ class RenderTarget {
 	public:
 		RenderTarget();
 		virtual ~RenderTarget();
-		virtual bool activate() = 0;
-		virtual bool deactivate() = 0;
+		bool activate();
+		virtual bool deactivate() { return true; }
 		virtual bool isValid() const = 0;
 		virtual void lock(int flags) = 0;
 		virtual void unlock() = 0;
@@ -19,15 +19,19 @@ class RenderTarget {
 		int height() const { return mHeight; }
 		void setSize(int width, int height);
 
-		static void resetTarget();
+
 		static RenderTarget *activated();
+		static void setFallbackRenderTarget(RenderTarget *t);
 	protected:
+		virtual bool activateRenderContext() = 0;
+
 		void setupDrawingState();
 		int mWidth;
 		int mHeight;
 		gfx::Blender mBlender;
 
 		static RenderTarget *sCurrentTarget;
+		static RenderTarget *sFallbackRenderTarget;
 	private:
 };
 

@@ -2,7 +2,6 @@
 #define IMAGE_H
 #include "common.h"
 #include "rendertarget.h"
-#include "idmap.h"
 #include <allegro5/allegro.h>
 
 class Image : public RenderTarget {
@@ -11,7 +10,6 @@ class Image : public RenderTarget {
 		~Image();
 		static Image *load(const LString &path);
 
-		bool activate();
 		bool deactivate();
 		bool isValid() const;
 		void lock(int flags);
@@ -20,16 +18,15 @@ class Image : public RenderTarget {
 		void resize(int w, int h);
 		void mask(const ALLEGRO_COLOR &color);
 
-		static Image *get(int id);
+		void draw(float x, float y);
 
-		int id() const { return mId; }
+		ALLEGRO_COLOR getPixel(int x,int y);
 	private:
+		bool activateRenderContext();
+
 		Image(ALLEGRO_BITMAP *bitmap);
 
 		ALLEGRO_BITMAP *mBitmap;
-		int mId;
-
-		static IdMap<Image> sIdMap;
 };
 
 #endif // IMAGE_H

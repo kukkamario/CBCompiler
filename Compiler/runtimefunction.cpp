@@ -7,13 +7,15 @@
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
 #include "typepointervaluetype.h"
+#include "functionvaluetype.h"
 #include "typevaluetype.h"
 #include "value.h"
 #include "builder.h"
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
-	Function(QString(), 0,0),
-	mRuntime(r){
+	Function(QString(), CodePoint()),
+	mRuntime(r),
+	mFunctionValueType(0) {
 
 }
 
@@ -21,62 +23,28 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 	mFunction = func;
 	llvm::FunctionType *funcTy = func->getFunctionType();
 	llvm::Type *retTy = funcTy->getReturnType();
-	if (retTy == mRuntime->stringValueType()->llvmType()) {
-		mReturnValue = mRuntime->stringValueType();
-	}
-	else if (retTy == mRuntime->intValueType()->llvmType()) {
-		mReturnValue = mRuntime->intValueType();
-	}
-	else if (retTy == mRuntime->floatValueType()->llvmType()) {
-		mReturnValue = mRuntime->floatValueType();
-	}
-	else if (retTy == mRuntime->shortValueType()->llvmType()) {
-		mReturnValue = mRuntime->shortValueType();
-	}
-	else if( retTy == mRuntime->byteValueType()->llvmType()) {
-		mReturnValue = mRuntime->byteValueType();
-	}
-	else if ( retTy == mRuntime->typeValueType()->llvmType()) {
-		mReturnValue = mRuntime->typeValueType();
-	}
-	else if ( retTy == llvm::Type::getVoidTy(mRuntime->module()->getContext())) {
+	if ( retTy == llvm::Type::getVoidTy(mRuntime->module()->getContext())) {
 		mReturnValue = 0;
 	}
 	else {
-		return false;
+		mReturnValue = mRuntime->valueTypeCollection().valueTypeForLLVMType(retTy);
+		if (!mReturnValue) return false;
 	}
 	mName = name.toLower();
 	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
-		if (*i == mRuntime->stringValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->stringValueType());
-		}
-		else if (*i == mRuntime->intValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->intValueType());
-		}
-		else if (*i == mRuntime->floatValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->floatValueType());
-		}
-		else if (*i == mRuntime->shortValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->shortValueType());
-		}
-		else if( *i == mRuntime->byteValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->byteValueType());
-		}
-		else if (*i == mRuntime->typePointerCommonValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->typePointerCommonValueType());
-		}
-		else if (*i == mRuntime->typeValueType()->llvmType()) {
-			mParamTypes.append(mRuntime->typeValueType());
+		ValueType *paramType = mRuntime->valueTypeCollection().valueTypeForLLVMType(*i);
+		if (paramType) {
+			mParamTypes.append(paramType);
 		}
 		else {
-			qDebug("Dumping: ");
-			funcTy->dump(); qDebug("\n");
-			mRuntime->stringValueType()->llvmType()->dump();
-			qDebug("\n-------\n");
+			qDebug("Dumping an invalid runtime function: ");
+			funcTy->dump();
+			qDebug("\n-------\n\n");
 			return false;
 		}
 	}
 	mRequiredParams = mParamTypes.size();
+	mFunctionValueType = new FunctionValueType(mRuntime, this);
 	return true;
 }
 
@@ -91,6 +59,7 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 		return Value();
 	}
 	else {
-		return Value(mReturnValue, ret);
+		return Value(mReturnValue, ret, false);
 	}
 }
+

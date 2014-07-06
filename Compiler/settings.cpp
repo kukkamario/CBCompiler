@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <QFileInfo>
 
 Settings::Settings() :
 	mFVD(false) {
@@ -27,6 +28,18 @@ bool Settings::loadDefaults() {
 	var = settings.value("compiler/default-output-file");
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
 	mDefaultOutput = var.toString();
+
+	var = settings.value("compiler/runtime-library");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mRuntimeLibrary = var.toString();
+
+	var = settings.value("compiler/function-mapping");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mFunctionMapping = var.toString();
+
+	var = settings.value("compiler/data-types");
+	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
+	mDataTypes= var.toString();
 
 	var = settings.value("opt/call");
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
@@ -52,29 +65,39 @@ bool Settings::loadDefaults() {
 	if (var.isNull() ||  !var.canConvert(QMetaType::QString)) return false;
 	mLinkerFlags = var.toString();
 
+	QFileInfo fi;
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mDataTypes);
+	mDataTypes = fi.absoluteFilePath();
+
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mRuntimeLibrary);
+	mRuntimeLibrary = fi.absoluteFilePath();
+
+	fi.setFile(QDir(QCoreApplication::applicationDirPath()), mFunctionMapping);
+	mFunctionMapping = fi.absoluteFilePath();
 	return true;
 }
 
 bool Settings::callOpt(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
-	int ret = QProcess::execute(mOpt.arg(mOptFlags, inputFile, outputFile));
-	QDir::setCurrent(p);
+	QString cmd = mOpt.arg(mOptFlags, inputFile, outputFile);
+	qDebug() << cmd;
+	qDebug() << QDir::currentPath();
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }
 
 bool Settings::callLLC(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
-	int ret = QProcess::execute(mLLC.arg(mLLCFlags, inputFile, outputFile));
-	QDir::setCurrent(p);
+	QString cmd = mLLC.arg(mLLCFlags, inputFile, outputFile);
+	qDebug() << cmd;
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }
 
 bool Settings::callLinker(const QString &inputFile, const QString &outputFile) const {
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
-	int ret = QProcess::execute(mLinker.arg(mLinkerFlags, inputFile, "\"" + p + "/" + outputFile + "\""));
-	QDir::setCurrent(p);
+	QString cmd = mLinker.arg(mLinkerFlags, inputFile, "\"" + outputFile + "\"");
+	qDebug() << cmd;
+	int ret = QProcess::execute(cmd);
+	qDebug() << ret;
 	return ret == 0;
 }

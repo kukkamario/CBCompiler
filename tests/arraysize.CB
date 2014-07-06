@@ -1,0 +1,6 @@
+Dim array[34,23]
+Print "Dim 1: " + ArraySize(array, 0)
+Print "Dim 2: " + ArraySize(array, 1)
+
+Dim array2[123]
+Print "Arr2 size: " + ArraySize(array2)

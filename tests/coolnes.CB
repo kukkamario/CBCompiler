@@ -1,0 +1,1026 @@
+'This is your first CoolBasic program!
+
+SCREEN 800,300
+
+'avaa rom
+'fileName$="zelda\Zelda.NES"  'http://nesdev.parodius.com/zelda.zip
+'fileName$="sof.nes" 'Sack of flour: Heart of gold http://bobrost.com/nes/games.php
+fileName$="fighter_f8000\fighter_f8000.nes" 'http://nesdev.parodius.com/fighter_f8000.zip
+'fileName$="NEStress\NEStress.nes" 'http://nesdev.parodius.com/NEStress.zip
+'fileName$="fighter_f8000\f8000.nes"
+'fileName$="soda cans\sprite.nes"
+'fileName$=CommandLine()
+
+
+//headerin k‰sittely
+f As File=OpenToRead(fileName$)
+size=FileSize(fileName$)
+
+Global rombanks,vrombanks,mapper
+headercheck=(ReadInt(f)==441664846)
+rombanks=ReadByte(f)
+vrombanks=ReadByte(f)
+t=ReadByte(f)
+mapper=t Shr 4 + ReadByte(f) Shr 4
+mirroring=t Mod 16
+
+
+'infoa
+Print "headerin tarkistus: "+headercheck
+Print "rombanks: "+rombanks
+Print "vrombanks: "+vrombanks
+Print "mapper: "+mapper
+Print "mirroring:  "+mirroring
+Print "tiedostokoko: "+size+"(muistia "+(rombanks*16384+vrombanks*8192)+")tavua"
+Print "precalcing..."
+
+//luetaan muistipalikoihin
+SeekFile f,16
+Global rom As Memblock,vrom As Memblock,ram As Memblock,ppuram As Memblock
+rom As Memblock =MakeMEMBlock(rombanks*16384)
+vrom As Memblock =MakeMEMBlock(vrombanks*8192*2)'*2)
+Print "reading to rom"
+For i=0 To 16384*rombanks-1
+    romByte = ReadByte(f)
+	PokeByte rom, i, romByte
+	//Print "Rom " + i + ": " + romByte
+Next i
+Print "reading to vrom"
+For i=0 To 2*8192*vrombanks-1
+    PokeByte vrom, i, ReadByte(f)
+Next i
+
+ram As Memblock=MakeMEMBlock(2048)
+ppuram As memblock =MakeMEMBlock(16384)
+
+
+//mapperikohtaiset globaalit ja alustus
+Global prgbank0addr,prgbank1addr,prgbank2addr,prgbank3addr, bankselect
+Global chrbank0addr,chrbank1addr,chrbank2addr,chrbank3addr,chrbank4addr,chrbank5addr
+Select mapper
+    Case 4
+        prgbank0addr=0
+        prgbank1addr=0
+        prgbank2addr=16384*rombanks-8192*2
+        prgbank3addr=16384*rombanks-8192
+EndSelect
+
+//flagit ja rekisterit
+Global C,Z,I,D,B,V,N'flageja asmidokumentissa n on s statusrekisterist‰
+Global A,X,Y'rekisterit
+Global S'stack
+Global ppu_vblank,ppuaddr_addr,ppuaddr_addr0,ppuaddr_addr1,ppuaddr_turn
+Global ppu_ctrl_nametable_address,ppu_ctrl_increment,ppu_ctrl_sprite_patt_addr
+Global ppu_ctrl_bg_patterntable_tileoffset,ppu_master_slave,ppu_ctrl_sprite_size,ppu_enable_vblank_nmi
+Global cycle,PC
+Global ret, address, address2
+
+//loogisten operaattoreiden esilasku
+Print "logical operations"
+Global _and[256,256]
+Global _or[256,256]
+//esilasketaan kaikki kahden tavun v‰liset andit ja orit
+For x=0 To 255 
+    For y=0 To 255
+        _and[x,y]=((y Shr 7) and (x Shr 7)) Shl 7 +((y Shl 25 Shr 31) and (x Shl 25 Shr 31)) Shl 6 +((y Shl 26 Shr 31) And (x Shl 26 Shr 31)) Shl 5+((y Shl 27 Shr 31) And (x Shl 27 Shr 31)) Shl 4+((y Shl 28 Shr 31) And (x Shl 28 Shr 31)) Shl 3+((y Shl 29 Shr 31) And (x Shl 29 Shr 31)) Shl 2+((y Shl 30 Shr 31) And (x Shl 30 Shr 31)) Shl 1+((y Shl 31 Shr 31) And (x Shl 31 Shr 31))
+    Next y
+Next x
+For x=0 To 255 
+    For y=0 To 255
+        _or[x,y]=((y Shr 7) Or (x Shr 7)) Shl 7 +((y Shl 25 Shr 31) Or (x Shl 25 Shr 31)) Shl 6 +((y Shl 26 Shr 31) Or (x Shl 26 Shr 31)) Shl 5+((y Shl 27 Shr 31) Or (x Shl 27 Shr 31)) Shl 4+((y Shl 28 Shr 31) Or (x Shl 28 Shr 31)) Shl 3+((y Shl 29 Shr 31) Or (x Shl 29 Shr 31)) Shl 2+((y Shl 30 Shr 31) Or (x Shl 30 Shr 31)) Shl 1+((y Shl 31 Shr 31) Or (x Shl 31 Shr 31))
+    Next y
+Next x
+//piirto
+Global rendermethod
+rendermethod=0
+Global renderlayers[7] As Image
+Global maskedtiles[3] As Image
+
+Global scr As Image
+scr=MakeImage(256,240)
+Global palette[64]
+palette[0]=8158332:palette[1]=252:palette[2]=$188:palette[3]=4466876
+palette[4]=9699460:palette[5]=9699460:palette[6]=11014144:palette[7]=8918016
+palette[8]=5255168:palette[9]=30720:palette[10]=26624:palette[11]=22528
+palette[12]=16472:palette[13]=1:palette[14]=1:palette[15]=1
+palette[16]=12369084:palette[17]=30968:palette[18]=22776:palette[19]=6833404
+palette[20]=14155980:palette[21]=14942296:palette[22]=16267264:palette[23]=14965776
+palette[24]=11303936:palette[25]=47104:palette[26]=43008:palette[27]=43076
+palette[28]=34952:palette[29]=1:palette[30]=1:palette[31]=1
+palette[32]=16316664:palette[33]=3980540:palette[34]=6850812:palette[35]=9992440
+palette[36]=16283896:palette[37]=16275608:palette[38]=16283736:palette[39]=16556100
+palette[40]=16300032:palette[41]=12122136:palette[42]=5822548:palette[43]=5830808
+palette[44]=59608:palette[45]=7895160:palette[46]=1:palette[47]=1
+palette[48]=16579836:palette[49]=10806524:palette[50]=12105976:palette[51]=14203128
+palette[52]=16300280:palette[53]=16295104:palette[54]=15782064:palette[55]=16572584
+palette[56]=16308344:palette[57]=14219384:palette[58]=12122296:palette[59]=$12122328
+palette[60]=64764:palette[61]=16308472:palette[62]=1:palette[63]=1
+
+For i=0 To 3 'rendermethod 1 juttuja
+    renderlayers[i]=MakeImage(256,240)
+    MaskImage renderlayers[i], 255, 0, 255
+Next i
+For i=4 To 7
+    renderlayers[i]=MakeImage(256,240)
+    MaskImage renderlayers[i], 0, 0, 0
+Next i
+'prerendataan tilet
+Print "tiles"
+RemStart
+For i=0 To 3
+    maskedtiles[i]=MakeImage(512*8*vrombanks,8)
+    DrawToImage maskedtiles[i]
+        For j=0 To 512*vrombanks
+            For y=0 To 7
+                byte1=PeekByte(vrom,j*16+y)
+                byte2=PeekByte(vrom,j*16+8+y)
+                For x=0 To 7
+                    If Not (((byte1 Shr (7-x)) Mod 2))+((((byte2 Shr (7-x)) Mod 2))Shl 1)==i Then PutPixel j*8+x,y,255 Shl 16 +255
+                    'PutPixel j*8+x,y,((byte1 Shl (25+x)) Shr 31 + (byte2 Shl (25+x)) Shr 30)*64
+                Next x
+            Next y
+            'If (j Mod 4) then Line j+i,0,j+i+8,8
+        Next j
+    DrawToScreen
+Next i
+RemEnd
+
+Print "ready."
+
+Global aika
+
+//emulaattori
+pc=readmem(65533) Shl 8 + readmem(65532)'reset-osoitin, eli aloituskohta osoitteesta $FFFE
+ppu_ctrl_nametable_address=8192'$2000-t‰‰lt‰ alkaa kuvamuisti oletuksena
+ppu_ctrl_increment=1
+Print "alkuosoitin: "+pc  //+" " +Hex(PC)
+running=1
+nextStop = 0
+While running
+    Repeat
+        address=pc
+        readmem8()
+        Select ret
+            Case 9'09 ORA
+                A=_or[A,readmem(pc+1)]
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7
+                pc=pc+2
+                cycle=cycle+2
+            Case 10'0A ASL
+                C=A Shr 7
+                A=(A Shl 1) Mod 256
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7
+                pc=pc+1
+                cycle=cycle+2
+            Case 16'10 BPL Relative
+                If N==0 Then
+                    param=readmem(pc+1)
+                    oldpc=pc
+                    pc=pc+2+(param-(param>127)*256)
+                    cycle=cycle+3+(RoundDown((oldpc-32768)/16384.0)<>RoundDown((pc-32768)/16384.0))
+                Else
+                    pc=pc+2
+                    cycle=cycle+2
+                EndIf
+            Case 24'18 CLC
+                C=0
+                pc=pc+1
+                cycle=cycle+2
+            Case 32'JSR
+                writemem(256+S,(PC+2) Shr 8)
+                S=(256+S+1) Mod 256
+                writemem(256+S,(PC+2) Mod 256)
+                S=(256+S+1) Mod 256
+                pc=readmem(pc+2) Shl 8 + readmem(pc+1)
+                cycle=cycle+6
+                'pc+3
+                Color 255, 255, 255
+            Case 41'29 AND Immediate
+                A=_and[A,readmem(pc+1)]
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+2
+            Case 42'2A ROL
+                T=A Shr 7
+                A=A Shl 1 - T Shr 8 +C
+                C=T
+                pc=pc+1
+                cycle=cycle+2
+            Case 44'2C BIT
+                par=readmem(pc+1)
+                T=_and[A,par]
+                If T==0 Then Z=1 Else Z=0
+                N=par Shr 7
+                V=par Shl 25 Shr 31
+                pc=pc+3
+                cycle=cycle+4
+            Case 48'30 BMI Relative
+                If N==1 Then
+                    param=readmem(pc+1)
+                    oldpc=pc
+                    pc=pc+2+(param-(param>127)*256)
+                    cycle=cycle+3+(RoundDown((oldpc-32768)/16384.0)<>RoundDown((pc-32768)/16384.0))
+                Else
+                    pc=pc+2
+                    cycle=cycle+2
+                EndIf
+            Case 72'48 PHA
+                writemem(S,A)
+                S=S+1
+                pc=pc+1
+                cycle=cycle+3
+            Case 76'4C JMP absolute
+                address2=pc+1
+                readmem16()
+                pc=ret
+                cycle=cycle+3
+            Case 96'RTS
+                S=(256+S-1) Mod 256
+                tS=(256+S-1) Mod 256
+                pc=readmem(256+S)+1+readmem(256+tS)Shl 8
+                S=tS
+                cycle=cycle+6
+                Color 255, 0, 255
+            Case 101'65 ADC Zero Page
+                A=A+readmem(readmem(pc+1))+c
+                If A>255 Then C=1:A= A Mod 256 Else C=0
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+3
+            Case 104'68 PLA
+                S=S-1
+                A=readmem(S)
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+4
+            Case 105'69 ADC Immediate
+                A=A+readmem(pc+1)+c
+                If A>255 Then C=1:A= A Mod 256 Else C=0
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+3
+            Case 106'6A ROR
+                T=A Mod 2
+                A=A Shr 1 + C Shl 7
+                C=T
+                pc=pc+1
+                cycle=cycle+2
+            Case 109'6D ADC Absolute
+                A=A+readmem(readmem(pc+2) Shl 8 + readmem(pc+1))+c
+                If A>255 Then C=1:A= A Mod 256 Else C=0
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+3
+                cycle=cycle+4
+            Case 120'78 SEI 1 -> I
+                I=1
+                pc=pc+1
+                cycle=cycle+2
+            Case 132'84 STY Zero page
+                writemem(readmem(pc+1),Y)
+                Print "             STY "+readmem(pc+1)+" ("+readmem(readmem(pc+1))+")"
+                pc=pc+2
+                cycle=cycle+3
+            Case 133'85 STA Zero Page
+                writemem(readmem(pc+1),A)
+                pc=pc+2
+                cycle=cycle+3
+            Case 134'86 STX Zero Page
+                writemem(readmem(pc+1),X)
+                pc=pc+2
+                cycle=cycle+3
+            Case 136'88 DEY Y - 1 -> Y
+                Y=(Y+255) Mod 256
+                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+2
+            Case 138'8A TXA
+                A=X
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+2
+            Case 140'8C STY Absolute
+                writemem(readmem(pc+2) Shl 8 + readmem(pc+1),Y)
+                pc=pc+3
+                cycle=cycle+4
+            Case 141'8D STA Absolute
+                writemem(readmem(pc+2) Shl 8 + readmem(pc+1),A)
+                pc=pc+3
+                cycle=cycle+4
+            Case 142'8E STX Absolute
+                writemem(readmem(pc+2) Shl 8 + readmem(pc+1),X)
+                Print "            "+(readmem(pc+1) Shl 8 + readmem(pc+2))
+                pc=pc+3
+                cycle=cycle+4
+            Case 145'91 STA (Indirect),Y
+                par=readmem(pc+1)
+                writemem((readmem(par+1) Shl 8 + readmem(par) + Y),A)
+                Print "    STA"+"("+par+"),Y="+Y+"  =STA "+(readmem(par+1) Shl 8 + readmem(par) + Y)
+                pc=pc+2
+                cycle=cycle+6
+            Case 149'95 STA zero page, X
+                writemem((X+readmem(pc+1))Mod 256,A)
+                pc=pc+2
+                cycle=cycle+4
+            Case 152'98 TYA
+                A=Y
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+2
+            Case 153'99 STA Absolute, Y
+                writemem(readmem(pc+2) Shl 8 + readmem(pc+1)+Y,A)
+                pc=pc+3
+                cycle=cycle+5
+            Case 154'9A TXS X -> S
+                writemem(256+S,X)
+                S=(256+S+1) Mod 256
+                pc=pc+1
+                cycle=cycle+2
+            Case 157'9D STA Absolute, X
+                writemem(readmem(pc+2) Shl 8 + readmem(pc+1)+X,A)
+                pc=pc+3
+                cycle=cycle+5
+            Case 160'A0 LDY Immediate
+                Y=readmem(pc+1)
+                pc=pc+2
+                cycle=cycle+2
+                N=Y Shr 7
+                Z=(Y==0)
+            Case 162'A2 LDX Immediate
+                X=readmem(pc+1)
+                pc=pc+2
+                cycle=cycle+2
+                N=X Shr 7
+                Z=(X==0)
+            Case 164'A4 LDY Zero Page
+                Y=readmem(readmem(pc+1))
+                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+3
+            Case 165'A5 LDA Zero Page
+                A=readmem(readmem(pc+1))
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+3
+            Case 166'A6 LDX Zero Page
+                X=readmem(readmem(pc+1))
+                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+3
+            Case 168'A8 TAY
+                Y=A
+                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7
+                pc=pc+1
+                cycle=cycle+2
+            Case 169'A9 LDA Immediate
+                A=readmem(pc+1)
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+2
+                cycle=cycle+2
+            Case 170'AA TAX
+                X=A
+                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7
+                pc=pc+1
+                cycle=cycle+2
+            Case 172'AC LDY Absolute
+                Y=readmem(readmem(pc+2) Shl 8 + readmem(pc+1))
+                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                pc=pc+3
+                cycle=cycle+4
+            Case 173'AD LDA Absolute
+                A=readmem(readmem(pc+2) Shl 8 + readmem(pc+1))
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+3
+                cycle=cycle+4
+            Case 174'AE LDX ABSOLUTE
+                X=readmem(readmem(pc+2) Shl 8 + readmem(pc+1))
+                pc=pc+3
+                cycle=cycle+4
+                N=X Shr 7
+                Z=(X==0)
+            Case 177'B1 LDA (Indirect),Y
+                par=readmem(pc+1)
+                p2=readmem(par)
+                A=readmem(readmem(par+1) Shl 8 + p2 + Y)
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If p2+Y>255 Then cycle=6 Else cycle=5
+                pc=pc+2
+            Case 185'B9 LDA Absolute, Y
+                addr=readmem(pc+2) Shl 8 + readmem(pc+1)
+                A=readmem(addr+ Y)
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+3   
+                cycle=cycle+4+((addr Shr 8) ==((addr+Y)Shr 8) )
+            Case 189'BD LDA Absolute,X
+                addr=readmem(pc+2) Shl 8 + readmem(pc+1)
+                A=readmem(addr+ X)
+                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                pc=pc+3   
+                cycle=cycle+4+((addr Shr 8) ==((addr+X)Shr 8) )
+            Case 192'C0 CPY immediate
+                T=(256+Y-readmem(pc+1)) Mod 256
+                C=(T>=0)
+                Z=(T==0)
+                N=T Shr 7
+                pc=pc+2
+                cycle=cycle+2
+            Case 198'C6 DEC Zero-page
+                par=readmem(pc+1)
+                par2=(256+(readmem(par)-1)) Mod 256
+                writemem(par,par2)
+                Print "      DEC "+par+" ="+readmem(par)
+                pc=pc+2
+                cycle=cycle+5
+                N=par2 Shr 7
+                Z=(par2==0)
+            Case 200'C8 INY
+                X=(Y+1) Mod 256
+                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+2
+            Case 201'C9 CMP
+                T=(256+A-readmem(pc+1)) Mod 256
+                C=(T>=0)
+                Z=(T==0)
+                N=T Shr 7
+                pc=pc+2
+                cycle=cycle+2
+            Case 202'CA DEX X - 1 -> X
+                X=(256+X-1) Mod 256
+                pc=pc+1
+                cycle=cycle+2
+                N=X Shr 7
+                Z=(X==0)
+            Case 205'CD CMP Absolute
+                T=(256+A-readmem(readmem(pc+2) Shl 8 + readmem(pc+1))) Mod 256
+                C=(T>=0)
+                Z=(T=0)
+                N=T Shr 7
+                pc=pc+3
+                cycle=cycle+4
+            Case 206'CE DEC Absolute
+                par=readmem(pc+2) Shl 8 + readmem(pc+1)
+                par2=(256+(readmem(par)-1)) Mod 256
+                writemem(par,par2)
+                pc=pc+3
+                cycle=cycle+6
+                N=par2 Shr 7
+                Z=(par2==0)
+            Case 208'D0 BNE Relative
+                If Z==0 Then
+                    param=readmem(pc+1)
+                    oldpc=pc
+                    pc=pc+2+(param-(param>127)*256)
+                    cycle=cycle+3+(RoundDown((oldpc-32768)/16384.0)<>RoundDown((pc-32768)/16384.0))'OPTIMOI!
+                Else
+                    pc=pc+2
+                    cycle=cycle+2
+                EndIf
+            Case 216'D8 CLD 0 -> D(D-flagilla ei nesiss‰ ole mit‰‰n k‰yttˆ‰)
+                D=0
+                pc=pc+1
+                cycle=cycle+2
+            Case 224'E0 CPX
+                T=(256+X-readmem(pc+1)) Mod 256
+                C=(T>=0)
+                Z=(T=0)
+                N=T Shr 7
+                pc=pc+2
+                cycle=cycle+2
+            Case 230'E6 INC Zero Page
+                addr=readmem(pc+1)
+                result=(readmem(addr)+1) Mod 256
+                N=result Shr 7
+                Z=(result=0)
+                writemem(addr,result)
+                pc=pc+2
+                cycle=cycle+5
+            Case 232'E8 INX
+                X=(X+1) Mod 256
+                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                pc=pc+1
+                cycle=cycle+2
+            Case 234'EA NOP
+                pc=pc+1
+                cycle=cycle+2
+            Case 238'EE INX Absolute
+                addr=readmem(pc+2) Shl 8 + readmem(pc+1)
+                result=(readmem(addr)+1) Mod 256
+                N=result Shr 7
+                Z=(result==0)
+                writemem(addr,result)
+                pc=pc+3
+                cycle=cycle+6
+            Case 240'F0 BEQ
+                If Z==1 Then
+                    param=readmem(pc+1)
+                    oldpc=pc
+                    pc=pc+2+(param-(param>127)*256)
+                    cycle=cycle+3+(RoundDown((oldpc-32768)/16384.0)<>RoundDown((pc-32768)/16384.0))'OPTIMOI!
+                Else
+                    pc=pc+2
+                    cycle=cycle+2
+                EndIf
+            Case 253'FD SBC Absolute,X
+                'addr=readmem(pc+2) Shl 8 + readmem(pc+1)
+                par1=readmem(pc+2)
+                par2=readmem(pc+1)
+                addr=par1 Shl 8 + par2 +X
+                A=A-readmem(addr)
+                If A<0 Then A=0:C=1 Else C=0
+                'owerflowi puuttuu
+                Print "SBC Absolute, X: fixme"//TODO: fixme
+                pc=pc+3
+                cycle=cycle+4+par2+X>255
+                Color 255, 255, 255
+            Default'jos komentoa ei lˆytynyt
+                cycle=cycle+1
+                pc=pc+1
+                Color 255,0,0
+                Print ret+" " //+Right(Hex(ret),2)
+                printstatus()
+                //WaitKey
+                'Wait 2000
+        EndSelect
+
+        //Print "OP: " + ret //+" "+Right(Hex(op),2)
+		//Wait 200
+        Color 255,255,255
+        //printstatus()
+        'WaitKey
+        'If KeyDown(25) Then printstatus()
+        If KeyDown(32) Then debugmem(pc)
+        'If Not KeyDown(cbkeyspace) Then WaitKey' Else Wait 1'50
+    Until cycle>nextStop
+    //vblankin generointi
+    If cycle>29829 Or KeyDown(47) Then  cycle=cycle-29829:ppu_vblank=1:Print "vblank":ppu():drawppu()':Wait 2000
+    'If cycle>65535 Then  cycle=cycle-65535:ppu_vblank=1:Print "vblank":ppu()
+    nextstop=cycle+100 'stoppisysteemi keskeytyksi‰ ja hienompaa rendausta
+Wend
+
+Function readmem8() As Integer
+    If address=>32768 Then//ROM
+        Select mapper
+            Case 0 'NOMAPPER
+                If rombanks==1 Then 'k‰sittely yhdell‰ rompankilla, se peilautuu yl‰ ja alapankkiin.
+                    'Print (address-32768) Mod 16384
+                    ret=PeekByte(rom,(address-32768) Mod 16384)
+                    Return 
+                ElseIf rombanks==2 'kahdella rompankilla ne n‰kyy per‰kk‰in(ei testattu)
+                    'Print address-32768
+                    ret=PeekByte(rom,address-32768)
+                    Return 
+                Else
+                    MakeError rombanks+" pankkisia NOMAPPER-romeja ei ole"+chr(10)+"(an error that was impossible to occur has just occured.)"
+                EndIf
+             Case 4 'MMC3
+                Select (address-32768) Shr 13
+                    Case 0
+                        ret=PeekByte(rom,address-32768+prgbank0addr)
+                        Return 
+                    Case 1
+                        ret=PeekByte(rom,address-32768-8192+prgbank1addr)
+                        Return 
+                    Case 2
+                        ret=PeekByte(rom,address-32768-8192*2+prgbank2addr)
+                        Return 
+                    Case 3
+                        ret=PeekByte(rom,address-32768-8192*3+prgbank3addr)
+                        Return 
+                 EndSelect
+             Default
+                If rombanks==1 Then 'nomapper
+                    ret=PeekByte(rom,(address-32768) Mod 16384)
+                    Return 
+                Else
+                    ret=PeekByte(rom,address-32768)
+                    Return 
+                EndIf
+                'MakeError mapper+"ei ole tuettu mapperi"
+        EndSelect
+    ElseIf address<8192 Then//RAM
+        ret=PeekByte(ram,address)
+        Return 
+    ElseIf address=>8192 And address<16383 Then//Registers
+        Select address Mod 8
+            Case 2'$2002
+                ret=ppu_vblank Shl 7//eivalmis
+                ppu_vblank=0
+                Return
+            'Case 4 04 Sprite Memory Data
+            Case 7
+                Print "PPUIO luku"
+            Default
+                Print "hassu rekisteri(luku) "+address//Right(Hex(address),4)
+                ret= 0
+                Return
+        EndSelect
+    ElseIf address=>16384 And address<=16407 Then'toinen rekisterialue
+        Select address - 16384
+            Case 22
+                Print "Ohjain 1 luku"
+                ret=Rand(255)
+                Return 
+            Case 23
+                Print "Ohjain 2 luku"
+            Default
+                Print "hassu rekisteri(luku) "+ address //Right(Hex(address),4)
+        EndSelect
+    Else'jos osoitteella ei ole muistia niin toimitaan n‰in.
+        Print "hassu lukuosoite "+ address
+        ret= address Shr 8
+        Return 0
+    EndIf
+	Return 0
+EndFunction
+
+Function readmem16() As Integer //readmemist‰ puolicopypasteversio voisi olla nopeampi
+    address=address2
+    readmem8()
+    t1=ret
+    address=address2+1
+    readmem8()
+    ret=ret Shl 8 +t1
+	Return 0
+EndFunction
+
+
+Function readmem(addr) As Integer//koko prossun muisti
+    If addr=>32768 Then//ROM
+        Select mapper
+            Case 0'NOMAPPER
+                If rombanks==1 Then 'k‰sittely yhdell‰ rompankilla, se peilautuu yl‰ ja alapankkiin.
+                    //Print (addr-32768) Mod 16384
+                    //Print Integer(PeekByte(rom,(addr-32768) Mod 16384))
+					Return PeekByte(rom,(addr-32768) Mod 16384)
+                ElseIf rombanks==2 'kahdella rompankilla ne n‰kyy per‰kk‰in(ei testattu)
+                    //Print addr-32768
+					//Print Integer(PeekByte(rom,addr-32768))
+                    Return PeekByte(rom,addr-32768)
+                Else
+                    MakeError rombanks+" pankkisia NOMAPPER-romeja ei ole"+chr(10)+"(an error that was impossible to occur has just occured.)"
+                EndIf
+             Case 4'MMC3
+                Select (addr-32768) Shr 13
+                    Case 0
+                        Return PeekByte(rom,addr-32768+prgbank0addr)
+                    Case 1
+                        Return PeekByte(rom,addr-32768-8192+prgbank1addr)
+                    Case 2
+                        Return PeekByte(rom,addr-32768-8192*2+prgbank2addr)
+                    Case 3
+                        Return PeekByte(rom,addr-32768-8192*3+prgbank3addr)
+                 EndSelect
+             Default
+                If rombanks==1 Then 'nomapper
+                    Return PeekByte(rom,(addr-32768) Mod 16384)
+                Else
+                    Return PeekByte(rom,addr-32768)
+                EndIf
+                'MakeError mapper+"ei ole tuettu mapperi"
+        EndSelect
+    ElseIf addr<8192 Then//RAM
+        Return PeekByte(ram,addr)
+    ElseIf addr=>8192 And addr<16383 Then//Registers
+        Select addr Mod 8
+            Case 2'$2002
+                ret=ppu_vblank Shl 7//eivalmis
+                ppu_vblank=0
+                Return ret
+            'Case 4'04 Sprite Memory Data
+            Case 7
+                Print "PPUIO luku"
+            Default
+                Print "hassu rekisteri(luku) "+addr//Right(Hex(address),4)
+                Return 0
+        EndSelect
+    ElseIf addr=>16384 And addr<=16407 Then'toinen rekisterialue
+        Select addr - 16384
+            Case 22
+                Print "Ohjain 1 luku"
+                Return Rand(255)
+            Case 23
+                Print "Ohjain 2 luku"
+            Default
+                Print "hassu rekisteri(luku) "+addr//Right(Hex(address),4)
+        EndSelect
+    Else'jos osoitteella ei ole muistia niin toimitaan n‰in.
+        Print "hassu lukuosoite "+ addr
+        Return addr Shr 8
+    EndIf
+EndFunction
+
+Function writemem(addr, arvo)  As Integer //koko prossun muisti
+    If addr<=8191 Then //RAM
+        PokeByte ram,addr Mod 2048, arvo
+    ElseIf addr=>8192 And addr<16383 Then//Registers
+        Select addr mod 8 'korvaa printit lukemisella
+            Case 0'$2000
+                Print "PPUCNT1 kirjoitus"
+                //Global ppu_ctrl_nametable_address,ppu_ctrl_increment,ppu_ctrl_sprite_patt_addr
+                //Global ppu_ctrl_bg_patterntable_addr,ppu_master_slave,ppu_ctrl_sprite_size,ppu_enable_vblank_nmi
+                 ppu_ctrl_nametable_addr=(arvo Mod 4)*1024+8192
+                 ppu_ctrl_increment=((arvo Shr 2) Mod 2)*31+1
+                 ppu_ctrl_sprite_patt_addr=((arvo Shr 3) Mod 2)*4096
+                 ppu_ctrl_bg_patterntable_tileoffset=((arvo Shr 4) Mod 2)*255
+                 ppu_master_slave=((arvo Shl 5) Mod 2)
+                 ppu_ctrl_sprite_size=((arvo Shl 6) Mod 2)
+                 ppu_enable_vblank_nmi=arvo Shl 7
+                 Return 0
+            Case 1'$2001
+                Print "PPUCNT2 kirjoitus"
+                Return 0
+            Case 3'$2003
+                Print "SPRADDR kirjoitus"
+                Return 0
+            Case 4'$2004
+                Print "SPRIO kirjoitus"
+                Return 0
+            Case 5'$2005
+                Print "BGSCROL kirjoitus"
+                Return 0
+            Case 6'$2006
+                Print "PPUADDR kirjoitus"
+                ppuaddr_turn=((ppuaddr_turn+1)<2)
+                If ppuaddr_turn==1 Then
+                    ppuaddr_addr=ppuaddr_addr Shl 24 Shr 24 + arvo Shl 8
+                    'ppuaddr_addr0=arvo
+                    Return 0
+                Else
+                    ppuaddr_addr=ppuaddr_addr Shr 8 Shl 8 +arvo
+                    'ppuaddr_addr1=arvo
+                    Return 0
+                EndIf
+                Return 0
+            Case 7'$2007
+                //Print "PPUIO kirjoitus "+ppuaddr_addr+"= "+arvo
+                'huom:
+                'Write data into $2007. After each write, the address will auto-increment by 1, or 32 (if Bit #2 of $2000 is 1).
+                'muista mirroring t‰h‰n,lukuun ja n‰yttikseen kun mapperit lis‰‰ntyy
+                'If ppuaddr_addr<8192
+                    addr=ppuaddr_addr//t‰ss‰ olisi 
+                'ElseIf
+                PokeByte ppuram, ppuaddr_addr, arvo
+                ppuaddr_addr=(ppuaddr_addr+ppu_ctrl_increment) Mod 16384
+                
+                'Print ppuaddr_addr+ " "+arvo
+                'Wait 400
+                Return 0
+            Default
+                Print "hassu rekisteri(kirjoitus) "+addr//Right(Hex(addr),4)
+                Return 0
+        EndSelect
+    ElseIf addr=>16384 And addr<=16407 Then
+        Select addr - 16384
+            Case 22
+                Print "Ohjain 1 kirjoitus"
+                Return 0
+            Case 23
+                Print "Ohjain 2 kirjoitus"
+                Return 0
+            Default
+                Print "hassu rekisteri(kirjoitus) "+addr//Right(Hex(addr),4)
+                Return 0
+        EndSelect
+    ElseIf addr=>32768 Then//ROM =>$8000
+        Select mapper
+            Case 0
+                Print "Ohjelmaromiin kirjoitus ei tee mit‰‰n t‰ll‰ mapperilla"
+            Case 1
+                Print "MMC1, implementoimatta!(kirjoitus) "+addr+ " arvo: " + arvo //Right(Hex(addr),4)+" "+Right(Hex(arvo),2)
+            Case 4
+                If addr<40959 Then 'bankswitching
+                    Select (addr Mod 2)
+                        Case 0
+                            Print "bankselect: "+arvo
+                            bankselect=arvo
+                            Return  0
+                        Case 1
+                            Print "bankdata: "+arvo
+                            'TODO-mapping modes
+                            Select bankselect Mod 8
+                                Case 0
+                                    chrbank0addr=arvo*2048
+                                Case 1
+                                    chrbank1addr=arvo*2048
+                                Case 2
+                                    chrbank2addr=arvo*1024
+                                Case 3
+                                    chrbank3addr=arvo*1024
+                                Case 4
+                                    chrbank4addr=arvo*1024
+                                Case 5
+                                    chrbank5addr=arvo*1024
+                                Case 6
+                                    chrbank0addr=8192*arvo
+                                Case 7
+                                    chrbank1addr=8192*arvo
+                             EndSelect
+                            
+                    EndSelect
+                Else
+                    print "MMC3 kirjoitus implementoimatta: "+addr + " arvo: " + arvo //Right(Hex(addr),4)+" "+Right(Hex(arvo),2)
+                EndIf
+            Default
+                Print "tuntematon mapperi tekee jotain "+addr + " arvo: " + arvo //Right(Hex(addr),4)+" "+Right(Hex(arvo),2)
+        EndSelect
+    Else'jos osoitteella ei ole muistia niin toimitaan n‰in.
+        Print "hassu kirjoitusosoite "+addr
+    EndIf
+EndFunction
+
+Function nmi()  As Integer
+
+EndFunction
+
+Function ppu()  As Integer
+     //kuva kerrallaan piirto, korjataan scanline/pikseli kerrallaan piirrolla.
+    ulkoaika=Timer()-aika
+	Wait 1000
+	Print "ppu()"
+    cycle=0
+    t=Timer()
+    Select rendermethod
+        Case 0
+            //TODO: MMC3 banking support
+            DrawToImage scr
+            Lock
+                For sy=0 To 239
+                    For til=0 To 31
+                        tilenumber=PeekByte(ppuram,ppu_ctrl_nametable_address+(RoundDown(sy/8.0)*32+til))+1+ppu_ctrl_bg_patterntable_tileoffset
+                        byte1=PeekByte(vrom,tilenumber*16+(sy Mod 8))
+                        byte2=PeekByte(vrom,tilenumber*16+(sy Mod 8)+8)
+                        pal=PeekByte(ppuram,9152+RoundDown(sy/32.0)*8+RoundDown(til/4.0)) Shl (24+2*(RoundDown(til/2+1)Mod 2)+4*(RoundDown(sy/16+1) Mod 2)) Shr 30
+                        //Print "Pal: " + pal
+						For sx=0 To 7
+							colorId1 = ((byte1 Shr (7-sx)) Mod 2)
+							colorId2 = ((((byte2 Shr (7-sx)) Mod 2))Shl 1)
+							paletteId = PeekByte(ppuram,16128+colorId1+colorId2+(pal Shl 2))
+							//If paletteId then Print "Color id: " + paletteId // + "  Pixel: " + palette[paletteId]
+                            PutPixel til*8+sx,sy,palette[paletteId] + $FF000000
+                            'SetWindow ""+(PeekByte(ppuram,16128+(byte1 Shr (7-sx)) Mod 2+((byte2 Shr (7-sx)) Mod 2)Shl 1 +pal Shl 2))+" "+((byte1 Shr (7-sx)) Mod 2+((byte2 Shr (7-sx)) Mod 2)Shl 1 +pal Shl 2)+ " " +pal
+                        Next sx
+                    Next til
+                Next sy
+            Unlock
+            DrawToScreen
+		RemStart
+        Case 1
+            Select mapper
+                Case 4// MMC3
+                    For l=4 To 7'tilet
+                        DrawToImage renderlayers(l)
+                            Color 0, 0, 0
+                            Box 0,0,256,240
+                            j=l-4
+                            For i=0 To 959
+                                'DrawImageBox maskedtiles(j),i*8 Mod 256,RoundDown(i/32.0)*8,(PeekByte(ppuram,8192+i)+256)Shl 3,0,8,8
+                                tile=PeekByte(ppuram,ppu_ctrl_nametable_address+i)+ppu_ctrl_bg_patterntable_tileoffset
+                                If tile<=2047
+                                    tile=chrbank0addr+tile
+                                ElseIf tile<=4095
+                                    tile=chrbank1addr-2048+tile
+                                ElseIf tile<=5119
+                                    tile=chrbank2addr-4096+tile
+                                ElseIf tile<=6143
+                                    tile=chrbank3addr-5120+tile
+                                ElseIf tile<=7167
+                                    tile=chrbank4addr-6144+tile
+                                ElseIf tile<=8191
+                                    tile=chrbank5addr-7168+tile
+                                EndIf
+                                Color 0, 0, 0
+                                'Print tile
+                                CopyBox tile Shl 3,0,8,8,(i Shl 3) Mod 256,RoundDown(i/32.0)Shl 3,Image(maskedtiles(j)),Image(renderlayers(l))
+                            Next i
+                    Next l
+                Default
+                    For l=4 To 7'tilet
+                        DrawToImage renderlayers(l)
+                            Color cbblack
+                            Box 0,0,256,240
+                            j=l-4
+                            For i=0 To 959
+                                'DrawImageBox maskedtiles(j),i*8 Mod 256,RoundDown(i/32.0)*8,(PeekByte(ppuram,8192+i)+256)Shl 3,0,8,8
+                                CopyBox (PeekByte(ppuram,ppu_ctrl_nametable_address+i)+ppu_ctrl_bg_patterntable_tileoffset+1)Shl 3,0,8,8,(i Shl 3) Mod 256,RoundDown(i/32.0)Shl 3,Image(maskedtiles(j)),Image(renderlayers(l))
+                            Next i
+                    Next l
+            EndSelect
+            For l=0 To 3'tausta
+                DrawToImage renderlayers(l)
+                    Color cbblack
+                    Box 0,0,256,240
+                    For i=0 To 63
+                        pal=PeekByte(ppuram,9152+i)
+                        Color 0,0,palette[PeekByte(ppuram,16128+((pal Shl 30) Shr 28)+l))
+                        Box i*32 Mod 256, RoundDown(i/8.0)*32,16,16
+                        Color 0,0,palette[PeekByte(ppuram,16128+((pal Shl 28) Shr 30)Shl 2+l))
+                        Box (i*32+16) Mod 256, RoundDown(i/8.0)*32,16,16
+                        Color 0,0,palette[PeekByte(ppuram,16128+((pal Shl 26) Shr 30)Shl 2+l))
+                        Box i*32 Mod 256, RoundDown(i/8.0)*32+16,16,16
+                        Color 0,0,palette[PeekByte(ppuram,16128+((pal Shl 24) Shr 30)Shl 2+l))
+                        Box (i*32+16) Mod 256, RoundDown(i/8.0)*32+16,16,16
+                    Next i
+                    DrawImage renderlayers(l+4),0,0
+                DrawToScreen
+            Next l
+            DrawToImage scr
+            Color cbblack
+            Box 0,0,256,240
+            DrawImage renderlayers(0),0,0
+            DrawImage renderlayers(1),0,0
+            DrawImage renderlayers(2),0,0
+            DrawImage renderlayers(3),0,0
+            DrawToScreen
+		RemEnd
+    EndSelect
+    Color 0, 0, 0
+    Box 200,0,256,240
+    DrawImage scr,200,0' kaksi piirtoa koska print pist‰‰ koordinaatit sekaisin
+    'DrawImage scr,200,150
+    DrawScreen
+
+
+    Print "FPS: "+((10000/(ulkoaika+(Timer()-t)))/10.0)+" kierrosaika: "+(ulkoaika+(Timer()-t))+" Rendaus: "+(Timer()-t)
+    aika=Timer()
+
+EndFunction
+
+Function printstatus()  As Integer
+    Print "A:"+A+" X:"+X+" Y:"+Y+"  N:"+N+" V:"+V+" I:"+I+" Z:"+Z+" C:"+C+"  Stack:"+S+" PC:"+" "+pc+" ppuaddr:"+ppuaddr_addr
+EndFunction
+
+Function rendermem(alku,loppu)  As Integer
+    For i=alku To loppu
+        'Print Right(Hex(i),4)+": "+Right(Hex(readmem(i)),2)
+        'Print Right(Hex(i),4)+": "+Right(hex(PeekByte(rom,i-32768)),2)
+    Next i
+EndFunction
+
+Function debugmem(kohta)  As Integer
+    Repeat
+        kohta=kohta+KeyDown(208)-KeyDown(200)+(KeyDown(209)-KeyDown(201))*8
+        kohta=Min(65535,Max(kohta,0))
+        rendermem(Max(kohta-8,0),Min(kohta+8,65535))
+        Box 0,13*(8  ),200,1
+        Box 0,13*(8+1),200,1
+        Text 255,0,"S To see Chr-tables"
+        If KeyDown(31) Then drawppu()
+        DrawScreen
+        Wait 1
+        Cls
+        
+    Until KeyDown(57)'space
+EndFunction
+
+Function drawppu()  As Integer
+    Lock
+    For sy=0 To 127'239
+        For til=0 To 31
+            tile=(RoundDown(sy/8.0)*32+til)*16+(sy Mod 8)'-1'+256
+            'tile=PeekByte(ppuram,8192+i)+255
+            Select mapper 
+                Case 4
+                    If tile<=2047
+                        tile=chrbank0addr+tile
+                    ElseIf tile<=4095
+                        tile=chrbank1addr-2048+tile
+                    ElseIf tile<=5119
+                        tile=chrbank2addr-4096+tile
+                    ElseIf tile<=6143
+                        tile=chrbank3addr-5120+tile
+                    ElseIf tile<=7167
+                        tile=chrbank4addr-6144+tile
+                    ElseIf tile<=8191
+                        tile=chrbank5addr-7168+tile
+                    EndIf
+            EndSelect
+            byte1=PeekByte(vrom,int(Max(0,tile)))
+            byte2=PeekByte(vrom,tile+8)
+            For sx=0 To 7
+                PutPixel 255+til*8+sx,sy,palette[(((byte1 Shr (7-sx)) Mod 2))+((((byte2 Shr (7-sx)) Mod 2))Shl 1)]
+            Next sx
+        Next til
+    Next sy
+    
+    Unlock
+    
+
+    For sy=0 To 239 Step 8
+        For til=0 To 31
+            tilenumber=PeekByte(ppuram,ppu_ctrl_nametable_address+(RoundDown(sy/8.0)*32+til))
+            Color 0,0,tilenumber Shl 16 +tilenumber Shl 8 + tilenumber
+            Box 512+til*8,sy,8,8
+            Color 255, 0, 0
+            For i=0 To 7
+                If (tilenumber Shr (7-i))Mod 2 Then Dot 512+til*8+i,sy
+            Next i
+
+        Next til
+    Next sy
+    
+    Color 255, 255, 255
+    Text 175,0,"$0000 chr0"
+    Text 175,64,"$1000 chr1"
+    Box  256,ppu_ctrl_bg_patterntable_tileoffset/4.0,256,64,0
+
+EndFunction

@@ -26,13 +26,14 @@ CONFIG(debug, debug|release) {
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
 	LIBS +=  -L"$$(LLVM_LIB)"
-	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMIRReader -lLLVMObjCARCOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
+	LIBS += -lLLVMInstrumentation -lLLVMIRReader -lLLVMAsmParser -lLLVMDebugInfo -lLLVMOption -lLLVMLTO -lLLVMLinker -lLLVMipo -lLLVMVectorize -lLLVMBitWriter -lLLVMBitReader -lLLVMTableGen -lLLVMXCoreDisassembler -lLLVMXCoreCodeGen -lLLVMXCoreDesc -lLLVMXCoreInfo -lLLVMXCoreAsmPrinter -lLLVMX86Disassembler -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMX86Desc -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMSystemZDisassembler -lLLVMSystemZCodeGen -lLLVMSystemZAsmParser -lLLVMSystemZDesc -lLLVMSystemZInfo -lLLVMSystemZAsmPrinter -lLLVMSparcCodeGen -lLLVMSparcDesc -lLLVMSparcInfo -lLLVMR600CodeGen -lLLVMR600Desc -lLLVMR600Info -lLLVMR600AsmPrinter -lLLVMPowerPCCodeGen -lLLVMPowerPCAsmParser -lLLVMPowerPCDesc -lLLVMPowerPCInfo -lLLVMPowerPCAsmPrinter -lLLVMNVPTXCodeGen -lLLVMNVPTXDesc -lLLVMNVPTXInfo -lLLVMNVPTXAsmPrinter -lLLVMMSP430CodeGen -lLLVMMSP430Desc -lLLVMMSP430Info -lLLVMMSP430AsmPrinter -lLLVMMipsDisassembler -lLLVMMipsCodeGen -lLLVMMipsAsmParser -lLLVMMipsDesc -lLLVMMipsInfo -lLLVMMipsAsmPrinter -lLLVMHexagonCodeGen -lLLVMHexagonAsmPrinter -lLLVMHexagonDesc -lLLVMHexagonInfo -lLLVMCppBackendCodeGen -lLLVMCppBackendInfo -lLLVMARMDisassembler -lLLVMARMCodeGen -lLLVMARMAsmParser -lLLVMARMDesc -lLLVMARMInfo -lLLVMARMAsmPrinter -lLLVMAArch64Disassembler -lLLVMAArch64CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMAArch64AsmParser -lLLVMAArch64Desc -lLLVMAArch64Info -lLLVMAArch64AsmPrinter -lLLVMAArch64Utils -lgtest_main -lgtest -lLLVMMCDisassembler -lLLVMMCParser -lLLVMInterpreter -lLLVMMCJIT -lLLVMJIT -lLLVMCodeGen -lLLVMObjCARCOpts -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMTarget -lLLVMMC -lLLVMObject -lLLVMCore -lLLVMSupport
 	LIBS += -lAdvapi32 -lShell32
 	win32-msvc { #msvc
 		QMAKE_CXXFLAGS += /Zc:wchar_t
 		LIBS += -ldbghelp
 	} else { #mingw
 		LIBS += -lpsapi -limagehlp # = dbghelp (msvc)
+		QMAKE_CXXFLAGS += -std=c++11
 	}
 }
 
@@ -46,6 +47,7 @@ linux {
 #	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
 	LIBS += -L`llvm-config --libdir` `llvm-config --libs all`
 	LIBS += -ldl
+	QMAKE_CXXFLAGS += -std=c++11
 }
 
 macx {
@@ -76,22 +78,33 @@ SOURCES += main.cpp \
     shortvaluetype.cpp \
     bytevaluetype.cpp \
     booleanvaluetype.cpp \
-    constantexpressionevaluator.cpp \
     constantvalue.cpp \
     constantsymbol.cpp \
     variablesymbol.cpp \
     typesymbol.cpp \
     typepointervaluetype.cpp \
-    symbolcollectortypechecker.cpp \
-    arraysymbol.cpp \
     cbfunction.cpp \
-    functioncodegenerator.cpp \
-    expressioncodegenerator.cpp \
     labelsymbol.cpp \
     builder.cpp \
     settings.cpp \
     typevaluetype.cpp \
-    valuetypesymbol.cpp
+    valuetypesymbol.cpp \
+    customdatatypedefinitions.cpp \
+    customvaluetype.cpp \
+    astvisitor.cpp \
+    symbolcollector.cpp \
+    typeresolver.cpp \
+    valuetypecollection.cpp \
+    arrayvaluetype.cpp \
+    genericarrayvaluetype.cpp \
+    functionvaluetype.cpp \
+    functionselectorvaluetype.cpp \
+    functioncodegenerator.cpp \
+    castcostcalculator.cpp \
+    constantexpressionevaluator.cpp \
+    genericstructvaluetype.cpp \
+    structvaluetype.cpp \
+    nullvaluetype.cpp
 
 HEADERS += \
     lexer.h \
@@ -117,22 +130,35 @@ HEADERS += \
     shortvaluetype.h \
     bytevaluetype.h \
     booleanvaluetype.h \
-    constantexpressionevaluator.h \
     constantvalue.h \
-    unionwrapper.h \
     constantsymbol.h \
     variablesymbol.h \
     typesymbol.h \
     typepointervaluetype.h \
-    symbolcollectortypechecker.h \
-    arraysymbol.h \
     cbfunction.h \
-    functioncodegenerator.h \
-    expressioncodegenerator.h \
     labelsymbol.h \
     builder.h \
     global.h \
     warningcodes.h \
     settings.h \
     typevaluetype.h \
-    valuetypesymbol.h
+    valuetypesymbol.h \
+    customdatatypedefinitions.h \
+    customvaluetype.h \
+    codepoint.h \
+    astvisitor.h \
+    symbolcollector.h \
+    typeresolver.h \
+    valuetypecollection.h \
+    arrayvaluetype.h \
+    genericarrayvaluetype.h \
+    functionvaluetype.h \
+    liststringjoin.h \
+    operationflags.h \
+    functionselectorvaluetype.h \
+    functioncodegenerator.h \
+    castcostcalculator.h \
+    constantexpressionevaluator.h \
+    structvaluetype.h \
+    genericstructvaluetype.h \
+    nullvaluetype.h

@@ -5,6 +5,8 @@ namespace ErrorCodes {
 enum ErrorCode {
 	//Settings
 	ecSettingsLoadingFailed = 11,
+	ecCantParseCustomDataTypeDefinitionFile,
+	ecInvalidCustomDataTypeDefinitionFileFormat,
 
 	//Lexer
 	ecLexicalAnalysingFailed,
@@ -20,6 +22,8 @@ enum ErrorCode {
 	ecExpectingVarType,
 	ecExpectingLeftParenthese,
 	ecExpectingRightParenthese,
+	ecExpectingLeftSquareBracket,
+	ecExpectingRightSquareBracket,
 	ecExpectingPrimaryExpression,
 	ecExpectingEndOfRepeat,
 	ecExpectingEndFunction,
@@ -44,7 +48,8 @@ enum ErrorCode {
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,
 
-	ecVarAlreadyDefinedWithAnotherType,
+	ecVariableAlreadyDefinedWithAnotherType,
+	ecConstantAlreadyDefinedWithAnotherType,
 	ecVariableTypeDefinedTwice,
 
 	ecParsingFailed,
@@ -56,6 +61,8 @@ enum ErrorCode {
 	ecCantLoadFunctionMapping,
 	ecInvalidFunctionMappingFile,
 	ecCantFindRuntimeFunction,
+	ecCantFindCustomDataType,
+	ecValueTypeDefinedMultipleTimes,
 
 	//Code generation
 	ecCodeGeneratorInitializationFailed,
@@ -63,15 +70,16 @@ enum ErrorCode {
 	ecNotConstant,
 	ecNotVariable,
 	ecNotTypePointer,
+	ecNotLabel,
 	ecArraySubscriptNotInteger,
 	ecConstantAlreadyDefined,
 	ecSymbolAlreadyDefinedInRuntime,
 	ecSymbolAlreadyDefined,
 	ecCantFindType,
-	ecCantFindTypeField,
+	ecCantFindField,
 	ecForEachInvalidContainer,
 	ecForcingType,
-	ecNotArrayOrFunction,
+	ecNotArray,
 	ecInvalidArraySubscript,
 	ecMathematicalOperationOperandTypeMismatch,
 	ecCantCreateTypePointerLLVMStructType,
@@ -104,8 +112,23 @@ enum ErrorCode {
 	ecExpectingType,
 	ecCastFunctionRequiresOneParameter,
 	ecCantCastValue,
+	ecExpectingVariableDefinition,
+	ecSymbolNotValueType,
+	ecIntegerDividedByZero,
+	ecOperationNotAllowedInConstantExpression,
+	ecWrongNumberOfParameters,
+	ecNotTypeName,
+	ecReferenceRequired,
+	ecNotContainer,
+	ecEmptySelect,
+	ecStructContainsItself,
+	ecNotInteger,
+	ecInvalidParameter,
 
 	ecCantWriteBitcodeFile,
+	ecOptimizingFailed,
+	ecCantCreateObjectFile,
+	ecNativeLinkingFailed,
 
 	ecCodeGenerationFailed,
 

@@ -63,3 +63,13 @@ void CBF_end() {
 int CBF_fps() {
 	return Window::instance()->fps();
 }
+
+void CBF_makeError(CBString errorMsg) {
+	error(LString(errorMsg));
+	sys::closeProgram();
+}
+
+void CBF_wait(int t) {
+	al_rest((double)t / 1000.0);
+}
+

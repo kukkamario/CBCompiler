@@ -7,4 +7,5 @@
 #ifndef QStringLiteral
 	#define QStringLiteral QString
 #endif
+class Runtime;
 #endif // GLOBAL_H

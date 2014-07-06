@@ -1,0 +1,7 @@
+s$ = "Hello world"
+
+d$ = "dasdsad"
+
+
+t$ = s$ + d$
+Print t$

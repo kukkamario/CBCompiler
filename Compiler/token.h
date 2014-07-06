@@ -1,9 +1,10 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 #include <QString>
-class QFile;
-struct Token
-{
+#include "codepoint.h"
+
+class Token {
+	public:
 		enum Type {
 			EndOfTokens = 0,
 			EOL,
@@ -22,9 +23,13 @@ struct Token
 
 			LeftParenthese,
 			RightParenthese,
+
+			LeftSquareBracket,
+			RightSquareBracket,
 			//Operators
 
 			OperatorsBegin,
+			opAssign,
 			opEqual,
 			opNotEqual,
 			opGreater,
@@ -44,7 +49,6 @@ struct Token
 			opOr,
 			opXor,
 			opNot,
-			opTypePtrField,
 			opDot,  //   Dot
 			OperatorsEnd,
 
@@ -63,8 +67,10 @@ struct Token
 			kReturn,
 			kEndFunction,
 			kType,
+			kStruct,
 			kField,
 			kEndType,
+			kEndStruct,
 			kWhile,
 			kWend,
 			kRepeat,
@@ -95,12 +101,20 @@ struct Token
 			kLast,
 			kBefore,
 			kAfter,
+			kArraySize,
 
 			KeywordsEnd,
 			TypeCount
 		};
 
-		Token(Type t, QString::ConstIterator begin, QString::ConstIterator end, int line, const QString &f) : mType(t), mBegin(begin), mEnd(end), mLine(line), mFile(f) {}
+		Token(Type t, QString::ConstIterator begin, QString::ConstIterator end, const CodePoint &cp) : mType(t), mBegin(begin), mEnd(end), mCodePoint(cp) {}
+		~Token() { }
+		Type type() const { return mType; }
+		const CodePoint &codePoint() const { return mCodePoint; }
+		QString file() const { return mCodePoint.file(); }
+		int line() const { return mCodePoint.line(); }
+		int column() const { return mCodePoint.column(); }
+
 		QString toString() const;
 		QString typeToString() const;
 		QString info() const;
@@ -109,11 +123,13 @@ struct Token
 		bool isKeyword() const;
 		bool isEndOfStatement() const;
 
+		QString::ConstIterator begin() const { return mBegin; }
+		QString::ConstIterator end() const { return mEnd; }
+	private:
 		Type mType;
 		QString::ConstIterator mBegin;
 		QString::ConstIterator mEnd;
-		int mLine;
-		QString mFile;
+		CodePoint mCodePoint;
 };
 
 #endif // TOKEN_H

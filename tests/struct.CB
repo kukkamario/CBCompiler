@@ -1,0 +1,21 @@
+Struct TestStruct
+	Field x
+	Field y
+	Field z#
+	Field name$
+EndStruct
+
+
+Dim a As TestStruct
+a.x = 2
+a.y = 23
+a.z = 23.5
+
+printTestStruct(a)
+
+Function printTestStruct(a As TestStruct) As Integer
+	Print "TestStruct: Name: " + a.name
+	Print "x: " + a.x
+	Print "y: " + a.y
+	Print "z: " + a.z
+EndFunction

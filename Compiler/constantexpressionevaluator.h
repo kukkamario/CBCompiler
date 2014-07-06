@@ -1,38 +1,33 @@
 #ifndef CONSTANTEXPRESSIONEVALUATOR_H
 #define CONSTANTEXPRESSIONEVALUATOR_H
-#include "stringpool.h"
-#include "value.h"
-#include "constantvalue.h"
-#include "valuetype.h"
-#include "abstractsyntaxtree.h"
-#include "scope.h"
-#include "constantsymbol.h"
 
+#include <QObject>
+#include "constantvalue.h"
+#include "abstractsyntaxtree.h"
+class Scope;
 class ConstantExpressionEvaluator : public QObject {
 		Q_OBJECT
 	public:
-		ConstantExpressionEvaluator();
-		ConstantValue evaluate(const ast::Node *s);
-		ConstantValue evaluate(const ast::Expression *s);
-		ConstantValue evaluate(const ast::Unary *s);
-		ConstantValue evaluate(const ast::String *s);
-		ConstantValue evaluate(const ast::Integer *s);
-		ConstantValue evaluate(const ast::Float *s);
-		ConstantValue evaluate(const ast::Variable *s);
+		explicit ConstantExpressionEvaluator(QObject *parent = 0);
 
-		void setRuntime(Runtime *runtime);
-		void setGlobalScope(Scope *globalScope);
-		void setCodeFile(const QString &f);
-		void setCodeLine(int l);
-	private:
-		Runtime *mRuntime;
-		Scope* mGlobalScope;
-		QString mFile;
-		int mLine;
-		void errorConstantAlreadyDefinedWithAnotherType(const QString &name);
+		Scope *scope() const { return mScope; }
+		void setScope(Scope *s) { mScope = s; }
+
+		ConstantValue evaluate(ast::Node *node);
+		ConstantValue evaluate(ast::Identifier *node);
+		ConstantValue evaluate(ast::Variable *node);
+		ConstantValue evaluate(ast::Integer *node);
+		ConstantValue evaluate(ast::Float *node);
+		ConstantValue evaluate(ast::String *node);
+		ConstantValue evaluate(ast::Expression *node);
+		ConstantValue evaluate(ast::Unary *node);
 	signals:
-		void error(int code, QString msg, int line, const QString &file);
-		void warning(int code, QString msg, int line, const QString &file);
+		void warning(int code, QString msg, CodePoint codePoint);
+		void error(int code, QString msg, CodePoint codePoint);
+	public slots:
+
+	private:
+		Scope *mScope;
 };
 
 #endif // CONSTANTEXPRESSIONEVALUATOR_H

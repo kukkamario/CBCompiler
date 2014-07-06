@@ -1,19 +1,22 @@
-Dim array(10,2)
-Dim array2(12)
+Dim array[10,2] As String
+Dim array2[2]
 
-for x = 0 to 9
-	for y = 0 to 1
-		array(x,y) = x + y
-	next y
-next x
+For x = 0 To 9
+	For y = 0 to 1
+		array[x,y] = x + " " + y
+	Next y
+Next x
 
 
-for x = 0 to 9
-	for y = 0 to 1
-		Print array(x,y)
-	next y
-next x
+For x = 0 to 9
+	For y = 0 to 1
+		Print array[x,y]
+	Next y
+Next x
 
-Print array2(3)
+Print array2[1]
 
- 
+Print "For-Each:"
+For a As String = Each array
+	Print a
+Next

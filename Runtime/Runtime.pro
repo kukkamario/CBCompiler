@@ -30,7 +30,15 @@ SOURCES += \
     image.cpp \
     cb_image.cpp \
     inputinterface.cpp \
-    cb_input.cpp
+    cb_input.cpp \
+    cbarray.cpp \
+    atomicint.cpp \
+    cb_array.cpp \
+    cb_file.cpp \
+    fileinterface.cpp \
+    cb_struct.cpp \
+    memblock.cpp \
+    cb_mem.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -45,8 +53,12 @@ HEADERS += \
     types.h \
     lstring.h \
     image.h \
-    idmap.h \
-    inputinterface.h
+    inputinterface.h \
+    cbarray.h \
+    atomicint.h \
+    fileinterface.h \
+    cb_struct.h \
+    memblock.h
 
 #win32 {
 #    LLVM_FILES += atomic_operations_mingw.ll
@@ -61,7 +73,8 @@ HEADERS += \
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
-QMAKE_CXXFLAGS = -emit-llvm -std=c++0x
+QMAKE_CXXFLAGS = -emit-llvm -std=c++11
+QMAKE_CXXFLAGS_EXCEPTIONS_ON -= -mthreads
 
 unix {
 	QMAKE_LIB = llvm-link -o
@@ -80,6 +93,7 @@ QMAKE_EXT_RES           = _res.bc
 
 #QMAKE_PREFIX_STATICLIB  = lib
 QMAKE_EXTENSION_STATICLIB = bc
+
 
 #llvm_compiler.output  = ${QMAKE_FILE_BASE}.bc
 #llvm_compiler.commands = llvm-as ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}

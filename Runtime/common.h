@@ -2,7 +2,8 @@
 #define COMMON_H
 
 #include <cmath>
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstdint>
 #include "lstring.h"
 
 

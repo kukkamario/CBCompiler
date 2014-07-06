@@ -33,6 +33,8 @@ class Scope {
 		 */
 		Symbol *find(const QString &name) const;
 
+		Symbol *findOnlyThisScope(const QString &name) const;
+
 		/**
 		 * @brief writeToStream Writes the scope to a stream for a debugging purposes.
 		 * @param s Stream
