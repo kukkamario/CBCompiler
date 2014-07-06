@@ -149,10 +149,7 @@ bool CodeGenerator::createExecutable(const QString &path) {
 	}
 	qDebug() << "Building binary...\n";
 
-	QFileInfo fi;
-	fi.setFile(QDir(p), path);
-
-	if (!mSettings.callLinker("llc", fi.absoluteFilePath())) {
+	if (!mSettings.callLinker("llc", "cbrun")) {
 		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
 		return false;
 	}
