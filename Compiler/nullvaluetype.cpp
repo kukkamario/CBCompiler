@@ -22,6 +22,7 @@ llvm::Constant *NullValueType::defaultValue() const {
 
 int NullValueType::size() const {
 	assert("Null doesn't have a type");
+	return 0;
 }
 
 Value NullValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {

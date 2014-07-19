@@ -23,6 +23,8 @@ DEPENDPATH += "./"
 CONFIG(debug, debug|release) {
 	DEFINES += _DEBUG DEBUG_OUTPUT
 }
+CONFIG += c++11
+
 win32 {
 	INCLUDEPATH += "$$(LLVM_INCLUDE)"
 	LIBS +=  -L"$$(LLVM_LIB)"
@@ -33,7 +35,6 @@ win32 {
 		LIBS += -ldbghelp
 	} else { #mingw
 		LIBS += -lpsapi -limagehlp # = dbghelp (msvc)
-		QMAKE_CXXFLAGS += -std=c++11
 	}
 }
 
@@ -47,7 +48,6 @@ linux {
 #	LIBS += -lLLVMVectorize -lLLVMipo -lLLVMLinker -lLLVMBitReader -lLLVMBitWriter -lLLVMInstrumentation -lLLVMX86CodeGen -lLLVMX86AsmParser -lLLVMX86Disassembler -lLLVMRuntimeDyld -lLLVMExecutionEngine -lLLVMArchive -lLLVMAsmParser -lLLVMAsmPrinter -lLLVMSelectionDAG -lLLVMX86Desc -lLLVMMCParser -lLLVMCodeGen -lLLVMX86AsmPrinter -lLLVMX86Info -lLLVMScalarOpts -lLLVMX86Utils -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMCore -lLLVMMC -lLLVMObject -lLLVMSupport
 	LIBS += -L`llvm-config --libdir` `llvm-config --libs all`
 	LIBS += -ldl
-	QMAKE_CXXFLAGS += -std=c++11
 }
 
 macx {
