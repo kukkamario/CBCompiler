@@ -565,9 +565,12 @@ ast::Node *Parser::expectArrayTypeDefinition(Parser::TokIterator &i) {
 		CodePoint cp = i->codePoint();
 		i++;
 		int dims = 1;
-		while ((i++)->type() == Token::Comma) ++dims;
+		while (i->type() == Token::Comma) {
+			++dims;
+			i++;
+		}
 		if (i->type() != Token::RightSquareBracket) {
-			emit error(ErrorCodes::ecExpectingRightSquareBracket, tr("Expecting a right square bracket after ','"), i->codePoint());
+			emit error(ErrorCodes::ecExpectingRightSquareBracket, tr("Expecting a right square bracket"), i->codePoint());
 			mStatus = Error;
 			delete base;
 			return 0;

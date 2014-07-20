@@ -73,6 +73,7 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 	llvm::StructType *arrayType = llvm::StructType::get(arrayDataHeaderType, baseValueType->llvmType(), 0);
 	ArrayValueType *valTy = new ArrayValueType(baseValueType, arrayType->getPointerTo(), dimensions);
 	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
+	mLLVMTypeMapping[valTy->llvmType()] = valTy;
 	return valTy;
 }
 
@@ -123,4 +124,6 @@ ValueType *ValueTypeCollection::generateArrayValueType(llvm::StructType *arrayDa
 
 	ArrayValueType *arrayValueType = new ArrayValueType(baseType, arrayDataType->getPointerTo(), dims);
 	mLLVMTypeMapping[arrayDataType->getPointerTo()] = arrayValueType;
+	mArrayMapping[QPair<ValueType*, int>(baseType, dims)] = arrayValueType;
+	return arrayValueType;
 }

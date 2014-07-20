@@ -385,7 +385,7 @@ void Builder::store(VariableSymbol *var, llvm::Value *val) {
 		mRuntime->stringValueType()->assignString(&mIRBuilder, var->alloca_(), val);
 	} else if (var->valueType()->isArray()) {
 		ArrayValueType *arrayValueType = static_cast<ArrayValueType*>(var->valueType());
-		arrayValueType->assignArray(this, var->alloca_(), llvmValue(val));
+		arrayValueType->assignArray(this, var->alloca_(), val);
 	}
 	else {
 		store(var->alloca_(), val);
