@@ -1,0 +1,141 @@
+SCREEN 800, 600
+Const FACES = 6
+Dim vertices[4 * FACES * 3] As Float
+Dim colors[4 * FACES * 4] As Float
+generateCube(vertices, 3)
+generateCubeColors(colors)
+
+setupViewport 0, 0, 800, 600
+Repeat
+	begin3d
+		Color 255, 0, 0
+		drawBasic3d 3, vertices, colors
+	end3d
+	DrawScreen
+Forever
+
+Function generateCube(vertices As Float[], size As Float) As Integer
+	If ArraySize(vertices) < 4 * FACES * 3 Then
+		MakeError "Too small array For a cube"
+	EndIf
+	Dim i = 0
+	Dim halfW As Float = size * 0.5
+	//FRONT
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1 
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	//BACK
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	
+	//RIGHT
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	//LEFT
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	
+	//TOP
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	
+	//BOTTOM
+	vertices[i] =  halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	
+	vertices[i] =  halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = halfW : i = i + 1
+	
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+	vertices[i] = -halfW : i = i + 1
+EndFunction
+
+Function generateCubeColors(colors As Float[]) As Integer
+	Dim colorCount = ArraySize(colors) / 4
+	Dim i = 0
+	For c = 1 To colorCount
+		colors[i] = Rnd(1) : i = i + 1
+		colors[i] = Rnd(1) : i = i + 1
+		colors[i] = Rnd(1) : i = i + 1 
+		colors[i] = 1 : i = i + 1
+	Next c
+	 
+EndFunction
+
+

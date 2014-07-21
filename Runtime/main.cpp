@@ -15,13 +15,13 @@ extern "C" void CB_initialize();
 #ifdef _WIN32
 #include <window.h>
 int CALLBACK WinMain(
-  HINSTANCE hInstance,
-  HINSTANCE hPrevInstance,
-  LPSTR lpCmdLine,
-  int nCmdShow
+  HINSTANCE,
+  HINSTANCE,
+  LPSTR,
+  int
 ) {
 #else
-int main(int argc, char **argv) {
+int main(int, char **) {
 #endif
 	info(U"Initializing types and strings");
 	CB_initialize();
