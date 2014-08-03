@@ -25,7 +25,6 @@ class Window : public RenderTarget{
 		void unlock();
 		void drawscreen();
 		void cls();
-		ALLEGRO_BITMAP *getBitmap() const;
 
 		ALLEGRO_EVENT_QUEUE *eventQueue() const { return mEventQueue; }
 
@@ -35,6 +34,8 @@ class Window : public RenderTarget{
 
 		void setBackgroundColor(const ALLEGRO_COLOR &color);
 		const ALLEGRO_COLOR &backgroundColor() const { return mBackgroundColor; }
+
+		void flipBuffers();
 	private:
 		bool activateRenderContext();
 

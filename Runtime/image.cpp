@@ -6,10 +6,10 @@ Image::Image(int w, int h) {
 	mHeight = h;
 }
 
-Image::Image(ALLEGRO_BITMAP *bitmap) :
-	mBitmap(bitmap) {
+Image::Image(ALLEGRO_BITMAP *bitmap) {
 	mWidth = al_get_bitmap_width(bitmap);
 	mHeight = al_get_bitmap_height(bitmap);
+	mBitmap = bitmap;
 }
 
 

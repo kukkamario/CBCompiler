@@ -61,6 +61,7 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 
 	mBackgroundColor = al_map_rgb(0,0,0);
 
+	mBitmap = al_get_backbuffer(mDisplay);
 	activate();
 
 	return true;
@@ -139,13 +140,10 @@ void Window::cls() {
 	al_clear_to_color(mBackgroundColor);
 }
 
-ALLEGRO_BITMAP *Window::getBitmap() const {
-	return al_get_backbuffer(mDisplay);
-}
-
 void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {
 	mBackgroundColor = color;
 }
+
 
 void Window::handleEvent(const ALLEGRO_EVENT &event) {
 	switch (event.type) {

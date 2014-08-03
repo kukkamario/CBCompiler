@@ -4,6 +4,7 @@ RenderTarget *RenderTarget::sFallbackRenderTarget = 0;
 
 RenderTarget::RenderTarget() :
 	mBlender(gfx::defaultBlender()),
+	mBitmap(0),
 	mLockedRegion(0) {
 }
 

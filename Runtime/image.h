@@ -15,16 +15,12 @@ class Image : public RenderTarget {
 
 		void resize(int w, int h);
 		void mask(const ALLEGRO_COLOR &color);
-		ALLEGRO_BITMAP *getBitmap() const { return mBitmap; }
 
 		void draw(float x, float y);
 
 	private:
 		bool activateRenderContext();
-
 		Image(ALLEGRO_BITMAP *bitmap);
-
-		ALLEGRO_BITMAP *mBitmap;
 };
 
 #endif // IMAGE_H

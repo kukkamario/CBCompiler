@@ -16,7 +16,7 @@ class RenderTarget {
 		int width() const {return mWidth; }
 		int height() const { return mHeight; }
 		void setSize(int width, int height);
-		virtual ALLEGRO_BITMAP *getBitmap() const = 0;
+		ALLEGRO_BITMAP *getBitmap() const { return mBitmap; }
 
 		void putPixel(int x, int y, int pixel);
 		int getPixel(int x, int y) const;
@@ -33,6 +33,7 @@ class RenderTarget {
 		int mWidth;
 		int mHeight;
 		gfx::Blender mBlender;
+		ALLEGRO_BITMAP *mBitmap;
 		ALLEGRO_LOCKED_REGION *mLockedRegion;
 
 		static RenderTarget *sCurrentTarget;
