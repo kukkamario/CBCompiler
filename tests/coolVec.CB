@@ -69,7 +69,7 @@ function vecNegate(v as Vec) as Vec
     return newVec(-v.x, -v.y, -v.z)
 endFunction
 
-function vecProject(v as Vec, n as Vec) as Vec
+function vecReflect(v as Vec, n as Vec) as Vec
 	return vecSub(v, vecMul(vecDot(vecMul(2,v),n),n))
 endFunction
 

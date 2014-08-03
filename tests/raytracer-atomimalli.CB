@@ -143,12 +143,7 @@ function cast(pos as Vec, dir as Vec, lightDist as float) as castData
             If (hit.dist==0 or hit.dist#>tt) And tt>0.001
                 hit.dist#=tt
                 nearest As sphere=obj
-                //castd.shadow=0
             Endif
-        Else
-            //tt# = (-b#-Sqrt(-d#))/2
-            //objdist=vecLength(vecSub(obj.pos,pos))
-            //if tt>0 and objdist<lightDist then castD.shadow=min(castD.shadow,0.5-d*(1-objdist/lightDist))//*(lightDist-vecLength(vecProject(obj.pos,dir)))/lightDist)
         EndIf
         tt# = (-b#-Sqrt(abs(d#)))/2
         objdist=vecLength(vecSub(obj.pos,pos))
@@ -169,7 +164,7 @@ Function trace(cv as ColorVec, pos as Vec, dir as Vec, iters) As ColorVec
     hit as rayHit = cast(pos,dir)
 
     If hit.dist Then
-        specularDir as Vec = normalize(vecProject(dir,hit.normal))
+        specularDir as Vec = normalize(vecReflect(dir,hit.normal))
         //valaistus
         specular#=0
         diffuse#=0
