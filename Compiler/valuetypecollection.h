@@ -2,8 +2,8 @@
 #define VALUETYPECOLLECTION_H
 #include <QMap>
 #include "constantvalue.h"
+#include "valuetype.h"
 
-class ValueType;
 class ArrayValueType;
 class Runtime;
 class StructValueType;
