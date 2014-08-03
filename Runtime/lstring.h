@@ -14,8 +14,8 @@ class LStringData {
 		static LStringData *create(size_t size);
 		static LStringData *create(const LChar *text);
 		static LStringData *create(const LChar *text, size_t len);
-		static LStringData *createFromBuffer(LChar *buffer);
-		static LStringData *createFromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
+		static LStringData *createFromBuffer(const LChar *buffer);
+		static LStringData *createFromBuffer(const LChar *buffer, size_t stringLength, size_t bufferSize);
 		static LStringData *copy(LStringData *o);
 		static void destruct(LStringData *d);
 		void increase();
@@ -59,8 +59,8 @@ class LString {
 
 		~LString();
 
-		static LString fromBuffer(LChar *buffer);
-		static LString fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize);
+		static LString fromBuffer(const LChar *buffer);
+		static LString fromBuffer(const LChar *buffer, size_t stringLength, size_t bufferSize);
 		static LString fromUtf8(const std::string &s);
 		static LString fromAscii(const std::string &s);
 		static LString number(int i, int base = 10);

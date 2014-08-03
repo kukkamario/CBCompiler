@@ -386,5 +386,11 @@ bool Runtime::loadDefaultRuntimeFunctions() {
 		mValid = false;
 	}
 
+	func = mModule->getFunction("CB_Delete");
+	if (!func || !mTypeValueType->setDeleteFunction(func)) {
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Delete"), CodePoint());
+		mValid = false;
+	}
+
 	return mValid;
 }

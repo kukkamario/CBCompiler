@@ -12,15 +12,13 @@ class Image : public RenderTarget {
 
 		bool deactivate();
 		bool isValid() const;
-		void lock(int flags);
-		void unlock();
 
 		void resize(int w, int h);
 		void mask(const ALLEGRO_COLOR &color);
+		ALLEGRO_BITMAP *getBitmap() const { return mBitmap; }
 
 		void draw(float x, float y);
 
-		ALLEGRO_COLOR getPixel(int x,int y);
 	private:
 		bool activateRenderContext();
 

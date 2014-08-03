@@ -521,6 +521,7 @@ class KeywordFunctionCall : public Node {
 			Last,
 			Before,
 			After,
+			Delete,
 			ArraySize
 		};
 

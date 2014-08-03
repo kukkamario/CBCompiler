@@ -60,6 +60,7 @@ Lexer::Lexer()
 	mKeywords["last"] = Token::kLast;
 	mKeywords["before"] = Token::kBefore;
 	mKeywords["after"] = Token::kAfter;
+	mKeywords["delete"] = Token::kDelete;
 	mKeywords["arraysize"] = Token::kArraySize;
 
 	mKeywords["include"] = Token::kInclude;

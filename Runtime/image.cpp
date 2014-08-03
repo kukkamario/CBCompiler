@@ -39,13 +39,6 @@ bool Image::isValid() const {
 	return mBitmap != 0;
 }
 
-void Image::lock(int flags) {
-	al_lock_bitmap(mBitmap, 0, flags);
-}
-
-void Image::unlock() {
-	al_unlock_bitmap(mBitmap);
-}
 
 void Image::resize(int w, int h) {
 	sCurrentTarget->deactivate();
@@ -68,6 +61,3 @@ void Image::draw(float x, float y) {
 	al_draw_bitmap(mBitmap, x, y, 0);
 }
 
-ALLEGRO_COLOR Image::getPixel(int x, int y) {
-	return al_get_pixel(mBitmap, x, y);
-}

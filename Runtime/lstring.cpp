@@ -45,7 +45,7 @@ LStringData *LStringData::create(const LChar *text, size_t len) {
 	return d;
 }
 
-LStringData *LStringData::createFromBuffer(LChar *buffer) {
+LStringData *LStringData::createFromBuffer(const LChar *buffer) {
 	size_t len = 0;
 	while(buffer[len]) {
 		len++;
@@ -53,14 +53,14 @@ LStringData *LStringData::createFromBuffer(LChar *buffer) {
 	return createFromBuffer(buffer, len, len + 1);
 }
 
-LStringData *LStringData::createFromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
+LStringData *LStringData::createFromBuffer(const LChar *buffer, size_t stringLength, size_t bufferSize) {
 	char *buf = new char[sizeof(LStringData)];
 	LStringData *ret = reinterpret_cast<LStringData*>(buf);
 	ret->mSize = stringLength;
 	ret->mCapacity = bufferSize;
 	ret->mUtf8String = 0;
 	ret->mRefCount = 1;
-	ret->mOffset = reinterpret_cast<char*>(buffer) - buf;
+	ret->mOffset = reinterpret_cast<const char*>(buffer) - buf;
 	return ret;
 }
 
@@ -150,7 +150,7 @@ LString::~LString() {
 	// ~LSharedStringDataPointer will destroy everything
 }
 
-LString LString::fromBuffer(LChar *buffer, size_t stringLength, size_t bufferSize) {
+LString LString::fromBuffer(const LChar *buffer, size_t stringLength, size_t bufferSize) {
 	assert(stringLength < bufferSize);
 	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize));
 }
@@ -182,7 +182,7 @@ LString LString::fromAscii(const std::string &s) {
 	return ret;
 }
 
-LString LString::fromBuffer(LChar *buffer) {
+LString LString::fromBuffer(const LChar *buffer) {
 	return LString(LStringData::createFromBuffer(buffer));
 }
 

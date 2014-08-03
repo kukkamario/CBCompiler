@@ -603,7 +603,10 @@ void FunctionCodeGenerator::visit(ast::Exit *n) {
 
 void FunctionCodeGenerator::visit(ast::KeywordFunctionCall *n) {
 	CHECK_UNREACHABLE(n->codePoint());
-
+	if (n->keyword() == ast::KeywordFunctionCall::Delete) {
+		generate(n);
+		return;
+	}
 	emit warning(WarningCodes::wcUselessLineIgnored, tr("Ignored expression because it doesn't affect anything"), n->codePoint());
 }
 
@@ -1003,6 +1006,15 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
 			}
 			return mBuilder->afterTypeMember(param);
+		}
+		case ast::KeywordFunctionCall::Delete:  {
+			ValueType *valueType = param.valueType();
+			if (!valueType->isTypePointer()) {
+				emit error(ErrorCodes::ecNotTypePointer, tr("\"Delete\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
+				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
+			}
+			mBuilder->deleteTypeMember(param);
+			return Value();
 		}
 		default:
 			assert("Invalid ast::KeywordFunctionCall::KeywordFunction" && 0);

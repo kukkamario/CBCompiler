@@ -114,14 +114,6 @@ bool Window::activateRenderContext() {
 }
 
 
-void Window::lock(int flags) {
-	al_lock_bitmap(al_get_backbuffer(mDisplay), ALLEGRO_PIXEL_FORMAT_ANY, flags);
-}
-
-void Window::unlock() {
-	al_unlock_bitmap(al_get_backbuffer(mDisplay));
-}
-
 void Window::drawscreen() {
 	ALLEGRO_EVENT e;
 	input::eventLoopBegin();
@@ -145,6 +137,10 @@ void Window::drawscreen() {
 void Window::cls() {
 	activate();
 	al_clear_to_color(mBackgroundColor);
+}
+
+ALLEGRO_BITMAP *Window::getBitmap() const {
+	return al_get_backbuffer(mDisplay);
 }
 
 void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {

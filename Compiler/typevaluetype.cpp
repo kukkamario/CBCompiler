@@ -9,7 +9,8 @@ TypeValueType::TypeValueType(Runtime *r, llvm::Type *type) :
 	mFirstFunction(0),
 	mLastFunction(0),
 	mBeforeFunction(0),
-	mAfterFunction(0) {
+	mAfterFunction(0),
+	mDeleteFunction(0) {
 	mType = type;
 }
 
@@ -91,6 +92,15 @@ bool TypeValueType::setAfterFunction(llvm::Function *func) {
 	if (i->getType() != mRuntime->typeMemberPointerLLVMType()) return false;
 	if (func->getReturnType() != mRuntime->typeMemberPointerLLVMType()) return false;
 	mAfterFunction = func;
+	return true;
+}
+
+bool TypeValueType::setDeleteFunction(llvm::Function *func) {
+	if (func->arg_size() != 1) return false;
+	llvm::Function::arg_iterator i = func->arg_begin();
+	if (i->getType() != mRuntime->typeMemberPointerLLVMType()) return false;
+	if (func->getReturnType() != mRuntime->typeMemberPointerLLVMType()) return false;
+	mDeleteFunction = func;
 	return true;
 }
 

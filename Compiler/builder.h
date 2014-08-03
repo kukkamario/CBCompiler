@@ -88,6 +88,7 @@ class Builder {
 		Value lastTypeMember(TypeSymbol *type);
 		Value afterTypeMember(const Value &ptr);
 		Value beforeTypeMember(const Value &ptr);
+		void deleteTypeMember(const Value &ptr);
 		Value typePointerNotNull(const Value &ptr);
 
 		llvm::GlobalVariable *createGlobalVariable(ValueType *type, bool isConstant, llvm::GlobalValue::LinkageTypes linkage, llvm::Constant *initializer, const llvm::Twine &name = llvm::Twine());

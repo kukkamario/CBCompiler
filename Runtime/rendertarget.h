@@ -9,8 +9,6 @@ class RenderTarget {
 		bool activate();
 		virtual bool deactivate() { return true; }
 		virtual bool isValid() const = 0;
-		virtual void lock(int flags) = 0;
-		virtual void unlock() = 0;
 		bool paintingActive() const { return sCurrentTarget == this; }
 		const gfx::Blender &blender() const { return mBlender; }
 		void setBlender(const gfx::Blender &blender);
@@ -18,7 +16,13 @@ class RenderTarget {
 		int width() const {return mWidth; }
 		int height() const { return mHeight; }
 		void setSize(int width, int height);
+		virtual ALLEGRO_BITMAP *getBitmap() const = 0;
 
+		void putPixel(int x, int y, int pixel);
+		int getPixel(int x, int y) const;
+
+		void lock(int flags);
+		void unlock();
 
 		static RenderTarget *activated();
 		static void setFallbackRenderTarget(RenderTarget *t);
@@ -29,6 +33,7 @@ class RenderTarget {
 		int mWidth;
 		int mHeight;
 		gfx::Blender mBlender;
+		ALLEGRO_LOCKED_REGION *mLockedRegion;
 
 		static RenderTarget *sCurrentTarget;
 		static RenderTarget *sFallbackRenderTarget;

@@ -135,15 +135,17 @@ void CBF_unlock(Image *img) {
 
 
 void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b) {
-	al_put_pixel(x, y, al_map_rgb(r, g, b));
+	int pixel = (255 << 24) + ((int)r << 16) + ((int)g << 8) + (int)b;
+	RenderTarget::activated()->putPixel(x, y, pixel);
 }
 
 void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-	al_put_pixel(x, y, al_map_rgba(r, g, b, a));
+	int pixel = ((int)a << 24) + ((int)r << 16) + ((int)g << 8) + (int)b;
+	RenderTarget::activated()->putPixel(x, y, pixel);
 }
 
 void CBF_putpixel(int x, int y, unsigned int pixel) {
-	al_put_pixel(x, y, al_map_rgba((pixel >> 16) & 0xFF, (pixel >> 8) & 0xFF, pixel & 0xFF, (pixel >> 24) & 0xFF));
+	RenderTarget::activated()->putPixel(x, y, pixel);
 }
 
 void CBF_putpixel(int x, int y, float r, float g, float b) {
@@ -154,11 +156,13 @@ void CBF_putpixel(int x, int y, float r, float g, float b, float a) {
 	al_put_pixel(x, y, al_map_rgba_f(r, g, b, a));
 }
 
+
+int CBF_getPixel(int x, int y) {
+	return RenderTarget::activated()->getPixel(x, y);
+}
+
 int CBF_getPixel(Image *img, int x, int y) {
-	ALLEGRO_COLOR color = img->getPixel(x, y);
-	uint8_t r, g, b, a;
-	al_unmap_rgba(color, &r, &g, &b, &a);
-	return ((int)a << 24) + ((int)r << 16) + ((int)g << 8) + (int)b;
+	return img->getPixel(x, y);
 }
 
 

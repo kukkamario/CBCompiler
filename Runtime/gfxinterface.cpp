@@ -13,6 +13,7 @@ void gfx::initGfx() {
 	al_init_primitives_addon();
 	al_init_image_addon();
 	sCurrentColor = al_map_rgb(255, 255, 255);
+	al_set_new_bitmap_format(ALLEGRO_PIXEL_FORMAT_ARGB_8888);
 }
 
 

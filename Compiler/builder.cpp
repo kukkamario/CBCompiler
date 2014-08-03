@@ -565,6 +565,15 @@ Value Builder::beforeTypeMember(const Value &ptr) {
 	return Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr), false);
 }
 
+void Builder::deleteTypeMember(const Value &ptr) {
+	llvm::Value *param = bitcast(mRuntime->typePointerCommonValueType()->llvmType(), llvmValue(ptr));
+	llvm::Value *typePtr = mIRBuilder.CreateCall(mRuntime->typeValueType()->deleteFunction(), param);
+	Value val = Value(ptr.valueType(), bitcast(ptr.valueType()->llvmType(), typePtr), false);
+	if (ptr.isReference()) {
+		store(ptr, val);
+	}
+}
+
 Value Builder::typePointerNotNull(const Value &ptr) {
 	assert(ptr.valueType()->isTypePointer());
 	return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(ptr)), false);

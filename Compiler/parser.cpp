@@ -20,9 +20,10 @@ static BlockParserFunction blockParsers[] =  {
 	&Parser::trySelectStatement,
 	&Parser::tryConstDefinition,
 	&Parser::tryExit,
-	&Parser::tryExpression
+	&Parser::tryExpression,
+	&Parser::tryDelete
 };
-static const int blockParserCount = 13;
+static const int blockParserCount = 14;
 
 ast::Node *Parser::expectBlock(Parser::TokIterator &i) {
 	QList<ast::Node*> statements;
@@ -127,6 +128,20 @@ ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 		default:
 			return 0;
 	}
+}
+
+ast::Node *Parser::tryDelete(Parser::TokIterator &i) {
+	if (i->type() == Token::kDelete) {
+		CodePoint cp = i->codePoint();
+		i++;
+
+		ast::Node *p = expectExpressionList(i);
+
+		ast::KeywordFunctionCall *call =  new ast::KeywordFunctionCall(ast::KeywordFunctionCall::Delete, cp);
+		call->setParameters(p);
+		return call;
+	}
+	return 0;
 }
 
 ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings) {

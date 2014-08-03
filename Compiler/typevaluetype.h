@@ -18,12 +18,14 @@ class TypeValueType : public ValueType {
 		bool setLastFunction(llvm::Function *func);
 		bool setBeforeFunction(llvm::Function *func);
 		bool setAfterFunction(llvm::Function *func);
+		bool setDeleteFunction(llvm::Function *func);
 		llvm::Function *constructTypeFunction() const { return mConstructTypeFunction; }
 		llvm::Function *newFunction() const { return mNewFunction; }
 		llvm::Function *firstFunction() const { return mFirstFunction; }
 		llvm::Function *lastFunction() const { return mLastFunction; }
 		llvm::Function *beforeFunction() const { return mBeforeFunction; }
 		llvm::Function *afterFunction() const { return mAfterFunction; }
+		llvm::Function *deleteFunction() const { return mDeleteFunction; }
 		bool isTypePointer() const{return false;}
 		bool isNumber() const{return false;}
 		int size() const;
@@ -36,6 +38,7 @@ class TypeValueType : public ValueType {
 	llvm::Function *mLastFunction;
 	llvm::Function *mBeforeFunction;
 	llvm::Function *mAfterFunction;
+	llvm::Function *mDeleteFunction;
 };
 
 #endif // TYPEVALUETYPE_H
