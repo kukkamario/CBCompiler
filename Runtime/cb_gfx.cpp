@@ -148,6 +148,10 @@ void CBF_putpixel(int x, int y, unsigned int pixel) {
 	RenderTarget::activated()->putPixel(x, y, pixel);
 }
 
+void CBF_putpixel(Image *img, int x, int y, unsigned int pixel) {
+	img->putPixel(x, y, pixel);
+}
+
 void CBF_putpixel(int x, int y, float r, float g, float b) {
 	al_put_pixel(x, y, al_map_rgb_f(r, g, b));
 }

@@ -99,7 +99,18 @@ void SymbolCollector::visit(ast::Const *c) {
 		valType = resolveValueType(valueTypeNode);
 	}
 
-	addConstantSymbol(id, valType, (mCurrentScope == mMainScope) ? mGlobalScope : mCurrentScope);
+	ConstantSymbol *symbol = addConstantSymbol(id, valType, (mCurrentScope == mMainScope) ? mGlobalScope : mCurrentScope);
+
+	mConstEval.setScope(mCurrentScope);
+	ConstantValue val = mConstEval.evaluate(c->value());
+	if (!val.isValid()) {
+		return;
+	}
+	if (valType == 0) {
+		ValueType *constValType = mRuntime->valueTypeCollection().constantValueType(val.type());
+		symbol->setValueType(constValType);
+	}
+	symbol->setValue(val);
 }
 
 void SymbolCollector::visit(ast::Dim *c) {
@@ -262,7 +273,9 @@ bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
 				QString name = varDef->identifier()->name();
 				ValueType *valType = resolveValueType(varDef->valueType());
 				if (!valType) return false;
-				typeSymbol->addField(TypeField(name, valType, node->codePoint()));
+				if (!typeSymbol->addField(TypeField(name, valType, node->codePoint()))) {
+					emit error(ErrorCodes::ecTypeHasMultipleFieldsWithSameName, tr("Type field \"%1\" is already defined").arg(varDef->identifier()->name()), varDef->codePoint());
+				}
 				break;
 			}
 			default:
@@ -321,7 +334,9 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 	ast::Node *parameterList = funcDef->parameterList();
 
 	Scope *scope = new Scope(funcDef->identifier()->name(), mGlobalScope);
-	QList<CBFunction::Parameter> params = functionParameterList(parameterList, scope);
+	bool success;
+	QList<CBFunction::Parameter> params = functionParameterList(parameterList, scope, success);
+	if (!success) return false;
 	QList<ValueType*> paramValueTypes;
 	for (const CBFunction::Parameter p : params) {
 		paramValueTypes.append(p.mVariableSymbol->valueType());
@@ -373,12 +388,17 @@ QList<VariableSymbol *> SymbolCollector::variableDefinitionList(ast::Node *node,
 	return result;
 }
 
-QList<CBFunction::Parameter> SymbolCollector::functionParameterList(ast::Node *node, Scope *scope) {
+QList<CBFunction::Parameter> SymbolCollector::functionParameterList(ast::Node *node, Scope *scope, bool &success) {
+	success = true;
 	ast::List *list = node->cast<ast::List>();
 	QList<CBFunction::Parameter> ret;
 	for (ast::Node *def : list->items()) {
 		ast::VariableDefinition *varDef = def->cast<ast::VariableDefinition>();
 		VariableSymbol *varSymbol = variableDefinition(varDef, scope);
+		if (!varSymbol) {
+			success = false;
+			return QList<CBFunction::Parameter>();
+		}
 		CBFunction::Parameter param;
 		param.mVariableSymbol = varSymbol;
 		if (varDef->value()->type() != ast::Node::ntDefaultValue) {

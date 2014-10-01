@@ -115,7 +115,7 @@ void FunctionCodeGenerator::visit(ast::Expression *n) {
 
 
 void FunctionCodeGenerator::visit(ast::Const *n) {
-	CHECK_UNREACHABLE(n->codePoint());
+	/*CHECK_UNREACHABLE(n->codePoint());
 
 	Value constVal = generate(n->value());
 	if (!constVal.isConstant()) {
@@ -125,7 +125,7 @@ void FunctionCodeGenerator::visit(ast::Const *n) {
 	Symbol *sym = mLocalScope->find(n->variable()->identifier()->name());
 	assert(sym->type() == Symbol::stConstant);
 	ConstantSymbol *constant = static_cast<ConstantSymbol*>(sym);
-	constant->setValue(constVal.constant());
+	constant->setValue(constVal.constant());*/
 }
 
 void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
@@ -638,7 +638,7 @@ Value FunctionCodeGenerator::generate(ast::Identifier *n) {
 		}
 		case Symbol::stConstant: {
 			ConstantSymbol *constant = static_cast<ConstantSymbol*>(symbol);
-			return Value(constant->value(), mRuntime);
+			return constant->valueType()->cast(mBuilder, Value(constant->value(), mRuntime));
 		}
 		case Symbol::stFunctionOrCommand: {
 			FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(symbol);
@@ -993,7 +993,7 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 
 		case ast::KeywordFunctionCall::Before: {
 			ValueType *valueType = param.valueType();
-			if (!valueType->isTypePointer()) {
+			if (!param.isNormalValue() || !valueType->isTypePointer()) {
 				emit error(ErrorCodes::ecNotTypePointer, tr("\"Before\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
 			}
@@ -1001,7 +1001,7 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 		}
 		case ast::KeywordFunctionCall::After: {
 			ValueType *valueType = param.valueType();
-			if (!valueType->isTypePointer()) {
+			if (!param.isNormalValue() || !valueType->isTypePointer()) {
 				emit error(ErrorCodes::ecNotTypePointer, tr("\"After\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
 			}
@@ -1009,7 +1009,7 @@ Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
 		}
 		case ast::KeywordFunctionCall::Delete:  {
 			ValueType *valueType = param.valueType();
-			if (!valueType->isTypePointer()) {
+			if (!param.isNormalValue() || !valueType->isTypePointer()) {
 				emit error(ErrorCodes::ecNotTypePointer, tr("\"Delete\" takes a type pointer as a parameter. Invalid parameter type \"%1\"").arg(valueType->name()), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecNotTypePointer);
 			}

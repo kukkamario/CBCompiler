@@ -900,7 +900,9 @@ Value Builder::multiply(const Value &a, const Value &b) {
 Value Builder::divide(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
 		OperationFlags flags;
-		return Value(ConstantValue::divide(a.constant(), b.constant(), flags), mRuntime);
+		ConstantValue constVal = ConstantValue::divide(a.constant(), b.constant(), flags);
+		assert(constVal.isValid());
+		return Value(constVal, mRuntime);
 	}
 	llvm::Value *result;
 	switch(a.valueType()->basicType()) {

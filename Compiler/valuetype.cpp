@@ -310,8 +310,23 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				Value op2 = operand2;
 				CastCost cc = castToSameType(builder, op1, op2);
 				operationFlags = castCostOperationFlags(cc);
-				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
+
+				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
+				//Integer divided by zero
+				if (operand1.valueType()->basicType() <= ValueType::Integer
+						&& operand2.valueType()->basicType() <= ValueType::Integer
+						&& operand2.isConstant()
+						&& operand2.constant().toInt() == 0) {
+					operationFlags |= OperationFlag::IntegerDividedByZero;
+					return Value();
+				}
+				if (op1.isConstant() && op2.isConstant()) {
+					ConstantValue constVal = ConstantValue::divide(op1.constant(), op2.constant(), operationFlags);
+					if (operationFlagsContainFatalFlags(operationFlags)) return Value();
+
+					return Value(constVal, mRuntime);
+				}
 				return builder->divide(op1, op2);
 			}
 			operationFlags = OperationFlag::NoSuchOperation;

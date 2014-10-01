@@ -38,7 +38,8 @@ Value CBFunction::call(Builder *builder, const QList<Value> &params) {
 
 	//Default parameters
 	for (int i = params.size(); i < mParams.size(); i++) {
-		p.push_back(builder->llvmValue(paramI->mDefaultValue));
+		Value val = paramI->mVariableSymbol->valueType()->cast(builder, Value(paramI->mDefaultValue, builder->runtime()));
+		p.push_back(builder->llvmValue(val));
 		paramI++;
 	}
 

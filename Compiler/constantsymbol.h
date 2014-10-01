@@ -12,6 +12,7 @@ class ConstantSymbol : public Symbol {
 		const ConstantValue &value()const {return mValue;}
 		bool autoValueType() const { return mValueType == 0; }
 		ValueType *valueType() const { return mValueType; }
+		void setValueType(ValueType *valueType) { mValueType = valueType; }
 		QString info() const;
 	private:
 		ConstantValue mValue;

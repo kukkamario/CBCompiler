@@ -964,7 +964,7 @@ ConstantValue ConstantValue::divide(const ConstantValue &a, const ConstantValue 
 		case Integer:
 			switch (b.mType) {
 				case Integer:
-					if (b.mData.mInt != 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
+					if (b.mData.mInt == 0 ) { flags |= OperationFlag::IntegerDividedByZero; return ConstantValue(); }
 
 					return a.mData.mInt / b.mData.mInt;
 				case Float:

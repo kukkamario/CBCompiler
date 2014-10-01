@@ -50,7 +50,7 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 
 
 		QList<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
-		QList<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope);
+		QList<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope, bool &success);
 
 		ValueType *resolveValueType(ast::Node *valueType);
 
