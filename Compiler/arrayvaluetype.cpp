@@ -45,6 +45,7 @@ Value ArrayValueType::generateOperation(Builder *builder, int opType, const Valu
 		}
 		assert(operand1.valueType() == this && operand2.valueType() == this);
 		builder->store(operand1, operand2);
+		return operand1;
 	}
 
 	operationFlags |= OperationFlag::NoSuchOperation;
