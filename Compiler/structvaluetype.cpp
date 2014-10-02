@@ -62,7 +62,11 @@ llvm::Constant *StructValueType::defaultValue() const {
 }
 
 int StructValueType::size() const {
-	return mRuntime->dataLayout().getPointerSize();
+	int s = 0;
+	for (QList<StructField>::ConstIterator i = mFields.begin(); i != mFields.end(); ++i) {
+		s += i->valueType()->size();
+	}
+	return s;
 }
 
 void StructValueType::setFields(const QList<StructField> &fields) {
