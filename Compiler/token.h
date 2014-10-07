@@ -29,7 +29,6 @@ class Token {
 			//Operators
 
 			OperatorsBegin,
-			opAssign,
 			opEqual,
 			opNotEqual,
 			opGreater,

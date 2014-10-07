@@ -140,7 +140,7 @@ function cast(pos as Vec, dir as Vec, lightDist as float) as castData
         d# = b#*b# - 4*c#
         If d>0 Then
             tt# = (-b#-Sqrt(d#))/2
-            If (hit.dist==0 or hit.dist#>tt) And tt>0.001
+            If (hit.dist=0 or hit.dist#>tt) And tt>0.001
                 hit.dist#=tt
                 nearest As sphere=obj
             Endif

@@ -17,7 +17,7 @@ f As File=OpenToRead(fileName$)
 size=FileSize(fileName$)
 
 Global rombanks,vrombanks,mapper
-headercheck=(ReadInt(f)==441664846)
+headercheck=(ReadInt(f)=441664846)
 rombanks=ReadByte(f)
 vrombanks=ReadByte(f)
 t=ReadByte(f)
@@ -135,7 +135,7 @@ For i=0 To 3
                 byte1=PeekByte(vrom,j*16+y)
                 byte2=PeekByte(vrom,j*16+8+y)
                 For x=0 To 7
-                    If Not (((byte1 Shr (7-x)) Mod 2))+((((byte2 Shr (7-x)) Mod 2))Shl 1)==i Then PutPixel j*8+x,y,255 Shl 16 +255
+                    If Not (((byte1 Shr (7-x)) Mod 2))+((((byte2 Shr (7-x)) Mod 2))Shl 1)=i Then PutPixel j*8+x,y,255 Shl 16 +255
                     'PutPixel j*8+x,y,((byte1 Shl (25+x)) Shr 31 + (byte2 Shl (25+x)) Shr 30)*64
                 Next x
             Next y
@@ -163,17 +163,17 @@ While running
         Select ret
             Case 9'09 ORA
                 A=_or[A,readmem(pc+1)]
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7
                 pc=pc+2
                 cycle=cycle+2
             Case 10'0A ASL
                 C=A Shr 7
                 A=(A Shl 1) Mod 256
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7
                 pc=pc+1
                 cycle=cycle+2
             Case 16'10 BPL Relative
-                If N==0 Then
+                If N=0 Then
                     param=readmem(pc+1)
                     oldpc=pc
                     pc=pc+2+(param-(param>127)*256)
@@ -197,7 +197,7 @@ While running
                 Color 255, 255, 255
             Case 41'29 AND Immediate
                 A=_and[A,readmem(pc+1)]
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+2
             Case 42'2A ROL
@@ -209,13 +209,13 @@ While running
             Case 44'2C BIT
                 par=readmem(pc+1)
                 T=_and[A,par]
-                If T==0 Then Z=1 Else Z=0
+                If T=0 Then Z=1 Else Z=0
                 N=par Shr 7
                 V=par Shl 25 Shr 31
                 pc=pc+3
                 cycle=cycle+4
             Case 48'30 BMI Relative
-                If N==1 Then
+                If N=1 Then
                     param=readmem(pc+1)
                     oldpc=pc
                     pc=pc+2+(param-(param>127)*256)
@@ -244,19 +244,19 @@ While running
             Case 101'65 ADC Zero Page
                 A=A+readmem(readmem(pc+1))+c
                 If A>255 Then C=1:A= A Mod 256 Else C=0
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+3
             Case 104'68 PLA
                 S=S-1
                 A=readmem(S)
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+4
             Case 105'69 ADC Immediate
                 A=A+readmem(pc+1)+c
                 If A>255 Then C=1:A= A Mod 256 Else C=0
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+3
             Case 106'6A ROR
@@ -268,7 +268,7 @@ While running
             Case 109'6D ADC Absolute
                 A=A+readmem(readmem(pc+2) Shl 8 + readmem(pc+1))+c
                 If A>255 Then C=1:A= A Mod 256 Else C=0
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+3
                 cycle=cycle+4
             Case 120'78 SEI 1 -> I
@@ -290,12 +290,12 @@ While running
                 cycle=cycle+3
             Case 136'88 DEY Y - 1 -> Y
                 Y=(Y+255) Mod 256
-                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                If Y=0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+2
             Case 138'8A TXA
                 A=X
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+2
             Case 140'8C STY Absolute
@@ -323,7 +323,7 @@ While running
                 cycle=cycle+4
             Case 152'98 TYA
                 A=Y
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+2
             Case 153'99 STA Absolute, Y
@@ -344,51 +344,51 @@ While running
                 pc=pc+2
                 cycle=cycle+2
                 N=Y Shr 7
-                Z=(Y==0)
+                Z=(Y=0)
             Case 162'A2 LDX Immediate
                 X=readmem(pc+1)
                 pc=pc+2
                 cycle=cycle+2
                 N=X Shr 7
-                Z=(X==0)
+                Z=(X=0)
             Case 164'A4 LDY Zero Page
                 Y=readmem(readmem(pc+1))
-                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                If Y=0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+3
             Case 165'A5 LDA Zero Page
                 A=readmem(readmem(pc+1))
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+3
             Case 166'A6 LDX Zero Page
                 X=readmem(readmem(pc+1))
-                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                If X=0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+3
             Case 168'A8 TAY
                 Y=A
-                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7
+                If Y=0 Then Z=1:N=0 Else Z=0:N=Y Shr 7
                 pc=pc+1
                 cycle=cycle+2
             Case 169'A9 LDA Immediate
                 A=readmem(pc+1)
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+2
                 cycle=cycle+2
             Case 170'AA TAX
                 X=A
-                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7
+                If X=0 Then Z=1:N=0 Else Z=0:N=X Shr 7
                 pc=pc+1
                 cycle=cycle+2
             Case 172'AC LDY Absolute
                 Y=readmem(readmem(pc+2) Shl 8 + readmem(pc+1))
-                If Y==0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
+                If Y=0 Then Z=1:N=0 Else Z=0:N=Y Shr 7'FLAGIT
                 pc=pc+3
                 cycle=cycle+4
             Case 173'AD LDA Absolute
                 A=readmem(readmem(pc+2) Shl 8 + readmem(pc+1))
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+3
                 cycle=cycle+4
             Case 174'AE LDX ABSOLUTE
@@ -396,30 +396,30 @@ While running
                 pc=pc+3
                 cycle=cycle+4
                 N=X Shr 7
-                Z=(X==0)
+                Z=(X=0)
             Case 177'B1 LDA (Indirect),Y
                 par=readmem(pc+1)
                 p2=readmem(par)
                 A=readmem(readmem(par+1) Shl 8 + p2 + Y)
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 If p2+Y>255 Then cycle=6 Else cycle=5
                 pc=pc+2
             Case 185'B9 LDA Absolute, Y
                 addr=readmem(pc+2) Shl 8 + readmem(pc+1)
                 A=readmem(addr+ Y)
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+3   
-                cycle=cycle+4+((addr Shr 8) ==((addr+Y)Shr 8) )
+                cycle=cycle+4+((addr Shr 8) =((addr+Y)Shr 8) )
             Case 189'BD LDA Absolute,X
                 addr=readmem(pc+2) Shl 8 + readmem(pc+1)
                 A=readmem(addr+ X)
-                If A==0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
+                If A=0 Then Z=1:N=0 Else Z=0:N=A Shr 7'FLAGIT
                 pc=pc+3   
-                cycle=cycle+4+((addr Shr 8) ==((addr+X)Shr 8) )
+                cycle=cycle+4+((addr Shr 8) =((addr+X)Shr 8) )
             Case 192'C0 CPY immediate
                 T=(256+Y-readmem(pc+1)) Mod 256
                 C=(T>=0)
-                Z=(T==0)
+                Z=(T=0)
                 N=T Shr 7
                 pc=pc+2
                 cycle=cycle+2
@@ -431,16 +431,16 @@ While running
                 pc=pc+2
                 cycle=cycle+5
                 N=par2 Shr 7
-                Z=(par2==0)
+                Z=(par2=0)
             Case 200'C8 INY
                 X=(Y+1) Mod 256
-                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                If X=0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+2
             Case 201'C9 CMP
                 T=(256+A-readmem(pc+1)) Mod 256
                 C=(T>=0)
-                Z=(T==0)
+                Z=(T=0)
                 N=T Shr 7
                 pc=pc+2
                 cycle=cycle+2
@@ -449,7 +449,7 @@ While running
                 pc=pc+1
                 cycle=cycle+2
                 N=X Shr 7
-                Z=(X==0)
+                Z=(X=0)
             Case 205'CD CMP Absolute
                 T=(256+A-readmem(readmem(pc+2) Shl 8 + readmem(pc+1))) Mod 256
                 C=(T>=0)
@@ -464,9 +464,9 @@ While running
                 pc=pc+3
                 cycle=cycle+6
                 N=par2 Shr 7
-                Z=(par2==0)
+                Z=(par2=0)
             Case 208'D0 BNE Relative
-                If Z==0 Then
+                If Z=0 Then
                     param=readmem(pc+1)
                     oldpc=pc
                     pc=pc+2+(param-(param>127)*256)
@@ -496,7 +496,7 @@ While running
                 cycle=cycle+5
             Case 232'E8 INX
                 X=(X+1) Mod 256
-                If X==0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
+                If X=0 Then Z=1:N=0 Else Z=0:N=X Shr 7'FLAGIT
                 pc=pc+1
                 cycle=cycle+2
             Case 234'EA NOP
@@ -506,12 +506,12 @@ While running
                 addr=readmem(pc+2) Shl 8 + readmem(pc+1)
                 result=(readmem(addr)+1) Mod 256
                 N=result Shr 7
-                Z=(result==0)
+                Z=(result=0)
                 writemem(addr,result)
                 pc=pc+3
                 cycle=cycle+6
             Case 240'F0 BEQ
-                If Z==1 Then
+                If Z=1 Then
                     param=readmem(pc+1)
                     oldpc=pc
                     pc=pc+2+(param-(param>127)*256)
@@ -561,11 +561,11 @@ Function readmem8() As Integer
     If address=>32768 Then//ROM
         Select mapper
             Case 0 'NOMAPPER
-                If rombanks==1 Then 'käsittely yhdellä rompankilla, se peilautuu ylä ja alapankkiin.
+                If rombanks=1 Then 'käsittely yhdellä rompankilla, se peilautuu ylä ja alapankkiin.
                     'Print (address-32768) Mod 16384
                     ret=PeekByte(rom,(address-32768) Mod 16384)
                     Return 
-                ElseIf rombanks==2 'kahdella rompankilla ne näkyy peräkkäin(ei testattu)
+                ElseIf rombanks=2 'kahdella rompankilla ne näkyy peräkkäin(ei testattu)
                     'Print address-32768
                     ret=PeekByte(rom,address-32768)
                     Return 
@@ -588,7 +588,7 @@ Function readmem8() As Integer
                         Return 
                  EndSelect
              Default
-                If rombanks==1 Then 'nomapper
+                If rombanks=1 Then 'nomapper
                     ret=PeekByte(rom,(address-32768) Mod 16384)
                     Return 
                 Else
@@ -648,11 +648,11 @@ Function readmem(addr) As Integer//koko prossun muisti
     If addr=>32768 Then//ROM
         Select mapper
             Case 0'NOMAPPER
-                If rombanks==1 Then 'käsittely yhdellä rompankilla, se peilautuu ylä ja alapankkiin.
+                If rombanks=1 Then 'käsittely yhdellä rompankilla, se peilautuu ylä ja alapankkiin.
                     //Print (addr-32768) Mod 16384
                     //Print Integer(PeekByte(rom,(addr-32768) Mod 16384))
 					Return PeekByte(rom,(addr-32768) Mod 16384)
-                ElseIf rombanks==2 'kahdella rompankilla ne näkyy peräkkäin(ei testattu)
+                ElseIf rombanks=2 'kahdella rompankilla ne näkyy peräkkäin(ei testattu)
                     //Print addr-32768
 					//Print Integer(PeekByte(rom,addr-32768))
                     Return PeekByte(rom,addr-32768)
@@ -671,7 +671,7 @@ Function readmem(addr) As Integer//koko prossun muisti
                         Return PeekByte(rom,addr-32768-8192*3+prgbank3addr)
                  EndSelect
              Default
-                If rombanks==1 Then 'nomapper
+                If rombanks=1 Then 'nomapper
                     Return PeekByte(rom,(addr-32768) Mod 16384)
                 Else
                     Return PeekByte(rom,addr-32768)
@@ -741,7 +741,7 @@ Function writemem(addr, arvo)  As Integer //koko prossun muisti
             Case 6'$2006
                 Print "PPUADDR kirjoitus"
                 ppuaddr_turn=((ppuaddr_turn+1)<2)
-                If ppuaddr_turn==1 Then
+                If ppuaddr_turn=1 Then
                     ppuaddr_addr=ppuaddr_addr Shl 24 Shr 24 + arvo Shl 8
                     'ppuaddr_addr0=arvo
                     Return 0

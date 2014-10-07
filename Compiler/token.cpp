@@ -28,7 +28,6 @@ static const char *const tokenNames[] = {
 	//Operators
 
 	"OperatorsBegin",
-	"opAssign",
 	"opEqual",
 	"opNotEqual",
 	"opGreater",

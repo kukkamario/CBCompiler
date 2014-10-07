@@ -51,7 +51,7 @@ class Parser : public QObject {
 		ast::Node *tryExit(TokIterator &i);
 		ast::Node *expectBlock(TokIterator &i);
 		ast::Node *expectInlineBlock(TokIterator &i);
-		ast::Node *tryExpression(TokIterator &i);
+		ast::Node *tryAssignmentExpression(TokIterator &i);
 		ast::Node *tryDelete(TokIterator &i);
 
 		ast::FunctionDefinition *tryFunctionDefinition(TokIterator &i);

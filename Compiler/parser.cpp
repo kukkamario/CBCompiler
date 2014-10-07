@@ -20,7 +20,7 @@ static BlockParserFunction blockParsers[] =  {
 	&Parser::trySelectStatement,
 	&Parser::tryConstDefinition,
 	&Parser::tryExit,
-	&Parser::tryExpression,
+	&Parser::tryAssignmentExpression,
 	&Parser::tryDelete
 };
 static const int blockParserCount = 14;
@@ -103,7 +103,7 @@ ast::Node *Parser::expectInlineBlock(Parser::TokIterator &i) {
 	return block;
 }
 
-ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
+ast::Node *Parser::tryAssignmentExpression(Parser::TokIterator &i) {
 	switch (i->type()) {
 		case Token::Identifier: {
 			Parser::TokIterator begin = i;
@@ -124,7 +124,7 @@ ast::Node *Parser::tryExpression(Parser::TokIterator &i) {
 		case Token::kAfter:
 		case Token::kBefore:
 		case Token::kArraySize:
-			return expectExpression(i);
+			return expectAssignementExpression(i);
 		default:
 			return 0;
 	}
@@ -218,7 +218,7 @@ ast::Node *Parser::tryConstDefinition(Parser::TokIterator &i) {
 		i++;
 		ast::Variable *var = expectVariable(i);
 		if (mStatus == Error) return 0;
-		if (i->type() != Token::opAssign) {
+		if (i->type() != Token::opEqual) {
 			emit error(ErrorCodes::ecExpectingAssignment, tr("Expecting '=' after the constant, got \"%1\"").arg(i->toString()), i->codePoint());
 			mStatus = Error;
 			return 0;
@@ -527,7 +527,7 @@ ast::Node *Parser::expectVariableDefinitionOrArrayInitialization(Parser::TokIter
 	else {
 		ast::Node *value = 0;
 		if (!varType) varType = new ast::DefaultType(cp);
-		if (i->type() == Token::opAssign) {
+		if (i->type() == Token::opEqual) {
 			i++;
 			value = expectExpression(i);
 			if (mStatus == Error) return 0;
@@ -1026,8 +1026,6 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 
 static ast::ExpressionNode::Op tokenTypeToOperator(Token::Type t) {
 	switch (t) {
-		case Token::opAssign:
-			return ast::ExpressionNode::opAssign;
 		case Token::opEqual:
 			return ast::ExpressionNode::opEqual;
 		case Token::opNotEqual:
@@ -1069,16 +1067,11 @@ static ast::ExpressionNode::Op tokenTypeToOperator(Token::Type t) {
 	}
 }
 
-ast::Node *Parser::expectExpression(Parser::TokIterator &i) {
-	return expectAssignementExpression(i);
-
-}
-
 ast::Node *Parser::expectAssignementExpression(Parser::TokIterator &i) {
 	CodePoint cp1 = i->codePoint();
-	ast::Node *first = expectLogicalOrExpression(i);
+	ast::Node *first = expectCallOrArraySubscriptExpression(i);
 	if (mStatus == Error) return 0;
-	if (i->type() == Token::opAssign) {
+	if (i->type() == Token::opEqual) {
 		CodePoint cp2 = i->codePoint();
 		++i;
 		ast::Node *second = expectLogicalOrExpression(i);
@@ -1088,7 +1081,7 @@ ast::Node *Parser::expectAssignementExpression(Parser::TokIterator &i) {
 		ast::ExpressionNode *exprNode = new ast::ExpressionNode(ast::ExpressionNode::opAssign, cp2);
 		exprNode->setOperand(second);
 		expr->appendOperation(exprNode);
-		while (i->type() == Token::opAssign) {
+		while (i->type() == Token::opEqual) {
 			exprNode = new ast::ExpressionNode(ast::ExpressionNode::opAssign, i->codePoint());
 			expr->appendOperation(exprNode);
 			i++;
@@ -1102,6 +1095,11 @@ ast::Node *Parser::expectAssignementExpression(Parser::TokIterator &i) {
 	}
 
 	return first;
+}
+
+ast::Node *Parser::expectExpression(Parser::TokIterator &i) {
+	return expectLogicalOrExpression(i);
+
 }
 
 ast::Node *Parser::expectLogicalOrExpression(Parser::TokIterator &i) {
@@ -1745,7 +1743,7 @@ ast::Node *Parser::expectVariableDefinition(Parser::TokIterator &i) {
 	if (mStatus == Error) return 0;
 	if (!varType) varType = new ast::DefaultType(id->codePoint());
 	ast::Node *value = 0;
-	if (i->type() == Token::opAssign) {
+	if (i->type() == Token::opEqual) {
 		i++;
 		value = expectExpression(i);
 		if (mStatus == Error) return 0;
@@ -1801,7 +1799,7 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 		ast::Node *part1 = expectVariable(i);
 		if (mStatus == Error) { return 0;}
 
-		if (i->type() == Token::opAssign) {
+		if (i->type() == Token::opEqual) {
 			i++;
 			if (i->type() == Token::kEach) { //For-Each
 				i++;
@@ -1847,7 +1845,7 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 			//For-To
 			i = start;
 			delete part1;
-			part1 = expectExpression(i);
+			part1 = expectAssignementExpression(i);
 			if (mStatus == Error) { return 0;}
 		}
 
