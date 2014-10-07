@@ -43,8 +43,6 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	connect(&mSymbolCollector, &SymbolCollector::warning, this, &CodeGenerator::warning);
 	connect(&mFuncCodeGen, &FunctionCodeGenerator::error, this, &CodeGenerator::error);
 	connect(&mFuncCodeGen, &FunctionCodeGenerator::warning, this, &CodeGenerator::warning);
-
-	addPredefinedConstantSymbols();
 }
 
 bool CodeGenerator::initialize(const Settings &settings) {
@@ -55,6 +53,7 @@ bool CodeGenerator::initialize(const Settings &settings) {
 	}
 
 	createBuilder();
+	addPredefinedConstantSymbols();
 	return addRuntimeFunctions();
 }
 
