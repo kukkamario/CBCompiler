@@ -1894,7 +1894,7 @@ ast::Node *Parser::tryForStatement(Parser::TokIterator &i) {
 			return 0;
 		}
 		if (nextV) {
-			emit warning(WarningCodes::wcNextVariableIgnored, tr("The variable name after \"Next\" is ignored"), nextVCp);
+			//emit warning(WarningCodes::wcNextVariableIgnored, tr("The variable name after \"Next\" is ignored"), nextVCp);
 			delete nextV;
 		}
 		return forTo;
