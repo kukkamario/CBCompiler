@@ -277,6 +277,11 @@ FunctionDefinition::~FunctionDefinition() {
 	delete mBlock;
 }
 
+int FunctionDefinition::childNodeCount() const {
+	 if (mReturnType) return 4;
+	 return 3;
+}
+
 Node *FunctionDefinition::childNode(int n) const {
 	switch(n) {
 		case 0:
@@ -284,9 +289,10 @@ Node *FunctionDefinition::childNode(int n) const {
 		case 1:
 			return mParameterList;
 		case 2:
-			return mReturnType;
-		case 3:
+			if (mReturnType) return mReturnType;
 			return mBlock;
+		case 3:
+			if (mReturnType) return mBlock;
 		default:
 			assert("Invalid child node id" && 0);
 			return 0;

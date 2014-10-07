@@ -342,7 +342,9 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 		paramValueTypes.append(p.mVariableSymbol->valueType());
 	}
 
-	ValueType *retType = resolveValueType(funcDef->returnType());
+	ValueType *retType = 0;
+	if (funcDef->returnType())
+		retType = resolveValueType(funcDef->returnType());
 
 	if (funcSym->exactMatch(paramValueTypes)) {
 		functionAlreadyDefinedError(funcDef->codePoint(), funcSym->exactMatch(paramValueTypes));

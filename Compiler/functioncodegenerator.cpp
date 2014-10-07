@@ -68,9 +68,13 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 
 	if (!mBuilder->currentBasicBlock()->getTerminator()) {
 		generateDestructors();
-		mBuilder->returnValue(func->returnValue(), Value(func->returnValue(), func->returnValue()->defaultValue()));
-		emit warning(WarningCodes::wcReturnsDefaultValue, tr("Function might return default value of the return type because the function doesn't end to return statement"), func->codePoint());
-	}
+		if (func->returnValue()) {
+			mBuilder->returnValue(func->returnValue(), Value(func->returnValue(), func->returnValue()->defaultValue()));
+			emit warning(WarningCodes::wcReturnsDefaultValue, tr("Function might return default value of the return type because the function doesn't end to return statement"), func->codePoint());
+		}
+		else
+			mBuilder->returnVoid();
+		}
 
 	resolveGotos();
 
@@ -524,6 +528,13 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 	}
 	else {
 		if (n->value()) {
+			if (!mReturnType) {
+				emit error(ErrorCodes::ecReturnParameterInCommand,
+						   tr("Return doesn't take parameters in a command. (if you wish to return a value, define the return type of a function after the parameter list.)"),
+						   n->value()->codePoint());
+				return;
+			}
+
 			Value v = generate(n->value());
 			if (v.isReference()) {
 				v = mBuilder->load(v);
@@ -534,13 +545,16 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 
 			if (opFlags.testFlag(OperationFlag::OperandBCantBeCastedToA)) {
 				emit error(ErrorCodes::ecCantCastValue, tr("Can't cast \"%1\" to \"%2\"").arg(v.valueType()->name(), mReturnType->name()), n->value()->codePoint());
-				throw CodeGeneratorError(ErrorCodes::ecCantCastValue);
+				return;
 			}
 
 			mBuilder->returnValue(mReturnType, v);
 		}
 		else {
-			mBuilder->returnValue(mReturnType, mBuilder->defaultValue(mReturnType));
+			if (mReturnType)
+				mBuilder->returnValue(mReturnType, mBuilder->defaultValue(mReturnType));
+			else
+				mBuilder->returnVoid();
 		}
 	}
 	mUnreachableBasicBlock = true;

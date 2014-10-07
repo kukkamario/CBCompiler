@@ -932,7 +932,7 @@ class FunctionDefinition : public BlockNode {
 		~FunctionDefinition();
 		static Type staticType() { return ntFunctionDefinition; }
 		Type type() const { return staticType(); }
-		int childNodeCount() const { return 4; }
+		int childNodeCount() const;
 		Node *childNode(int n) const;
 
 		Identifier *identifier() const { return mIdentifier; }

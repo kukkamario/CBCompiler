@@ -23,7 +23,7 @@ CBFunction::~CBFunction() {
 }
 
 void CBFunction::generateFunction(Runtime *runtime) {
-	mFunctionValueType = new FunctionValueType(mReturnValue->runtime(), this);
+	mFunctionValueType = new FunctionValueType(runtime, this);
 	mFunction = llvm::Function::Create(llvm::cast<llvm::FunctionType>(mFunctionValueType->llvmType()), llvm::Function::PrivateLinkage, "CBF_user_" + mName.toStdString(), runtime->module());
 }
 

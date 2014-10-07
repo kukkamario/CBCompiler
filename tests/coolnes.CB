@@ -552,8 +552,8 @@ While running
         'If Not KeyDown(cbkeyspace) Then WaitKey' Else Wait 1'50
     Until cycle>nextStop
     //vblankin generointi
-    If cycle>29829 Or KeyDown(47) Then  cycle=cycle-29829:ppu_vblank=1:Print "vblank":ppu():drawppu()':Wait 2000
-    'If cycle>65535 Then  cycle=cycle-65535:ppu_vblank=1:Print "vblank":ppu()
+    If cycle>29829 Or KeyDown(47) Then  cycle=cycle-29829:ppu_vblank=1:Print "vblank":ppu:drawppu':Wait 2000
+    'If cycle>65535 Then  cycle=cycle-65535:ppu_vblank=1:Print "vblank":ppu
     nextstop=cycle+100 'stoppisysteemi keskeytyksiä ja hienompaa rendausta
 Wend
 
@@ -828,11 +828,11 @@ Function writemem(addr, arvo)  As Integer //koko prossun muisti
     EndIf
 EndFunction
 
-Function nmi()  As Integer
+Function nmi()
 
 EndFunction
 
-Function ppu()  As Integer
+Function ppu()
      //kuva kerrallaan piirto, korjataan scanline/pikseli kerrallaan piirrolla.
     ulkoaika=Timer()-aika
 	Wait 1000
@@ -949,22 +949,22 @@ Function printstatus()  As Integer
     Print "A:"+A+" X:"+X+" Y:"+Y+"  N:"+N+" V:"+V+" I:"+I+" Z:"+Z+" C:"+C+"  Stack:"+S+" PC:"+" "+pc+" ppuaddr:"+ppuaddr_addr
 EndFunction
 
-Function rendermem(alku,loppu)  As Integer
+Function rendermem(alku,loppu)
     For i=alku To loppu
         'Print Right(Hex(i),4)+": "+Right(Hex(readmem(i)),2)
         'Print Right(Hex(i),4)+": "+Right(hex(PeekByte(rom,i-32768)),2)
     Next i
 EndFunction
 
-Function debugmem(kohta)  As Integer
+Function debugmem(kohta)
     Repeat
         kohta=kohta+KeyDown(208)-KeyDown(200)+(KeyDown(209)-KeyDown(201))*8
         kohta=Min(65535,Max(kohta,0))
-        rendermem(Max(kohta-8,0),Min(kohta+8,65535))
+        rendermem Max(kohta-8,0),Min(kohta+8,65535)
         Box 0,13*(8  ),200,1
         Box 0,13*(8+1),200,1
         Text 255,0,"S To see Chr-tables"
-        If KeyDown(31) Then drawppu()
+        If KeyDown(31) Then drawppu
         DrawScreen
         Wait 1
         Cls
@@ -972,7 +972,7 @@ Function debugmem(kohta)  As Integer
     Until KeyDown(57)'space
 EndFunction
 
-Function drawppu()  As Integer
+Function drawppu()
     Lock
     For sy=0 To 127'239
         For til=0 To 31

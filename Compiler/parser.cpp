@@ -1000,10 +1000,6 @@ ast::FunctionDefinition *Parser::tryFunctionDefinition(Parser::TokIterator &i) {
 			}
 		}
 		if (retType2) retType = retType2;
-		if (!retType) {
-			emit error(ErrorCodes::ecFunctionReturnTypeRequired, tr("Function return type required"), startCp);
-			mStatus = ErrorButContinue;
-		}
 
 		expectEndOfStatement(i);
 		ast::Node *block = expectBlock(i);

@@ -124,6 +124,7 @@ enum ErrorCode {
 	ecStructContainsItself,
 	ecNotInteger,
 	ecInvalidParameter,
+	ecReturnParameterInCommand,
 
 	ecCantWriteBitcodeFile,
 	ecOptimizingFailed,
