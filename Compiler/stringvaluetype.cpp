@@ -176,12 +176,15 @@ llvm::Constant *StringValueType::defaultValue() const {
 }
 
 llvm::Value *StringValueType::stringDataPointerToString(llvm::IRBuilder<> *builder, llvm::Value *ptr) const {
-	llvm::Value *sharedDataPointer = builder->CreateInsertValue(llvm::UndefValue::get(mSharedDataPointerType), ptr, {0});
-	return builder->CreateInsertValue(llvm::UndefValue::get(mType), sharedDataPointer, {0});
+	unsigned idx[1] = {0};
+	llvm::Value *sharedDataPointer = builder->CreateInsertValue(llvm::UndefValue::get(mSharedDataPointerType), ptr, idx);
+	return builder->CreateInsertValue(llvm::UndefValue::get(mType), sharedDataPointer, idx);
 }
 
 llvm::Value *StringValueType::stringToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const {
-	return builder->CreateExtractValue(builder->CreateExtractValue(str, {0}), {0});
+	unsigned idx[1] = {0};
+
+	return builder->CreateExtractValue(builder->CreateExtractValue(str, idx), idx);
 }
 
 llvm::Value *StringValueType::stringPointerToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const {

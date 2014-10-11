@@ -29,7 +29,7 @@ EndType
 
 Struct castData
     field hit as rayHit
-    field shadow as float
+    Field shadow As float
 endStruct
 
 Struct rayHit
@@ -39,43 +39,43 @@ Struct rayHit
     Field dist as Float
 endStruct
 
-function newMaterial(cv As colorVec, diffusivity#, specularity#) as Material
+Function newMaterial(cv As colorVec, diffusivity#, specularity#) As Material
     m as Material
     m.cv=cv:m.specularity=specularity:m.diffusivity=diffusivity
     return m
 endFunction
 
-function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) as Sphere
+Function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) As Sphere
     s As sphere = New(sphere)
     s.origin=newVec(x#,y#,z#)
     s.size# = size#
     s.m=newMaterial(newColorVec(r#,g#,b#),diffusivity,specularity)
-    return s
-endFunction
+    Return s
+EndFunction
 
-function newLight(x#,y#,z#) as Light
+Function newLight(x#,y#,z#) as Light
     l As Light = New(Light)
     l.pos=newVec(x#,y#,z#)
-    return l
-endFunction
+    Return l
+EndFunction
 
 newSphere(-1,-1,7,  1.5,    255,0,0, 0.9,1)
 newSphere(2,1,6,    1,      5,0,255, 0.8,1)
 newSphere(0,1.5,7,  1,      5,205,0, 0.8,1)
 newLight(-3,0,0)
 
-global ambient as ColorVec = newColorVec(40,100,100)
+Global ambient As ColorVec = newColorVec(40,100,100)
 
 
-lastUpdate as Integer
-tim as Integer
+lastUpdate As Integer
+tim As Integer
 
 
 Repeat
     Tim=Timer()
 
-    if keydown(205) then t#=t+1.5
-    if keydown(203) then t=t-1.5
+    if KeyDown(205) Then t#=t+1.5
+    if KeyDown(203) Then t=t-1.5
 
     t# = t# + (Timer() - lastUpdate) / 860.0
     lastUpdate = Timer()
@@ -86,20 +86,20 @@ Repeat
         s.pos.y# = s.origin.y# + Sin(t2# * 1.4 +124124) * 0.3
         s.pos.z# = s.origin.z# + Sin(t2# + 343) * 0.6
         t2# = t2# + t#
-        s.m.specularity#=sin(timer()/25.0)*0.25+0.5
+        s.m.specularity#=Sin(timer()/25.0)*0.25+0.5
     Next s
 
-    l as light = first(light)
+    l As light = First(light)
     l.pos.x=sin(t*9.0+90)*10
     l.pos.z=cos(t*9.0+90)*10+10.0
 
-    render()
+    render
     DrawScreen
     Print (Timer()-Tim)+" "+FPS()
 Forever
 
-function render() as integer
-    cv as ColorVec// use single struct for every pixel
+function render()
+    cv As ColorVec// use single struct for every pixel
 
     fovc#=Tan(fov/2)/Cos(fov/2)'sama kulma joka resolla(pystysuunnassa)
 
@@ -113,23 +113,23 @@ function render() as integer
             g as Byte = min(255,col.g)
             b as Byte = min(255,col.b)
 
-            putpixel x,y,r,g,b
+            PutPixel x,y,r,g,b
         Next
     Next
     unlock
 endfunction
 
-function cast(pos as Vec, dir as Vec) as rayHit
-    d as castData = cast(pos as Vec, dir as Vec,0)
-    return d.hit
+Function cast(pos As Vec, dir As Vec) As rayHit
+    d As castData = cast(pos As Vec, dir As Vec,0)
+    Return d.hit
 endFunction
 
-function castShadow(pos as Vec, dir as Vec,lightDist as float) as Float
-    d as castData = cast(pos, dir, lightDist)
+Function castShadow(pos as Vec, dir as Vec,lightDist as float) as Float
+    d As castData = cast(pos, dir, lightDist)
     return d.shadow
-endFunction
+EndFunction
 
-function cast(pos as Vec, dir as Vec, lightDist as float) as castData
+Function cast(pos as Vec, dir as Vec, lightDist as float) as castData
     hit as rayHit
     castD as castData
     castD.shadow=1000
@@ -147,7 +147,7 @@ function cast(pos as Vec, dir as Vec, lightDist as float) as castData
         EndIf
         tt# = (-b#-Sqrt(abs(d#)))/2
         objdist=vecLength(vecSub(obj.pos,pos))
-         if tt>0 and objdist<lightDist then castD.shadow=min(castD.shadow,0.5-d*(1-objdist/lightDist))
+         If tt>0 And objdist<lightDist then castD.shadow=min(castD.shadow,0.5-d*(1-objdist/lightDist))
         
     Next 
     If hit.dist Then
@@ -157,13 +157,13 @@ function cast(pos as Vec, dir as Vec, lightDist as float) as castData
     endif
     castd.hit=hit
     return castD
-endFunction
+EndFunction
 
 Function trace(cv as ColorVec, pos as Vec, dir as Vec, iters) As ColorVec
     dir=normalize(dir)
-    hit as rayHit = cast(pos,dir)
+    hit As rayHit = cast(pos,dir)
 
-    If hit.dist Then
+    If hit.dist Then 
         specularDir as Vec = normalize(vecReflect(dir,hit.normal))
         //valaistus
         specular#=0

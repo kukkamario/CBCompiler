@@ -90,7 +90,6 @@ int CBF_len(CBString cbstr) {
 }
 
 LStringData *CB_StringConstruct(char32_t *txt) {
-	info(U"String constructed\n");
 	if (txt) {
 		return LStringData::createFromBuffer(txt);
 	}
@@ -99,9 +98,7 @@ LStringData *CB_StringConstruct(char32_t *txt) {
 
 void CB_StringDestruct (LStringData *str) {
 	if (str)
-		if (str->decrease()) {
-			info(U"String destructed\n");
-		}
+		str->decrease();
 }
 
 void CB_StringAssign(LStringData **target, LStringData *s) {
@@ -132,7 +129,6 @@ float CB_StringToFloat(LStringData *s) {
 }
 
 LStringData *CB_FloatToString(float f) {
-	LString str = LString::number(f);
 	return LString::number(f).returnData();
 }
 

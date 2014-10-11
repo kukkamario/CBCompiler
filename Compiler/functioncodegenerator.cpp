@@ -766,9 +766,6 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 
 				assert(result.isValid());
 
-				mBuilder->destruct(op1);
-				mBuilder->destruct(op2);
-
 				op1 = result;
 			}
 		}
@@ -815,9 +812,6 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 					emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operation \"%1\" between operands of types \"%2\" and \"%3\"").arg(ast::ExpressionNode::opToString(op), valueType->name(), op2.valueType()->name()), cp);
 					throw CodeGeneratorError(ErrorCodes::ecMathematicalOperationOperandTypeMismatch);
 				}
-
-				mBuilder->destruct(op1);
-				mBuilder->destruct(op2);
 
 				op = (*i)->op();
 				cp = (*i)->codePoint();

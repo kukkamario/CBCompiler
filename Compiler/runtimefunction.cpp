@@ -83,10 +83,13 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 					builder->irBuilder().CreateStore(val.value(), allocaInst);
 					p.push_back(allocaInst);
 				}
-				continue;
 			}
-			assert(i->getType() == val.valueType()->llvmType());
-			p.push_back(builder->llvmValue(val));
+			else {
+				assert(i->getType() == val.valueType()->llvmType());
+				p.push_back(builder->llvmValue(val));
+
+			}
+			i++;
 		}
 	}
 

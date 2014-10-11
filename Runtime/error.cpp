@@ -3,22 +3,22 @@
 void error(const LString &string) {
 
 #ifndef _WIN32
-	std::cerr << string.toUtf8() << '\n';
+	std::cerr << string.toUtf8() << std::endl;
 #else
-	std::wcerr << string.toWString() << '\n';
+	std::wcerr << string.toWString() << std::endl;
 #endif
 }
 
 
 void info(const LString &string) {
 #ifndef _WIN32
-	std::cout << string.toUtf8() << '\n';
+	std::cout << string.toUtf8() << std::endl;
 #else
-	std::wcout << string.toWString() << '\n';
+	std::wcout << string.toWString() << std::endl;
 #endif
 }
 
 
 void error(const std::string &txt) {
-	std::cout << txt << '\n';
+	std::cout << txt << std::endl;
 }

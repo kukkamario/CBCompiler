@@ -71,16 +71,21 @@ ValueType::CastCost ValueType::castToSameType(Builder *builder, Value &a, Value 
 		b = builder->defaultValue(a.valueType());
 	}
 
+	Value ao = a;
+	Value bo = b;
+
 	if (!a.valueType()->isBasicType() && !b.valueType()->isBasicType()) {
 		CastCost cc = b.valueType()->castingCostToOtherValueType(a.valueType());
 		if (cc != ccNoCast) {
 			b = a.valueType()->cast(builder, b);
+			builder->destruct(bo);
 			return cc;
 		}
 
 		cc = a.valueType()->castingCostToOtherValueType(b.valueType());
 		if (cc != ccNoCast) {
 			a = b.valueType()->cast(builder, a);
+			builder->destruct(ao);
 			return cc;
 		}
 
@@ -91,6 +96,7 @@ ValueType::CastCost ValueType::castToSameType(Builder *builder, Value &a, Value 
 		CastCost cc = a.valueType()->castingCostToOtherValueType(b.valueType());
 		if (cc != ccNoCast) {
 			a = b.valueType()->cast(builder, a);
+			builder->destruct(ao);
 		}
 		return cc;
 	}
@@ -98,6 +104,7 @@ ValueType::CastCost ValueType::castToSameType(Builder *builder, Value &a, Value 
 		CastCost cc = b.valueType()->castingCostToOtherValueType(a.valueType());
 		if (cc != ccNoCast) {
 			b = a.valueType()->cast(builder, b);
+			builder->destruct(bo);
 		}
 		return cc;
 	}
@@ -116,6 +123,7 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 			Value op2 = this->cast(builder, operand2);
 			builder->store(operand1, op2);
+			builder->destruct(op2);
 			return operand1;
 		}
 
@@ -127,7 +135,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->equal(op1, op2);
+				Value ret = builder->equal(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -140,7 +151,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->notEqual(op1, op2);
+				Value ret = builder->notEqual(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -154,7 +168,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->greater(op1, op2);
+				Value ret = builder->greater(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -167,7 +184,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->less(op1, op2);
+				Value ret = builder->less(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -180,7 +200,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->greaterEqual(op1, op2);
+				Value ret = builder->greaterEqual(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -193,7 +216,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->lessEqual(op1, op2);
+				Value ret = builder->lessEqual(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -207,7 +233,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->add(op1, op2);
+				Value ret = builder->add(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -220,7 +249,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->subtract(op1, op2);
+				Value ret = builder->subtract(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -233,7 +265,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->multiply(op1, op2);
+				Value ret = builder->multiply(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -246,7 +281,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->power(op1, op2);
+				Value ret = builder->power(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -260,7 +298,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->mod(op1, op2);
+				Value ret = builder->mod(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -273,7 +314,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->shl(op1, op2);
+				Value ret = builder->shl(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -286,7 +330,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->shr(op1, op2);
+				Value ret = builder->shr(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -299,7 +346,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 				operationFlags = castCostOperationFlags(cc);
 				if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
-				return builder->sar(op1, op2);
+				Value ret = builder->sar(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -327,7 +377,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 
 					return Value(constVal, mRuntime);
 				}
-				return builder->divide(op1, op2);
+				Value ret = builder->divide(op1, op2);
+				builder->destruct(op1);
+				builder->destruct(op2);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -344,7 +397,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
 			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
-			return builder->and_(op1, op2);
+			Value ret = builder->and_(op1, op2);
+			builder->destruct(op1);
+			builder->destruct(op2);
+			return ret;
 		}
 		case ast::ExpressionNode::opOr: {
 			CastCost cc1 = operand1.valueType()->castingCostToOtherValueType(mRuntime->booleanValueType());
@@ -358,7 +414,10 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
 			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
-			return builder->or_(op1, op2);
+			Value ret = builder->or_(op1, op2);
+			builder->destruct(op1);
+			builder->destruct(op2);
+			return ret;
 		}
 		case ast::ExpressionNode::opXor: {
 			CastCost cc1 = operand1.valueType()->castingCostToOtherValueType(mRuntime->booleanValueType());
@@ -372,9 +431,13 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			Value op1 = mRuntime->booleanValueType()->cast(builder, operand1);
 			Value op2 = mRuntime->booleanValueType()->cast(builder, operand2);
 
-			return builder->xor_(op1, op2);
+			Value ret = builder->xor_(op1, op2);
+			builder->destruct(op1);
+			builder->destruct(op2);
+			return ret;
 		}
 		case ast::ExpressionNode::opComma:
+			builder->destruct(operand1);
 			return operand2;
 	}
 	assert("Invalid ast::ExpressionNode::Op" && 0);
@@ -385,7 +448,9 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 	switch (opType) {
 		case ast::Unary::opNegative:
 			if (operand.valueType()->isNumber()) {
-				return builder->minus(operand);
+				Value ret = builder->minus(operand);
+				builder->destruct(operand);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
@@ -395,11 +460,15 @@ Value ValueType::generateBasicTypeOperation(Builder *builder, int opType, const 
 			if (operationFlagsContainFatalFlags(operationFlags)) return Value();
 
 			Value op = this->cast(builder, operand);
-			return builder->not_(op);
+			Value ret = builder->not_(op);
+			builder->destruct(op);
+			return ret;
 		}
 		case ast::Unary::opPositive: {
 			if (operand.valueType()->isNumber()) {
-				return builder->plus(operand);
+				Value ret = builder->plus(operand);
+				builder->destruct(operand);
+				return ret;
 			}
 			operationFlags = OperationFlag::NoSuchOperation;
 			return Value();
