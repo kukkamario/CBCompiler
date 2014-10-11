@@ -5,6 +5,7 @@
 #include "floatvaluetype.h"
 #include "arrayvaluetype.h"
 #include "stringvaluetype.h"
+#include "functionvaluetype.h"
 
 TypeResolver::TypeResolver(Runtime *runtime) :
 	mRuntime(runtime) {
@@ -21,6 +22,8 @@ ValueType *TypeResolver::resolve(ast::Node *type) {
 			return resolve(static_cast<ast::NamedType*>(type));
 		case ast::Node::ntArrayType:
 			return resolve(static_cast<ast::ArrayType*>(type));
+		case ast::Node:: ntFunctionPointerType:
+			return resolve(static_cast<ast::FunctionPointerType*>(type));
 		default:
 			assert(0 && "ast::Node is not a type node");
 			return 0;
@@ -40,6 +43,22 @@ ValueType *TypeResolver::resolve(ast::BasicType *basicType) {
 			assert(0 && "Invalid ast::BasicType::ValueType");
 			return 0;
 	}
+}
+
+ValueType *TypeResolver::resolve(ast::FunctionPointerType *funcTy) {
+	ast::List *paramTypes = funcTy->parameterTypes();
+	QList<ValueType*> paramValueTypes;
+	for (ast::Node *n : paramTypes->items()) {
+		ValueType *valTy = resolve(n);
+		if (!valTy) return 0;
+		paramValueTypes.append(valTy);
+	}
+	ValueType *retType = 0;
+	if (funcTy->returnType()) {
+		retType = resolve(funcTy->returnType());
+		if (!retType) return 0;
+	}
+	return mRuntime->valueTypeCollection().functionValueType(retType, paramValueTypes);
 }
 
 ValueType *TypeResolver::resolve(ast::NamedType *namedType) {

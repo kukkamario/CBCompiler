@@ -10,6 +10,7 @@
 #include "typepointervaluetype.h"
 #include "genericarrayvaluetype.h"
 #include "structvaluetype.h"
+#include "functionvaluetype.h"
 #include "nullvaluetype.h"
 #include "runtime.h"
 
@@ -40,7 +41,7 @@ ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
 	ValueType *valType = mLLVMTypeMapping.value(type, 0);
 	if (valType) return valType;
 
-	//Check if type is ArrayValueType
+	//Check if type is ArrayValueType or FunctionValueType
 	if (type->isPointerTy()) {
 		llvm::PointerType *ptrType = llvm::cast<llvm::PointerType>(type);
 		llvm::Type *elementType = ptrType->getElementType();
@@ -49,6 +50,9 @@ ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
 			if (structType->getName().startswith("struct.CB_ArrayData")) {
 				return generateArrayValueType(structType);
 			}
+		} else if (elementType->isFunctionTy()) {
+			llvm::FunctionType *ft = llvm::cast<llvm::FunctionType>(elementType);
+			return generateFunctionValueType(ft);
 		}
 	}
 
@@ -75,6 +79,22 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
 	mLLVMTypeMapping[valTy->llvmType()] = valTy;
 	return valTy;
+}
+
+FunctionValueType *ValueTypeCollection::functionValueType(ValueType *returnType, const QList<ValueType *> &paramTypes) {
+	FunctionType ft;
+	ft.mReturnType = returnType;
+	ft.mParamTypes = paramTypes;
+	QMap<FunctionType, FunctionValueType*>::ConstIterator i = mFunctionTypeMapping.find(ft);
+
+	if (i != mFunctionTypeMapping.end()) {
+		return i.value();
+	}
+
+	FunctionValueType *fvt = new FunctionValueType(mRuntime, returnType, paramTypes);
+	mFunctionTypeMapping[ft] = fvt;
+	mLLVMTypeMapping[fvt->llvmType()] = fvt;
+	return fvt;
 }
 
 ValueType *ValueTypeCollection::constantValueType(ConstantValue::Type type) const {
@@ -126,4 +146,38 @@ ValueType *ValueTypeCollection::generateArrayValueType(llvm::StructType *arrayDa
 	mLLVMTypeMapping[arrayDataType->getPointerTo()] = arrayValueType;
 	mArrayMapping[QPair<ValueType*, int>(baseType, dims)] = arrayValueType;
 	return arrayValueType;
+}
+
+ValueType *ValueTypeCollection::generateFunctionValueType(llvm::FunctionType *funcTy) {
+	ValueType *retType = 0;
+	if (!funcTy->getReturnType()->isVoidTy()) {
+		retType = valueTypeForLLVMType(funcTy->getReturnType());
+	   if (!retType) return 0;
+	}
+	QList<ValueType*> paramTypes;
+	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
+		ValueType *vt = valueTypeForLLVMType(*i);
+		if (!vt) return 0;
+		paramTypes.append(vt);
+	}
+	return functionValueType(retType, paramTypes);
+}
+
+
+bool ValueTypeCollection::FunctionType::operator <(const ValueTypeCollection::FunctionType &ft) const {
+	if (this->mReturnType < ft.mReturnType) return true;
+	if (this->mReturnType > ft.mReturnType) return false;
+	if (this->mParamTypes.size() < ft.mParamTypes.size()) return true;
+	if (this->mParamTypes.size() > ft.mParamTypes.size()) return false;
+	QList<ValueType*>::ConstIterator i = ft.mParamTypes.begin();
+	for (ValueType *p : this->mParamTypes) {
+		if (p < *i) {
+			return true;
+		}
+		if (p > *i) {
+			return false;
+		}
+		i++;
+	}
+	return false;
 }

@@ -601,7 +601,52 @@ ast::Node *Parser::expectArrayTypeDefinition(Parser::TokIterator &i) {
 }
 
 ast::Node *Parser::expectVariableTypeDefinition(Parser::TokIterator &i) {
+	ast::Node *fpt = tryFunctionPointerTypeDefinition(i);
+	if (mStatus == Error) return 0;
+	if (fpt) return fpt;
 	return expectArrayTypeDefinition(i);
+}
+
+ast::Node *Parser::tryFunctionPointerTypeDefinition(Parser::TokIterator &i) {
+	if (i->type() != Token::kFunction) {
+		return 0;
+	}
+	CodePoint cp = i->codePoint();
+	i++;
+	if (!expectLeftParenthese(i)) return 0;
+	QList<ast::Node*> ns;
+	while (true) {
+		if (i->type() == Token::RightParenthese) {
+			break;
+		}
+		ast::Node *t = expectVariableTypeDefinition(i);
+		if (mStatus == Error) {
+			qDeleteAll(ns);
+			return 0;
+		}
+		ns.append(t);
+		if (i->type() == Token::Comma) {
+			i++;
+			continue;
+		}
+		break;
+	}
+	if (!expectRightParenthese(i)) return 0;
+	ast::Node *retType = 0;
+	if (i->type() == Token::kAs) {
+		i++;
+		retType = expectVariableTypeDefinition(i);
+		if (mStatus == Error) {
+			qDeleteAll(ns);
+			return 0;
+		}
+	}
+	ast::List *paramTypeList = new ast::List(cp);
+	paramTypeList->setItems(ns);
+	ast::FunctionPointerType *n = new ast::FunctionPointerType(cp);
+	n->setParameterTypes(paramTypeList);
+	n->setReturnType(retType);
+	return n;
 }
 
 void Parser::expectEndOfStatement(Parser::TokIterator &i) {

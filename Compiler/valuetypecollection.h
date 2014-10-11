@@ -8,6 +8,7 @@ class ArrayValueType;
 class Runtime;
 class StructValueType;
 class TypePointerValueType;
+class FunctionValueType;
 namespace llvm { class Type; }
 class ValueTypeCollection {
 	public:
@@ -20,6 +21,7 @@ class ValueTypeCollection {
 		ValueType *findNamedType(const QString &name);
 
 		ArrayValueType *arrayValueType(ValueType *baseValueType, int dimensions);
+		FunctionValueType *functionValueType(ValueType *returnType, const QList<ValueType*> &paramTypes);
 
 		ValueType *constantValueType(ConstantValue::Type type) const;
 		QList<ValueType*> namedTypes() const;
@@ -27,9 +29,17 @@ class ValueTypeCollection {
 		const QList<StructValueType*> structValueTypes() const { return mStructs; }
 		const QList<TypePointerValueType*> typePointerValueTypes() const { return mTypes; }
 	private:
+		struct FunctionType {
+				ValueType *mReturnType;
+				QList<ValueType*> mParamTypes;
+				bool operator < (const FunctionType &ft) const;
+		};
+
 		ValueType *generateArrayValueType(llvm::StructType *arrayDataType);
+		ValueType *generateFunctionValueType(llvm::FunctionType *funcTy);
 
 		QMap<QPair<ValueType*, int> , ArrayValueType *> mArrayMapping;
+		QMap<FunctionType, FunctionValueType *> mFunctionTypeMapping;
 		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
 		QMap<QString, ValueType *> mNamedType;
 		QList<StructValueType*> mStructs;

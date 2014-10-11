@@ -53,7 +53,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Value generate(ast::ArraySubscript *n);
 		Value generate(ast::Node *n);
 
-		Function *findBestOverload(const QList<Function*> &functions, const QList<Value> &parameters, bool command, const CodePoint &cp);
+		Function *findBestOverload(const QList<Function*> &functions, const QList<ValueType *> &parameters, bool command, const CodePoint &cp);
 		QList<Value> generateParameterList(ast::Node *n);
 		void resolveGotos();
 
@@ -66,6 +66,7 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		void generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters);
 
 		VariableSymbol *searchVariableSymbol(ast::Node *n);
+		bool checkFunctionCallValidity(FunctionValueType *funcValType, const QList<Value> &parameters, const CodePoint &cp);
 
 		Settings *mSettings;
 		Scope *mLocalScope;

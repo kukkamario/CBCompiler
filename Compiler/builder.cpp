@@ -311,44 +311,18 @@ Value Builder::call(Function *func, QList<Value> &params) {
 Value Builder::call(FunctionValueType *funcType, llvm::Value *func, QList<Value> &params) {
 	QList<ValueType*> paramTypes = funcType->paramTypes();
 	QList<ValueType*> ::ConstIterator pi = paramTypes.begin();
+	std::vector<llvm::Value*> p;
 	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
 		//Cast to the right value type
 		*i = (*pi)->cast(this, *i);
 		//string destruction hack
 		i->toLLVMValue(this);
 		pi++;
+		p.push_back(i->value());
 	}
 
-	std::vector<llvm::Value*> p;
-	bool returnInParameters = false;
-	llvm::Value *returnValueAlloca = 0;
-	llvm::Function *f = llvm::dyn_cast<llvm::Function>(func);
-	if (!f->arg_empty()) {
-		llvm::Function::const_arg_iterator i = f->arg_begin();
-		if (i->hasStructRetAttr()) {
-			returnValueAlloca = irBuilder().CreateAlloca(funcType->returnType()->llvmType());
-			p.insert(p.begin(), returnValueAlloca);
-			i++;
-			returnInParameters = true;
-		}
-		foreach(const Value &val, params) {
-			if (i->getType() == val.valueType()->llvmType()->getPointerTo()) {
-				if (val.isReference()) {
-					p.push_back(val.value());
-				}
-				else {
-					llvm::AllocaInst *allocaInst = irBuilder().CreateAlloca(val.valueType()->llvmType());
-					irBuilder().CreateStore(val.value(), allocaInst);
-					p.push_back(allocaInst);
-				}
-			}
-			else {
-				assert(i->getType() == val.valueType()->llvmType());
-				p.push_back(llvmValue(val));
-
-			}
-			i++;
-		}
+	if (func->getType()->isPointerTy()) {
+		func = mIRBuilder.CreateLoad(func);
 	}
 
 	Value ret = Value(funcType->returnType(), mIRBuilder.CreateCall(func, p), false);

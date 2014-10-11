@@ -23,6 +23,7 @@ class TypeResolver : public QObject{
 		ValueType *resolve(ast::DefaultType *defaultTy);
 		ValueType *resolve(ast::NamedType *namedTy);
 		ValueType *resolve(ast::BasicType *basicTy);
+		ValueType *resolve(ast::FunctionPointerType *funcTy);
 };
 
 #endif // TYPERESOLVER_H

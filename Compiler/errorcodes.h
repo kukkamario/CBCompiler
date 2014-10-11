@@ -44,6 +44,8 @@ enum ErrorCode {
 	ecUnexpectedToken,
 	ecMultipleSelectDefaultCases,
 	ecExpectingLabel,
+	ecExpectingFunctionPointerType,
+	ecExpectingParameterTypeList,
 
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,
@@ -125,6 +127,7 @@ enum ErrorCode {
 	ecNotInteger,
 	ecInvalidParameter,
 	ecReturnParameterInCommand,
+	ecFunctionSelectorParametersShouldBeValueTypes,
 
 	ecCantWriteBitcodeFile,
 	ecOptimizingFailed,

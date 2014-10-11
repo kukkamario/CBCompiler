@@ -92,6 +92,7 @@ class Parser : public QObject {
 		ast::Node *expectPrimaryTypeDefinition(TokIterator &i);
 		ast::Node *expectArrayTypeDefinition(TokIterator &i);
 		ast::Node *expectVariableTypeDefinition(TokIterator &i);
+		ast::Node *tryFunctionPointerTypeDefinition(TokIterator &i);
 
 		void expectEndOfStatement(TokIterator &i);
 

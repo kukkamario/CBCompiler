@@ -113,6 +113,7 @@ NODE_ACCEPT_VISITOR_DEF(Exit)
 NODE_ACCEPT_VISITOR_DEF(DefaultType)
 NODE_ACCEPT_VISITOR_DEF(BasicType)
 NODE_ACCEPT_VISITOR_DEF(NamedType)
+NODE_ACCEPT_VISITOR_DEF(FunctionPointerType)
 NODE_ACCEPT_VISITOR_DEF(ArrayType)
 NODE_ACCEPT_VISITOR_DEF(Variable)
 NODE_ACCEPT_VISITOR_DEF(ExpressionNode)
@@ -385,6 +386,14 @@ Node *VariableDefinition::childNode(int n) const {
 SelectCase::~SelectCase() {
 	delete mValue;
 	delete mBlock;
+}
+
+Node *FunctionPointerType::childNode(int n) const {
+	assert(n >= 0 && n < childNodeCount() && "Invalid child node id");
+	switch (n) {
+		case 0: return mParameterTypes;
+		case 1: return mReturnType;
+	 }
 }
 
 }

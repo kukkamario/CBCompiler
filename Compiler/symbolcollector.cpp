@@ -156,7 +156,7 @@ void SymbolCollector::visit(ast::Variable *c) {
 	}
 	if (existingSymbol->type() == Symbol::stType) {
 		if (c->valueType()->type() != ast::Node::ntDefaultType) {
-			emit error(ErrorCodes::ecTypeCantHaveValueType, tr("\%1\" is a type. It can't have a value type"), c->codePoint());
+			emit error(ErrorCodes::ecTypeCantHaveValueType, tr("\"%1\" is a type. It can't have a value type"), c->codePoint());
 		}
 		return;
 	}

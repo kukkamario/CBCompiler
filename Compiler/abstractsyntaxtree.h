@@ -117,6 +117,7 @@ class Node {
 			ntDefaultType,
 			ntBasicType,
 			ntNamedType,
+			ntFunctionPointerType,
 			ntArrayType,
 
 			ntExpression,
@@ -314,6 +315,23 @@ class Exit : public LeafNode {
 		Type type() const { return staticType(); }
 };
 
+class List : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		List(const CodePoint &cp) : Node(cp) { }
+		~List() { qDeleteAll(mItems); }
+		static Type staticType() { return ntList; }
+		Type type() const { return staticType(); }
+		int childNodeCount() const { return mItems.size(); }
+		Node *childNode(int n) const { return mItems.at(n); }
+		void appendItem(Node *n) { mItems.append(n); }
+		const QList<Node*> &items() const { return mItems; }
+		void setItems(const QList<Node*> &items) { mItems = items; }
+		void takeAll() { mItems.clear(); }
+	protected:
+		QList<Node*> mItems;
+};
+
 //ValueTypes:
 
 class DefaultType : public LeafNode {
@@ -358,6 +376,25 @@ class NamedType : public Node {
 		void setIdentifier(Identifier *id) { mIdentifier = id; }
 	protected:
 		Identifier *mIdentifier;
+};
+
+class FunctionPointerType : public Node {
+		NODE_ACCEPT_VISITOR_PRE_DEF
+	public:
+		FunctionPointerType(const CodePoint &cp) : Node(cp), mParameterTypes(0), mReturnType(0) {}
+		~FunctionPointerType() { delete mParameterTypes; delete mReturnType; }
+		static Type staticType() { return ntFunctionPointerType; }
+		Type type() const { return staticType(); }
+		int childNodeCount() const { return mReturnType ? 2 : 1; }
+		Node *childNode(int n) const;
+
+		List *parameterTypes() const { return mParameterTypes; }
+		void setParameterTypes(List *l) { mParameterTypes = l; }
+		Node *returnType() const { return mReturnType; }
+		void setReturnType(Node *n) { mReturnType = n; }
+	private:
+		List *mParameterTypes;
+		Node *mReturnType;
 };
 
 class ArrayType : public Node {
@@ -472,23 +509,6 @@ class Expression : public Node {
 		Node *mFirstOperand;
 		QList<ExpressionNode*> mOperations;
 		Associativity mAssociativity;
-};
-
-class List : public Node {
-		NODE_ACCEPT_VISITOR_PRE_DEF
-	public:
-		List(const CodePoint &cp) : Node(cp) { }
-		~List() { qDeleteAll(mItems); }
-		static Type staticType() { return ntList; }
-		Type type() const { return staticType(); }
-		int childNodeCount() const { return mItems.size(); }
-		Node *childNode(int n) const { return mItems.at(n); }
-		void appendItem(Node *n) { mItems.append(n); }
-		const QList<Node*> &items() const { return mItems; }
-		void setItems(const QList<Node*> &items) { mItems = items; }
-		void takeAll() { mItems.clear(); }
-	protected:
-		QList<Node*> mItems;
 };
 
 class FunctionCall : public Node {
