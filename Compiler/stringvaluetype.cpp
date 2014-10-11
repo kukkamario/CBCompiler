@@ -7,12 +7,19 @@
 StringValueType::StringValueType(StringPool *strPool, Runtime *r) :
 	ValueType(r),
 	mStringPool(strPool){
+
+}
+
+void StringValueType::setStringType(llvm::Type *t) {
+	mType = t;
+	mSharedDataPointerType = t->getContainedType(0);
+	mStringDataPointerType = mSharedDataPointerType->getContainedType(0);
 }
 
 bool StringValueType::setConstructFunction(llvm::Function *func) {
 	llvm::FunctionType *funcTy = func->getFunctionType();
 	if (funcTy->getNumParams() != 1) return false;
-	if (funcTy->getReturnType() != mType) return false;
+	if (funcTy->getReturnType() != mStringDataPointerType) return false;
 
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
@@ -28,10 +35,10 @@ bool StringValueType::setAssignmentFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 2) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType->getPointerTo()) return false;
+	if (arg1 != mStringDataPointerType->getPointerTo()) return false;
 	i++;
 	const llvm::Type *const arg2 = *i;
-	if (arg2 != mType) return false;
+	if (arg2 != mStringDataPointerType) return false;
 
 	mAssignmentFunction = func;
 	return true;
@@ -43,21 +50,21 @@ bool StringValueType::setDestructFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	mDestructFunction = func;
 	return true;
 }
 
 bool StringValueType::setAdditionFunction(llvm::Function *func) {
 	llvm::FunctionType *funcTy = func->getFunctionType();
-	if (funcTy->getReturnType() != mType) return false;
+	if (funcTy->getReturnType() != mStringDataPointerType) return false;
 	if (funcTy->getNumParams() != 2) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	i++;
 	const llvm::Type *const arg2 = *i;
-	if (arg2 != mType) return false;
+	if (arg2 != mStringDataPointerType) return false;
 
 	mAdditionFunction = func;
 	return true;
@@ -65,7 +72,7 @@ bool StringValueType::setAdditionFunction(llvm::Function *func) {
 
 bool StringValueType::setFloatToStringFunction(llvm::Function *func) {
 	llvm::FunctionType *funcTy = func->getFunctionType();
-	if (funcTy->getReturnType() != mType) return false;
+	if (funcTy->getReturnType() != mStringDataPointerType) return false;
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
@@ -76,7 +83,7 @@ bool StringValueType::setFloatToStringFunction(llvm::Function *func) {
 
 bool StringValueType::setIntToStringFunction(llvm::Function *func){
 	llvm::FunctionType *funcTy = func->getFunctionType();
-	if (funcTy->getReturnType() != mType) return false;
+	if (funcTy->getReturnType() != mStringDataPointerType) return false;
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
@@ -91,7 +98,7 @@ bool StringValueType::setStringToIntFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	mStringToIntFunction = func;
 	return true;
 }
@@ -102,7 +109,7 @@ bool StringValueType::setStringToFloatFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	mStringToFloatFunction = func;
 	return true;
 }
@@ -113,10 +120,10 @@ bool StringValueType::setEqualityFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 2) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	i++;
 	const llvm::Type *const arg2 = *i;
-	if (arg2 != mType) return false;
+	if (arg2 != mStringDataPointerType) return false;
 
 	mEqualityFunction = func;
 	return true;
@@ -128,17 +135,12 @@ bool StringValueType::setRefFunction(llvm::Function *func) {
 	if (funcTy->getNumParams() != 1) return false;
 	llvm::FunctionType::param_iterator i = funcTy->param_begin();
 	const llvm::Type *const arg1 = *i;
-	if (arg1 != mType) return false;
+	if (arg1 != mStringDataPointerType) return false;
 	i++;
 
 	mRefFunction = func;
 	return true;
 }
-
-void StringValueType::assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *string) {
-	builder->CreateCall2(mAssignmentFunction, var, string);
-}
-
 
 ValueType::CastCost StringValueType::castingCostToOtherValueType(const ValueType *to) const {
 	switch (to->basicType()) {
@@ -166,56 +168,71 @@ Value StringValueType::cast(Builder *builder, const Value &v) const {
 }
 
 int StringValueType::size() const {
-	switch (mRuntime->module()->getPointerSize()) {
-		case llvm::Module::Pointer32:
-			return 4;
-		case llvm::Module::Pointer64:
-			return 8;
-		default:
-			assert("Unknown pointer size" && 0);
-			return false;
-	}
+	return mRuntime->dataLayout().getTypeStoreSize(mType);
 }
 
 llvm::Constant *StringValueType::defaultValue() const {
-	return llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(mType));
+	return llvm::Constant::getNullValue(mType);
+}
+
+llvm::Value *StringValueType::stringDataPointerToString(llvm::IRBuilder<> *builder, llvm::Value *ptr) const {
+	llvm::Value *sharedDataPointer = builder->CreateInsertValue(llvm::UndefValue::get(mSharedDataPointerType), ptr, {0});
+	return builder->CreateInsertValue(llvm::UndefValue::get(mType), sharedDataPointer, {0});
+}
+
+llvm::Value *StringValueType::stringToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const {
+	return builder->CreateExtractValue(builder->CreateExtractValue(str, {0}), {0});
+}
+
+llvm::Value *StringValueType::stringPointerToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const {
+	llvm::Value *idx[] = {builder->getInt32(0), builder->getInt32(0), builder->getInt32(0)};
+	return builder->CreateLoad(builder->CreateGEP(str, idx));
 }
 
 llvm::Value *StringValueType::constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr) {
-	return builder->CreateCall(mConstructFunction, globalStrPtr);
+	llvm::Value *c = builder->CreateCall(mConstructFunction, globalStrPtr);
+	return stringDataPointerToString(builder, c);
 }
 
-void StringValueType::destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar) {
-	builder->CreateCall(mDestructFunction, stringVar);
+void StringValueType::destructString(llvm::IRBuilder<> *builder, llvm::Value *str) {
+	builder->CreateCall(mDestructFunction, stringToStringDataPointer(builder, str));
 }
 
 llvm::Value *StringValueType::stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str) {
-	return builder->CreateCall(mStringToIntFunction, str);
+	return builder->CreateCall(mStringToIntFunction, stringToStringDataPointer(builder, str));
 }
 
 llvm::Value *StringValueType::stringToFloatCast(llvm::IRBuilder<> *builder, llvm::Value *str) {
-	return builder->CreateCall(mStringToFloatFunction, str);
+	return builder->CreateCall(mStringToFloatFunction, stringToStringDataPointer(builder, str));
 }
 
 llvm::Value *StringValueType::intToStringCast(llvm::IRBuilder<> *builder, llvm::Value *i) {
-	return builder->CreateCall(mIntToStringFunction, i);
+	llvm::Value *c = builder->CreateCall(mIntToStringFunction, i);
+	return stringDataPointerToString(builder, c);
 }
 
 llvm::Value *StringValueType::floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f) {
-	return builder->CreateCall(mFloatToStringFunction, f);
+	llvm::Value *c = builder->CreateCall(mFloatToStringFunction, f);
+	return stringDataPointerToString(builder, c);
 }
 
 llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2) {
-	return builder->CreateCall2(mAdditionFunction, str1, str2);
+	llvm::Value *c = builder->CreateCall2(mAdditionFunction, stringToStringDataPointer(builder, str1), stringToStringDataPointer(builder, str2));
+	return  stringDataPointerToString(builder, c);
 }
 
 llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b) {
-	return builder->CreateCall2(mEqualityFunction, a, b);
+	return builder->CreateCall2(mEqualityFunction, stringDataPointerToString(builder, a), stringDataPointerToString(builder, b));
 }
 
-void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *a) const {
-	builder->CreateCall(mRefFunction, a);
+void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *str) const {
+	builder->CreateCall(mRefFunction, stringToStringDataPointer(builder, str));
 }
+
+void StringValueType::assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *val) {
+	builder->CreateCall2(mAssignmentFunction, builder->CreateBitCast(var, mStringDataPointerType->getPointerTo()), stringToStringDataPointer(builder, val));
+}
+
 
 Value StringValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
 	return generateBasicTypeOperation(builder, opType, operand1, operand2, operationFlags);

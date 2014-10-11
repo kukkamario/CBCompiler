@@ -40,11 +40,18 @@ class LStringData {
 		LStringData();
 		~LStringData();
 };
-struct CB_StringData;
-typedef CB_StringData* CBString;
 
-class LString {
+#pragma pack(1)
+ class LString {
 	public:
+		friend void CB_StringRef(LStringData *a);
+		friend LStringData *CB_StringConstruct(char32_t *txt);
+		friend LStringData *CB_StringAddition(LStringData *, LStringData *);
+		friend int CB_StringToInt(LStringData *);
+		friend float CB_StringToFloat(LStringData *);
+		friend LStringData *CB_IntToString(int);
+		friend LStringData *CB_FloatToString(float);
+		friend bool CB_StringEquality(LStringData *, LStringData *);
 		typedef LChar * iterator;
 		typedef const LChar * const_iterator;
 		typedef iterator Iterator;
@@ -55,7 +62,7 @@ class LString {
 		LString(const LChar *str, size_t len);
 		LString(ConstIterator begin, ConstIterator end);
 		LString(const LString &o);
-		LString(CBString cbString);
+		//LString(CBString cbString);
 
 		~LString();
 
@@ -79,7 +86,7 @@ class LString {
 		LString & operator += (LChar c);
 		LChar &operator[] (int i);
 		const LChar &operator[] (int i) const;
-		operator CBString() const;
+		//operator CBString() const;
 
 		LString substr(int start, int len) const;
 		LString left(int chars) const;
@@ -171,20 +178,21 @@ class LString {
 				bool isNull() const;
 				void detach();
 				LStringData *unsafePointer() const { return mPointer; }
+				void increase() const;
+				bool decrease() const;
 			private:
-				void increase(LStringData *d);
-				bool decrease(LStringData *d);
 				LStringData *mPointer;
 		};
+		LStringData *returnData();
+
 		size_t nextSize() const;
 		LSharedStringDataPointer mData;
 		static std::string sNullStdString;
 };
 
-//Internal format
-struct CB_StringData : LStringData {
-};
 
+
+typedef LString CBString;
 std::ostream& operator<< (std::ostream &stream, const LString &str);
 
 #endif // LSTRING_H

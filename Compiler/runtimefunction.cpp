@@ -31,8 +31,21 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		if (!mReturnValue) return false;
 	}
 	mName = name.toLower();
-	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
-		ValueType *paramType = mRuntime->valueTypeCollection().valueTypeForLLVMType(*i);
+	for (llvm::Function::arg_iterator i = func->arg_begin(); i != func->arg_end(); i++) {
+		if (i->getArgNo() == 0 && i->hasStructRetAttr()) {
+			retTy = llvm::dyn_cast<llvm::PointerType>(i->getType())->getElementType();
+			mReturnValue = mRuntime->valueTypeCollection().valueTypeForLLVMType(retTy);
+			continue;
+		}
+
+		ValueType *paramType = mRuntime->valueTypeCollection().valueTypeForLLVMType(i->getType());
+		if (!paramType) {
+			if (i->getType()->isPointerTy()) {
+				llvm::Type *trueType = llvm::dyn_cast<llvm::PointerType>(i->getType())->getElementType();
+				paramType = mRuntime->valueTypeCollection().valueTypeForLLVMType(trueType);
+			}
+		}
+
 		if (paramType) {
 			mParamTypes.append(paramType);
 		}
@@ -50,15 +63,40 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 
 Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	std::vector<llvm::Value*> p;
-	foreach(const Value &val, params) {
-		p.push_back(builder->llvmValue(val));
+	bool returnInParameters = false;
+	llvm::Value *returnValueAlloca = 0;
+	if (!mFunction->arg_empty()) {
+		llvm::Function::const_arg_iterator i = mFunction->arg_begin();
+		if (i->hasStructRetAttr()) {
+			returnValueAlloca = builder->irBuilder().CreateAlloca(mReturnValue->llvmType());
+			p.insert(p.begin(), returnValueAlloca);
+			i++;
+			returnInParameters = true;
+		}
+		foreach(const Value &val, params) {
+			if (i->getType() == val.valueType()->llvmType()->getPointerTo()) {
+				if (val.isReference()) {
+					p.push_back(val.value());
+				}
+				else {
+					llvm::AllocaInst *allocaInst = builder->irBuilder().CreateAlloca(val.valueType()->llvmType());
+					builder->irBuilder().CreateStore(val.value(), allocaInst);
+					p.push_back(allocaInst);
+				}
+				continue;
+			}
+			assert(i->getType() == val.valueType()->llvmType());
+			p.push_back(builder->llvmValue(val));
+		}
 	}
 
 	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
-	if (isCommand()) {
-		return Value();
+	if (returnInParameters) {
+		return Value(mReturnValue, builder->irBuilder().CreateLoad(returnValueAlloca));
 	}
-	else {
+	else if (isCommand()) {
+		return Value();
+	} else {
 		return Value(mReturnValue, ret, false);
 	}
 }

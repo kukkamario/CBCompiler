@@ -135,11 +135,16 @@ LString::LString(LString::ConstIterator begin, LString::ConstIterator end) : mDa
 
 LString::LString(const LString &o) : mData(o.mData) { }
 
-LString::LString(CBString cbString) : mData(cbString) {
+/*LString::LString(CBString cbString) : mData(cbString) {
 	if (cbString) cbString->increase();
-}
+}*/
 
 LString::LString(LStringData *data) : mData(data) { }
+
+LStringData *LString::returnData() {
+	mData.increase();
+	return mData.unsafePointer();
+}
 
 size_t LString::nextSize() const {
 	//TODO: Improve
@@ -378,11 +383,11 @@ const LChar &LString::operator [](int i) const {
 	return this->mData->begin()[i];
 }
 
-LString::operator CBString() const {
+/*LString::operator CBString() const {
 	if (isNull()) return 0;
 	this->mData.unsafePointer()->increase();
 	return reinterpret_cast<CBString>(this->mData.unsafePointer());
-}
+}*/
 
 LString LString::substr(int start, int len) const {
 	ConstIterator b = cbegin() + start;
@@ -1090,7 +1095,7 @@ void LString::detach() {
 //-------------------------------------------------------------------------
 
 LString::LSharedStringDataPointer::LSharedStringDataPointer(const LString::LSharedStringDataPointer &o) : mPointer(o.mPointer) {
-	increase(mPointer);
+	increase();
 }
 
 LString::LSharedStringDataPointer::LSharedStringDataPointer(LStringData *data) {
@@ -1098,12 +1103,12 @@ LString::LSharedStringDataPointer::LSharedStringDataPointer(LStringData *data) {
 }
 
 LString::LSharedStringDataPointer::~LSharedStringDataPointer() {
-	decrease(mPointer);
+	decrease();
 }
 
 LString::LSharedStringDataPointer &LString::LSharedStringDataPointer::operator =(const LString::LSharedStringDataPointer &o) {
-	increase(o.mPointer);
-	decrease(mPointer);
+	o.increase();
+	decrease();
 	mPointer = o.mPointer;
 	return *this;
 }
@@ -1116,17 +1121,17 @@ void LString::LSharedStringDataPointer::detach() {
 	}
 
 	LStringData *newData = LStringData::copy(mPointer);
-	decrease(mPointer);
+	decrease();
 	mPointer = newData;
 }
 
-void LString::LSharedStringDataPointer::increase(LStringData *d) {
-	if (d)
-		d->increase();
+void LString::LSharedStringDataPointer::increase() const {
+	if (mPointer)
+		const_cast<LStringData*>(mPointer)->increase();
 }
 
-bool LString::LSharedStringDataPointer::decrease(LStringData *d) {
-	if (d) return d->decrease();
+bool LString::LSharedStringDataPointer::decrease() const {
+	if (mPointer) return const_cast<LStringData*>(mPointer)->decrease();
 	return false;
 }
 

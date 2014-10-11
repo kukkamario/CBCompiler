@@ -8,7 +8,7 @@ class StringValueType : public ValueType {
 		StringValueType(StringPool *strPool, Runtime *r);
 		QString name() const {return "string";}
 		BasicType basicType() const{return String;}
-		void setStringType(llvm::Type *t) {mType = t;}
+		void setStringType(llvm::Type *t);
 		bool setConstructFunction(llvm::Function *func);
 		bool setAssignmentFunction(llvm::Function *func);
 		bool setDestructFunction(llvm::Function *func);
@@ -20,16 +20,17 @@ class StringValueType : public ValueType {
 		bool setEqualityFunction(llvm::Function *func);
 		bool setRefFunction(llvm::Function *func);
 
-		void assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *string);
+
 		llvm::Value *constructString(llvm::IRBuilder<> *builder, llvm::Value *globalStrPtr);
-		void destructString(llvm::IRBuilder<> *builder, llvm::Value *stringVar);
+		void destructString(llvm::IRBuilder<> *builder, llvm::Value *str);
 		llvm::Value *stringToIntCast(llvm::IRBuilder<> *builder, llvm::Value *str);
 		llvm::Value *stringToFloatCast(llvm::IRBuilder<> *builder, llvm::Value *str);
 		llvm::Value *intToStringCast(llvm::IRBuilder<> *builder, llvm::Value *i);
 		llvm::Value *floatToStringCast(llvm::IRBuilder<> *builder, llvm::Value *f);
 		llvm::Value *stringAddition(llvm::IRBuilder<> *builder, llvm::Value *str1, llvm::Value *str2);
 		llvm::Value *stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b);
-		void refString(llvm::IRBuilder<> *builder, llvm::Value *a) const;
+		void refString(llvm::IRBuilder<> *builder, llvm::Value *str) const;
+		void assignString(llvm::IRBuilder<> *builder, llvm::Value *var, llvm::Value *val);
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 		Value generateOperation(Builder *builder, int opType, const Value &operand, OperationFlags &operationFlags) const;
@@ -47,6 +48,10 @@ class StringValueType : public ValueType {
 
 		llvm::Constant *defaultValue() const;
 	private:
+		llvm::Value *stringDataPointerToString(llvm::IRBuilder<> *builder, llvm::Value *ptr) const;
+		llvm::Value *stringToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const;
+		llvm::Value *stringPointerToStringDataPointer(llvm::IRBuilder<> *builder, llvm::Value *str) const;
+
 		llvm::Function *mConstructFunction;
 		llvm::Function *mAssignmentFunction;
 		llvm::Function *mDestructFunction;
@@ -57,7 +62,9 @@ class StringValueType : public ValueType {
 		llvm::Function *mStringToFloatFunction;
 		llvm::Function *mEqualityFunction;
 		llvm::Function *mRefFunction;
-		StringPool *mStringPool;
+		llvm::Type *	mSharedDataPointerType;
+		llvm::Type *	mStringDataPointerType;
+		StringPool *	mStringPool;
 };
 
 #endif // STRINGVALUETYPE_H

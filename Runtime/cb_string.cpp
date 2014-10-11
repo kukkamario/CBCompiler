@@ -27,12 +27,12 @@ CBString CBF_chr(int c) {
  CBString CBF_left(CBString cbstr, int chars) {
 	if (chars <= 0) {
 		error(U"Left: Positive number required");
-		return 0;
+		return LString();
 	}
 	LString str(cbstr);
 	if (chars > (int)str.length()) {
 		error(U"Left: Parameter must be less than the length of the string");
-		return 0;
+		return LString();
 	}
 
 	return str.left(chars);
@@ -41,12 +41,12 @@ CBString CBF_chr(int c) {
  CBString CBF_right(CBString cbstr, int chars) {
 	if (chars <= 0) {
 		error(U"Right: Positive number required");
-		return 0;
+		return LString();
 	}
 	LString str(cbstr);
 	if (chars > (int)str.length()) {
 		error(U"Right: Parameter must be less than the length of the string");
-		return 0;
+		return LString();
 	}
 
 	return str.right(chars);
@@ -89,54 +89,58 @@ int CBF_len(CBString cbstr) {
 	return LString(cbstr).size();
 }
 
- CBEXPORT CBString CB_StringConstruct(char32_t *txt) {
+LStringData *CB_StringConstruct(char32_t *txt) {
+	info(U"String constructed\n");
 	if (txt) {
-		return reinterpret_cast<CBString>(LStringData::createFromBuffer(txt));
+		return LStringData::createFromBuffer(txt);
 	}
 	return 0;
 }
 
-CBEXPORT void CB_StringDestruct (CBString str) {
+void CB_StringDestruct (LStringData *str) {
 	if (str)
-		str->decrease();
+		if (str->decrease()) {
+			info(U"String destructed\n");
+		}
 }
 
-CBEXPORT void CB_StringAssign(CBString *target, CBString s) {
+void CB_StringAssign(LStringData **target, LStringData *s) {
 	if (s) {
 		s->increase();
 	}
-	if ((*target)) {
+	if (*target)
 		(*target)->decrease();
-	}
 	*target = s;
 }
 
 
-CBEXPORT CBString CB_StringAddition(CBString a, CBString b) {
-	return LString(a) + LString(b);
+LStringData *CB_StringAddition(LStringData * a, LStringData * b) {
+	return (LString(a) + LString(b)).returnData();
 }
 
-CBEXPORT void CB_StringRef(CBString a) {
-	if (a) a->increase();
+void CB_StringRef(LStringData *str) {
+	if (str)
+		str->increase();
 }
 
-CBEXPORT int CB_StringToInt(CBString s) {
+int CB_StringToInt(LStringData *s) {
 	return LString(s).toInt();
 }
 
-CBEXPORT float CB_StringToFloat(CBString s) {
+float CB_StringToFloat(LStringData *s) {
 	return LString(s).toFloat();
 }
 
-CBEXPORT CBString CB_FloatToString(float f) {
-	return LString::number(f);
+LStringData *CB_FloatToString(float f) {
+	LString str = LString::number(f);
+	return LString::number(f).returnData();
 }
 
-CBEXPORT CBString CB_IntToString(int i) {
-	return LString::number(i);
+LStringData *CB_IntToString(int i) {
+	return LString::number(i).returnData();
 }
 
-CBEXPORT bool CB_StringEquality(CBString a, CBString b) {
+bool CB_StringEquality(LStringData *a, LStringData *b) {
 	return LString(a) == LString(b);
 }
 

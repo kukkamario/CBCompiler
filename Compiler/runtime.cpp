@@ -83,9 +83,9 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 
 	//String
 	mStringValueType = new StringValueType(strPool, this);
-	llvm::StructType *str = mModule->getTypeByName("struct.CB_StringData");
+	llvm::StructType *str = mModule->getTypeByName("class.LString");
 	if (!str) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_StringData\" in runtime library bitcode"), CodePoint());
+		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"class.LString\" in runtime library bitcode"), CodePoint());
 		return false;
 	}
 
@@ -113,7 +113,7 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 		return false;
 	}
 
-	mStringValueType->setStringType(str->getPointerTo());
+	mStringValueType->setStringType(str);
 	mValueTypeCollection.addValueType(mStringValueType);
 
 	mFloatValueType = new FloatValueType(this, mModule);
@@ -254,61 +254,61 @@ bool Runtime::loadDefaultRuntimeFunctions() {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"CB_initialize\""), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringConstruct");
+	func = mModule->getFunction("_Z18CB_StringConstructPDi");
 	if (!func || !mStringValueType->setConstructFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringConstruct"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringDestruct");
+	func = mModule->getFunction("_Z17CB_StringDestructP11LStringData");
 	if (!func || !mStringValueType->setDestructFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringDestruct"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringAssign");
+	func = mModule->getFunction("_Z15CB_StringAssignPP11LStringDataS0_");
 	if (!func || !mStringValueType->setAssignmentFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringAssign"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringToInt");
+	func = mModule->getFunction("_Z14CB_StringToIntP11LStringData");
 	if (!func || !mStringValueType->setStringToIntFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringToInt"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringToFloat");
+	func = mModule->getFunction("_Z16CB_StringToFloatP11LStringData");
 	if (!func || !mStringValueType->setStringToFloatFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringToFloat"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_IntToString");
+	func = mModule->getFunction("_Z14CB_IntToStringi");
 	if (!func || !mStringValueType->setIntToStringFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_IntToString"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_FloatToString");
+	func = mModule->getFunction("_Z16CB_FloatToStringf");
 	if (!func || !mStringValueType->setFloatToStringFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_FloatToString"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringAddition");
+	func = mModule->getFunction("_Z17CB_StringAdditionP11LStringDataS0_");
 	if (!func || !mStringValueType->setAdditionFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringAddition"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringEquality");
+	func = mModule->getFunction("_Z17CB_StringEqualityP11LStringDataS0_");
 	if (!func || !mStringValueType->setEqualityFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringEquality"), CodePoint());
 	}
 
-	func = mModule->getFunction("CB_StringRef");
+	func = mModule->getFunction("_Z12CB_StringRefP11LStringData");
 	if (!func || !mStringValueType->setRefFunction(func)) {
 		mValid = false;
 		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringRef"), CodePoint());
