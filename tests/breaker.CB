@@ -1,0 +1,377 @@
+
+Type Particle
+	Field x#
+	Field y#
+	Field mx#
+	Field my#
+	Field r#
+	Field g#
+	Field b#
+	Field a#
+	Field gg#
+EndType
+
+Type HitPoint
+	Field x
+	Field y
+	Field r
+	Field g
+	Field b
+EndType
+
+Type Ball
+	Field x#
+	Field y#
+	Field mx#
+	Field my#
+	Field r#
+	Field g#
+	Field b#
+	Field trailI
+	Field trail As TrailPoint[]
+EndType
+
+Struct TrailPoint
+	Field x#
+	Field y#
+	Field r#
+	Field g#
+	Field b#
+EndStruct
+
+Const SCREEN_W = 800
+Const SCREEN_H = 600
+Const MAP_W = SCREEN_W
+Const MAP_H = 400
+
+Const BALL_TRAIL = 20
+
+Const SPEED_MULT = 1.001
+
+Const PLATFORM_W = 100
+Const PLATFORM_H = 20
+Const PLATFORM_Y = SCREEN_H - PLATFORM_H - 5
+Const BALL_R = 2
+Const BALL_REMOVE_R = 4
+
+SCREEN SCREEN_W, SCREEN_H
+Dim BALL_W[BALL_REMOVE_R * 2 + 1]
+For i = 0 To BALL_REMOVE_R - 1
+	a# = ASin(i / BALL_REMOVE_R)
+	v = Cos(a#) * BALL_REMOVE_R
+	BALL_W[BALL_REMOVE_R + i] = v
+	BALL_W[BALL_REMOVE_R - 1 - i] = v
+Next i
+BALL_W[BALL_REMOVE_R] = BALL_REMOVE_R
+RemStart
+level As Image = MakeImage(MAP_W, MAP_H)
+
+DrawToImage level
+	For i = 0 To 5
+		Color 255, 0, 0
+		Text i * 120, 10 + i * 3, "Hello world"
+		Color 0, 255, 0
+		Text i* 120 + 30, 20 + i * 3, "Wtf level is this?"
+	Next
+DrawToScreen
+RemEnd
+
+level As Image = LoadImage("Media/level.png")
+
+bx# = 0
+
+lastUpdate = Timer()
+particleTimer# = 0
+Repeat
+	t = Timer()
+	ts# = (t - lastUpdate) / 1000.0
+	lastUpdate = t
+
+	
+	particleTimer# = particleTimer# + ts#
+	If particleTimer# > 0.08 Then particleTimer = 0
+
+
+	If KeyDown(203) Then bx = bx - 500 * ts# * (1 + KeyDown(208))
+	If KeyDown(205) Then bx = bx + 500 * ts# * (1 + KeyDown(208))
+	If bx < 0 Then bx = 0
+	If bx + PLATFORM_W > SCREEN_W Then bx = SCREEN_W - PLATFORM_W
+	
+	If KeyHit(200) Then
+		b As Ball = CreateBall(bx# + PLATFORM_W / 2, PLATFORM_Y - BALL_R, Rnd(-200, 200), -300)
+	EndIf
+	Lock level
+	For b As Ball = Each Ball
+		b.my# = b.my#
+		b.y# = b.y# + b.my# * ts#
+		b.x# = b.x# + b.mx# * ts#
+		If b.y# < BALL_R Then
+			b.my# = -b.my#
+			b.y# = BALL_R
+		EndIf
+		If b.x# < BALL_R Then
+			b.mx# = -b.mx#
+			b.x# = BALL_R
+		ElseIf b.x# > SCREEN_W - BALL_R
+			b.mx# = -b.mx#
+			b.x# = SCREEN_W - BALL_R
+		EndIf
+		If b.y# > SCREEN_H Then
+			Delete b
+		Else
+			If b.y# + BALL_R > PLATFORM_Y Then
+				If bx# <= b.x# And b.x# < bx# + PLATFORM_W Then
+					oldMx# = b.mx#
+					trans# = -((bx# + PLATFORM_W / 2 - b.x#) / (PLATFORM_W / 2.0)) ^ 3.0 * 200
+					b.mx# = b.mx# + trans#
+					b.my# = -b.my# * SPEED_MULT
+					b.y# = PLATFORM_Y - BALL_R
+					b.r = 255
+					b.g = 255
+					b.b = 255
+					newB As Ball = CreateBall(b.x, b.y, b.mx + Rnd(-50, 50), b.my + Rnd(0, 50))
+					angB# = GetAngle(0, 0, b.mx# - oldMx, b.my#)
+					For i = 1 To 30
+						ang# = angB# + Rnd(-60, 60)
+						pow# = Rnd(50, 300)
+						CreateParticle(b.x, b.y, 255, 255, 255, Cos(ang#) * pow#, -Sin(ang#) * pow#, 300)
+					Next i
+				ElseIf Distance(bx# + PLATFORM_H / 2, PLATFORM_Y + PLATFORM_H / 2, b.x#, b.y#) < BALL_R + PLATFORM_H / 2
+					a# = GetAngle(bx# + PLATFORM_H / 2, PLATFORM_Y + PLATFORM_H / 2, b.x#, b.y#)
+					nx# = Cos(a#)
+					ny# = -Sin(a#)
+					//-(2(n · v) n - v)
+					vs# = 2 * dotProduct(nx#, ny#, b.mx#, b.my#)
+					vx# = nx# * vs#
+					vy# = ny# * vs#
+					vx# = vx# - b.mx#
+					vy# = vy# - b.my#
+					b.mx# = -vx#
+					b.my# = -vy#
+					b.x# = bx# + PLATFORM_H / 2 + Cos(a#) * (PLATFORM_H + BALL_R)
+					b.y# = PLATFORM_Y + PLATFORM_H / 2 - Sin(a#) * (PLATFORM_H + BALL_R)
+				ElseIf Distance(bx# + PLATFORM_W - PLATFORM_H / 2, PLATFORM_Y + PLATFORM_H / 2, b.x#, b.y#) < BALL_R + PLATFORM_H / 2
+					a# = GetAngle(bx# + PLATFORM_W - PLATFORM_H / 2, PLATFORM_Y + PLATFORM_H / 2, b.x#, b.y#)
+					nx# = Cos(a#)
+					ny# = -Sin(a#)
+					//-(2(n · v) n - v)
+					vs# = 2 * dotProduct(nx#, ny#, b.mx#, b.my#)
+					vx# = nx# * vs#
+					vy# = ny# * vs#
+					vx# = vx# - b.mx#
+					vy# = vy# - b.my#
+					b.mx# = -vx#
+					b.my# = -vy#
+					b.x# = bx# + PLATFORM_W - PLATFORM_H / 2 + Cos(a#) * (PLATFORM_H + BALL_R)
+					b.y# = PLATFORM_Y + PLATFORM_H / 2 - Sin(a#) * (PLATFORM_H + BALL_R)
+				EndIf
+			EndIf
+			If b.y# - BALL_R < MAP_H Then
+				
+					startY = b.y - BALL_REMOVE_R
+					If startY < 0 Then startY = 0
+					endY = b.y + BALL_REMOVE_R
+					If endY >= MAP_H Then endY = MAP_H - 1
+					For y = startY To endY
+						w = BALL_W[y - startY]
+						startX = b.x# - w
+						If startX < 0 Then startX = 0
+						endX = b.x# + w
+						If endX >= MAP_W Then endX = MAP_W - 1
+						For x = startX To endX
+							pixel = GetPixel(level, x, y)
+							pr = (pixel Shl 8) Shr 24
+							pg = (pixel Shl 16) Shr 24
+							pb = (pixel Shl 24) Shr 24
+							If pr <> 0 Or pg <> 0 Or pb <> 0 Then
+								hitp as HitPoint = New(HitPoint)
+								hitp.x = x
+								hitp.y = y
+								hitp.r = pr
+								hitp.g = pg
+								hitp.b = pb
+							EndIf
+						Next
+					Next
+					
+					fmx# = 0
+					fmy# = 0
+					fr# = 0
+					fg# = 0
+					fb# = 0
+					hits = 0
+					For hitp As HitPoint = Each HitPoint
+						d# = Distance(b.x#, b.y#, hitp.x, hitp.y)
+						If d# <= BALL_R Then
+							a# = GetAngle(b.x#, b.y#, hitp.x, hitp.y)
+							nx# = Cos(a#)
+							ny# = -Sin(a#)
+							//-(2(n · v) n - v)
+							vs# = 2 * dotProduct(nx#, ny#, b.mx#, b.my#)
+							vx# = nx# * vs#
+							vy# = ny# * vs#
+							vx# = vx# - b.mx#
+							vy# = vy# - b.my#
+							fmx# = fmx# - vx#
+							fmy# = fmy# - vy#
+							fr# = fr# + hitp.r
+							fg# = fg# + hitp.g
+							fb# = fb# + hitp.b
+							hits = hits + 1
+						EndIf
+					Next
+					If hits > 0 Then
+						For i = 1 To 100
+							ang# = GetAngle(0, 0, b.mx#, b.my#) + Rnd(180, 360)
+							pow# = Rnd(0, 200)
+							CreateParticle(x, y, pr, pg, pb, Cos(ang#) * pow#, -Sin(ang#) * pow#, 150)
+						Next
+						fmx# = fmx# / hits
+						fmy# = fmy# / hits
+						oldD# = Distance(0, 0, b.mx#, b.my#)
+						d# = Distance(0, 0, fmx#, fmy#)
+						If d > 0 Then
+							b.mx# = fmx# / d# * oldD# * SPEED_MULT
+							b.my# = fmy# / d# * oldD# * SPEED_MULT
+						EndIf
+						b.r# = fr# / hits
+						b.g# = fg# / hits
+						b.b# = fb# / hits
+						BallAddTrailPoint(b)
+						For hitp As HitPoint = Each HitPoint
+							PutPixel level, hitp.x, hitp.y, 0
+							Delete hitp
+						Next
+					Else
+						For hitp As HitPoint = Each HitPoint
+							Delete hitp
+						Next
+					EndIf
+			EndIf
+			If particleTimer = 0 Then
+				BallAddTrailPoint(b)
+			EndIf
+		EndIf
+	Next
+	Unlock level
+	
+	DrawImage level, 0, 0
+	particleCount = 0
+	For pa As Particle = Each Particle
+		pa.my = pa.my + pa.gg * ts#
+		pa.x = pa.x + pa.mx# * ts#
+		pa.y = pa.y + pa.my# * ts#
+		pa.a = pa.a - 40 * ts
+		particleCount = particleCount + 1
+		If pa.x >= 0 And pa.x < SCREEN_W And pa.y >= 0 And pa.y < SCREEN_H And pa.a >= 0 Then
+			Color pa.r, pa.g, pa.b, pa.a
+			Dot pa.x, pa.y
+		Else
+			Delete pa
+		EndIf
+	Next
+	
+	For b As Ball = Each Ball
+		Color b.r, b.g, b.b
+		Circle b.x# - BALL_R - 1, b.y# - BALL_R - 1, BALL_R * 2 + 2
+		aDiff# = 255.0 / BALL_TRAIL
+		a# = 255 - aDiff
+		trailI = b.trailI - 1
+		If trailI < 0 Then trailI = BALL_TRAIL - 1
+		lastTrailPoint As TrailPoint
+		lastTrailPoint.x = b.x
+		lastTrailPoint.y = b.y
+		lastTrailPoint.r = b.r
+		lastTrailPoint.g = b.g
+		lastTrailPoint.b = b.b
+		For i = 0 To BALL_TRAIL - 1
+			If b.trail[trailI].x = 0 And b.trail[trailI].y = 0 Then
+				Exit
+			EndIf
+			
+			Color b.trail[trailI].r, b.trail[trailI].g, b.trail[trailI].b, a#
+			Line lastTrailPoint.x, lastTrailPoint.y, b.trail[trailI].x, b.trail[trailI].y
+			lastTrailPoint = b.trail[trailI]
+			trailI = trailI - 1
+			If trailI < 0 Then
+				trailI = BALL_TRAIL - 1
+			EndIf
+			a# = a# - aDiff
+		Next
+		
+		
+		
+		Color 255, 255, 255
+		Circle b.x# - BALL_R - 1, b.y# - BALL_R - 1, BALL_R * 2 + 2, 0
+	Next
+	
+	Color 255, 255, 255
+	Text 10, 10, "Particles: " + particleCount
+	Text 200, 10, "FPS: " + FPS()
+	//Circle bx# + PLATFORM_W / 2 - BALL_R, PLATFORM_Y - 2 * BALL_R, BALL_R * 2
+	
+	Circle bx#, PLATFORM_Y, PLATFORM_H
+	Circle bx# + PLATFORM_W - PLATFORM_H, PLATFORM_Y, PLATFORM_H
+	Box bx# + PLATFORM_H / 2, PLATFORM_Y, PLATFORM_W - PLATFORM_H, PLATFORM_H
+	DrawScreen
+Forever
+
+Function CreateParticle(x#, y#, r, g, b) As Particle
+	Return CreateParticle(x, y, r, g, b, Rnd(-100, 100), Rnd(100) + 100, 100)
+EndFunction
+
+Function CreateParticle(x#, y#, r, g, b, mx#, my#, gg# = 0) As Particle
+	p As Particle = New(Particle)
+	p.x# = x#
+	p.y# = y#
+	p.mx# = mx#
+	p.my# = my#
+	p.r# = r
+	p.g# = g
+	p.b# = b
+	p.a# = 255.0
+	p.gg# = gg#
+	Return p
+EndFunction
+
+Function CreateBall(x#, y#, mx#, my#) As Ball
+	newB As Ball = New (Ball)
+	newB.x = x#
+	newB.y = y#
+	newB.mx = mx#
+	newB.my = my#
+	newB.r = 255
+	newB.g = 255
+	newB.b = 255
+	Dim trail[BALL_TRAIL] As TrailPoint
+	newB.trail = trail
+	newB.trail[0] = NewTrailPoint(x#, y#, 255, 255, 255)
+	newB.trailI = 1
+	Return newB
+EndFunction
+
+Function BallAddTrailPoint(b as Ball) As Integer
+	b.trail[b.trailI] = NewTrailPoint(b.x#, b.y#, b.r#, b.g#, b.b#)
+	b.trailI = b.trailI + 1
+	If b.trailI >= BALL_TRAIL Then
+		b.trailI = 0
+	EndIf
+	Return b.trailI
+EndFunction
+
+Function NewTrailPoint(x#, y#, r#, g#, b#) As TrailPoint
+	t As TrailPoint
+	t.x# = x#
+	t.y# = y#
+	t.r# = r#
+	t.g# = g#
+	t.b# = b#
+	Return t
+EndFunction
+
+
+
+Function dotProduct(x1#, y1#, x2#, y2#) As Float
+	Return x1 * x2 + y1 * y2
+EndFunction
+
