@@ -64,19 +64,19 @@ ConstantValue::ConstantValue(ConstantValue::Type type) :
 	mType(type) {
 	switch (type) {
 		case Byte:
-			mData.mByte = 0;
+			mData.mByte = 0; break;
 		case Short:
-			mData.mShort = 0;
+			mData.mShort = 0; break;
 		case Integer:
-			mData.mInt = 0;
+			mData.mInt = 0; break;
 		case Float:
-			mData.mFloat = 0;
+			mData.mFloat = 0; break;
 		case Boolean:
-			mData.mBool = 0;
+			mData.mBool = 0; break;
 		case String:
-			mData.mString = QString();
+			mData.mString = QString(); break;
 		default:
-			mData.mInt = 0;
+			mData.mInt = 0; break;
 	}
 
 }

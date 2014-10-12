@@ -8,10 +8,13 @@
 #include "systeminterface.h"
 
 CBEXPORT char *CB_Allocate(int size) {
+	info(U"Allocated");
+	//info(U"Allocated " + LString::number(size));
 	return new char[size];
 }
 
 CBEXPORT void CB_Free(char *mem) {
+	info(U"Free");
 	delete [] mem;
 }
 

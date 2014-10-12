@@ -11,8 +11,8 @@ ValueType::CastCost NullValueType::castingCostToOtherValueType(const ValueType *
 	return ccCastToSmaller;
 }
 
-Value NullValueType::cast(Builder *builder, const Value &v) const {
-	return Value();
+Value NullValueType::cast(Builder *, const Value &) const {
+	return Value(ConstantValue(ConstantValue::Null), mRuntime);
 }
 
 llvm::Constant *NullValueType::defaultValue() const {

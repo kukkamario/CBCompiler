@@ -7,7 +7,7 @@ class NullValueType : public ValueType {
 		NullValueType(Runtime *runtime);
 		virtual QString name() const { return "Null"; }
 		virtual CastCost castingCostToOtherValueType(const ValueType *to) const;
-		virtual Value cast(Builder *builder, const Value &v) const;
+		virtual Value cast(Builder *, const Value &) const;
 		bool isTypePointer() const { return false; }
 		bool isNumber() const{ return false; }
 		llvm::Constant *defaultValue() const;

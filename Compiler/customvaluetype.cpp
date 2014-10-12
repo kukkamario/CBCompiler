@@ -50,6 +50,13 @@ Value CustomValueType::generateOperation(Builder *builder, int opType, const Val
 			if (operand1.valueType() == this && operand2.valueType() == this) {
 				return builder->ptrEqual(builder->llvmValue(operand1), builder->llvmValue(operand2));
 			}
+			break;
+		}
+		case ast::ExpressionNode::opNotEqual: {
+			if (operand1.valueType() == this && operand2.valueType() == this) {
+				return builder->not_(builder->ptrEqual(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+			}
+			break;
 		}
 
 	}

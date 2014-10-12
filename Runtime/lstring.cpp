@@ -808,14 +808,29 @@ const std::string &LString::toUtf8() const {
 	if (isEmpty()) return sNullStdString;
 	if (mData->mUtf8String) return *mData->mUtf8String;
 
-	std::string *utf8 = new std::string(mData->mSize * 4, '\0');
-	const LChar* fromNext;
-	uint8_t* toNext;
-	bool conversionValid = ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext);
-	assert(conversionValid);
-	utf8->resize((char*)toNext - &(*utf8)[0]);
-	mData->mUtf8String = utf8;
-	return *mData->mUtf8String;
+	//info(U"toUtf8");
+	printf("toUtf Size: %i  Reserved: %i\n", size(), capacity());
+	//info(LString(U"Asd %1  %2  %3").arg(LString::number(mData->mSize), LString::number(mData->mCapacity), *this));
+	std::string *utf8 = 0;
+	try {
+		utf8 = new std::string(size() * 4, '\0');
+
+
+		const LChar* fromNext;
+		uint8_t* toNext;
+		bool conversionValid = ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext);
+		assert(conversionValid);
+		size_t newSize = (char*)toNext - &(*utf8)[0];
+		printf("New size: %i\n", newSize);
+		utf8->resize(newSize);
+		mData->mUtf8String = utf8;
+		return *mData->mUtf8String;
+	}
+	catch (const std::exception &e) {
+		printf("Bad alloc: %s\n", e.what());
+		mData->mUtf8String = new std::string("Bad alloc");
+		return *mData->mUtf8String;
+	}
 }
 
 ALLEGRO_USTR *LString::toAllegroUStr() const {
@@ -1149,3 +1164,15 @@ std::ostream &operator <<(std::ostream &stream, const LString &str) {
 
 
 
+
+
+LString operator +(const char32_t *a, const LString &b) {
+	LString out;
+	int aSize = 0;
+	for (; a[aSize] != 0; aSize++);
+	out.reserve(b.size() + aSize);
+	memcpy(out.mData->begin() + aSize, b.mData->begin(), b.size());
+	memcpy(out.mData->begin(), a, aSize);
+	out.mData->mSize += aSize;
+	return out;
+}

@@ -41,7 +41,6 @@ class LStringData {
 		~LStringData();
 };
 
-#pragma pack(1)
  class LString {
 	public:
 		friend void CB_StringRef(LStringData *a);
@@ -52,6 +51,8 @@ class LStringData {
 		friend LStringData *CB_IntToString(int);
 		friend LStringData *CB_FloatToString(float);
 		friend bool CB_StringEquality(LStringData *, LStringData *);
+		friend LString operator + (const char32_t *a, const LString &b);
+
 		typedef LChar * iterator;
 		typedef const LChar * const_iterator;
 		typedef iterator Iterator;
@@ -191,6 +192,7 @@ class LStringData {
 };
 
 
+LString operator + (const char32_t *a, const LString &b);
 
 typedef LString CBString;
 std::ostream& operator<< (std::ostream &stream, const LString &str);

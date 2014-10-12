@@ -12,6 +12,7 @@
 #include "shortvaluetype.h"
 #include "bytevaluetype.h"
 #include "booleanvaluetype.h"
+#include "nullvaluetype.h"
 #include "typesymbol.h"
 #include "typepointervaluetype.h"
 #include "functionsymbol.h"
@@ -256,7 +257,7 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("false", mRuntime.booleanValueType(), ConstantValue(false), CodePoint());
 	mGlobalScope.addSymbol(sym);
-	sym = new ConstantSymbol("null", mRuntime.typePointerCommonValueType(), ConstantValue(ConstantValue::Null), CodePoint());
+	sym = new ConstantSymbol("null", mRuntime.nullValueType(), ConstantValue(ConstantValue::Null), CodePoint());
 	mGlobalScope.addSymbol(sym);
 }
 

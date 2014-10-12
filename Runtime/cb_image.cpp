@@ -7,7 +7,14 @@ Image *CBF_makeImage(int w, int h) {
 }
 
 Image *CBF_loadImage(CBString str) {
-	Image *img = Image::load(str);
+	info(str);
+	Image *img = 0;
+	try {
+		img = Image::load(str);
+	} catch (...) {
+		error("Everything failed");
+	}
+
 	if (!img && sys::errorMessagesEnabled()) {
 		error(LString(U"LoadImage failed!  \"%1\"").arg(str));
 	}

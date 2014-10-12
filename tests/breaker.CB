@@ -55,6 +55,7 @@ Const BALL_R = 2
 Const BALL_REMOVE_R = 4
 
 SCREEN SCREEN_W, SCREEN_H
+Print "Creating an array"
 Dim BALL_W[BALL_REMOVE_R * 2 + 1]
 For i = 0 To BALL_REMOVE_R - 1
 	a# = ASin(i / BALL_REMOVE_R)
@@ -75,9 +76,10 @@ DrawToImage level
 	Next
 DrawToScreen
 RemEnd
-
+Print "Loading image"
+Print "..."
 level As Image = LoadImage("Media/level.png")
-
+Print "Image loaded:" + (level <> NULL)
 bx# = 0
 
 lastUpdate = Timer()
@@ -306,8 +308,8 @@ Repeat
 	Next
 	
 	Color 255, 255, 255
-	Text 10, 10, "Particles: " + particleCount
-	Text 200, 10, "FPS: " + FPS()
+	//Text 10, 10, "Particles: " + particleCount
+	//Text 200, 10, "FPS: " + FPS()
 	//Circle bx# + PLATFORM_W / 2 - BALL_R, PLATFORM_Y - 2 * BALL_R, BALL_R * 2
 	
 	Circle bx#, PLATFORM_Y, PLATFORM_H

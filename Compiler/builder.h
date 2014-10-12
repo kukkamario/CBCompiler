@@ -46,7 +46,7 @@ class Builder {
 		llvm::Value *bitcast(llvm::Type *type, llvm::Value *val);
 
 		Value call(Function *func, QList<Value> &params);
-		Value call(FunctionValueType *funcType, llvm::Value *func, QList<Value> &params);
+		Value call(const Value &funcValue, QList<Value> &params);
 		void branch(llvm::BasicBlock *dest);
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
 		void returnValue(ValueType *retType, const Value &v);

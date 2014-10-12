@@ -936,7 +936,7 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 
 		checkFunctionCallValidity(functionValueType, paramValues, n->codePoint());
 
-		return mBuilder->call(functionValueType, functionValue.value(), paramValues);
+		return mBuilder->call(functionValue, paramValues);
 	}
 }
 
