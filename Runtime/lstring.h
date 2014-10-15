@@ -164,7 +164,7 @@ class LStringData {
 
 		void detach();
 	private:
-		LString(LStringData *data);
+		LString(LStringData *data, bool increaseReference);
 		class LSharedStringDataPointer {
 			public:
 				LSharedStringDataPointer() : mPointer(0) {}

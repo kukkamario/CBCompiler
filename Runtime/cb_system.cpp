@@ -43,11 +43,11 @@ void CBF_print(float f) {
 	printf("%f\n", f);
 }
 
-void CBF_print(CBString s) {
+void CBF_print(LString s) {
 #ifdef _WIN32 //sizeof(wchar_t) == 2
-	std::wcout << LString(s).toWString() << std::endl;
+	std::wcout << s.toWString() << std::endl;
 #else //wchar_t == char32_t
-	std::cout << LString(s).toUtf8() << std::endl;
+	std::cout << s.toUtf8() << std::endl;
 #endif
 }
 

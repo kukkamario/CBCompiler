@@ -112,7 +112,7 @@ void CB_StringAssign(LStringData **target, LStringData *s) {
 
 
 LStringData *CB_StringAddition(LStringData * a, LStringData * b) {
-	return (LString(a) + LString(b)).returnData();
+	return (LString(a, true) + LString(b, true)).returnData();
 }
 
 void CB_StringRef(LStringData *str) {
@@ -121,11 +121,11 @@ void CB_StringRef(LStringData *str) {
 }
 
 int CB_StringToInt(LStringData *s) {
-	return LString(s).toInt();
+	return LString(s, true).toInt();
 }
 
 float CB_StringToFloat(LStringData *s) {
-	return LString(s).toFloat();
+	return LString(s, true).toFloat();
 }
 
 LStringData *CB_FloatToString(float f) {
@@ -137,7 +137,7 @@ LStringData *CB_IntToString(int i) {
 }
 
 bool CB_StringEquality(LStringData *a, LStringData *b) {
-	return LString(a) == LString(b);
+	return LString(a, true) == LString(b, true);
 }
 
 

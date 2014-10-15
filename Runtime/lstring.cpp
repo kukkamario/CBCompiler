@@ -139,7 +139,13 @@ LString::LString(const LString &o) : mData(o.mData) { }
 	if (cbString) cbString->increase();
 }*/
 
-LString::LString(LStringData *data) : mData(data) { }
+LString::LString(LStringData *data, bool increaseReference) :
+	mData(data) {
+	if (increaseReference) {
+		mData->increase();
+	}
+}
+
 
 LStringData *LString::returnData() {
 	mData.increase();
@@ -157,7 +163,7 @@ LString::~LString() {
 
 LString LString::fromBuffer(const LChar *buffer, size_t stringLength, size_t bufferSize) {
 	assert(stringLength < bufferSize);
-	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize));
+	return LString(LStringData::createFromBuffer(buffer, stringLength, bufferSize), false);
 }
 
 
@@ -188,7 +194,7 @@ LString LString::fromAscii(const std::string &s) {
 }
 
 LString LString::fromBuffer(const LChar *buffer) {
-	return LString(LStringData::createFromBuffer(buffer));
+	return LString(LStringData::createFromBuffer(buffer), false);
 }
 
 LString LString::number(int i, int base) {
@@ -219,7 +225,7 @@ LString LString::number(int i, int base) {
 	}
 
 	data->mSize = size;
-	return LString(data);
+	return LString(data, false);
 }
 
 LString LString::number(unsigned int i, int b) {
@@ -244,7 +250,7 @@ LString LString::number(unsigned int i, int b) {
 	}
 
 	data->mSize = size;
-	return LString(data);
+	return LString(data, false);
 }
 
 LString LString::number(float f) {
@@ -254,7 +260,7 @@ LString LString::number(float f) {
 #ifndef _WIN32
 	assert(sizeof(wchar_t) == sizeof(char32_t));
 	data->mSize = swprintf(reinterpret_cast<wchar_t*>(data->begin()), bufferSize, L"%g", f);
-	return LString(data);
+	return LString(data, false);
 #else
 	char charBuf[bufferSize];
 	data->mSize = snprintf(charBuf, bufferSize, "%g", f);
@@ -262,7 +268,7 @@ LString LString::number(float f) {
 		data->begin()[i] = static_cast<char32_t>(charBuf[i]);
 	}
 	data->begin()[data->mSize] = 0;
-	return LString(data);
+	return LString(data, false);
 #endif
 }
 
@@ -342,7 +348,7 @@ LString LString::operator +(const LString &o) const {
 	std::copy(o.mData->begin(), o.mData->end(), newStr->begin() + this->length());
 
 	newStr->mSize = this->length() + o.length();
-	return LString(newStr);
+	return LString(newStr, false);
 }
 
 LString &LString::operator +=(const LString &o) {
@@ -808,29 +814,17 @@ const std::string &LString::toUtf8() const {
 	if (isEmpty()) return sNullStdString;
 	if (mData->mUtf8String) return *mData->mUtf8String;
 
-	//info(U"toUtf8");
-	printf("toUtf Size: %i  Reserved: %i\n", size(), capacity());
-	//info(LString(U"Asd %1  %2  %3").arg(LString::number(mData->mSize), LString::number(mData->mCapacity), *this));
 	std::string *utf8 = 0;
-	try {
-		utf8 = new std::string(size() * 4, '\0');
+	utf8 = new std::string(size() * 4, '\0');
 
-
-		const LChar* fromNext;
-		uint8_t* toNext;
-		bool conversionValid = ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext);
-		assert(conversionValid);
-		size_t newSize = (char*)toNext - &(*utf8)[0];
-		printf("New size: %i\n", newSize);
-		utf8->resize(newSize);
-		mData->mUtf8String = utf8;
-		return *mData->mUtf8String;
-	}
-	catch (const std::exception &e) {
-		printf("Bad alloc: %s\n", e.what());
-		mData->mUtf8String = new std::string("Bad alloc");
-		return *mData->mUtf8String;
-	}
+	const LChar* fromNext;
+	uint8_t* toNext;
+	bool conversionValid = ucs4ToUtf8(cbegin(), cend(), fromNext, (uint8_t*)&(*utf8)[0], (uint8_t*)&(*utf8)[utf8->size()], toNext);
+	assert(conversionValid);
+	size_t newSize = (char*)toNext - &(*utf8)[0];
+	utf8->resize(newSize);
+	mData->mUtf8String = utf8;
+	return *mData->mUtf8String;
 }
 
 ALLEGRO_USTR *LString::toAllegroUStr() const {
@@ -1141,12 +1135,15 @@ void LString::LSharedStringDataPointer::detach() {
 }
 
 void LString::LSharedStringDataPointer::increase() const {
-	if (mPointer)
+	if (mPointer) {
 		const_cast<LStringData*>(mPointer)->increase();
+	}
 }
 
 bool LString::LSharedStringDataPointer::decrease() const {
-	if (mPointer) return const_cast<LStringData*>(mPointer)->decrease();
+	if (mPointer) {
+		return const_cast<LStringData*>(mPointer)->decrease();
+	}
 	return false;
 }
 

@@ -822,6 +822,12 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 		}
 		Value op1 = generate(n->firstOperand());
 		ValueType *valueType = op1.valueType();
+
+		if (op1.isConstant() ^ op2.isConstant()) {
+			op1.toLLVMValue(mBuilder);
+			op2.toLLVMValue(mBuilder);
+		}
+
 		Value result = valueType->generateOperation(mBuilder, op, op1, op2, opFlags);
 
 		if (opFlags.testFlag(OperationFlag::MayLosePrecision)) {
