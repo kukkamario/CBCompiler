@@ -76,7 +76,7 @@ void CBF_box(float x, float y, float w, float h, int fill) {
 	drawBox(x, y, w, h, fill);
 }
 
-void CBF_text(float x, float y, CBString str) {
+void CBF_text(float x, float y, LString str) {
 	drawText(str, x, y);
 }
 

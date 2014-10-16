@@ -63,7 +63,6 @@ class LStringData {
 		LString(const LChar *str, size_t len);
 		LString(ConstIterator begin, ConstIterator end);
 		LString(const LString &o);
-		//LString(CBString cbString);
 
 		~LString();
 
@@ -88,7 +87,6 @@ class LStringData {
 		LString & operator += (LChar c);
 		LChar &operator[] (int i);
 		const LChar &operator[] (int i) const;
-		//operator CBString() const;
 
 		LString substr(int start, int len) const;
 		LString left(int chars) const;
@@ -195,7 +193,6 @@ class LStringData {
 
 LString operator + (const char32_t *a, const LString &b);
 
-typedef LString CBString;
 std::ostream& operator<< (std::ostream &stream, const LString &str);
 
 #endif // LSTRING_H

@@ -154,10 +154,6 @@ LString::LString(LString::ConstIterator begin, LString::ConstIterator end) : mDa
 
 LString::LString(const LString &o) : mData(o.mData) { }
 
-/*LString::LString(CBString cbString) : mData(cbString) {
-	if (cbString) cbString->increase();
-}*/
-
 LString::LString(LStringData *data, bool increaseReference) :
 	mData(data) {
 	if (increaseReference) {

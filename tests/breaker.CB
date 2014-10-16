@@ -79,6 +79,7 @@ RemEnd
 Print "Loading image"
 Print "..."
 level As Image = LoadImage("Media/level.png")
+Print "Image loaded"
 Print "Image loaded:" + (level <> NULL)
 bx# = 0
 
@@ -102,11 +103,14 @@ Repeat
 	If KeyHit(200) Then
 		b As Ball = CreateBall(bx# + PLATFORM_W / 2, PLATFORM_Y - BALL_R, Rnd(-200, 200), -300)
 	EndIf
+	
 	Lock level
 	For b As Ball = Each Ball
-		b.my# = b.my#
-		b.y# = b.y# + b.my# * ts#
-		b.x# = b.x# + b.mx# * ts#
+		If KeyDown(57) Then
+			b.y# = b.y# + b.my# * ts#
+			b.x# = b.x# + b.mx# * ts#
+		EndIf
+		
 		If b.y# < BALL_R Then
 			b.my# = -b.my#
 			b.y# = BALL_R
@@ -250,7 +254,7 @@ Repeat
 						Next
 					EndIf
 			EndIf
-			If particleTimer = 0 Then
+			If particleTimer = 0 And KeyDown(57) Then
 				BallAddTrailPoint(b)
 			EndIf
 		EndIf
@@ -260,10 +264,12 @@ Repeat
 	DrawImage level, 0, 0
 	particleCount = 0
 	For pa As Particle = Each Particle
-		pa.my = pa.my + pa.gg * ts#
-		pa.x = pa.x + pa.mx# * ts#
-		pa.y = pa.y + pa.my# * ts#
-		pa.a = pa.a - 40 * ts
+		If KeyDown(57) Then
+			pa.my = pa.my + pa.gg * ts#
+			pa.x = pa.x + pa.mx# * ts#
+			pa.y = pa.y + pa.my# * ts#
+			pa.a = pa.a - 40 * ts
+		EndIf
 		particleCount = particleCount + 1
 		If pa.x >= 0 And pa.x < SCREEN_W And pa.y >= 0 And pa.y < SCREEN_H And pa.a >= 0 Then
 			Color pa.r, pa.g, pa.b, pa.a
@@ -308,9 +314,9 @@ Repeat
 	Next
 	
 	Color 255, 255, 255
-	//Text 10, 10, "Particles: " + particleCount
-	//Text 200, 10, "FPS: " + FPS()
-	//Circle bx# + PLATFORM_W / 2 - BALL_R, PLATFORM_Y - 2 * BALL_R, BALL_R * 2
+	Text 10, 10, "Particles: " + particleCount
+	Text 200, 10, "FPS: " + FPS()
+	Circle bx# + PLATFORM_W / 2 - BALL_R, PLATFORM_Y - 2 * BALL_R, BALL_R * 2
 	
 	Circle bx#, PLATFORM_Y, PLATFORM_H
 	Circle bx# + PLATFORM_W - PLATFORM_H, PLATFORM_Y, PLATFORM_H

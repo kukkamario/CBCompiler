@@ -1,35 +1,34 @@
-#include "lstring.h"
+#include "LString.h"
 #include "error.h"
 #include <algorithm>
 #include <iomanip>
 
- CBString CBF_str(int i) {
+ LString CBF_str(int i) {
 	return LString::number(i);
 }
 
- CBString CBF_str(float f) {
+ LString CBF_str(float f) {
 	return LString::number(f);
 }
 
- CBString CBF_hex(int i) {
+ LString CBF_hex(int i) {
 	 LString hex = LString::number((unsigned int)i, 16);
 	 hex.leftJustify(8, U'0');
 	 return hex;
 }
 
-CBString CBF_chr(int c) {
+LString CBF_chr(int c) {
 	char32_t cc[2];
 	cc[0] = c;
 	cc[1] = c;
 	return LString(cc);
 }
 
- CBString CBF_left(CBString cbstr, int chars) {
+ LString CBF_left(LString str, int chars) {
 	if (chars <= 0) {
 		error(U"Left: Positive number required");
 		return LString();
 	}
-	LString str(cbstr);
 	if (chars > (int)str.length()) {
 		error(U"Left: Parameter must be less than the length of the string");
 		return LString();
@@ -38,12 +37,11 @@ CBString CBF_chr(int c) {
 	return str.left(chars);
 }
 
- CBString CBF_right(CBString cbstr, int chars) {
+ LString CBF_right(LString str, int chars) {
 	if (chars <= 0) {
 		error(U"Right: Positive number required");
 		return LString();
 	}
-	LString str(cbstr);
 	if (chars > (int)str.length()) {
 		error(U"Right: Parameter must be less than the length of the string");
 		return LString();
@@ -52,40 +50,40 @@ CBString CBF_chr(int c) {
 	return str.right(chars);
 }
 
- int CBF_inStr(CBString cbstr, CBString find) {
+ int CBF_inStr(LString cbstr, LString find) {
 	int index = LString(cbstr).indexOf(find);
 	if (index == -1) return -1;
 	return ++index;
 }
 
- int CBF_inStr(CBString cbstr, CBString find, int start) {
+ int CBF_inStr(LString cbstr, LString find, int start) {
 	int index = LString(cbstr).indexOf(find, start - 1);
 	if (index == -1) return -1;
 	return ++index;
 }
 
-CBString CBF_strRemove(CBString cbstr, int begin, int len) {
+LString CBF_strRemove(LString cbstr, int begin, int len) {
 	LString str(cbstr);
 	str.remove(begin - 1, len);
 	return str;
 }
 
-CBString CBF_trim(CBString cbstr) {
+LString CBF_trim(LString cbstr) {
 	LString str(cbstr);
 	return str.trimmed();
 }
 
-CBString CBF_lower(CBString cbstr) {
+LString CBF_lower(LString cbstr) {
 	LString str(cbstr);
 	return str.toLower();
 }
 
-CBString CBF_upper(CBString cbstr) {
+LString CBF_upper(LString cbstr) {
 	LString str(cbstr);
 	return str.toUpper();
 }
 
-int CBF_len(CBString cbstr) {
+int CBF_len(LString cbstr) {
 	return LString(cbstr).size();
 }
 

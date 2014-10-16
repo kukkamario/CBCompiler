@@ -18,23 +18,23 @@ void CBF_endSearch() {
 	endSearch();
 }
 
-void CBF_chDir(CBString dir) {
+void CBF_chDir(LString dir) {
 	chDir(dir);
 }
 
-void CBF_makeDir(CBString dir) {
+void CBF_makeDir(LString dir) {
 	makeDir(dir);
 }
 
-void CBF_copyFile(CBString src, CBString dest) {
+void CBF_copyFile(LString src, LString dest) {
 	copyFile(src, dest);
 }
 
-void CBF_deleteFile(CBString file) {
+void CBF_deleteFile(LString file) {
 	deleteFile(file);
 }
 
-void CBF_execute(CBString f) {
+void CBF_execute(LString f) {
 	execute(f);
 }
 
@@ -54,11 +54,11 @@ void CBF_writeFloat(File *file, float v) {
 	writeFloat(file, v);
 }
 
-void CBF_writeString(File *file, CBString v) {
+void CBF_writeString(File *file, LString v) {
 	writeString(file, v);
 }
 
-void CBF_writeLine(File *file, CBString v) {
+void CBF_writeLine(File *file, LString v) {
 	writeLine(file, v);
 }
 
@@ -78,23 +78,23 @@ float CBF_readFloat(File *file) {
 	return readFloat(file);
 }
 
-CBString CBF_readString(File *file) {
+LString CBF_readString(File *file) {
 	return readString(file);
 }
 
-CBString CBF_readLine(File *file) {
+LString CBF_readLine(File *file) {
 	return readLine(file);
 }
 
-File *CBF_openToRead(CBString path) {
+File *CBF_openToRead(LString path) {
 	return openToRead(path);
 }
 
-File *CBF_openToWrite(CBString path) {
+File *CBF_openToWrite(LString path) {
 	return openToWrite(path);
 }
 
-File *CBF_openToEdit(CBString path) {
+File *CBF_openToEdit(LString path) {
 	return openToEdit(path);
 }
 
@@ -102,23 +102,23 @@ int CBF_fileOffset(File *f) {
 	return fileOffset(f);
 }
 
-CBString CBF_findFile() {
+LString CBF_findFile() {
 	return findFile();
 }
 
-CBString CBF_currentDir(void) {
+LString CBF_currentDir(void) {
 	return currentDir();
 }
 
-bool CBF_fileExists(CBString path) {
+bool CBF_fileExists(LString path) {
 	return fileExists(path);
 }
 
-bool CBF_isDirectory(CBString path) {
+bool CBF_isDirectory(LString path) {
 	return isDirectory(path);
 }
 
-int CBF_fileSize(CBString path) {
+int CBF_fileSize(LString path) {
 	return fileSize(path);
 }
 

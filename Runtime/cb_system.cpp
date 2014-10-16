@@ -22,17 +22,9 @@ int CBF_int(float f) {
 	return int(f + 0.5f);
 }
 
-int CBF_int(CBString s) {
-	return LString(s).toInt();
+int CBF_int(LString s) {
+	return s.toInt();
 }
-
-//extern "C" float CBF_floatI(int i) {
-//	return float(i);
-//}
-
-//extern "C" float CBF_floatS(CBString s) {
-//	return LString(s).toFloat();
-//}
 
 
 void CBF_print(int i) {
@@ -63,8 +55,8 @@ int CBF_fps() {
 	return Window::instance()->fps();
 }
 
-void CBF_makeError(CBString errorMsg) {
-	error(LString(errorMsg));
+void CBF_makeError(LString errorMsg) {
+	error(errorMsg);
 	sys::closeProgram();
 }
 
