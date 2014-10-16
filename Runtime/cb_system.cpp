@@ -44,11 +44,7 @@ void CBF_print(float f) {
 }
 
 void CBF_print(LString s) {
-#ifdef _WIN32 //sizeof(wchar_t) == 2
-	std::wcout << s.toWString() << std::endl;
-#else //wchar_t == char32_t
-	std::cout << s.toUtf8() << std::endl;
-#endif
+	sys::writeToOutput(s + L'\n');
 }
 
 void CBF_print() {

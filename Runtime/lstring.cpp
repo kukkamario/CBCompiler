@@ -71,6 +71,7 @@ LStringData *LStringData::copy(LStringData *o) {
 		memcpy(o, ret, sizeof(LStringData));
 		ret->mUtf8String = 0;
 		ret->mRefCount = 1;
+		ret->mOffset += buffer - reinterpret_cast<char*>(o);
 		return ret;
 	}
 	char *buffer = new char[sizeof(LStringData) + o->mCapacity * sizeof(LChar)];
@@ -87,10 +88,28 @@ void LStringData::destruct(LStringData *d) {
 }
 
 void LStringData::increase() {
+#if STRING_CAVEMAN_DEBUGGING
+	printf("Increase %x to %i     Offset:%i", this, mRefCount + 1, mOffset);
+	if (mUtf8String) {
+		printf("  %s\n", mUtf8String->c_str());
+	}
+	else {
+		printf("\n");
+	}
+#endif
 	atomicIncrease(mRefCount);
 }
 
 bool LStringData::decrease() {
+#if STRING_CAVEMAN_DEBUGGING
+	printf("Decrease %x to %i     Offset: %i", this, mRefCount - 1, mOffset);
+	if (mUtf8String) {
+		printf("  %s\n", mUtf8String->c_str());
+	}
+	else {
+		printf("\n");
+	}
+#endif
 	if (atomicDecrease(mRefCount)) {
 		atomicThreadFenceAcquire();
 		LStringData::destruct(this);
@@ -142,12 +161,12 @@ LString::LString(const LString &o) : mData(o.mData) { }
 LString::LString(LStringData *data, bool increaseReference) :
 	mData(data) {
 	if (increaseReference) {
-		mData->increase();
+		mData.increase();
 	}
 }
 
 
-LStringData *LString::returnData() {
+LStringData *LString::returnData() const {
 	mData.increase();
 	return mData.unsafePointer();
 }
@@ -348,6 +367,19 @@ LString LString::operator +(const LString &o) const {
 	std::copy(o.mData->begin(), o.mData->end(), newStr->begin() + this->length());
 
 	newStr->mSize = this->length() + o.length();
+	return LString(newStr, false);
+}
+
+LString LString::operator +(LChar o) const {
+	if (this->isEmpty()) {
+		return LString(&o, 1);
+	}
+	if (o == U'0') return *this;
+
+	LStringData *newStr = LStringData::create(this->length() + 1);
+	std::copy(this->mData->begin(), this->mData->end(), newStr->begin());
+	newStr->begin()[this->length()] = o;
+	newStr->mSize = this->length() + 1;
 	return LString(newStr, false);
 }
 

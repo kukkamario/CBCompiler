@@ -23,6 +23,7 @@ int CALLBACK WinMain(
 #else
 int main(int, char **) {
 #endif
+	sys::init();
 	info(U"Initializing types and strings");
 	CB_initialize();
 

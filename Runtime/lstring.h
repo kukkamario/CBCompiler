@@ -83,6 +83,7 @@ class LStringData {
 		bool operator < (const LString &o) const;
 		bool operator <= (const LString &o) const;
 		LString operator + (const LString &o) const;
+		LString operator + (LChar o) const;
 		LString & operator += (const LString &o);
 		LString & operator += (LChar c);
 		LChar &operator[] (int i);
@@ -184,7 +185,7 @@ class LStringData {
 			private:
 				LStringData *mPointer;
 		};
-		LStringData *returnData();
+		LStringData *returnData() const;
 
 		size_t nextSize() const;
 		LSharedStringDataPointer mData;
