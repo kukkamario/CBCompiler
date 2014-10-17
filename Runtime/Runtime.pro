@@ -85,6 +85,12 @@ unix {
 	QMAKE_RANLIB = ''
 }
 
+CONFIG(debug, debug|release) {
+	DEFINES += DEBUGGING_CHECKS
+} else {
+	DEFINES += NDEBUG
+}
+
 
 QMAKE_RUN_CC		= $(CC) $(CCFLAGS) $(INCPATH) -c $src -o $obj
 QMAKE_RUN_CC_IMP	= $(CC) $(CCFLAGS) $(INCPATH) -c $< -o $@

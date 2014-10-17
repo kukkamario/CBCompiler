@@ -1,6 +1,7 @@
-Const STEPP = 2
-Dim scale# = 1.5, pyÃ¶ritys# = 1
-Dim palettiR(255), palettiG(255), palettiB(255)
+Const SCREEN_W = 400
+Const SCREEN_H = 300
+Dim scale# = 1.5, pyöritys# = 1
+Dim palettiR[256], palettiG[256], palettiB[256]
 For i=0 To 255
     r# = (i / 16.0)
     r# = r * r
@@ -8,22 +9,23 @@ For i=0 To 255
     g# = g * g
     b# = Sin(i / 2.833) * 230 / 16
     b# = b * b
-    palettiR(i) = r
-    palettiG(i) = g
-    palettiB(i) = b
+    palettiR[i] = r
+    palettiG[i] = g
+    palettiB[i] = b
 Next i
 Repeat
-    pyÃ¶ritys = pyÃ¶ritys + 2.5
+    pyöritys = pyöritys + 2.5
     aika = aika+1
     vesiaika = vesiaika + 35
     level# = 1000 / (scale * scale * scale)
 
+	Lock2 2
     If level# = 0 Then level# = 240
-    For x=0 To 400 Step STEPP
-        For y=0 To 300 Step STEPP
-            //pyÃ¶ritys:
+    For x=0 To SCREEN_W - 1
+        For y=0 To SCREEN_H - 1
+            //pyöritys:
             d# = Distance(200, 150, x, y)
-            k# = WrapAngle(ATan((y - 150.5) / (x - 200.5)) + pyÃ¶ritys)
+            k# = WrapAngle(ATan((y - 150.5) / (x - 200.5)) + pyöritys)
             If x > 200 Then k = k - 180
             x2 = Sin(k) * d * scale + 200
             y2 = Cos(k) * d * scale + 150
@@ -38,10 +40,10 @@ Repeat
             arvo = arvo + (scaleI Shl 8) / Distance(x2, y2, 200 + Sin((aika - col) / 2.63) * 150, 150 + Sin(( aika - col) / 3.483) * 150)
 
             i = Max(0, Min(255, arvo))
-            Color palettiR(i), palettiG(i), palettiB(i)
-            Box x, y, STEPP, STEPP
+            PutPixel x, y, palettiR[i], palettiG[i], palettiB[i]
         Next y
     Next x
+	Unlock
 	Color 255,255,255
 	Text 10, 10, FPS()
     DrawScreen
