@@ -1,0 +1,91 @@
+Const IMG_SIZE_W = 1000
+Const IMG_SIZE_H = 1000
+Const LOCK_TESTS = 1000
+Const PIXEL_OPERATION_TESTS = 10000
+
+img As Image = MakeImage(IMG_SIZE_W, IMG_SIZE_H)
+
+Print "Warming up..."
+For i = 1 To LOCK_TESTS
+	Lock img
+	Unlock img
+Next
+
+
+Print "Starting Read-Only locking test"
+startT = Timer()
+For i = 1 To LOCK_TESTS
+	//Read only Lock
+	Lock2 img, 1
+	Unlock img
+Next
+endT = Timer()
+t# = Float(endT - startT) / LOCK_TESTS
+Print "Read-Only locking: " + t# + "ms"
+
+
+
+Print "Starting Write-Only locking test"
+startT = Timer()
+For i = 1 To LOCK_TESTS
+	//Write only Lock
+	Lock2 img, 2
+	Unlock img
+Next
+endT = Timer()
+t# = Float(endT - startT) / LOCK_TESTS
+Print "Write-Only locking: " + t# + "ms"
+
+
+Print "Starting Read-Write locking test"
+startT = Timer()
+For i = 1 To LOCK_TESTS
+	//Read-Write locking
+	Lock img
+	Unlock img
+Next
+endT = Timer()
+t# = Float(endT - startT) / LOCK_TESTS
+Print "Read-Write locking: " + t# + "ms"
+
+
+Print "Starting PutPixel test"
+Lock2 img, 2
+startT = Timer()
+For i = 1 To PIXEL_OPERATION_TESTS
+	For y = 0 To IMG_SIZE_H - 1
+		For x = 0 To IMG_SIZE_W -1
+			PutPixel img, x, y, 0
+		Next
+	Next y
+Next i
+endT = Timer()
+t# = Float(endT - startT) / PIXEL_OPERATION_TESTS
+Print "PutPixel: " + t# + "ms"
+
+Unlock img
+
+
+
+
+Print "Starting GetPixel test"
+
+stopOptimizingThisAway = 0
+Lock2 img, 1
+startT = Timer()
+For i = 1 To PIXEL_OPERATION_TESTS
+	For y = 0 To IMG_SIZE_H - 1
+		For x = 0 To IMG_SIZE_W -1
+			stopOptimizingThisAway = stopOptimizingThisAway + GetPixel(img, x, y)
+		Next
+	Next y
+Next i
+endT = Timer()
+t# = Float(endT - startT) / PIXEL_OPERATION_TESTS
+Print "GetPixel: " + t# + "ms"
+Print
+Print stopOptimizingThisAway
+Unlock img
+
+
+
