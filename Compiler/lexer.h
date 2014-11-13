@@ -68,7 +68,7 @@ class Lexer: public QObject
 		void combineTokens();
 
 		ReturnState readToEOL(QString::iterator &i, const QString::iterator &end);
-		ReturnState readToRemEnd(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file);
+		ReturnState readToEndRem(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file);
 		ReturnState readFloatDot(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);
 		ReturnState readNum(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);
 		ReturnState readHex(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file);

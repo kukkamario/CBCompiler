@@ -299,8 +299,8 @@ Lexer::ReturnState Lexer::readToEOL(QString::iterator &i, const QString::iterato
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readToRemEnd(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
-	const char * const endRem = "remend";
+Lexer::ReturnState Lexer::readToEndRem(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
+	const char * const endRem = "endrem";
 	int foundIndex = 0;
 	while (i != end) {
 		if (i->toLower() == endRem[foundIndex]) {
@@ -319,7 +319,7 @@ Lexer::ReturnState Lexer::readToRemEnd(QString::iterator &i, const QString::iter
 		}
 		i++;
 	}
-	emit warning(ErrorCodes::ecExpectingRemEndBeforeEOF, tr("Expecting RemEnd before end of file"), codePoint(i - 1, lineStart, line, file));
+	emit warning(ErrorCodes::ecExpectingRemEndBeforeEOF, tr("Expecting EndRem before end of file"), codePoint(i - 1, lineStart, line, file));
 	return Lexer::Error;
 }
 
@@ -430,8 +430,8 @@ Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::it
 		name += *i;
 		i++;
 	}
-	if (name == "remstart") {
-		return readToRemEnd(i, end, lineStart, line, file);
+	if (name == "rem") {
+		return readToEndRem(i, end, lineStart, line, file);
 	}
 	QMap<QString, Token::Type>::ConstIterator keyIt = mKeywords.find(name);
 	if (keyIt != mKeywords.end()) {
