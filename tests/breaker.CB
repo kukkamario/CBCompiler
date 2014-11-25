@@ -137,7 +137,7 @@ Repeat
 					b.b = 255
 					newB As Ball = CreateBall(b.x, b.y, b.mx + Rnd(-50, 50), b.my + Rnd(0, 50))
 					angB# = GetAngle(0, 0, b.mx# - oldMx, b.my#)
-					For i = 1 To 30
+					For i = 1 To 200
 						ang# = angB# + Rnd(-60, 60)
 						pow# = Rnd(50, 300)
 						CreateParticle(b.x, b.y, 255, 255, 255, Cos(ang#) * pow#, -Sin(ang#) * pow#, 300)
@@ -227,7 +227,10 @@ Repeat
 						EndIf
 					Next
 					If hits > 0 Then
-						For i = 1 To 100
+						pr = fr# / hits
+						pg = fg# / hits
+						pb = fb# / hits
+						For i = 1 To 1000
 							ang# = GetAngle(0, 0, b.mx#, b.my#) + Rnd(180, 360)
 							pow# = Rnd(0, 200)
 							CreateParticle(x, y, pr, pg, pb, Cos(ang#) * pow#, -Sin(ang#) * pow#, 150)
