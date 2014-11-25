@@ -437,10 +437,34 @@ VariableSymbol *SymbolCollector::variableDefinition(ast::VariableDefinition *def
 }
 
 VariableSymbol *SymbolCollector::variableDefinition(ast::ArrayInitialization *def, Scope *scope) {
+	ast::Node *array = def->array();
+
 	int dimCount = astListSize(def->dimensions());
 	ValueType *itemValueType = resolveValueType(def->valueType());
+	if (!itemValueType) return 0;
+	ast::Identifier *id = 0;
+	if (array->type() == ast::Node::ntIdentifier) {
+		id = array->cast<ast::Identifier>();
+	} else if (array->type() == ast::Node::ntVariable) {
+		ast::Variable *var = array->cast<ast::Variable>();
+		id = var->identifier();
+		if (var->valueType()->type() != ast::Node::ntDefaultType && def->valueType()->type() != ast::Node::ntDefaultType) {
+			ValueType *itemValueType2 = resolveValueType(var->valueType());
+			if (itemValueType != itemValueType2) {
+				emit error(ErrorCodes::ecVariableTypeDefinedTwice, tr("Array element type defined twice. %1 and %2").arg(itemValueType->name(), itemValueType2->name()), def->codePoint());
+				return 0;
+			}
+			else {
+				emit warning(WarningCodes::wcVariableTypeDefinedTwice, tr("Array element type defined twice."), def->codePoint());
+			}
+		}
+	}
+	else {
+		emit error(ErrorCodes::ecExpectingIdentifier, tr("Expecting an identifier in array initialization"), def->codePoint());
+		return 0;
+	}
 	ValueType *arrayValueType = mRuntime->valueTypeCollection().arrayValueType(itemValueType, dimCount);
-	return addVariableSymbol(def->identifier(), arrayValueType, scope);
+	return addVariableSymbol(id, arrayValueType, scope);
 }
 
 VariableSymbol *SymbolCollector::addVariableSymbol(ast::Identifier *identifier, ValueType *type, Scope *scope) {

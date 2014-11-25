@@ -646,21 +646,21 @@ class VariableDefinition : public Node {
 class ArrayInitialization : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		ArrayInitialization(const CodePoint &cp) : Node(cp), mIdentifier(0), mType(0), mDimensions(0) { }
+		ArrayInitialization(const CodePoint &cp) : Node(cp), mArray(0), mType(0), mDimensions(0) { }
 		~ArrayInitialization();
 		static Type staticType() { return ntArrayInitialization; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 3; }
 		Node *childNode(int n) const;
 
-		Identifier *identifier() const { return mIdentifier; }
-		void setIdentifier(Identifier *n) { mIdentifier = n; }
+		Node *array() const { return mArray; }
+		void setArray(Node *n) { mArray = n; }
 		Node *valueType() const { return mType; }
 		void setValueType(Node *type) { mType = type; }
 		Node *dimensions() const { return mDimensions; }
 		void setDimensions(Node *dim) { mDimensions = dim; }
 	protected:
-		Identifier *mIdentifier;
+		Node *mArray;
 		Node *mType;
 		Node *mDimensions;
 };

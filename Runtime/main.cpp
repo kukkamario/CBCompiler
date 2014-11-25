@@ -13,7 +13,7 @@ extern "C" void CB_main();
 extern "C" void CB_initialize();
 
 #ifdef _WIN32
-#include <window.h>
+#include <windows.h>
 int CALLBACK WinMain(
   HINSTANCE,
   HINSTANCE,
