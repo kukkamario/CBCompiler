@@ -156,7 +156,7 @@ void FunctionCodeGenerator::visit(ast::VariableDefinition *n) {
 void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
 	CHECK_UNREACHABLE(n->codePoint());
 
-	Value arr = generate(n->identifier());
+	Value arr = generate(n->array());
 	assert(arr.isReference());
 
 	if (arr.isNormalValue() && arr.valueType()->isArray()) {

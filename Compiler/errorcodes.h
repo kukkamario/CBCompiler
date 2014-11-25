@@ -46,6 +46,7 @@ enum ErrorCode {
 	ecExpectingLabel,
 	ecExpectingFunctionPointerType,
 	ecExpectingParameterTypeList,
+	ecExpectingArraySubscript,
 
 	ecFunctionReturnTypeDefinedTwice,
 	ecFunctionReturnTypeRequired,

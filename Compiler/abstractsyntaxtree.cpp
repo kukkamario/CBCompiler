@@ -301,7 +301,7 @@ Node *FunctionDefinition::childNode(int n) const {
 }
 
 ArrayInitialization::~ArrayInitialization() {
-	if (mIdentifier) delete mIdentifier;
+	if (mArray) delete mArray;
 	if (mType) delete mType;
 	if (mDimensions) delete mDimensions;
 }
@@ -309,7 +309,7 @@ ArrayInitialization::~ArrayInitialization() {
 Node *ArrayInitialization::childNode(int n) const {
 	switch (n) {
 		case 0:
-			return mIdentifier;
+			return mArray;
 		case 1:
 			return mType;
 		case 2:

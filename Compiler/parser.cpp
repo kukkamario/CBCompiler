@@ -415,32 +415,26 @@ ast::Identifier *Parser::expectIdentifierAfter(Parser::TokIterator &i, const QSt
 
 ast::ArrayInitialization *Parser::expectArrayInitialization(Parser::TokIterator &i) {
 	CodePoint cp = i->codePoint();
-	ast::Identifier *id = expectIdentifier(i);
+	ast::Node *array = expectCallOrArraySubscriptExpression(i);
 	if (mStatus == Error) return 0;
-	ast::Node *varType = tryVariableTypeDefinition(i);
-	if (mStatus == Error) { delete id; return 0; }
-	if (!expectLeftSquareBracket(i)) { delete id; return 0; }
-	ast::Node *dims = expectExpressionList(i);
-	if (mStatus == Error) { delete id; return 0; }
-	if (!expectRightSquareBracket(i)) { delete id; delete dims; return 0; }
-	ast::Node *varType2 = tryVariableAsType(i);
-	if (varType == 0) {
-		if (varType2 == 0) {
-			if (variableTypesAreEqual(varType, varType2)) {
-				emit error(ErrorCodes::ecVariableTypeDefinedTwice, tr("Variable \"%1\" type defined twice"), i->codePoint());
-				mStatus = ErrorButContinue;
-			}
-			else {
-				emit warning(WarningCodes::wcVariableTypeDefinedTwice, tr("Variable \"%1\" type defined twice"), i->codePoint());
-			}
-		}
+	ast::Node *varType = tryVariableAsType(i);
+	if (mStatus == Error) {
+		delete array;
+		return 0;
 	}
-	if (!varType) varType = varType2;
 	if (!varType) varType = new ast::DefaultType(cp);
 
+	if (array->type() != ast::Node::ntArraySubscript) {
+		emit error(ErrorCodes::ecExpectingArraySubscript, tr("Expecting array subscript expression after Redim"), i->codePoint());
+		delete array;
+		delete varType;
+	}
+
+	ast::ArraySubscript *subscript = array->cast<ast::ArraySubscript>();
+
 	ast::ArrayInitialization *init = new ast::ArrayInitialization(cp);
-	init->setDimensions(dims);
-	init->setIdentifier(id);
+	init->setArray(subscript->array());
+	init->setDimensions(subscript->subscript());
 	init->setValueType(varType);
 	return init;
 }
@@ -519,7 +513,7 @@ ast::Node *Parser::expectVariableDefinitionOrArrayInitialization(Parser::TokIter
 		if (!varType) varType = new ast::DefaultType(cp);
 
 		ast::ArrayInitialization *arr = new ast::ArrayInitialization(cp);
-		arr->setIdentifier(id);
+		arr->setArray(id);
 		arr->setDimensions(dims);
 		arr->setValueType(varType);
 		return arr;
@@ -660,19 +654,28 @@ void Parser::expectEndOfStatement(Parser::TokIterator &i) {
 }
 
 bool Parser::variableTypesAreEqual(ast::Node *a, ast::Node *b) {
-	assert(a->type() == ast::Node::ntNamedType || a->type() == ast::Node::ntArrayType);
-	assert(b->type() == ast::Node::ntNamedType || b->type() == ast::Node::ntArrayType);
+	assert(a->type() == ast::Node::ntNamedType || a->type() == ast::Node::ntArrayType || a->type() == ast::Node::ntFunctionPointerType);
+	assert(b->type() == ast::Node::ntNamedType || b->type() == ast::Node::ntArrayType || b->type() == ast::Node::ntFunctionPointerType);
 
 	if (a->type() != b->type()) return false;
 	if (a->type() == ast::Node::ntNamedType) {
 		return static_cast<ast::NamedType*>(a)->identifier()->name() == static_cast<ast::NamedType*>(b)->identifier()->name();
 	}
-	else { // ast::Node::ntArrayType
+	else if (a->type() == ast::Node::ntArrayType){ // ast::Node::ntArrayType
 		ast::ArrayType *arrTyA = static_cast<ast::ArrayType*>(a);
 		ast::ArrayType *arrTyB = static_cast<ast::ArrayType*>(b);
 		if (arrTyA->dimensions() != arrTyB->dimensions()) return false;
 		return variableTypesAreEqual(arrTyA->parentType(), arrTyB->parentType());
+	} else if (a->type() == ast::Node::ntFunctionPointerType) {
+		ast::FunctionPointerType *funcPtrTyA = a->cast<ast::FunctionPointerType>();
+		ast::FunctionPointerType *funcPtrTyB = b->cast<ast::FunctionPointerType>();
+		if (funcPtrTyA->childNodeCount() != funcPtrTyB->childNodeCount()) return false;
+		for (int i = 0; i < funcPtrTyA->childNodeCount(); i++) {
+			if (!variableTypesAreEqual(funcPtrTyA->childNode(i), funcPtrTyB->childNode(i))) return false;
+		}
+		return true;
 	}
+
 }
 
 bool Parser::isCommandParameterList(Parser::TokIterator i) {
