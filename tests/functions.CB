@@ -1,5 +1,9 @@
 Print func(23)
 
+funcPtr As Function(Integer, String) As String = func
+Print funcPtr(40, "Hello world")
+
 Function func$(parameter1, parameter2$ = "Default parameter")
 	Return "Func1(" + parameter1 + ", " + parameter2$ + ")"
 EndFunction
+

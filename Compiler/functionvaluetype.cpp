@@ -6,6 +6,7 @@
 #include "nullvaluetype.h"
 #include "abstractsyntaxtree.h"
 #include "booleanvaluetype.h"
+#include "functionselectorvaluetype.h"
 
 
 FunctionValueType::FunctionValueType(Runtime *r, ValueType *retType, const QList<ValueType *> &paramList) :
@@ -54,6 +55,15 @@ ValueType::CastCost FunctionValueType::castingCostToOtherValueType(const ValueTy
 }
 
 Value FunctionValueType::cast(Builder *, const Value &v) const {
+	if (v.valueType()->isFunctionSelector()) {
+		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(v.valueType());
+		if (funcSelector->overloads().size() == 1) {
+			Function *func = funcSelector->overloads().first();
+			if (func->functionValueType() == this) {
+				return Value(func->functionValueType(), func->function(), false);
+			}
+		}
+	}
 	if (v.valueType() != this) return Value();
 	return v;
 }
@@ -70,22 +80,33 @@ Value FunctionValueType::generateOperation(Builder *builder, int opType, const V
 	if (op2.valueType() == mRuntime->nullValueType()) {
 		op2 = Value(const_cast<FunctionValueType*>(this), defaultValue());
 	}
-	if (operand1.valueType() != operand2.valueType()) {
+	if (op2.valueType()->isFunctionSelector()) {
+		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(op2.valueType());
+		if (funcSelector->overloads().size() == 1) {
+			Function *func = funcSelector->overloads().first();
+			if (func->functionValueType() == this) {
+				op2 = Value(func->functionValueType(), func->function());
+			}
+		}
+	}
+
+	if (operand1.valueType() != op2.valueType()) {
 		operationFlags |= OperationFlag::NoSuchOperation;
 		return Value();
 	}
+
 	switch (opType) {
 		case ast::ExpressionNode::opAssign:
 			if (!operand1.isReference()) {
 				operationFlags |= OperationFlag::ReferenceRequired;
 				return Value();
 			}
-			builder->irBuilder().CreateStore(builder->llvmValue(operand2), operand1.value());
+			builder->irBuilder().CreateStore(builder->llvmValue(op2), operand1.value());
 			return operand1;
 		case ast::ExpressionNode::opEqual:
-			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(operand2)), false);
+			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
 		case ast::ExpressionNode::opNotEqual:
-			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(operand2)), false);
+			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
 	}
 	operationFlags |= OperationFlag::NoSuchOperation;
 	return Value();

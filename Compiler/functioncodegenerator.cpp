@@ -656,10 +656,10 @@ Value FunctionCodeGenerator::generate(ast::Identifier *n) {
 		}
 		case Symbol::stFunctionOrCommand: {
 			FunctionSymbol *funcSym = static_cast<FunctionSymbol*>(symbol);
-			if (funcSym->functions().size() == 1) {
+			/*if (funcSym->functions().size() == 1) {
 				Function *func = funcSym->functions().first();
 				return Value(func->functionValueType(), func->function(), false);
-			}
+			}*/
 
 			return Value(funcSym->functionSelector());
 		}
