@@ -34,6 +34,11 @@ int FunctionSelectorValueType::size() const {
 }
 
 ValueType::CastCost FunctionSelectorValueType::castingCostToOtherValueType(const ValueType *to) const {
+	if (mFunctions.size() == 1) {
+		if (mFunctions.first()->functionValueType() == to) {
+			return ValueType::ccNoCost;
+		}
+	}
 	if (to != this) return ValueType::ccNoCast;
 	return ValueType::ccNoCost;
 }
