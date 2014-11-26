@@ -30,6 +30,8 @@ class Window : public RenderTarget{
 
 		int fps() const { return mFPS; }
 
+		ALLEGRO_DISPLAY* display();
+
 		void handleEvent(const ALLEGRO_EVENT &event);
 
 		void setBackgroundColor(const ALLEGRO_COLOR &color);

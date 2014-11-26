@@ -11,6 +11,7 @@ enum KeyState {
 
 bool initInput();
 int scancodeToAllegroKey(int scan);
+int allegroKeyToScancode(int alkey);
 void eventLoopBegin();
 void eventLoopEnd();
 void handleKeyEvent(const ALLEGRO_EVENT &e);

@@ -1,4 +1,5 @@
 #include "inputinterface.h"
+#include "window.h"
 
 int CBF_keyDown(int scancode) {
 	return input::scancodeKeyState(scancode) & input::Down;
@@ -15,4 +16,24 @@ int CBF_keyHit(int scancode) {
 
 int CBF_escapeKey() {
 	return input::keyState(ALLEGRO_KEY_ESCAPE) & input::Down;
+}
+
+
+void CB_waitKey() {
+	ALLEGRO_EVENT e;
+	while(true) {
+		al_get_next_event(Window::instance()->eventQueue(), &e);
+		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
+			return;
+	}
+}
+
+
+int CBF_waitKey() {
+	ALLEGRO_EVENT e;
+	while(true) {
+		al_get_next_event(Window::instance()->eventQueue(), &e);
+		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
+			return e.keyboard.keycode;
+	}
 }

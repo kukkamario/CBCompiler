@@ -3,6 +3,7 @@
 #include "systeminterface.h"
 #include "window.h"
 static int sCBKeyMap[ALLEGRO_KEY_MAX] = {0};
+static int sAllegroKeyMap[ALLEGRO_KEY_MAX] = {0};
 static char sKeyStates[222] = {0};
 static bool sSafeExit = true;
 
@@ -113,6 +114,114 @@ bool input::initInput() {
 	sCBKeyMap[219] = ALLEGRO_KEY_LWIN;
 	sCBKeyMap[220] = ALLEGRO_KEY_RWIN;
 	sCBKeyMap[221] = ALLEGRO_KEY_MENU;
+
+	sAllegroKeyMap[0] = 0;
+	sAllegroKeyMap[ALLEGRO_KEY_ESCAPE] = 1;
+	sAllegroKeyMap[ALLEGRO_KEY_1] = 2;
+	sAllegroKeyMap[ALLEGRO_KEY_2] = 3;
+	sAllegroKeyMap[ALLEGRO_KEY_3] = 4;
+	sAllegroKeyMap[ALLEGRO_KEY_4] = 5;
+	sAllegroKeyMap[ALLEGRO_KEY_5] = 6;
+	sAllegroKeyMap[ALLEGRO_KEY_6] = 7;
+	sAllegroKeyMap[ALLEGRO_KEY_7] = 8;
+	sAllegroKeyMap[ALLEGRO_KEY_8] = 9;
+	sAllegroKeyMap[ALLEGRO_KEY_9] = 10;
+	sAllegroKeyMap[ALLEGRO_KEY_0] = 11;
+	sAllegroKeyMap[ALLEGRO_KEY_EQUALS] = 12;
+	sAllegroKeyMap[ALLEGRO_KEY_OPENBRACE] = 13;
+	sAllegroKeyMap[ALLEGRO_KEY_BACKSPACE] = 14;
+	sAllegroKeyMap[ALLEGRO_KEY_TAB] = 15;
+	sAllegroKeyMap[ALLEGRO_KEY_Q] = 16;
+	sAllegroKeyMap[ALLEGRO_KEY_W] = 17;
+	sAllegroKeyMap[ALLEGRO_KEY_E] = 18;
+	sAllegroKeyMap[ALLEGRO_KEY_R] = 19;
+	sAllegroKeyMap[ALLEGRO_KEY_T] = 20;
+	sAllegroKeyMap[ALLEGRO_KEY_Y] = 21;
+	sAllegroKeyMap[ALLEGRO_KEY_U] = 22;
+	sAllegroKeyMap[ALLEGRO_KEY_I] = 23;
+	sAllegroKeyMap[ALLEGRO_KEY_O] = 24;
+	sAllegroKeyMap[ALLEGRO_KEY_P] = 25;
+	sAllegroKeyMap[ALLEGRO_KEY_CLOSEBRACE] = 26;
+	sAllegroKeyMap[ALLEGRO_KEY_SEMICOLON] = 27;
+	sAllegroKeyMap[ALLEGRO_KEY_ENTER] = 28;
+	sAllegroKeyMap[ALLEGRO_KEY_LCTRL] = 29;
+	sAllegroKeyMap[ALLEGRO_KEY_A] = 30;
+	sAllegroKeyMap[ALLEGRO_KEY_S] = 31;
+	sAllegroKeyMap[ALLEGRO_KEY_D] = 32;
+	sAllegroKeyMap[ALLEGRO_KEY_F] = 33;
+	sAllegroKeyMap[ALLEGRO_KEY_G] = 34;
+	sAllegroKeyMap[ALLEGRO_KEY_H] = 35;
+	sAllegroKeyMap[ALLEGRO_KEY_J] = 36;
+	sAllegroKeyMap[ALLEGRO_KEY_K] = 37;
+	sAllegroKeyMap[ALLEGRO_KEY_L] = 38;
+	sAllegroKeyMap[ALLEGRO_KEY_TILDE] = 39;
+	sAllegroKeyMap[ALLEGRO_KEY_QUOTE] = 40;
+	sAllegroKeyMap[ALLEGRO_KEY_BACKSLASH] = 41;
+	sAllegroKeyMap[ALLEGRO_KEY_LSHIFT] = 42;
+	sAllegroKeyMap[ALLEGRO_KEY_SLASH] = 43;
+	sAllegroKeyMap[ALLEGRO_KEY_Z] = 44;
+	sAllegroKeyMap[ALLEGRO_KEY_X] = 45;
+	sAllegroKeyMap[ALLEGRO_KEY_C] = 46;
+	sAllegroKeyMap[ALLEGRO_KEY_V] = 47;
+	sAllegroKeyMap[ALLEGRO_KEY_B] = 48;
+	sAllegroKeyMap[ALLEGRO_KEY_N] = 49;
+	sAllegroKeyMap[ALLEGRO_KEY_M] = 50;
+	sAllegroKeyMap[ALLEGRO_KEY_COMMA] = 51;
+	sAllegroKeyMap[ALLEGRO_KEY_FULLSTOP] = 52;
+	sAllegroKeyMap[ALLEGRO_KEY_MINUS] = 53;
+	sAllegroKeyMap[ALLEGRO_KEY_RSHIFT] = 54;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_ASTERISK] = 55;
+	sAllegroKeyMap[ALLEGRO_KEY_ALT] = 56;
+	sAllegroKeyMap[ALLEGRO_KEY_SPACE] = 57;
+	sAllegroKeyMap[ALLEGRO_KEY_CAPSLOCK] = 58;
+	sAllegroKeyMap[ALLEGRO_KEY_F1] = 59;
+	sAllegroKeyMap[ALLEGRO_KEY_F2] = 60;
+	sAllegroKeyMap[ALLEGRO_KEY_F3] = 61;
+	sAllegroKeyMap[ALLEGRO_KEY_F4] = 62;
+	sAllegroKeyMap[ALLEGRO_KEY_F5] = 63;
+	sAllegroKeyMap[ALLEGRO_KEY_F6] = 64;
+	sAllegroKeyMap[ALLEGRO_KEY_F7] = 65;
+	sAllegroKeyMap[ALLEGRO_KEY_F8] = 66;
+	sAllegroKeyMap[ALLEGRO_KEY_F9] = 67;
+	sAllegroKeyMap[ALLEGRO_KEY_F10] = 68;
+	sAllegroKeyMap[ALLEGRO_KEY_PAUSE] = 69;
+	sAllegroKeyMap[ALLEGRO_KEY_SCROLLLOCK] = 70;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_7] = 71;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_8] = 72;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_9] = 73;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_MINUS] = 74;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_4] = 75;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_5] = 76;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_6] = 77;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_PLUS] = 78;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_1] = 79;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_2] = 80;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_3] = 81;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_0] = 82;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_DELETE] = 83;
+	sAllegroKeyMap[ALLEGRO_KEY_BACKSLASH2] = 86;
+	sAllegroKeyMap[ALLEGRO_KEY_F11] = 87;
+	sAllegroKeyMap[ALLEGRO_KEY_F12] = 88;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_ENTER] = 156;
+	sAllegroKeyMap[ALLEGRO_KEY_RCTRL] = 157;
+	sAllegroKeyMap[ALLEGRO_KEY_PAD_SLASH] = 181;
+	sAllegroKeyMap[ALLEGRO_KEY_PRINTSCREEN] = 183;
+	sAllegroKeyMap[ALLEGRO_KEY_ALTGR] = 184;
+	sAllegroKeyMap[ALLEGRO_KEY_NUMLOCK] = 197;
+	sAllegroKeyMap[ALLEGRO_KEY_HOME] = 199;
+	sAllegroKeyMap[ALLEGRO_KEY_UP] = 200;
+	sAllegroKeyMap[ALLEGRO_KEY_PGUP] = 201;
+	sAllegroKeyMap[ALLEGRO_KEY_LEFT] = 203;
+	sAllegroKeyMap[ALLEGRO_KEY_RIGHT] = 205;
+	sAllegroKeyMap[ALLEGRO_KEY_END] = 207;
+	sAllegroKeyMap[ALLEGRO_KEY_DOWN] = 208;
+	sAllegroKeyMap[ALLEGRO_KEY_PGDN] = 209;
+	sAllegroKeyMap[ALLEGRO_KEY_INSERT] = 210;
+	sAllegroKeyMap[ALLEGRO_KEY_DELETE] = 211;
+	sAllegroKeyMap[ALLEGRO_KEY_LWIN] = 219;
+	sAllegroKeyMap[ALLEGRO_KEY_RWIN] = 220;
+	sAllegroKeyMap[ALLEGRO_KEY_MENU] = 221;
+
 	if (!(al_install_keyboard() && al_install_mouse())) return false;
 	al_register_event_source(Window::instance()->eventQueue(), al_get_keyboard_event_source());
 	al_register_event_source(Window::instance()->eventQueue(), al_get_mouse_event_source());
@@ -123,6 +232,11 @@ bool input::initInput() {
 int input::scancodeToAllegroKey(int scan) {
 	if (scan > 0 && scan < 222) return sCBKeyMap[scan];
 	return 0;
+}
+
+
+int input::allegroKeyToScancode(int alkey) {
+	return sAllegroKeyMap[alkey];
 }
 
 
@@ -162,3 +276,4 @@ void input::setSafeExit(bool t) {
 input::KeyState input::keyState(int alKey) {
 	return (input::KeyState) sKeyStates[alKey];
 }
+

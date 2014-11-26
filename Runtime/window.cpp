@@ -140,6 +140,10 @@ void Window::cls() {
 	al_clear_to_color(mBackgroundColor);
 }
 
+ALLEGRO_DISPLAY *Window::display() {
+	return mDisplay;
+}
+
 void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {
 	mBackgroundColor = color;
 }

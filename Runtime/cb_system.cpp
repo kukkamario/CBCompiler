@@ -64,3 +64,6 @@ void CBF_wait(int t) {
 	al_rest((double)t / 1000.0);
 }
 
+void CB_setWindow(LString cbstr) {
+	al_set_window_title(Window::instance()->display(), cbstr.toUtf8().c_str());
+}
