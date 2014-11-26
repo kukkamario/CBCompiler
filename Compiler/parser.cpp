@@ -850,6 +850,7 @@ ast::Node *Parser::tryRedim(Parser::TokIterator &i) {
 		}
 		inits.append(arrInit);
 	} while ((i++)->type() == Token::Comma);
+	--i;
 
 	ast::Redim *arr = new ast::Redim(cp);
 	arr->setArrayInializations(inits);
