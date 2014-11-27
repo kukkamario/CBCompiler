@@ -19,7 +19,7 @@ int CBF_escapeKey() {
 }
 
 
-void CB_waitKey() {
+void CBF_waitKey() {
 	ALLEGRO_EVENT e;
 	while(true) {
 		al_get_next_event(Window::instance()->eventQueue(), &e);
@@ -29,11 +29,3 @@ void CB_waitKey() {
 }
 
 
-int CBF_waitKey() {
-	ALLEGRO_EVENT e;
-	while(true) {
-		al_get_next_event(Window::instance()->eventQueue(), &e);
-		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
-			return e.keyboard.keycode;
-	}
-}
