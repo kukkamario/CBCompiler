@@ -19,7 +19,17 @@ int CBF_escapeKey() {
 }
 
 
-void CBF_waitKey() {
+int CBF_waitKey() {
+	ALLEGRO_EVENT e;
+	while(true) {
+		al_get_next_event(Window::instance()->eventQueue(), &e);
+		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
+			return input::allegroKeyToScancode(e.keyboard.keycode);
+	}
+}
+
+/*Hack aler!*/
+void CBF_WaitKey() {
 	ALLEGRO_EVENT e;
 	while(true) {
 		al_get_next_event(Window::instance()->eventQueue(), &e);
@@ -27,5 +37,3 @@ void CBF_waitKey() {
 			return;
 	}
 }
-
-

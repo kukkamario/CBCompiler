@@ -15,14 +15,22 @@ void math::randomize(int seed){
 	::srand(seed);
 }
 
-
+/*
 double math::wrapAngle(double a) {
 	a = fmod(a, 360.0);
 	if (a < 0)
 		a += 360;
 	return a;
-}
+} */
 
+//Wouldn't this be a nicer solution? ~MaGetzUb
+double math::wrapAngle(double a) {
+	while(a > 360.0)
+		a -= 360.0;
+	while(a < 0.0)
+		a += 360;
+	return a;
+}
 
 double math::rnd() {
 	return ::rand() / (double)RAND_MAX;

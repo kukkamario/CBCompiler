@@ -43,6 +43,21 @@ void CBF_print() {
 	printf("\n");
 }
 
+void CBF_write(int i) {
+	printf("%i", i);
+}
+
+void CBF_write(float f) {
+	printf("%f", f);
+}
+
+void CBF_write(LString s) {
+	sys::writeToOutput(s);
+}
+
+
+
+
 int CBF_timer() {
 	return sys::timeInMSec();
 }
@@ -69,4 +84,10 @@ void CBF_setWindow(LString cbstr) {
 }
 
 
+void CBF_setWindow(int val) {
+	al_set_window_title(Window::instance()->display(), LString::number(val).toUtf8().c_str());
+}
 
+void CBF_setWindow(float val) {
+	al_set_window_title(Window::instance()->display(), LString::number(val).toUtf8().c_str());
+}
