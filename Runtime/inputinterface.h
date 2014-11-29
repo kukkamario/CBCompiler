@@ -15,8 +15,19 @@ int allegroKeyToScancode(int alkey);
 void eventLoopBegin();
 void eventLoopEnd();
 void handleKeyEvent(const ALLEGRO_EVENT &e);
+void handleMouseEvent(const ALLEGRO_EVENT &e);
 KeyState keyState(int alKey);
+KeyState mouseState(int mousebutton);
 KeyState scancodeKeyState(int scan);
+
+int Mousex();
+int MouseY();
+int MouseZ();
+int MouseMoveX();
+int MouseMoveY();
+int MouseMoveZ();
+float MousePressure();
+
 void setSafeExit(bool t);
 
 }

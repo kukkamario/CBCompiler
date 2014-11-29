@@ -5,7 +5,16 @@
 static int sCBKeyMap[ALLEGRO_KEY_MAX] = {0};
 static int sAllegroKeyMap[ALLEGRO_KEY_MAX] = {0};
 static char sKeyStates[222] = {0};
+static char sMouseStates[5] = {0};
 static bool sSafeExit = true;
+static int sMouseX = 0;
+static int sMouseY = 0;
+static int sMouseZ = 0;
+static int sMouseMoveX = 0;
+static int sMouseMoveY = 0;
+static int sMouseMoveZ = 0;
+
+static float sMousePressure = 0.0f;
 
 bool input::initInput() {
 	sCBKeyMap[0] = 0;
@@ -252,6 +261,27 @@ void input::handleKeyEvent(const ALLEGRO_EVENT &e) {
 	}
 }
 
+void input::handleMouseEvent(const ALLEGRO_EVENT &e) {
+	switch(e.type) {
+		case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+		case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
+			if(e.mouse.button < 5) {
+				sMouseStates[e.mouse.button] ^= 1;
+				sMouseStates[e.mouse.button] |= 2;
+			}
+		case ALLEGRO_EVENT_MOUSE_AXES:
+			sMouseX = e.mouse.x;
+			sMouseY = e.mouse.y;
+			sMouseZ = e.mouse.z;
+			sMouseMoveX = e.mouse.dx;
+			sMouseMoveY = e.mouse.dy;
+			sMouseMoveZ = e.mouse.dz;
+			sMousePressure = e.mouse.pressure;
+		break;
+	}
+}
+
+
 void input::eventLoopEnd() {
 }
 
@@ -259,6 +289,9 @@ void input::eventLoopEnd() {
 void input::eventLoopBegin() {
 	for (int i = 1; i < 222; i++) {
 		sKeyStates[i] &= 1;
+	}
+	for(int i = 0; i < 5; i++) {
+		sMouseStates[i] &= 1;
 	}
 }
 
@@ -276,4 +309,53 @@ void input::setSafeExit(bool t) {
 input::KeyState input::keyState(int alKey) {
 	return (input::KeyState) sKeyStates[alKey];
 }
+
+
+
+input::KeyState input::mouseState(int mousebutton) {
+	return (input::KeyState) sMouseStates[mousebutton];
+}
+
+
+int input::Mousex() {
+	return sMouseX;
+}
+
+int input::MouseY() {
+	return sMouseY;
+}
+
+int input::MouseZ() {
+	return sMouseZ;
+}
+
+int input::MouseMoveX() {
+	return sMouseMoveX;
+}
+
+int input::MouseMoveY() {
+	return sMouseMoveY;
+}
+
+int input::MouseMoveZ() {
+	return sMouseMoveZ;
+}
+
+
+float input::MousePressure() {
+	return sMousePressure;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 

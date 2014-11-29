@@ -151,6 +151,11 @@ void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {
 
 void Window::handleEvent(const ALLEGRO_EVENT &event) {
 	switch (event.type) {
+		case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+		case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
+		case ALLEGRO_EVENT_MOUSE_AXES:
+			input::handleMouseEvent(event);
+		break;
 		case ALLEGRO_EVENT_KEY_DOWN:
 		case ALLEGRO_EVENT_KEY_UP:
 			input::handleKeyEvent(event); break;

@@ -34,3 +34,46 @@ void CBF_WaitKey() {
 	CBF_waitKey();
 	return;
 }
+
+
+int CBF_mouseX() {
+	return input::Mousex();
+}
+
+int CBF_mouseY() {
+	return input::MouseY();
+}
+
+int CBF_mouseZ() {
+	return input::MouseZ();
+}
+
+
+int CBF_mouseMoveX() {
+	return input::MouseMoveX();
+}
+
+int CBF_mouseMoveY() {
+	return input::MouseMoveY();
+}
+
+int CBF_mouseMoveZ() {
+	return input::MouseMoveZ();
+}
+
+float CBF_MousePressure() {
+	return input::MousePressure();
+}
+
+int CBF_MouseDown(int button) {
+	return input::mouseState(button) & input::Down;
+}
+
+int CBF_MouseHit(int button) {
+	return input::mouseState(button) == input::Pressed;
+}
+
+int CBF_MouseUp(int button) {
+	return input::mouseState(button) == input::Released;
+}
+
