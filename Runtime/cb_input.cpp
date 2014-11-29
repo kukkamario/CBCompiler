@@ -22,18 +22,15 @@ int CBF_escapeKey() {
 int CBF_waitKey() {
 	ALLEGRO_EVENT e;
 	while(true) {
-		al_get_next_event(Window::instance()->eventQueue(), &e);
-		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
+		al_wait_for_event(Window::instance()->eventQueue(), &e);
+		input::handleKeyEvent(e);
+		if(e.type == ALLEGRO_EVENT_KEY_DOWN && (input::keyState(e.keyboard.keycode) & input::Pressed))
 			return input::allegroKeyToScancode(e.keyboard.keycode);
 	}
 }
 
 /*Hack aler!*/
 void CBF_WaitKey() {
-	ALLEGRO_EVENT e;
-	while(true) {
-		al_get_next_event(Window::instance()->eventQueue(), &e);
-		if(e.type == ALLEGRO_EVENT_KEY_DOWN)
-			return;
-	}
+	CBF_waitKey();
+	return;
 }
