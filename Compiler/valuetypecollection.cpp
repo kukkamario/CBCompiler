@@ -152,7 +152,7 @@ ValueType *ValueTypeCollection::generateFunctionValueType(llvm::FunctionType *fu
 	ValueType *retType = 0;
 	if (!funcTy->getReturnType()->isVoidTy()) {
 		retType = valueTypeForLLVMType(funcTy->getReturnType());
-	   if (!retType) return 0;
+		if (!retType) return 0;
 	}
 	QList<ValueType*> paramTypes;
 	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {

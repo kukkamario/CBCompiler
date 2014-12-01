@@ -3,8 +3,12 @@
 #include <allegro5/allegro5.h>
 #include "rendertarget.h"
 #include "common.h"
+#include <map>
+
 class Window : public RenderTarget{
 	public:
+		typedef void (*DrawCallback)(void);
+
 		enum WindowMode {
 			Windowed,
 			Resizable,
@@ -38,6 +42,8 @@ class Window : public RenderTarget{
 		const ALLEGRO_COLOR &backgroundColor() const { return mBackgroundColor; }
 
 		void flipBuffers();
+		int addDrawCallback(DrawCallback drawCallback);
+		void removeDrawCallback(int handle);
 	private:
 		bool activateRenderContext();
 
@@ -46,8 +52,11 @@ class Window : public RenderTarget{
 		ALLEGRO_COLOR mBackgroundColor;
 		WindowMode mWindowMode;
 
+		std::map<int, DrawCallback> mDrawCallbacks;
+
 		int mFPS;
 		int mFPSCounter;
+		int mCallbackCounter;
 		double mLastFPSUpdate;
 };
 
