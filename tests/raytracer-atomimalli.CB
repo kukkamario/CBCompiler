@@ -2,8 +2,8 @@
 
 include "coolVec.CB"
 
-Const screenw% = 300
-Const screenh% = 300
+Const screenw% = 400
+Const screenh% = 400
 
 Global fov=35
 Global maxiters=8
@@ -43,7 +43,7 @@ Function newMaterial(cv As colorVec, diffusivity#, specularity#) As Material
     m as Material
     m.cv=cv:m.specularity=specularity:m.diffusivity=diffusivity
     return m
-endFunction
+EndFunction
 
 Function newSphere(x#,y#,z#,size#,r#,g#,b#,diffusivity#,specularity#) As Sphere
     s As sphere = New(sphere)
@@ -64,7 +64,7 @@ newSphere(2,1,6,    1,      5,0,255, 0.8,1)
 newSphere(0,1.5,7,  1,      5,205,0, 0.8,1)
 newLight(-3,0,0)
 
-Global ambient As ColorVec = newColorVec(40,100,100)
+Global ambient As ColorVec = newColorVec(40,40,40)
 
 
 lastUpdate As Integer
@@ -90,12 +90,12 @@ Repeat
     Next s
 
     l As light = First(light)
-    l.pos.x=sin(t*9.0+90)*10
-    l.pos.z=cos(t*9.0+90)*10+10.0
+    l.pos.x=Sin(t*9.0+90)*10
+    l.pos.z=Cos(t*9.0+90)*10+10.0
 
     render
     DrawScreen
-    Print (Timer()-Tim)+" "+FPS()
+    SetWindow "FPS: " + FPS()
 Forever
 
 function render()
@@ -116,7 +116,7 @@ function render()
             PutPixel x,y,r,g,b
         Next
     Next
-    unlock
+    Unlock
 endfunction
 
 Function cast(pos As Vec, dir As Vec) As rayHit

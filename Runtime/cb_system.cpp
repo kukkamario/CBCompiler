@@ -91,3 +91,7 @@ void CBF_setWindow(int val) {
 void CBF_setWindow(float val) {
 	al_set_window_title(Window::instance()->display(), LString::number(val).toUtf8().c_str());
 }
+
+int CBF_addWindowDrawCallback(void (*callback)()) {
+	return Window::instance()->addDrawCallback(callback);
+}

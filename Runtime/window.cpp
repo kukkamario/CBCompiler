@@ -12,6 +12,7 @@ Window::Window():
 	mEventQueue(0),
 	mFPS(0),
 	mFPSCounter(0),
+	mCallbackCounter(0),
 	mLastFPSUpdate (0.0) {
 	assert(sInstance == 0);
 	sInstance = this;
@@ -121,7 +122,13 @@ void Window::drawscreen() {
 	while (al_get_next_event(mEventQueue, &e)) {
 		handleEvent(e);
 	}
+
 	input::eventLoopEnd();
+
+	for (std::map<int, DrawCallback>::const_iterator i = mDrawCallbacks.begin(); i != mDrawCallbacks.end(); i++) {
+		i->second();
+	}
+
 	al_flip_display();
 
 	mFPSCounter++;
@@ -146,6 +153,16 @@ ALLEGRO_DISPLAY *Window::display() {
 
 void Window::setBackgroundColor(const ALLEGRO_COLOR &color) {
 	mBackgroundColor = color;
+}
+
+int Window::addDrawCallback(Window::DrawCallback drawCallback) {
+	int id = mCallbackCounter++;
+	mDrawCallbacks[id] = drawCallback;
+	return id;
+}
+
+void Window::removeDrawCallback(int handle) {
+	mDrawCallbacks.erase(handle);
 }
 
 
