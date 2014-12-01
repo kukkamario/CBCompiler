@@ -45,6 +45,10 @@ Function Add(a As Vector2, b As Vector2) As Vector2
 	Return Vec2(a.x + b.x, a.y + b.y) 
 EndFunction 
 
+Function Negate(a As Vector2) As Vector2 
+	Return Vec2(-a.x, -a.y)
+Endfunction 
+
 Function Sub(a As Vector2, b As Vector2) As Vector2 
 	Return Vec2(a.x - b.x, a.y - b.y) 
 EndFunction 
@@ -127,6 +131,10 @@ Function Add(a As Vector3, b As Vector3) As Vector3
 	Return Vec3(a.x + b.x, a.y + b.y, a.z + b.z) 
 EndFunction 
 
+Function Negate(a As Vector3) As Vector3 
+	Return Vec3(-a.x, -a.y, -a.z)
+Endfunction 
+
 Function Sub(a As Vector3, b As Vector3) As Vector3 
 	Return Vec3(a.x - b.x, a.y - b.y, a.z - b.z) 
 EndFunction 
@@ -207,6 +215,10 @@ EndFunction
 Function Add(a As Vector4, b As Vector4) As Vector4 
 	Return Vec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w) 
 EndFunction 
+
+Function Negate(a As Vector4) As Vector4 
+	Return Vec4(-a.x, -a.y, -a.z, -a.w)
+Endfunction 
 
 Function Sub(a As Vector4, b As Vector4) As Vector4 
 	Return Vec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w) 
