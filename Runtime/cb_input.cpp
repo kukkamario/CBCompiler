@@ -65,15 +65,31 @@ float CBF_MousePressure() {
 	return input::MousePressure();
 }
 
-int CBF_MouseDown(int button) {
+int CBF_mouseDown(int button) {
 	return input::mouseState(button) & input::Down;
 }
 
-int CBF_MouseHit(int button) {
+int CBF_mouseHit(int button) {
 	return input::mouseState(button) == input::Pressed;
 }
 
-int CBF_MouseUp(int button) {
+int CBF_mouseUp(int button) {
 	return input::mouseState(button) == input::Released;
+}
+
+void CBF_positionMouse(int x, int y) {
+	input::setMousePosition(x, y);
+}
+
+void CBF_showMouse(int cursor) {
+	input::showMouse(cursor);
+}
+
+int CBF_getChar() {
+	return input::getLastChar();
+}
+
+int CBF_getKey() {
+	return input::getLastKey();
 }
 

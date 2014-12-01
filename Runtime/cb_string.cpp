@@ -3,15 +3,15 @@
 #include <algorithm>
 #include <iomanip>
 
- LString CBF_str(int i) {
+LString CBF_str(int i) {
 	return LString::number(i);
 }
 
- LString CBF_str(float f) {
+LString CBF_str(float f) {
 	return LString::number(f);
 }
 
- LString CBF_hex(int i) {
+LString CBF_hex(int i) {
 	 LString hex = LString::number((unsigned int)i, 16);
 	 hex.leftJustify(8, U'0');
 	 return hex;
@@ -20,11 +20,24 @@
 LString CBF_chr(int c) {
 	char32_t cc[2];
 	cc[0] = c;
-	cc[1] = c;
+	cc[1] = 0;
 	return LString(cc);
 }
 
- LString CBF_left(LString str, int chars) {
+uint8_t CBF_Asc(LString c) {
+	return c[0] & 0x000000FF;
+}
+
+uint16_t CBF_UTF16(LString c) {
+	return c[0] & 0x0000FFFF;
+}
+
+int CBF_UTF32(LString c) {
+	return c[0];
+}
+
+
+LString CBF_left(LString str, int chars) {
 	if (chars <= 0) {
 		error(U"Left: Positive number required");
 		return LString();

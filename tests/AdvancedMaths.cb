@@ -1,0 +1,630 @@
+
+
+Const MaxFloat = 3.402823466^38
+
+Struct Vector2
+	Field x As Float
+	Field y As Float
+End Struct
+
+Struct Vector3
+	Field x As Float
+	Field y As Float
+	Field z As Float
+End Struct
+
+Struct Vector4
+	Field x As Float
+	Field y As Float
+	Field z As Float
+	Field w As Float
+End Struct
+
+Struct Quaternion
+	Field x As Float
+	Field y As Float
+	Field z As Float
+	Field w As Float 
+EndStruct 
+
+Struct Matrix4
+	Field m As Float[, ]
+End Struct
+
+
+
+
+Function Vec2(x As Float, y As Float) As Vector2
+	v As Vector2
+ v.x = x
+	v.y = y
+	Return v
+EndFunction 
+
+Function Add(a As Vector2, b As Vector2) As Vector2 
+	Return Vec2(a.x + b.x, a.y + b.y) 
+EndFunction 
+
+Function Sub(a As Vector2, b As Vector2) As Vector2 
+	Return Vec2(a.x - b.x, a.y - b.y) 
+EndFunction 
+
+Function Dot(a As Vector2, b as Vector2) As Float 
+	Return a.x * b.x + a.y * b.y
+EndFunction 
+
+Function LengthSq(vec As Vector2) As Float
+	Return Dot(vec, vec)
+EndFunction 
+
+Function Length(vec As Vector2) As Float
+	Return Sqrt(lengthSq(vec))
+EndFUnction 
+
+Function Normalize(vec As Vector2) As Vector2
+	out As Vector2
+	vlength As Float = length(vec)
+	out.x = vec.x / vlength
+	out.y = vec.y / vlength
+	Return out 
+EndFUnction 
+
+Function Mul(v As Vector2, n As Float) As Vector2 
+	Return Vec2(v.x * n, v.y * n)
+EndFunction 
+
+Function Div(v As Vector2, n As Float) As Vector2 
+	Return Vec2(v.x / n, v.y / n)
+EndFunction 
+
+Function Cross(a As Vector2, b as Vector2) As Float 
+	Return a.x * b.y - b.x * a.y
+EndFunction
+
+Function Reflect(dir As Vector2, surf As Vector2) As Vector2
+	normal As Vector2 = normalize(surf)
+	//return vec - 2*dot(vec, norm)*norm;
+	Return Sub(dir, Mul(normal, (2*dot(dir, normal))))
+EndFunction
+
+Function VecLeft(v As Vector2) As Vector2 
+	Return Vec2( - v.y, v.x)
+EndFunction 
+
+Function VecRight(v As Vector2) As Vector2 
+	Return Vec2(v.y, - v.x)
+EndFunction 
+
+Function Lerp(a As Vector2, b As Vector2, amt As Float) As Vector2
+	out As Vector2
+	out.x = a.x + (b.x - a.x) * amt
+	out.y = a.y + (b.y - a.y) * amt
+	Return out
+EndFunction 
+
+Function Print(vec As Vector2)
+	Print vec.x + ", " + vec.y
+EndFunction 
+
+Function Project(vec As Vector2, tovec As Vector2) As Vector2
+	toVecN As Vector2 = Normalize(tovec)
+	Return Vec2(toVecN.x*vec.x, toVecN.y*vec.y)
+EndFunction 
+
+Function Vec3(x As Float, y As Float, z As Float) As Vector3 
+	Dim v As Vector3
+	v.x = x
+	v.y = y
+	v.z = z
+	Return v
+EndFunction
+
+Function Vec3(vec As Vector4) As Vector3 
+	Return Vec3(vec.x, vec.y, vec.z)
+EndFunction 
+
+Function Add(a As Vector3, b As Vector3) As Vector3 
+	Return Vec3(a.x + b.x, a.y + b.y, a.z + b.z) 
+EndFunction 
+
+Function Sub(a As Vector3, b As Vector3) As Vector3 
+	Return Vec3(a.x - b.x, a.y - b.y, a.z - b.z) 
+EndFunction 
+
+Function Dot(a As Vector3, b as Vector3) As Float 
+	Return a.x * b.x + a.y * b.y + a.z * b.z 
+EndFunction 
+
+Function LengthSq(vec As Vector3) As Float
+	Return Dot(vec, vec)
+EndFunction 
+
+Function Length(vec As Vector3) As Float
+	Return Sqrt(lengthSq(vec))
+EndFUnction 
+
+Function Normalize(vec As Vector3) As Vector3
+	out As Vector3
+	vlength As Float = length(vec)
+	out.x = vec.x / vlength
+	out.y = vec.y / vlength
+	out.z = vec.z / vlength
+	Return out 
+EndFUnction 
+
+Function Mul(v As Vector3, n As Float) As Vector3 
+	Return Vec3(v.x * n, v.y * n, v.z * n)
+EndFunction 
+
+Function Div(v As Vector3, n As Float) As Vector3 
+	Return Vec3(v.x / n, v.y / n, v.z / n)
+EndFunction 
+
+Function Cross(a As Vector3, b as Vector3) As Vector3 
+	Return Vec3(a.y * b.z - a.z * b.y, a.x * b.z - a.z * b.x, a.x * b.y - a.x * b.y)
+EndFunction
+
+Function Reflect(dir As Vector3, surf As Vector3) As Vector3
+	normal As Vector3 = normalize(surf)
+	Return Sub(dir, Mul(Mul(normal, Dot(dir, normal)), 2))
+EndFunction 
+
+Function Mul(vec As Vector3, mat As Matrix4) As Vector3
+	out As Vector3
+	out.x = vec.x * mat.m[0, 0] + vec.y * mat.m[1, 0] + vec.z * mat.m[2, 0] + 1 * mat.m[3, 0]
+	out.y = vec.x * mat.m[0, 1] + vec.y * mat.m[1, 1] + vec.z * mat.m[2, 1] + 1 * mat.m[3, 1]
+	out.z = vec.x * mat.m[0, 2] + vec.y * mat.m[1, 2] + vec.z * mat.m[2, 2] + 1 * mat.m[3, 2]
+	Return out
+EndFunction 
+
+Function Lerp(a As Vector3, b As Vector3, amt As Float) As Vector3
+	out As Vector3
+	out.x = a.x + (b.x - a.x) * amt
+	out.y = a.y + (b.y - a.y) * amt
+	out.z = a.z + (b.z - a.z) * amt
+	Return out
+EndFunction 
+
+Function Print(vec As Vector3)
+	Print vec.x + ", " + vec.y + ", " + vec.z
+EndFunction 
+
+
+Function Vec4(x As Float, y As Float, z As Float, w As Float = 1.0) As Vector4 
+	v As Vector4
+	v.x = x
+	v.y = y
+	v.z = z
+	v.w = w
+	Return v
+EndFunction
+
+Function Vec4(vec As Vector3, w As Float = 1.0) As Vector4 
+	Return Vec4(vec.x, vec.y, vec.z, w)
+EndFunction 
+
+
+Function Add(a As Vector4, b As Vector4) As Vector4 
+	Return Vec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w) 
+EndFunction 
+
+Function Sub(a As Vector4, b As Vector4) As Vector4 
+	Return Vec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w) 
+EndFunction 
+
+Function Dot(a As Vector4, b as Vector4) As Float 
+	Return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w 
+EndFunction 
+
+Function LengthSq(vec As Vector4) As Float
+	Return Dot(vec, vec)
+EndFunction 
+
+Function Length(vec As Vector4) As Float
+	Return Sqrt(lengthSq(vec))
+ENdFUnction 
+
+Function Normalize(vec As Vector4) As Vector4
+	out As Vector4
+	vlength As Float = Length(vec)
+	out.x = vec.x / vlength
+	out.y = vec.y / vlength
+	out.z = vec.z / vlength
+	out.w = vec.w / vlength
+	Return out 
+EndFUnction 
+
+Function Mul(v As Vector4, n As Float) As Vector4 
+ Return Vec4(v.x * n, v.y * n, v.z * n, v.w * n)
+EndFunction 
+
+Function Mul(v As Vector2, mat As Matrix4) As Vector2
+	out As Vector2
+	out.x = v.x * mat.m[0, 0] + v.y * mat.m[1, 0] + 1.0 * mat.m[2, 0] + 1.0 * mat.m[3, 0]
+	out.y = v.x * mat.m[0, 1] + v.y * mat.m[1, 1] + 1.0 * mat.m[2, 1] + 1.0 * mat.m[3, 1]
+	Return out
+EndFunction 
+
+Function Div(v As Vector4, n As Float) As Vector4 
+ Return Vec4(v.x / n, v.y / n, v.z / n, v.w / n)
+EndFunction 
+
+Function Reflect(dir As Vector4, surf As Vector4) As Vector4
+	normal As Vector4 = normalize(surf)
+	Return Sub(dir, Mul(Mul(normal, Dot(dir, normal)), 2))
+EndFunction
+
+Function Mul(v As Vector4, mat As Matrix4) As Vector4
+	out As Vector4
+	out.x = v.x * mat.m[0, 0] + v.y * mat.m[1, 0] + v.z * mat.m[2, 0] + v.w * mat.m[3, 0]
+	out.y = v.x * mat.m[0, 1] + v.y * mat.m[1, 1] + v.z * mat.m[2, 1] + v.w * mat.m[3, 1]
+	out.z = v.x * mat.m[0, 2] + v.y * mat.m[1, 2] + v.z * mat.m[2, 2] + v.w * mat.m[3, 2]
+	out.w = v.x * mat.m[0, 3] + v.y * mat.m[1, 3] + v.z * mat.m[2, 3] + v.w * mat.m[3, 3]
+	Return out
+EndFunction 
+
+Function Lerp(a As Vector4, b As Vector4, amt As Float) As Vector4
+	out As Vector4
+	out.x = a.x + (b.x - a.x) * amt
+	out.y = a.y + (b.y - a.y) * amt
+	out.z = a.z + (b.z - a.z) * amt
+	out.w = a.w + (b.w - a.w) * amt
+	Return out
+EndFunction 
+
+Function Print(vec As Vector4)
+	Print vec.x + ", " + vec.y + ", " + vec.z + ", " + vec.w
+EndFunction  
+
+Function InitQuaternion(x As Float, y As Float, z As Float, w As Float) As Quaternion
+	quat As Quaternion
+	quat.x = x 
+	quat.y = y
+	quat.z = z
+	quat.w = w
+	Return quat
+EndFunction 
+
+Function InitQuaternionFromVector4(vec As Vector4) As Quaternion
+	Return InitQuaternion(vec.x, vec.y, vec.z, vec.w)
+EndFUnction 
+
+Function InitQuaternionFromAxisAngle(ang As Float, x As Float, y As Float, z As Float) As Quaternion
+	Return InitQuaternion(x * Sin(ang/2), y * Sin(ang/2), z * Sin(ang/2), Cos(ang/2))
+EndFunction
+
+Function InitQuaternionFromEulerAngle(x As Float, y As Float, z As Float) As Quaternion
+	'I'm not sure if a over 2 is actually needed..
+	xcos As Float = Cos(x/2) : xsin As Float = Sin(x/2)
+	ycos As Float = Cos(y/2) : ysin As Float = Sin(y/2)
+	zcos As Float = Cos(z/2) : zsin As Float = Sin(z/2) 
+	
+	x As Float = xcos*ycos*zcos + xsin*ysin*zsin
+	y As Float = xsin*ycos*zcos - xcos*ysin*zsin
+	z As Float = xcos*ysin*zcos + xsin*ycos*zsin
+	w As Float = xcos*ycos*zsin - xsin*ysin*zcos
+	
+	Return InitQuaternion(x, y, z, w) 
+EndFunction
+
+Function Dot(a As Quaternion, b As Quaternion) As Float 
+	Return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w
+EndFunction 
+
+Function LengthSq(a As Quaternion) As Float
+	Return Dot(a, a)
+EndFunction 
+
+Function Length(a As Quaternion) As Float
+	Return Sqrt(LengthSq(a))
+EndFunction 
+
+Function Normalize(a As Quaternion) As Quaternion
+	mag As Float = Length(a)
+	
+	x As Float = a.x / mag
+	y As Float = a.y / mag
+	z As Float = a.z / mag
+	w As Float = a.w / mag 
+	
+	Return InitQuaternion(x, y, z, w)
+EndFunction 
+
+//Would conjugate be a better name? 
+Function Inverse(quat As Quaternion) As Quaternion
+	Return InitQuaternion( - quat.x, - quat.y, - quat.z, quat.w)
+EndFunction 
+
+Function Mul(a As Quaternion, b As Quaternion) As Quaternion
+	w As Float = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z)
+	x As Float = (a.x * b.w) + (a.w * b.x) + (a.y * b.z) - (a.z * b.y)
+	y As Float = (a.y * b.w) + (a.w * b.y) + (a.z * b.x) - (a.x * b.z)
+	z As Float = (a.z * b.w) + (a.w * b.z) + (a.x * b.y) - (a.y * b.x)
+	Return InitQuaternion(x, y, z, w)
+End Function 
+
+Function Mul(q As Quaternion, v As Vector3) As Quaternion
+	w As Float = - (q.x * v.x) - (q.y * v.y) - (q.z * v.z)  
+	x As Float = (q.w * v.x) + (q.y * v.z) - (q.z * v.y)  
+	y As Float = (q.w * v.y) + (q.z * v.x) - (q.x * v.z)  
+	z As Float = (q.w * v.z) + (q.x * v.y) - (q.y * v.x)  
+	Return InitQuaternion(x, y, z, w)       
+EndFunction  			 
+
+
+
+
+Function InitIdentity() As Matrix4
+	Dim mat As Matrix4
+	Redim mat.m[4, 4]
+	
+	mat.m[0, 0] = 1.0: mat.m[1, 0] = 0.0: mat.m[2, 0] = 0.0: mat.m[3, 0] = 0.0 
+	mat.m[0, 1] = 0.0: mat.m[1, 1] = 1.0: mat.m[2, 1] = 0.0: mat.m[3, 1] = 0.0
+	mat.m[0, 2] = 0.0: mat.m[1, 2] = 0.0: mat.m[2, 2] = 1.0: mat.m[3, 2] = 0.0 
+	mat.m[0, 3] = 0.0: mat.m[1, 3] = 0.0: mat.m[2, 3] = 0.0: mat.m[3, 3] = 1.0
+	
+	Return mat
+EndFunction
+
+Function InitScreenSpaceTransform(width As Float, height As Float) As Matrix4
+	Dim mat As Matrix4 = InitIdentity()
+	
+	mat.m[0, 0] = width/2
+	mat.m[1, 1] = height/2 
+	mat.m[3, 0] = width/2
+	mat.m[3, 1] = height/2
+	mat.m[2, 2] = 1.0
+	mat.m[3, 3] = 1.0
+	
+	Return mat
+EndFunction
+
+
+
+Function InitTranslate(x As Float, y As Float, z As Float, w As Float = 1.0) As Matrix4
+	Dim mat As Matrix4 = InitIdentity()
+	
+	mat.m[3, 0] = x 
+	mat.m[3, 1] = y
+	mat.m[3, 2] = z 
+	mat.m[3, 3] = w
+	
+	Return mat
+EndFunction
+
+Function InitScale(x As Float, y As Float, z As Float, w As Float = 1.0) As Matrix4
+	Dim mat As Matrix4 = InitIdentity()
+	mat.m[0, 0] = x
+	mat.m[1, 1] = y
+	mat.m[2, 2] = z
+	mat.m[3, 3] = w
+	Return mat
+EndFunction
+
+Function InitOrtho(lft As FLoat, rght As Float, bottom As FLoat, top As Float, znear As Float, zfar As Float) As Matrix4
+
+	out As Matrix4 = InitIdentity()
+	out.m[0, 0] = 2.0 / (rght - lft)
+	out.m[1, 1] = 2.0 / (top - bottom)
+	out.m[2, 2] = - 2.0 / (zfar - znear)
+
+	out.m[3, 0] = - (rght + lft) / (rght - lft)
+	out.m[3, 1] = - (top + bottom) / (top - bottom)
+	out.m[3, 2] = - (zfar + znear) / (zfar - znear)
+
+	Return out
+
+EndFunction 
+
+Function InitLookAt(x As Float, y As Float, z As Float, fx As Float, fy As Float, fz As Float, ux As FLoat, uy As FLoat, uz As FLoat) As Matrix4
+	forward As Vector3 = normalize(Vec3(fx, fy, fz))
+	up As Vector3 = normalize(Vec3(ux, uy, uz))
+	rght As Vector3 = cross(forward, up)
+	mat As Matrix4 = InitTranslate(x, y, z)
+	
+	mat.m[0, 0] = rght.x
+	mat.m[1, 0] = rght.y
+	mat.m[2, 0] = rght.z
+	
+	mat.m[0, 1] = up.x
+	mat.m[1, 1] = up.y
+	mat.m[2, 1] = up.z
+	
+	mat.m[0, 2] = forward.x
+	mat.m[1, 2] = forward.y
+	mat.m[2, 2] = forward.z
+	
+	Return mat
+EndFUnction 
+
+
+Function InitFrustum(fleft As FLoat, fright As Float, ftop As Float, fbottom As FLoat, fnear As Float, ffar As Float) As Matrix4
+	Dim mat As Matrix4 = InitIdentity()
+
+	xdist As Float = fright - fleft
+	ydist As Float = ftop - fbottom
+	zdist As Float = ffar - fnear
+
+	mat.m[0, 0] = (2.0 * fnear) / xdist
+	mat.m[1, 1] = (2.0 * fnear) / ydist
+ 
+	mat.m[2, 0] = (fright + fleft) / xdist
+	mat.m[2, 1] = (ftop + fbottom) / ydist
+	mat.m[2, 2] = - (ffar + fnear) / zdist
+	mat.m[2, 3] = - 1.0
+ 
+	mat.m[3, 2] = - (2.0 * ffar * fnear) / zdist
+	mat.m[2, 3] = 1.0
+	
+	Return mat
+EndFunction 
+
+
+Function InitPerspective(aratio As Float, fov As Float, near As FLoat, far As Float) As Matrix4
+		fright As Float = near * tan(fov/2)      
+		fleft As Float = - fright           
+																			 
+		fbottom As Float = fleft / aratio         
+		ftop As Float = fright / aratio         
+																				 
+		Return InitFrustum(fleft, fright, fbottom, ftop, near, far)
+EndFunction
+
+Function Mul(a As Matrix4, b As Matrix4) As Matrix4 
+	Dim mat As Matrix4 = InitIdentity() 
+	for x = 0 to 3
+		for y = 0 to 3
+			mat.m[x, y] = a.m[x, 0] * b.m[0, y] + a.m[x, 1] * b.m[1, y] + a.m[x, 2] * b.m[2, y] + a.m[x, 3] * b.m[3, y]
+		next y
+	next x
+	Return mat
+EndFunction 
+
+Function Normalize(mat As Matrix4) As Matrix4
+	out As Matrix4 = InitIdentity()
+	For j = 0 to 2 
+		For i = 0 to 2
+			out.m[i, j] = mat.m[i, j]
+		Next i
+	Next j
+	Return out
+EndFunction 
+
+Function InitRotation(ang As Float, x As Float, y As Float, z As Float) As Matrix4
+	
+	c As Float = cos(ang)
+ s As FLoat = sin(ang)
+
+	Dim mat As Matrix4 = InitIdentity()
+	
+	mat.m[0, 0] = x*x*(1 - c) + c
+	mat.m[1, 0] = x*y*(1 - c) - z*s
+	mat.m[2, 0] = x*z*(1 - c) + y*s
+	
+	mat.m[0, 1] = x*y*(1 - c) + z*s
+	mat.m[1, 1] = y*y*(1 - c) + c
+	mat.m[2, 1] = y*z*(1 - c) - x*s
+	
+	mat.m[0, 2] = x*z*(1 - c) - y*s
+	mat.m[1, 2] = y*z*(1 - c) + x*s
+	mat.m[2, 2] = z*z*(1 - c) + c
+	
+	Return mat
+EndFunction
+
+Function Determinant(mat As Matrix4) As Float 
+
+	Det As Float = 0.0
+	Det = Det + mat.m[0, 0]*mat.m[1, 1]*mat.m[2, 2]*mat.m[3, 3] - mat.m[0, 0]*mat.m[1, 1]*mat.m[3, 2]*mat.m[2, 3] + mat.m[0, 0]*mat.m[2, 1]*mat.m[3, 2]*mat.m[1, 3] - mat.m[0, 0]*mat.m[2, 1]*mat.m[1, 2]*mat.m[3, 3]
+	Det = Det + mat.m[0, 0]*mat.m[3, 1]*mat.m[1, 2]*mat.m[2, 3] - mat.m[0, 0]*mat.m[3, 1]*mat.m[2, 2]*mat.m[1, 3] - mat.m[1, 0]*mat.m[2, 1]*mat.m[3, 2]*mat.m[0, 3] + mat.m[1, 0]*mat.m[2, 1]*mat.m[0, 2]*mat.m[3, 3]
+	Det = Det - mat.m[1, 0]*mat.m[3, 1]*mat.m[0, 2]*mat.m[2, 3] + mat.m[1, 0]*mat.m[3, 1]*mat.m[2, 2]*mat.m[0, 3] - mat.m[1, 0]*mat.m[0, 1]*mat.m[2, 2]*mat.m[3, 3] + mat.m[1, 0]*mat.m[0, 1]*mat.m[3, 2]*mat.m[2, 3]
+	Det = Det + mat.m[2, 0]*mat.m[3, 1]*mat.m[0, 2]*mat.m[1, 3] - mat.m[2, 0]*mat.m[3, 1]*mat.m[1, 2]*mat.m[0, 3] + mat.m[2, 0]*mat.m[0, 1]*mat.m[1, 2]*mat.m[3, 3] - mat.m[2, 0]*mat.m[0, 1]*mat.m[3, 2]*mat.m[1, 3]
+	Det = Det + mat.m[2, 0]*mat.m[1, 1]*mat.m[3, 2]*mat.m[0, 3] - mat.m[2, 0]*mat.m[1, 1]*mat.m[0, 2]*mat.m[3, 3] - mat.m[3, 0]*mat.m[0, 1]*mat.m[1, 2]*mat.m[2, 3] + mat.m[3, 0]*mat.m[0, 1]*mat.m[2, 2]*mat.m[1, 3]
+	Det = Det - mat.m[3, 0]*mat.m[1, 1]*mat.m[2, 2]*mat.m[0, 3] + mat.m[3, 0]*mat.m[1, 1]*mat.m[0, 2]*mat.m[2, 3] - mat.m[3, 0]*mat.m[2, 1]*mat.m[0, 2]*mat.m[1, 3] + mat.m[3, 0]*mat.m[2, 1]*mat.m[1, 2]*mat.m[0, 3]
+
+	Return Det
+EndFunction 
+
+Function Inverse(mat As Matrix4) As Matrix4 
+	
+	Det As Float = DeterMinant(mat)
+	if Det = 0 Then 
+		Return mat
+	Endif 
+	
+	out As Matrix4
+	ReDim out.m[4, 4]
+	
+	InvDet As Float = 1.0 / Det 
+	
+	out.m[0, 0] = invDet * (mat.m[1, 1] * (mat.m[2, 2] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 2]) + mat.m[1, 2] * (mat.m[2, 3] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 3]) + mat.m[1, 3] * (mat.m[2, 1] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 1]))
+	out.m[1, 0] = - invDet * (mat.m[1, 0] * (mat.m[2, 2] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 2]) + mat.m[1, 2] * (mat.m[2, 3] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 3]) + mat.m[1, 3] * (mat.m[2, 0] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 0]))
+	out.m[2, 0] = invDet * (mat.m[1, 0] * (mat.m[2, 1] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 1]) + mat.m[1, 1] * (mat.m[2, 3] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 3]) + mat.m[1, 3] * (mat.m[2, 0] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 0]))
+	out.m[3, 0] = - invDet * (mat.m[1, 0] * (mat.m[2, 1] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 1]) + mat.m[1, 1] * (mat.m[2, 2] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 2]) + mat.m[1, 2] * (mat.m[2, 0] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 0]))                                            
+	out.m[0, 1] = - invDet * (mat.m[0, 1] * (mat.m[2, 2] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[2, 3] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[2, 1] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 1]))
+	out.m[1, 1] = invDet * (mat.m[0, 0] * (mat.m[2, 2] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[2, 3] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[2, 0] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 0]))
+	out.m[2, 1] = - invDet * (mat.m[0, 0] * (mat.m[2, 1] * mat.m[3, 3] - mat.m[2, 3] * mat.m[3, 1]) + mat.m[0, 1] * (mat.m[2, 3] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[2, 0] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 0]))
+	out.m[3, 1] = invDet * (mat.m[0, 0] * (mat.m[2, 1] * mat.m[3, 2] - mat.m[2, 2] * mat.m[3, 1]) + mat.m[0, 1] * (mat.m[2, 2] * mat.m[3, 0] - mat.m[2, 0] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[2, 0] * mat.m[3, 1] - mat.m[2, 1] * mat.m[3, 0]))                                             
+	out.m[0, 2] = invDet * (mat.m[0, 1] * (mat.m[1, 2] * mat.m[3, 3] - mat.m[1, 3] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[1, 3] * mat.m[3, 1] - mat.m[1, 1] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[1, 1] * mat.m[3, 2] - mat.m[1, 2] * mat.m[3, 1]))
+	out.m[1, 2] = - invDet * (mat.m[0, 0] * (mat.m[1, 2] * mat.m[3, 3] - mat.m[1, 3] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[1, 3] * mat.m[3, 0] - mat.m[1, 0] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[1, 0] * mat.m[3, 2] - mat.m[1, 2] * mat.m[3, 0]))
+	out.m[2, 2] = invDet * (mat.m[0, 0] * (mat.m[1, 1] * mat.m[3, 3] - mat.m[1, 3] * mat.m[3, 1]) + mat.m[0, 1] * (mat.m[1, 3] * mat.m[3, 0] - mat.m[1, 0] * mat.m[3, 3]) + mat.m[0, 3] * (mat.m[1, 0] * mat.m[3, 1] - mat.m[1, 1] * mat.m[3, 0]))
+	out.m[3, 2] = - invDet * (mat.m[0, 0] * (mat.m[1, 1] * mat.m[3, 2] - mat.m[1, 2] * mat.m[3, 1]) + mat.m[0, 1] * (mat.m[1, 2] * mat.m[3, 0] - mat.m[1, 0] * mat.m[3, 2]) + mat.m[0, 2] * (mat.m[1, 0] * mat.m[3, 1] - mat.m[1, 1] * mat.m[3, 0]))                                             
+	out.m[0, 3] = - invDet * (mat.m[0, 1] * (mat.m[1, 2] * mat.m[2, 3] - mat.m[1, 3] * mat.m[2, 2]) + mat.m[0, 2] * (mat.m[1, 3] * mat.m[2, 1] - mat.m[1, 1] * mat.m[2, 3]) + mat.m[0, 3] * (mat.m[1, 1] * mat.m[2, 2] - mat.m[1, 2] * mat.m[2, 1]))
+	out.m[1, 3] = invDet * (mat.m[0, 0] * (mat.m[1, 2] * mat.m[2, 3] - mat.m[1, 3] * mat.m[2, 2]) + mat.m[0, 2] * (mat.m[1, 3] * mat.m[2, 0] - mat.m[1, 0] * mat.m[2, 3]) + mat.m[0, 3] * (mat.m[1, 0] * mat.m[2, 2] - mat.m[1, 2] * mat.m[2, 0]))
+	out.m[2, 3] = - invDet * (mat.m[0, 0] * (mat.m[1, 1] * mat.m[2, 3] - mat.m[1, 3] * mat.m[2, 1]) + mat.m[0, 1] * (mat.m[1, 3] * mat.m[2, 0] - mat.m[1, 0] * mat.m[2, 3]) + mat.m[0, 3] * (mat.m[1, 0] * mat.m[2, 1] - mat.m[1, 1] * mat.m[2, 0]))
+	out.m[3, 3] = invDet * (mat.m[0, 0] * (mat.m[1, 1] * mat.m[2, 2] - mat.m[1, 2] * mat.m[2, 1]) + mat.m[0, 1] * (mat.m[1, 2] * mat.m[2, 0] - mat.m[1, 0] * mat.m[2, 2]) + mat.m[0, 2] * (mat.m[1, 0] * mat.m[2, 1] - mat.m[1, 1] * mat.m[2, 0]))
+	
+	Return out
+EndFunction 
+
+//Vector initializers
+
+
+Function InitScreenSpaceTransform(vec As Vector2) As Matrix4
+	Return InitScreenSpaceTransform(vec.x, vec.y)
+EndFunction
+
+Function InitTranslate(vec As Vector4) As Matrix4
+	Return InitTranslate(vec.x, vec.y, vec.z, vec.w) 
+EndFunction
+
+Function InitTranslate(vec As Vector3) As Matrix4
+	Return InitTranslate(vec.x, vec.y, vec.z) 
+EndFunction
+
+Function InitTranslate(vec As Vector2) As Matrix4
+	Return InitTranslate(vec.x, vec.y, 1.0) 
+EndFunction
+
+Function InitScale(vec As Vector4) As Matrix4
+	Return InitScale(vec.x, vec.y, vec.z, vec.w)
+EndFunction
+
+Function InitScale(vec As Vector3) As Matrix4
+	Return InitScale(vec.x, vec.y, vec.z)
+EndFunction
+
+Function InitScale(vec As Vector2) As Matrix4
+	Return InitScale(vec.x, vec.y, 1.0)
+EndFunction
+
+Function InitOrtho(lefBottomNear As Vector3, rightTopFar As Vector3) As Matrix4
+	Return InitOrtho(lefBottomNear.x, rightTopFar.x, lefBottomNear.y, rightTopFar.y, lefBottomNear.z, rightTopFar.z)
+EndFunction 
+
+Function InitFrustum(lefBottomNear As Vector3, rightTopFar As Vector3) As Matrix4
+	Return InitFrustum(lefBottomNear.x, rightTopFar.x, lefBottomNear.y, rightTopFar.y, lefBottomNear.z, rightTopFar.z)
+EndFunction
+
+Function InitLookAt(camPosition As Vector3, camForward As Vector3, camUp As Vector3) As Matrix4
+	Return InitLookAt(camPosition.x, camPosition.y, camPosition.z, camForward.x, camForward.y, camForward.z, camUp.x, camUp.y, camUp.z)
+EndFUnction 
+
+Function InitRotation(ang As Float, axis As Vector3) As Matrix4
+	Return InitRotation(ang, axis.x, axis.y, axis.z)
+EndFunction
+
+Function GetRow(mat As Matrix4, row As Integer) As Vector4
+	Return Vec4(mat.m[0, row], mat.m[1, row], mat.m[2, row], mat.m[3, row])
+EndFunction 
+
+Function GetColumn(mat As Matrix4, col As Integer) As Vector4
+	Return Vec4(mat.m[col, 0], mat.m[col, 1], mat.m[col, 2], mat.m[col, 3])
+EndFunction 
+
+Function Element(mat As Matrix4, x As Integer, y As Integer) As Float
+	Return mat.m[x, y]
+EndFunction 
+
+Function Print(mat As Matrix4)
+	for j = 0 to 3
+		Write "["
+		for i = 0 to 3
+		Write mat.m[i, j]
+		if i <> 3 then Write ", "
+		next i
+		Write "]"
+		Print
+	next j
+	Print
+EndFUnction 

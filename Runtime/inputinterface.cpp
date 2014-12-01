@@ -2,6 +2,7 @@
 #include <allegro5/allegro.h>
 #include "systeminterface.h"
 #include "window.h"
+
 static int sCBKeyMap[ALLEGRO_KEY_MAX] = {0};
 static int sAllegroKeyMap[ALLEGRO_KEY_MAX] = {0};
 static char sKeyStates[222] = {0};
@@ -14,6 +15,8 @@ static int sMouseMoveX = 0;
 static int sMouseMoveY = 0;
 static int sMouseMoveZ = 0;
 
+static int sLastScanCode = 0;
+static int sLastChar = 0;
 static float sMousePressure = 0.0f;
 
 bool input::initInput() {
@@ -251,6 +254,9 @@ int input::allegroKeyToScancode(int alkey) {
 
 void input::handleKeyEvent(const ALLEGRO_EVENT &e) {
 	int keyCode = e.keyboard.keycode;
+	sLastScanCode = allegroKeyToScancode(keyCode);
+	if(e.keyboard.unichar != 0)
+		sLastChar = e.keyboard.unichar;
 	if (sSafeExit && e.type == ALLEGRO_EVENT_KEY_DOWN && keyCode == ALLEGRO_KEY_ESCAPE) {
 		sys::closeProgram();
 	}
@@ -347,15 +353,26 @@ float input::MousePressure() {
 }
 
 
+void input::setMousePosition(int x, int y) {
+	al_set_mouse_xy(Window::instance()->display(), x, y);
+}
+
+void input::showMouse(int cursor) {
+	al_set_system_mouse_cursor(Window::instance()->display(),
+				(cursor >= 0 && cursor < ALLEGRO_NUM_SYSTEM_MOUSE_CURSORS) == true ?
+				(ALLEGRO_SYSTEM_MOUSE_CURSOR)cursor :
+				ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT
+				);
+}
 
 
 
 
+int input::getLastKey() {
+	return sLastScanCode;
+}
 
 
-
-
-
-
-
-
+int input::getLastChar() {
+	return sLastChar;
+}

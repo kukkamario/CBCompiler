@@ -13,6 +13,7 @@ class Memblock {
 		void pokeFloat(int index, float value);
 		void pokeShort(int index, uint16_t value);
 		void pokeByte(int index, uint8_t value);
+
 	private:
 		char *mData;
 };

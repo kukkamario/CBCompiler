@@ -40,7 +40,10 @@ SOURCES += \
     memblock.cpp \
     cb_mem.cpp \
     basic3d.cpp \
-    cb_basic3d.cpp
+    cb_basic3d.cpp \
+    cb_thread.cpp \
+    sound.cpp \
+    audiointerface.cpp
 
 HEADERS += \
     referencecounter.h \
@@ -61,7 +64,9 @@ HEADERS += \
     fileinterface.h \
     cb_struct.h \
     memblock.h \
-    basic3d.h
+    basic3d.h \
+    sound.h \
+    audiointerface.h
 
 #win32 {
 #    LLVM_FILES += atomic_operations_mingw.ll

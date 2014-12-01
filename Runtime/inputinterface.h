@@ -20,6 +20,12 @@ KeyState keyState(int alKey);
 KeyState mouseState(int mousebutton);
 KeyState scancodeKeyState(int scan);
 
+int getLastKey();
+int getLastChar();
+
+void setMousePosition(int x, int y);
+void showMouse(int cursor);
+
 int Mousex();
 int MouseY();
 int MouseZ();
