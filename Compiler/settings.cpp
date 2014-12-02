@@ -14,9 +14,9 @@ bool Settings::loadDefaults() {
 
 
 #ifdef _WIN32
-	mLoadPath = QCoreApplication::applicationDirPath() + "\\settings_win.ini";
+	mLoadPath = QCoreApplication::applicationDirPath() + "\\settings_win_default.ini";
 #else
-	mLoadPath = QCoreApplication::applicationDirPath() + "/settings_linux.ini";
+	mLoadPath = QCoreApplication::applicationDirPath() + "/settings_linux_default.ini";
 #endif
 
 
