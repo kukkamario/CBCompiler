@@ -187,6 +187,8 @@ void Window::handleEvent(const ALLEGRO_EVENT &event) {
 			input::handleMouseEvent(event);
 		break;
 		case ALLEGRO_EVENT_KEY_CHAR:
+			input::handleCharEvent(event);
+		break;
 		case ALLEGRO_EVENT_KEY_DOWN:
 		case ALLEGRO_EVENT_KEY_UP:
 			input::handleKeyEvent(event); break;

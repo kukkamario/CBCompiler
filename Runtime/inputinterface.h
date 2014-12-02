@@ -14,8 +14,11 @@ int scancodeToAllegroKey(int scan);
 int allegroKeyToScancode(int alkey);
 void eventLoopBegin();
 void eventLoopEnd();
+
 void handleKeyEvent(const ALLEGRO_EVENT &e);
 void handleMouseEvent(const ALLEGRO_EVENT &e);
+void handleCharEvent(const ALLEGRO_EVENT &e);
+
 KeyState keyState(int alKey);
 KeyState mouseState(int mousebutton);
 KeyState scancodeKeyState(int scan);

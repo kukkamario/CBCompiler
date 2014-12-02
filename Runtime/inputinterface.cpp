@@ -255,8 +255,6 @@ int input::allegroKeyToScancode(int alkey) {
 void input::handleKeyEvent(const ALLEGRO_EVENT &e) {
 	int keyCode = e.keyboard.keycode;
 	sLastScanCode = allegroKeyToScancode(keyCode);
-	if(e.keyboard.unichar != 0)
-		sLastChar = e.keyboard.unichar;
 	if (sSafeExit && e.type == ALLEGRO_EVENT_KEY_DOWN && keyCode == ALLEGRO_KEY_ESCAPE) {
 		sys::closeProgram();
 	}
@@ -375,4 +373,10 @@ int input::getLastKey() {
 
 int input::getLastChar() {
 	return sLastChar;
+}
+
+
+void input::handleCharEvent(const ALLEGRO_EVENT &e) {
+	if(e.keyboard.unichar != 0)
+		sLastChar = e.keyboard.unichar;
 }
