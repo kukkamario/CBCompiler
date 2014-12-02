@@ -72,7 +72,19 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 void Window::resize(int width, int height, Window::WindowMode windowMode) {
 	assert(mDisplay);
 
+	int oldx, oldy, oldw, oldh;
+	int newX, newY;
+	al_get_window_position(mDisplay, &oldx, &oldy);
+	oldw = al_get_display_width(mDisplay);
+	oldh = al_get_display_height(mDisplay);
+
+	newX = oldx + oldw / 2;
+	newY = oldy + oldh / 2;
+	newX -= width/2;
+	newY -= height/2;
+
 	if (windowMode == mWindowMode) {
+		al_set_window_position(mDisplay, newX, newY);
 		al_resize_display(mDisplay, width, height);
 		return;
 	}
@@ -88,6 +100,7 @@ void Window::resize(int width, int height, Window::WindowMode windowMode) {
 		case FullScreen:
 			al_set_new_display_flags(ALLEGRO_FULLSCREEN | ALLEGRO_OPENGL); break;
 	}
+	al_set_new_window_position(newX, newY);
 	mDisplay = al_create_display(width, height);
 	if (mDisplay == 0) {
 		error(U"Creating a window failed");
