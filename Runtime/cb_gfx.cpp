@@ -37,6 +37,14 @@ void CBF_color(int r, int g, int b) {
 	setDrawColor(al_map_rgb(r, g, b));
 }
 
+void CBF_pushColor() {
+	pushColor();
+}
+
+void CBF_popColor() {
+	popColor();
+}
+
 void CBF_color(int r, int g, int b, int a) {
 	setDrawColor(al_map_rgba(r, g, b, a));
 }

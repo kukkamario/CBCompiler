@@ -13,6 +13,8 @@ namespace gfx {
 
 	void initGfx();
 	const ALLEGRO_COLOR &drawColor();
+	void pushColor();
+	void popColor();
 	void setDrawColor(const ALLEGRO_COLOR &color);
 	void drawLine(float x1, float y1, float x2, float y2);
 	void drawCircle(float x, float y, float d, bool fill = true);
