@@ -1,12 +1,6 @@
 #include "image.h"
 #include "mathinterface.h"
 
-Image::Image(int w, int h) {
-	mBitmap = al_create_bitmap(w, h);
-	mWidth = w;
-	mHeight = h;
-}
-
 Image::Image(ALLEGRO_BITMAP *bitmap) {
 	mWidth = al_get_bitmap_width(bitmap);
 	mHeight = al_get_bitmap_height(bitmap);
@@ -30,6 +24,10 @@ Image *Image::make(int w, int h) {
 	if(!bitmap)
 		return 0;
 	return new Image(bitmap);
+}
+
+Image *Image::clone(Image *img) {
+	return new Image(al_clone_bitmap(img->mBitmap));
 }
 
 bool Image::activateRenderContext() {
@@ -78,7 +76,7 @@ void Image::draw(float x, float y, float w, float h) {
 }
 
 void Image::draw(float x, float y, float ang, float cx, float cy) {
-	al_draw_rotated_bitmap(mBitmap, cx, cy, x, y, -math::toRad(ang), 0);
+	al_draw_rotated_bitmap(mBitmap, float(width())*0.5f + cx, float(height())*0.5f + cy, x, y, -math::toRad(ang), 0);
 }
 
 void Image::draw(float x, float y, float srcx, float srcy, float srcw, float srch) {
@@ -89,18 +87,23 @@ void Image::draw(float x, float y, float srcx, float srcy, float srcw, float src
 	al_draw_scaled_bitmap(mBitmap, srcx, srcy, srcw, srch, x, y, w, h, 0);
 }
 
+void Image::draw(float x, float y, float w, float h, float cx, float cy, float ang) {
+	al_draw_scaled_rotated_bitmap(mBitmap,float(width())*0.5f + cx, float(height())*0.5f + cy, x, y, w, h, -math::toRad(ang), 0);
+}
 
-void Image::draw(float x, float y, float srcx, float srcy, float srcw, float srch, float cx, float cy, float sx, float sy, float ang) {
+void Image::draw(float x, float y, float srcx, float srcy, float srcw, float srch, float cx, float cy, float w, float h, float ang) {
 	al_draw_tinted_scaled_rotated_bitmap_region(mBitmap,
 						srcx, srcy,
 						srcw, srch,
 						gfx::drawColor(),
-						cx, cy,
+						float(width())*0.5f + cx,
+						float(height())*0.5f + cy,
 						x, y,
-						sx, sy,
+						w, h,
 						-math::toRad(ang),
 						0);
 }
+
 
 void Image::drawTinted(float x, float y) {
 	al_draw_tinted_bitmap(mBitmap, gfx::drawColor(), x, y, 0);
@@ -111,11 +114,15 @@ void Image::drawTinted(float x, float y, float w, float h) {
 }
 
 void Image::drawTinted(float x, float y, float ang, float cx, float cy) {
-	al_draw_tinted_rotated_bitmap(mBitmap, gfx::drawColor(), cx, cy, x, y, -math::toRad(ang), 0);
+	al_draw_tinted_rotated_bitmap(mBitmap, gfx::drawColor(),  float(width())*0.5f + cx, float(height())*0.5f + cy, x, y, -math::toRad(ang), 0);
 }
 
 void Image::drawTinted(float x, float y, float srcx, float srcy, float srcw, float srch) {
 	al_draw_tinted_scaled_bitmap(mBitmap, gfx::drawColor(), srcx, srcy, srcw, srch, x, y, srcw, srch, 0);
+}
+
+void Image::drawTinted(float x, float y, float w, float h, float cx, float cy, float ang) {
+	al_draw_tinted_scaled_rotated_bitmap(mBitmap, gfx::drawColor(), float(width())*0.5f + cx, float(height())*0.5f + cy, x, y, w, h, -math::toRad(ang), 0);
 }
 
 void Image::drawTinted(float x, float y, float srcx, float srcy, float srcw, float srch, float w, float h) {

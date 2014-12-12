@@ -168,7 +168,13 @@ int CBF_getPixel(Image *img, int x, int y) {
 	return img->getPixel(x, y);
 }
 
+void CBF_SetBlender(int op, int src, int dest) {
+	gfx::setBlender(gfx::Blender(op, src, dest));
+}
 
+void CBF_ResetBlender() {
+	gfx::setBlender(gfx::defaultBlender());
+}
 
 void CBF_drawToScreen() {
 	Window::instance()->activate();
