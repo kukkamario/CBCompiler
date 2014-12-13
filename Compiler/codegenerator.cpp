@@ -149,7 +149,7 @@ bool CodeGenerator::createExecutable(const QString &path) {
 	}
 	qDebug() << "Building binary...\n";
 
-	if (!mSettings.callLinker("llc", "cbrun")) {
+	if (!mSettings.callLinker("llc", path)) {
 		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
 		return false;
 	}

@@ -394,6 +394,7 @@ Node *FunctionPointerType::childNode(int n) const {
 		case 0: return mParameterTypes;
 		case 1: return mReturnType;
 	 }
+	return 0;
 }
 
 }
