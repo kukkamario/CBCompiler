@@ -23,7 +23,7 @@ CBEXPORT TypeMember *CB_Last(Type *type) {
 
 CBEXPORT TypeMember *CB_After(TypeMember *member) {
 	if (member == 0) {
-		error(U"CBF_CB_TypeMemberAfter: Invalid TypeMember");
+		//error(U"CBF_CB_TypeMemberAfter: Invalid TypeMember");
 		return 0;
 	}
 	return member->after();
@@ -31,7 +31,7 @@ CBEXPORT TypeMember *CB_After(TypeMember *member) {
 
 CBEXPORT TypeMember *CB_Before(TypeMember *member) {
 	if (member == 0) {
-		error(U"CBF_CB_TypeMemberBefore: NULL TypeMember");
+		//error(U"CBF_CB_TypeMemberBefore: NULL TypeMember");
 		return 0;
 	}
 	return member->before();
@@ -44,4 +44,15 @@ CBEXPORT TypeMember *CB_Delete(TypeMember *member) {
 	}
 	return member->deleteThis();
 }
+
+
+void CBF_InsertAfter(TypeMember *ptr, TypeMember *target) {
+	ptr->type()->moveMemberAfter(ptr, target);
+}
+
+void CBF_InsertBefore(TypeMember *ptr, TypeMember *target) {
+	ptr->type()->moveMemberBefore(ptr, target);
+}
+
+
 

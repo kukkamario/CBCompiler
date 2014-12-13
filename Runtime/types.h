@@ -44,7 +44,10 @@ struct CB_Type {
 		void setSizeOfMember(unsigned int s) { mSizeOfMember = s; }
 		unsigned int sizeOfMember() { return mSizeOfMember; }
 		unsigned int sizeOfMemberData() { return mSizeOfMember - offsetof(CB_TypeMember, mData); }
+		void moveMemberAfter(CB_TypeMember *ptr, CB_TypeMember *target);
+		void moveMemberBefore(CB_TypeMember *ptr, CB_TypeMember *target);
 	private:
+		void removeMember(CB_TypeMember *ptr);
 		void insertLast(CB_TypeMember *member);
 		CB_TypeMember *mFirst;
 		CB_TypeMember *mLast;

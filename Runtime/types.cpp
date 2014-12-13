@@ -57,7 +57,60 @@ void CB_Type::setFirstMember(CB_TypeMember *m) {
 }
 
 void CB_Type::setLastMember(CB_TypeMember *m) {
-	 mLast = m;
+	mLast = m;
+}
+
+void CB_Type::moveMemberAfter(CB_TypeMember *ptr, CB_TypeMember *target) {
+	//Already in place
+	if (ptr == target) return;
+	if (target->after() == ptr) return;
+
+	removeMember(ptr);
+	TypeMember *after = target->mAfter;
+	if (after) {
+		after->mBefore = ptr;
+	}
+	else {
+		setLastMember(ptr);
+	}
+	target->mAfter = ptr;
+	ptr->mBefore = target;
+	ptr->mAfter = after;
+}
+
+void CB_Type::moveMemberBefore(CB_TypeMember *ptr, CB_TypeMember *target) {
+	//Already in place
+	if (ptr == target) return;
+	if (target->before() == ptr) return;
+
+	removeMember(ptr);
+	TypeMember *before = target->mBefore;
+	if (before) {
+		before->mAfter = ptr;
+	}
+	else {
+		setFirstMember(ptr);
+	}
+	target->mBefore = ptr;
+	ptr->mAfter = target;
+	ptr->mBefore = before;
+}
+
+void CB_Type::removeMember(CB_TypeMember *ptr) {
+	TypeMember *beforePtr = ptr->before();
+	TypeMember *afterPtr = ptr->after();
+	if (beforePtr) {
+		beforePtr->mAfter = afterPtr;
+	}
+	else {
+		setFirstMember(afterPtr);
+	}
+	if (afterPtr) {
+		afterPtr->mBefore = beforePtr;
+	}
+	else {
+		setLastMember(beforePtr);
+	}
 }
 
 
