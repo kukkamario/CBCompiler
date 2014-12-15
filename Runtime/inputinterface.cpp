@@ -356,13 +356,20 @@ void input::setMousePosition(int x, int y) {
 }
 
 void input::showMouse(int cursor) {
-	al_set_system_mouse_cursor(Window::instance()->display(),
-				(cursor >= 0 && cursor < ALLEGRO_NUM_SYSTEM_MOUSE_CURSORS) == true ?
-				(ALLEGRO_SYSTEM_MOUSE_CURSOR)cursor :
-				ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT
-				);
+	if(cursor == 0)
+		al_hide_mouse_cursor(Window::instance()->display());
+	else if(cursor == 1)
+		al_show_mouse_cursor(Window::instance()->display());
 }
 
+
+void input::setMouseCursor(int cursor) {
+	al_set_system_mouse_cursor(Window::instance()->display(),
+			(cursor >= 0 && cursor < ALLEGRO_NUM_SYSTEM_MOUSE_CURSORS) == true ?
+			(ALLEGRO_SYSTEM_MOUSE_CURSOR)cursor :
+			ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT
+			);
+}
 
 
 

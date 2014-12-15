@@ -9,6 +9,22 @@ int CBF_keyUp(int scancode) {
 	return input::scancodeKeyState(scancode) == input::Released;
 }
 
+int CBF_upKey() {
+	return input::keyState(ALLEGRO_KEY_UP) & input::Down;
+}
+
+int CBF_downKey() {
+	return input::keyState(ALLEGRO_KEY_DOWN) & input::Down;
+}
+
+int CBF_leftKey() {
+	return input::keyState(ALLEGRO_KEY_LEFT) & input::Down;
+}
+
+int CBF_rightKey() {
+	return input::keyState(ALLEGRO_KEY_RIGHT) & input::Down;
+}
+
 
 int CBF_keyHit(int scancode) {
 	return input::scancodeKeyState(scancode) == input::Pressed;
@@ -61,7 +77,7 @@ int CBF_mouseMoveZ() {
 	return input::MouseMoveZ();
 }
 
-float CBF_MousePressure() {
+float CBF_mousePressure() {
 	return input::MousePressure();
 }
 
@@ -84,6 +100,11 @@ void CBF_positionMouse(int x, int y) {
 void CBF_showMouse(int cursor) {
 	input::showMouse(cursor);
 }
+
+void CBF_setMouseSystemCursor(int cursor) {
+	input::setMouseCursor(cursor);
+}
+
 
 int CBF_getChar() {
 	return input::getLastChar();

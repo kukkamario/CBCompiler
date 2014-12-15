@@ -28,6 +28,8 @@ int getLastChar();
 
 void setMousePosition(int x, int y);
 void showMouse(int cursor);
+void setMouseCursor(int cursor);
+
 
 int Mousex();
 int MouseY();
