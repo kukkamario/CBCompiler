@@ -2,6 +2,8 @@
 #define GFX_H
 #include "common.h"
 #include <allegro5/allegro5.h>
+
+
 namespace gfx {
 	//http://alleg.sourceforge.net/a5docs/5.0.10/graphics.html#al_set_blender
 	struct Blender {

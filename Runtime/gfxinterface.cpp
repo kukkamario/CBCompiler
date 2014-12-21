@@ -94,3 +94,5 @@ void gfx::setBlender(const gfx::Blender &blender) {
 const gfx::Blender &gfx::defaultBlender() {
 	return sDefaultBlender;
 }
+
+

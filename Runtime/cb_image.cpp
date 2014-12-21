@@ -42,18 +42,22 @@ void CBF_drawImageBoxScaled(Image* img, float x, float y, float sx, float sy, fl
 }
 
 void CBF_drawImageBoxResized(Image* img, float x, float y, float sx, float sy, float sw, float sh, float w, float h) {
-	img->draw(x, y, sx, sy, sw, sh, sw*w, sh*h);
+	img->draw(x, y, sx, sy, sw, sh, w / sw, h / sh);
+}
+
+void CBF_drawImageBoxScaled(Image* img, float x, float y, float sx, float sy, float sw, float sh, float s) {
+	img->draw(x, y, sx, sy, sw, sh, s, s);
 }
 
 void CBF_drawGhostImage(Image* img, float x, float y, float alpha) {
 	img->draw(x, y, alpha);
 }
 
-void CBF_drawRotatedImage(Image* img, float x, float y, float ang, float cx, float cy) {
+void CBF_drawImageRotated(Image* img, float x, float y, float ang, float cx, float cy) {
 	img->draw(x, y, ang, cx, cy);
 }
 
-void CBF_drawRotatedImage(Image* img, float x, float y, float ang) {
+void CBF_drawImageRotated(Image* img, float x, float y, float ang) {
 	img->draw(x, y, ang, 0.0f, 0.0f);
 }
 
@@ -61,24 +65,33 @@ void CBF_drawImageScaledRotated(Image* img, float x, float y, float ang, float w
 	img->draw(x, y, w, h, cx, cy, ang);
 }
 
-void CBF_drawImageResizedRotated(Image* img, float x, float y, float ang, float w, float h, float cx, float cy) {
-	img->draw(x, y,(float)img->width()*w, (float)img->height()*h, cx, cy, ang);
-}
-
 void CBF_drawImageScaledRotated(Image* img, float x, float y, float ang, float w, float h) {
 	img->draw(x, y, w, h, 0.0f, 0.0f, ang);
 }
 
 void CBF_drawImageResizedRotated(Image* img, float x, float y, float ang, float w, float h) {
-	img->draw(x, y,(float)img->width()*w, (float)img->height()*h, 0.0f, 0.0f, ang);
+	img->draw(x, y, w / (float)img->width(), h / (float)img->height(), 0.0f, 0.0f, ang);
+}
+
+void CBF_drawImageScaledRotated(Image* img, float x, float y, float ang, float s) {
+	img->draw(x, y, s, s, 0.0f, 0.0f, ang);
+}
+
+void CBF_drawImageScaledRotated(Image* img, float x, float y, float ang, float s, float cx, float cy) {
+	img->draw(x, y, s, s, cx, cy, ang);
 }
 
 
-void CBF_drawImageScaled(Image* img, float x, float y, float w, float h) {
-	img->draw(x, y, (float)img->width()*w, (float)img->height()*h);
-}
 
 void CBF_drawImageResized(Image* img, float x, float y, float w, float h) {
+	img->draw(x, y, (float)img->width() / w, (float)img->height() / h);
+}
+
+void CBF_drawImageScaled(Image* img, float x, float y, float s) {
+	img->draw(x, y, s, s);
+}
+
+void CBF_drawImageScaled(Image* img, float x, float y, float w, float h) {
 	img->draw(x, y, w, h);
 }
 
@@ -86,16 +99,24 @@ void CBF_drawImageAdvanced(Image* img, float x, float y, float srcx, float srcy,
 	img->draw(x, y, srcx, srcy, srcw, srch, cx, cy, w, h, ang);
 }
 
-void CBF_drawImageAdvanced2(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float w, float h, float ang, float cx, float cy) {
-	img->draw(x, y, srcx, srcy, srcw, srch, cx, cy, w*srcw, h*srch, ang);
-}
-
 void CBF_drawImageAdvanced(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float w, float h, float ang) {
 	img->draw(x, y, srcx, srcy, srcw, srch, 0.0f, 0.0f, w, h, ang);
 }
 
+void CBF_drawImageAdvanced2(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float w, float h, float ang, float cx, float cy) {
+	img->draw(x, y, srcx, srcy, srcw, srch, cx, cy, w*srcw, h*srch, ang);
+}
+
+void CBF_drawImageAdvanced2(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float s, float ang, float cx, float cy) {
+	img->draw(x, y, srcx, srcy, srcw, srch, cx, cy, s*srcw, s*srch, ang);
+}
+
 void CBF_drawImageAdvanced2(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float w, float h, float ang) {
 	img->draw(x, y, srcx, srcy, srcw, srch, 0.0f, 0.0f, w*srcw, h*srch, ang);
+}
+
+void CBF_drawImageAdvanced2(Image* img, float x, float y, float srcx, float srcy, float srcw, float srch, float s, float ang) {
+	img->draw(x, y, srcx, srcy, srcw, srch, 0.0f, 0.0f, s*srcw, s*srch, ang);
 }
 
 void CBF_drawTintedImage(Image *img, float x, float y) {
@@ -106,11 +127,15 @@ void CBF_drawTintedImageBox(Image *img, float x, float y, float sx, float sy, fl
 	img->drawTinted(x, y, sx, sy, sw, sh);
 }
 
-void CBF_drawTintedImageBoxScaled(Image *img, float x, float y, float sx, float sy, float sw, float sh, float w, float h) {
-	img->drawTinted(x, y, sx, sy, sw, sh, sw*w, sh*h);
+void CBF_drawTintedImageBoxResized(Image *img, float x, float y, float sx, float sy, float sw, float sh, float w, float h) {
+	img->drawTinted(x, y, sx, sy, sw, sh, w/sw, h/sh);
 }
 
-void CBF_drawTintedImageBoxResized(Image *img, float x, float y, float sx, float sy, float sw, float sh, float w, float h) {
+void CBF_drawTintedImageBoxScaled(Image *img, float x, float y, float sx, float sy, float sw, float sh, float s) {
+	img->drawTinted(x, y, sx, sy, sw, sh, s, s);
+}
+
+void CBF_drawTintedImageBoxScaled(Image *img, float x, float y, float sx, float sy, float sw, float sh, float w, float h) {
 	img->drawTinted(x, y, sx, sy, sw, sh, w, h);
 }
 
@@ -122,32 +147,44 @@ void CBF_drawTintedImageRotated(Image *img, float x, float y, float ang) {
 	img->drawTinted(x, y, ang, 0.0f, 0.0f);
 }
 
-void CBF_drawTintedImageScaledRotated(Image* img, float x, float y, float ang, float w, float h, float cx, float cy) {
+void CBF_drawTintedImageResizedRotated(Image* img, float x, float y, float ang, float w, float h, float cx, float cy) {
 	img->drawTinted(x, y, w, h, cx, cy, ang);
 }
 
-void CBF_drawTintedImageResizedRotated(Image* img, float x, float y, float ang, float w, float h, float cx, float cy) {
-	img->drawTinted(x, y,(float)img->width()*w, (float)img->height()*h, cx, cy, ang);
+void CBF_drawTintedImageResizedRotated(Image* img, float x, float y, float ang, float w, float h) {
+	img->drawTinted(x, y, w / (float)img->width(), h / (float)img->height(), 0.0f, 0.0f, ang);
+}
+
+void CBF_drawTintedImageScaledRotated(Image* img, float x, float y, float ang, float s) {
+	img->drawTinted(x, y, s, s, 0.0f, 0.0f, ang);
+}
+
+void CBF_drawTintedImageScaledRotated(Image* img, float x, float y, float ang, float w, float h, float cx, float cy) {
+	img->drawTinted(x, y, w, h, cx, cy, ang);
 }
 
 void CBF_drawTintedImageScaledRotated(Image* img, float x, float y, float ang, float w, float h) {
 	img->drawTinted(x, y, w, h, 0.0f, 0.0f, ang);
 }
 
-void CBF_drawTintedImageResizedRotated(Image* img, float x, float y, float ang, float w, float h) {
-	img->drawTinted(x, y,(float)img->width()*w, (float)img->height()*h, 0.0f, 0.0f, ang);
+void CBF_drawTintedImageResized(Image *img, float x, float y, float w, float h) {
+	img->drawTinted(x, y, w / (float)img->width(), h / (float)img->height());
 }
 
 void CBF_drawTintedImageScaled(Image *img, float x, float y, float w, float h) {
-	img->drawTinted(x, y, (float)img->width()*w, (float)img->height()*h);
+	img->drawTinted(x, y, w, h);
 }
 
-void CBF_drawTintedImageResized(Image *img, float x, float y, float w, float h) {
-	img->drawTinted(x, y, w, h);
+void CBF_drawTintedImageScaled(Image *img, float x, float y, float s) {
+	img->drawTinted(x, y, (float)img->width()*s, (float)img->height()*s);
 }
 
 void CBF_maskImage(Image *img, int r, int g, int b) {
 	img->mask(al_map_rgb(r, g, b));
+}
+
+void CBF_resizeImage(Image *img, int width, int height) {
+	img->resize(width,  height);
 }
 
 void CBF_maskImage(Image *img, int r, int g, int b, int a) {

@@ -45,7 +45,7 @@ int CBF_waitKey() {
 	}
 }
 
-/*Hack aler!*/
+/*Hack alert!*/
 void CBF_WaitKey() {
 	CBF_waitKey();
 	return;

@@ -6,6 +6,7 @@
 #include "image.h"
 #include <allegro5/allegro_primitives.h>
 
+
 using namespace gfx;
 void CBF_drawscreen() {
 	//printf("DrawScreen\n");
@@ -26,6 +27,14 @@ void CBF_screen(int w, int h, int mode) {
 			error(U"Invalid window mode");
 	}
 	Window::instance()->resize(w, h, windowMode);
+}
+
+int CBF_screenWidth() {
+	return Window::instance()->width();
+}
+
+int CBF_screenHeight() {
+	return Window::instance()->height();
 }
 
 void CBF_screen(int w, int h) {
