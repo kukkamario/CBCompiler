@@ -243,7 +243,7 @@ llvm::Value *Builder::llvmValue(float i) {
 
 llvm::Value *Builder::llvmValue(const QString &s) {
 	if (s.isEmpty()) {
-		return llvm::ConstantPointerNull::get((llvm::PointerType*)mRuntime->stringValueType()->llvmType());
+		return llvm::Constant::getNullValue(mRuntime->stringValueType()->llvmType());
 	}
 	return mStringPool->globalString(this, s).value();
 }

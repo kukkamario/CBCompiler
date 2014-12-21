@@ -2,6 +2,7 @@ s$ = "Hello world"
 
 d$ = "dasdsad"
 
+Dim stringVar As String = ""
 
 t$ = s$ + d$
 Print t$
