@@ -36,7 +36,7 @@ End Struct
 
 Function Vec2(x As Float, y As Float) As Vector2
 	v As Vector2
- v.x = x
+	v.x = x
 	v.y = y
 	Return v
 EndFunction 
@@ -539,7 +539,7 @@ EndFunction
 
 Function Inverse(mat As Matrix4) As Matrix4 
 	
-	Det As Float = DeterMinant(mat)
+	Det As Float = Determinant(mat)
 	if Det = 0 Then 
 		Return mat
 	Endif 
