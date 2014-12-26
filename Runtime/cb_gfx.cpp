@@ -141,6 +141,28 @@ void CBF_unlock(Image *img) {
 	img->unlock();
 }
 
+void CBF_unlockScreen() {
+	Window::instance()->unlock();
+}
+
+void CBF_lockScreen() {
+	Window::instance()->lock(ALLEGRO_LOCK_READWRITE);
+}
+
+void CBF_lockScreen(int state) {
+	int flags = 0;
+	switch (state) {
+		case 1:
+			flags = ALLEGRO_LOCK_READONLY; break;
+		case 2:
+			flags = ALLEGRO_LOCK_WRITEONLY; break;
+		default:
+			flags = ALLEGRO_LOCK_READWRITE; break;
+	}
+
+	Window::instance()->lock(flags);
+}
+
 
 void CBF_putpixel(int x, int y, unsigned char r, unsigned char g, unsigned char b) {
 	int pixel = (255 << 24) + ((int)r << 16) + ((int)g << 8) + (int)b;
