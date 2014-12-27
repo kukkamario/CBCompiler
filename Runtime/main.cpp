@@ -7,6 +7,7 @@
 #include "gfxinterface.h"
 #include "textinterface.h"
 #include "inputinterface.h"
+#include "transforminterface.h"
 #include <cstdio>
 
 extern "C" void CB_main();
@@ -43,6 +44,7 @@ int main(int, char **) {
 	gfx::initGfx();
 	text::initText();
 	input::initInput();
+	transforms::initTransforms();
 
 	//Begin execution
 	info(U"Beginning execution");

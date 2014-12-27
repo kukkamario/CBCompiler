@@ -81,8 +81,6 @@ void CBF_drawImageScaledRotated(Image* img, float x, float y, float ang, float s
 	img->draw(x, y, s, s, cx, cy, ang);
 }
 
-
-
 void CBF_drawImageResized(Image* img, float x, float y, float w, float h) {
 	img->draw(x, y, (float)img->width() / w, (float)img->height() / h);
 }
