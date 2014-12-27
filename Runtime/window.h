@@ -25,8 +25,6 @@ class Window : public RenderTarget{
 
 		bool isValid() const;
 
-		void lock(int flags);
-		void unlock();
 		void drawscreen();
 		void cls();
 
