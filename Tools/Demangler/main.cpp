@@ -12,18 +12,35 @@
 #include <QFile>
 #include <QDebug>
 #include <llvm/Config/llvm-config.h>
-#if LLVM_VERSION_MINOR < 3
-	#include <llvm/LLVMContext.h>
-	#include <llvm/Support/IRReader.h>
-	#include <llvm/Function.h>
-	#include <llvm/Module.h>
-#else
-	#include <llvm/IR/Module.h>
-	#include <llvm/IR/LLVMContext.h>
-	#include <llvm/IRReader/IRReader.h>
-	#include <llvm/IR/Function.h>
-	#include <llvm/Support/SourceMgr.h>
-#endif
+#include <llvm/Support/MathExtras.h>
+#include <llvm/Pass.h>
+#include <llvm/PassManager.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/ADT/Triple.h>
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/CallingConv.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/InlineAsm.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/SourceMgr.h>
+
+#include <llvm/Support/DynamicLibrary.h>
+#include <llvm/LinkAllPasses.h>
+#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Support/MemoryBuffer.h>
 
 using namespace std;
 

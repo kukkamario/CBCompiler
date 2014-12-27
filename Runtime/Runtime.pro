@@ -84,7 +84,7 @@ HEADERS += \
 QMAKE_CC = clang
 QMAKE_CXX = clang++
 QMAKE_CFLAGS = -emit-llvm
-QMAKE_CXXFLAGS = -O1 -emit-llvm -std=c++11 -g
+QMAKE_CXXFLAGS = -O1 -emit-llvm -std=c++11
 QMAKE_CXXFLAGS_EXCEPTIONS_ON -= -mthreads
 
 unix {
@@ -120,6 +120,7 @@ QMAKE_EXTENSION_STATICLIB = bc
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
 	INCLUDEPATH += $$(ALLEGRO_INCLUDE)
+	INCLUDEPATH += "C:/MinGW/include"
 
 	#overrides default link
 	#and creates warning... :/

@@ -37,9 +37,9 @@ void sys::init() {
 
 void sys::writeToOutput(const LString &s) {
 #ifdef _WIN32 //sizeof(wchar_t) == 2
-	std::wcout << s.toWString();
-	//std::wstring wstr = s.toWString();
-	//WriteConsoleW(sOutputHandle, wstr.c_str(), wstr.size(), 0, 0);
+	//std::wcout << s.toWString();
+	std::wstring wstr = s.toWString();
+	WriteConsoleW(sOutputHandle, wstr.c_str(), wstr.size(), 0, 0);
 #else //wchar_t == char32_t
 	std::cout << s.toUtf8();
 #endif

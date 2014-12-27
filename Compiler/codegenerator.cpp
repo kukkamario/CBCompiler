@@ -23,7 +23,6 @@
 #include "valuetypesymbol.h"
 #include "customvaluetype.h"
 #include "structvaluetype.h"
-#include <llvm/Assembly/AssemblyAnnotationWriter.h>
 
 
 #ifndef M_PI
@@ -111,23 +110,22 @@ bool CodeGenerator::generate(ast::Program *program) {
 }
 
 bool CodeGenerator::createExecutable(const QString &path) {
-	std::string errorInfo;
 	std::string fileOpenErrorInfo;
-	if (llvm::verifyModule(*mRuntime.module(), llvm::ReturnStatusAction, &errorInfo)) { //Invalid module
+	llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
+	if (llvm::verifyModule(*mRuntime.module(), &out)) { //Invalid module
 		llvm::AssemblyAnnotationWriter asmAnnoWriter;
-		llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo);
-		out << errorInfo;
 		out << "\n\n\n-----LLVM-IR-----\n\n\n";
 		mRuntime.module()->print(out, &asmAnnoWriter);
 		out.close();
 		qDebug("Invalid module. See verifier.log");
 		return false;
 	}
+	out.close();
 
 	QString p = QDir::currentPath();
 	QDir::setCurrent(QCoreApplication::applicationDirPath());
 
-	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::sys::fs::F_Binary);
+	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
 	if (fileOpenErrorInfo.empty()) {
 		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
 		bitcodeFile.close();

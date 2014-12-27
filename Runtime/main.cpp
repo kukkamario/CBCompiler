@@ -9,6 +9,7 @@
 #include "inputinterface.h"
 #include "transforminterface.h"
 #include <cstdio>
+#include <iostream>
 
 extern "C" void CB_main();
 extern "C" void CB_initialize();
@@ -24,8 +25,11 @@ int CALLBACK WinMain(
 #else
 int main(int, char **) {
 #endif
+	std::cout << "asd\n";
 	sys::init();
+	std::cout << "asd\n";
 	info(U"Initializing types and strings");
+	std::cout << "asd\n";
 	CB_initialize();
 
 	info(U"Initializing allegro");
