@@ -241,8 +241,8 @@ llvm::Value *Builder::llvmValue(float i) {
 	return llvm::ConstantFP::get(mIRBuilder.getFloatTy(), (double)i);
 }
 
-llvm::Value *Builder::llvmValue(const QString &s) {
-	if (s.isEmpty()) {
+llvm::Value *Builder::llvmValue(const std::string &s) {
+	if (s.empty()) {
 		return llvm::ConstantPointerNull::get((llvm::PointerType*)mRuntime->stringValueType()->llvmType());
 	}
 	return mStringPool->globalString(this, s).value();
@@ -290,11 +290,11 @@ llvm::Value *Builder::bitcast(llvm::Type *type, llvm::Value *val) {
 }
 
 
-Value Builder::call(Function *func, QList<Value> &params) {
+Value Builder::call(Function *func, std::vector<Value> &params) {
 	Function::ParamList paramTypes = func->paramTypes();
 	assert(func->requiredParams() <= params.size() && params.size() <= paramTypes.size());
-	Function::ParamList::ConstIterator pi = paramTypes.begin();
-	for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
+	Function::ParamList::const_iterator pi = paramTypes.begin();
+	for (std::vector<Value>::iterator i = params.begin(); i != params.end(); ++i) {
 		//Cast to the right value type
 		*i = (*pi)->cast(this, *i);
 		//string destruction hack
@@ -302,22 +302,22 @@ Value Builder::call(Function *func, QList<Value> &params) {
 		pi++;
 	}
 	Value ret = func->call(this, params);
-	for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
+	for (std::vector<Value>::const_iterator i = params.begin(); i != params.end(); ++i) {
 		destruct(*i);
 	}
 	return ret;
 }
 
-Value Builder::call(const Value &funcValue, QList<Value> &params) {
+Value Builder::call(const Value &funcValue, std::vector<Value> &params) {
 
 
 	FunctionValueType *funcType = static_cast<FunctionValueType*>(funcValue.valueType());
-	QList<ValueType*> paramTypes = funcType->paramTypes();
+	std::vector<ValueType*> paramTypes = funcType->paramTypes();
 	std::vector<llvm::Value*> p;
 	if (funcValue.isReference()) {
-		QList<ValueType*> ::ConstIterator pi = paramTypes.begin();
+		std::vector<ValueType*> ::const_iterator pi = paramTypes.begin();
 
-		for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
+		for (std::vector<Value>::iterator i = params.begin(); i != params.end(); ++i) {
 			//Cast to the right value type
 			*i = (*pi)->cast(this, *i);
 			//string destruction hack
@@ -328,14 +328,14 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 
 		llvm::Value *func = mIRBuilder.CreateLoad(funcValue.value());
 		Value ret = Value(funcType->returnType(), mIRBuilder.CreateCall(func, p), false);
-		for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
+		for (std::vector<Value>::const_iterator i = params.begin(); i != params.end(); ++i) {
 			destruct(*i);
 		}
 		return ret;
 	}
 	else {
-		QList<ValueType*> ::ConstIterator pi = paramTypes.begin();
-		for (QList<Value>::Iterator i = params.begin(); i != params.end(); ++i) {
+		std::vector<ValueType*> ::const_iterator pi = paramTypes.begin();
+		for (std::vector<Value>::iterator i = params.begin(); i != params.end(); ++i) {
 			//Cast to the right value type
 			*i = (*pi)->cast(this, *i);
 			//string destruction hack
@@ -376,7 +376,7 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 		}
 
 		Value ret = Value(returnType, mIRBuilder.CreateCall(function, p), false);
-		for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
+		for (std::vector<Value>::const_iterator i = params.begin(); i != params.end(); ++i) {
 			destruct(*i);
 		}
 		return ret;
@@ -454,7 +454,7 @@ void Builder::store(const Value &ref, const Value &index, const Value &val) {
 	store(arrayElementPointer(array, index), array->valueType()->cast(this, val));
 }
 
-void Builder::store(const Value &ref, const QList<Value> &dims, const Value &val) {
+void Builder::store(const Value &ref, const std::vector<Value> &dims, const Value &val) {
 	store(arrayElementPointer(ref, dims), ref->valueType()->cast(this, val));
 }*/
 
@@ -467,7 +467,7 @@ Value Builder::load(const VariableSymbol *var) {
 Value Builder::load(const Value &var) {
 	assert(var.isReference());
 	Value ret = var.valueType()->generateLoad(this, var);
-	ret.value()->setName(("loaded_as_" + var.valueType()->name()).toUtf8().data());
+	ret.value()->setName(("loaded_as_" + var.valueType()->name()));
 	return ret;
 }
 
@@ -475,7 +475,7 @@ Value Builder::load(const Value &var) {
 	return Value(ref->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(ref, index)), false);
 }
 
-Value Builder::load(const Value &ref, const QList<Value> &dims) {
+Value Builder::load(const Value &ref, const std::vector<Value> &dims) {
 	return Value(array->valueType(), mIRBuilder.CreateLoad(arrayElementPointer(array, dims)), false);
 }*/
 
@@ -499,7 +499,7 @@ Value Builder::nullTypePointer() {
 	return Value(ConstantValue(ConstantValue::Null), mRuntime);
 }
 
-/*void Builder::initilizeArray(VariableSymbol *array, const QList<Value> &dimSizes) {
+/*void Builder::initilizeArray(VariableSymbol *array, const std::vector<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 	array->valueType()
 
@@ -518,9 +518,9 @@ Value Builder::nullTypePointer() {
 
 
 
-llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
+llvm::Value *Builder::calculateArrayElementCount(const std::vector<Value> &dimSizes) {
 
-	QList<Value>::ConstIterator i = dimSizes.begin();
+	std::vector<Value>::const_iterator i = dimSizes.begin();
 	llvm::Value *result = llvmValue(toInt(*i));
 	for (++i; i != dimSizes.end(); i++) {
 		result = mIRBuilder.CreateMul(result, llvmValue(toInt(*i)));
@@ -528,23 +528,23 @@ llvm::Value *Builder::calculateArrayElementCount(const QList<Value> &dimSizes) {
 	return result;
 }
 
-llvm::Value *Builder::calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes) {
+llvm::Value *Builder::calculateArrayMemorySize(ArraySymbol *array, const std::vector<Value> &dimSizes) {
 	llvm::Value *elements = calculateArrayElementCount(dimSizes);
 	int sizeOfElement = array->valueType()->size();
 	return mIRBuilder.CreateMul(elements, llvmValue(sizeOfElement));
 }
 
-llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const QList<Value> &index) {
+llvm::Value *Builder::arrayElementPointer(ArraySymbol *array, const std::vector<Value> &index) {
 	assert(array->dimensions() == index.size());
 	if (array->dimensions() == 1) {
 		return mIRBuilder.CreateGEP(mIRBuilder.CreateLoad(array->globalArrayData()), llvmValue(toInt(index.first())));
 	}
 	else { // array->dimensions() > 1
-		QList<Value>::ConstIterator i = index.begin();
+		std::vector<Value>::const_iterator i = index.begin();
 		llvm::Value *arrIndex =  mIRBuilder.CreateMul(llvmValue(toInt(*i)), arrayIndexMultiplier(array, 0));
 		int multIndex = 1;
 		i++;
-		for (QList<Value>::ConstIterator end = --index.end(); i != end; ++i) {
+		for (std::vector<Value>::const_iterator end = --index.end(); i != end; ++i) {
 			arrIndex = mIRBuilder.CreateAdd(arrIndex, mIRBuilder.CreateMul(llvmValue(toInt(*i)), arrayIndexMultiplier(array, multIndex)));
 			multIndex++;
 		}
@@ -563,11 +563,11 @@ llvm::Value *Builder::arrayIndexMultiplier(ArraySymbol *array, int index) {
 	return mIRBuilder.CreateLoad(mIRBuilder.CreateGEP(array->globalIndexMultiplierArray(), gepParams));
 }
 
-void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes) {
+void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const std::vector<Value> &dimSizes) {
 	assert(array->dimensions() == dimSizes.size());
 
 	if (array->dimensions() > 1) {
-		QList<Value>::ConstIterator i = --dimSizes.end();
+		std::vector<Value>::const_iterator i = --dimSizes.end();
 		llvm::Value *multiplier = llvmValue(toInt(*i));
 		int arrIndex = array->dimensions() - 2;
 		while(i != dimSizes.begin()) {
@@ -585,7 +585,7 @@ void Builder::fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Valu
 }*/
 
 
-Value Builder::typePointerFieldReference(Value typePtrVar, const QString &fieldName) {
+Value Builder::typePointerFieldReference(Value typePtrVar, const std::string &fieldName) {
 	assert(typePtrVar.valueType()->isTypePointer());
 	TypePointerValueType *typePointerValueType = static_cast<TypePointerValueType*>(typePtrVar.valueType());
 	TypeSymbol *type = typePointerValueType->typeSymbol();
@@ -1806,7 +1806,8 @@ void Builder::pushInsertPoint() {
 }
 
 void Builder::popInsertPoint() {
-	llvm::IRBuilder<>::InsertPoint insertPoint = mInsertPointStack.pop();
+	llvm::IRBuilder<>::InsertPoint insertPoint = mInsertPointStack.top();
+	mInsertPointStack.pop();
 	mIRBuilder.restoreIP(insertPoint);
 }
 

@@ -15,8 +15,8 @@ GenericArrayValueType::~GenericArrayValueType() {
 
 }
 
-QString GenericArrayValueType::name() const {
-	return QStringLiteral("GenericArrayValueType");
+std::string GenericArrayValueType::name() const {
+	return std::stringLiteral("GenericArrayValueType");
 }
 
 llvm::Constant *GenericArrayValueType::defaultValue() const {

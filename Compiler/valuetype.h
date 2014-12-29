@@ -1,6 +1,6 @@
 #ifndef VALUETYPE_H
 #define VALUETYPE_H
-#include <QString>
+#include <string>
 #include <QObject>
 #include "llvm.h"
 #include "operationflags.h"
@@ -44,7 +44,7 @@ class ValueType {
 		ValueType(Runtime *r);
 		ValueType(Runtime *r, llvm::Type *type);
 		virtual ~ValueType() {}
-		virtual QString name() const = 0;
+		virtual std::string name() const = 0;
 		virtual bool isNamedValueType() const = 0;
 		llvm::Type *llvmType() const {return mType;}
 		virtual bool isTypePointer() const = 0;
@@ -74,12 +74,12 @@ class ValueType {
 		virtual void generateDestructor(Builder *builder, const Value &value);
 		virtual Value generateLoad(Builder *builder, const Value &var) const;
 
-		virtual Value member(Builder *, const Value &, const QString &) const { return Value(); }
-		virtual ValueType *memberType(const QString &) const { return 0; }
-		bool hasMember(const QString &name) const { return memberType(name) != 0; }
+		virtual Value member(Builder *, const Value &, const std::string &) const { return Value(); }
+		virtual ValueType *memberType(const std::string &) const { return 0; }
+		bool hasMember(const std::string &name) const { return memberType(name) != 0; }
 		
 		virtual bool isCallable() const { return false; }
-		virtual QList<Function*> overloads() const { return QList<Function*>(); }
+		virtual std::vector<Function*> overloads() const { return std::vector<Function*>(); }
 
 		llvm::LLVMContext &context();
 		Runtime *runtime() const { return mRuntime; }

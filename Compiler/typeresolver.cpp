@@ -47,11 +47,11 @@ ValueType *TypeResolver::resolve(ast::BasicType *basicType) {
 
 ValueType *TypeResolver::resolve(ast::FunctionPointerType *funcTy) {
 	ast::List *paramTypes = funcTy->parameterTypes();
-	QList<ValueType*> paramValueTypes;
+	std::vector<ValueType*> paramValueTypes;
 	for (ast::Node *n : paramTypes->items()) {
 		ValueType *valTy = resolve(n);
 		if (!valTy) return 0;
-		paramValueTypes.append(valTy);
+		paramValueTypes.push_back(valTy);
 	}
 	ValueType *retType = 0;
 	if (funcTy->returnType()) {

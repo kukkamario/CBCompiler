@@ -8,7 +8,7 @@
 #include "shortvaluetype.h"
 #include "functionselectorvaluetype.h"
 #include "builder.h"
-#include <QDebug>
+#include <iostream>
 
 Value::Value():
 	mValueType(0), mValue(0), mType(tNormalValue) {
@@ -68,12 +68,12 @@ void Value::toLLVMValue(Builder *builder) {
 
 void Value::dump() const {
 	if (!isValid()) {
-		qDebug("Invalid Value");
+		std::cout << "Invalid Value";
 		return;
 	}
-	qDebug() << "Value:" << mValueType->name() << (isReference() ? " (reference)" : "");
+	std::cout << "Value:" << mValueType->name() << (isReference() ? " (reference)" : "");
 	if (isConstant())
-		qDebug() << "\t = " << constant().valueInfo();
+		std::cout << "\t = " << constant().valueInfo();
 }
 
 bool Value::isNormalValue() const {

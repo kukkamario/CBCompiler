@@ -14,7 +14,7 @@ TypePointerValueType::TypePointerValueType(Runtime *r, TypeSymbol *s):
 	mType = 0;
 }
 
-QString TypePointerValueType::name() const {
+std::string TypePointerValueType::name() const {
 	return mTypeSymbol->name();
 }
 
@@ -89,13 +89,13 @@ Value TypePointerValueType::generateOperation(Builder *builder, int opType, cons
 	return Value();
 }
 
-Value TypePointerValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
+Value TypePointerValueType::member(Builder *builder, const Value &a, const std::string &memberName) const {
 	assert(a.valueType() == this);
 	if (!mTypeSymbol->hasField(memberName)) return Value();
 	return builder->typePointerFieldReference(a, memberName);
 }
 
-ValueType *TypePointerValueType::memberType(const QString &memberName) const {
+ValueType *TypePointerValueType::memberType(const std::string &memberName) const {
 	if (!mTypeSymbol->hasField(memberName)) return 0;
 	const TypeField &field = mTypeSymbol->field(memberName);
 	return field.valueType();

@@ -9,7 +9,7 @@
 #include "functionselectorvaluetype.h"
 
 
-FunctionValueType::FunctionValueType(Runtime *r, ValueType *retType, const QList<ValueType *> &paramList) :
+FunctionValueType::FunctionValueType(Runtime *r, ValueType *retType, const std::vector<ValueType *> &paramList) :
 	ValueType(r),
 	mReturnType(retType),
 	mParamTypes(paramList) {
@@ -26,16 +26,16 @@ FunctionValueType::FunctionValueType(Runtime *r, ValueType *retType, const QList
 	}
 }
 
-QString FunctionValueType::name() const {
+std::string FunctionValueType::name() const {
 	if (mReturnType) {
-		return QStringLiteral("Function (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
+		return std::stringLiteral("Function (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
 			return valTy->name();
-		}) % QStringLiteral(") As ") % mReturnType->name();
+		}) % std::stringLiteral(") As ") % mReturnType->name();
 	}
 	else {
-		return QStringLiteral("Command (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
+		return std::stringLiteral("Command (") % listStringJoin(mParamTypes, [](ValueType *valTy) {
 			return valTy->name();
-		}) % QStringLiteral(")");
+		}) % std::stringLiteral(")");
 	}
 }
 

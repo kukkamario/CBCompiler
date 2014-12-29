@@ -8,7 +8,7 @@ class GenericArrayValueType : public ValueType {
 public:
 	GenericArrayValueType(llvm::PointerType *genericArrayPointerType, Runtime *r);
 	~GenericArrayValueType();
-	QString name() const;
+	std::string name() const;
 	bool isNamedValueType() const { return false; }
 	bool isTypePointer() const { return false; }
 	bool isArray() const { return true; }

@@ -5,7 +5,7 @@
 class TypeValueType : public ValueType {
 	public:
 		TypeValueType(Runtime *r, llvm::Type *type);
-		QString name() const { return QObject::tr("Type"); }
+		std::string name() const { return "Type"; }
 		llvm::Type *llvmType() { return mType; }
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */

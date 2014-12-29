@@ -4,19 +4,18 @@
 #include <QDebug>
 #include <QByteArray>
 #include <QFile>
-#include <QTextStream>
 #include <QObject>
 
 namespace ast {
 
 
-void printTabs(QTextStream &s, int tabs) {
+void printTabs(std::basic_ostream<char> &s, int tabs) {
 	for (int i = 0; i < tabs; i++) {
 		s << '\t';
 	}
 }
 
-void Node::write(QTextStream &s, int tabs) {
+void Node::write(std::basic_ostream<char> &s, int tabs) {
 	printTabs(s, tabs);
 	s << "Node:" << typeAsString() << " {\n";
 	for (int i = 0; i < childNodeCount(); i++) {
@@ -156,8 +155,8 @@ NODE_ACCEPT_VISITOR_DEF(Program)
 
 
 
-QString ExpressionNode::opToString(ExpressionNode::Op op) {
-	const static QString ops[] = {
+std::string ExpressionNode::opToString(ExpressionNode::Op op) {
+	const static std::string ops[] = {
 		QT_TRANSLATE_NOOP("ExpressionNode", "assign"),
 		QT_TRANSLATE_NOOP("ExpressionNode", "equal"),
 		QT_TRANSLATE_NOOP("ExpressionNode", "not equal"),
@@ -187,7 +186,7 @@ QString ExpressionNode::opToString(ExpressionNode::Op op) {
 	return ops[ExpressionNode::opInvalid];
 }
 
-void ExpressionNode::write(QTextStream &s, int tabs) {
+void ExpressionNode::write(std::basic_ostream<char> &s, int tabs) {
 	printTabs(s, tabs);
 	s << "Node:" << typeAsString() << " " << opToString(mOp) << " {\n";
 	for (int i = 0; i < childNodeCount(); i++) {
@@ -198,8 +197,8 @@ void ExpressionNode::write(QTextStream &s, int tabs) {
 }
 
 
-QString Unary::opToString(Unary::Op op) {
-	static QString ops[] = {
+std::string Unary::opToString(Unary::Op op) {
+	static std::string ops[] = {
 		QT_TRANSLATE_NOOP("Unary", "not"),
 		QT_TRANSLATE_NOOP("Unary", "positive"),
 		QT_TRANSLATE_NOOP("Unary", "negative"),
@@ -334,7 +333,7 @@ Node *Const::childNode(int n) const {
 
 SelectStatement::~SelectStatement() {
 	delete mVariable;
-	qDeleteAll(mCases);
+	containerDeleteAll(mCases);
 	delete mDefault;
 }
 
@@ -347,9 +346,9 @@ Node *SelectStatement::childNode(int n) const {
 }
 
 Program::~Program() {
-	qDeleteAll(mFunctionDefinitions);
-	qDeleteAll(mTypeDefinitions);
-	qDeleteAll(mStructDefinitions);
+	containerDeleteAll(mFunctionDefinitions);
+	containerDeleteAll(mTypeDefinitions);
+	containerDeleteAll(mStructDefinitions);
 	delete mMainBlock;
 }
 

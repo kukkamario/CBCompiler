@@ -1,7 +1,8 @@
 #ifndef CONSTANTVALUE_H
 #define CONSTANTVALUE_H
-#include <QString>
+#include <string>
 #include "operationflags.h"
+#include <cstdint>
 
 class ValueType;
 class ConstantValue {
@@ -22,9 +23,9 @@ class ConstantValue {
 		ConstantValue(int i);
 		ConstantValue(double d);
 		ConstantValue(float f);
-		ConstantValue(quint8 b);
-		ConstantValue(quint16 s);
-		ConstantValue(const QString s);
+		ConstantValue(uint8_t b);
+		ConstantValue(uint16_t s);
+		ConstantValue(const std::string s);
 		ConstantValue(const ConstantValue &o);
 		ConstantValue(Type type);
 		~ConstantValue();
@@ -59,14 +60,14 @@ class ConstantValue {
 		static int cbIntPower(int a, int b);
 
 		ConstantValue to(Type type);
-		QString toString() const;
-		quint16 toShort() const;
-		quint8 toByte() const;
+		std::string toString() const;
+		uint16_t toShort() const;
+		uint8_t toByte() const;
 		float toFloat() const;
 		int toInt() const;
 		bool toBool() const;
-		QString typeName() const;
-		QString valueInfo() const;
+		std::string typeName() const;
+		std::string valueInfo() const;
 	private:
 		Type mType;
 		struct {
@@ -74,10 +75,10 @@ class ConstantValue {
 				bool mBool;
 				int mInt;
 				float mFloat;
-				quint16 mShort;
-				quint8 mByte;
+				uint16_t mShort;
+				uint8_t mByte;
 			};
-			QString mString;
+			std::string mString;
 		} mData;
 };
 

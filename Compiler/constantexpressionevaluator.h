@@ -4,11 +4,11 @@
 #include <QObject>
 #include "constantvalue.h"
 #include "abstractsyntaxtree.h"
+#include "errorhandler.h"
 class Scope;
-class ConstantExpressionEvaluator : public QObject {
-		Q_OBJECT
+class ConstantExpressionEvaluator {
 	public:
-		explicit ConstantExpressionEvaluator(QObject *parent = 0);
+		explicit ConstantExpressionEvaluator(ErrorHandler *errorHandler);
 
 		Scope *scope() const { return mScope; }
 		void setScope(Scope *s) { mScope = s; }
@@ -21,13 +21,14 @@ class ConstantExpressionEvaluator : public QObject {
 		ConstantValue evaluate(ast::String *node);
 		ConstantValue evaluate(ast::Expression *node);
 		ConstantValue evaluate(ast::Unary *node);
-	signals:
-		void warning(int code, QString msg, CodePoint codePoint);
-		void error(int code, QString msg, CodePoint codePoint);
-	public slots:
+
 
 	private:
+		void warning(int code, std::string msg, CodePoint codePoint);
+		void error(int code, std::string msg, CodePoint codePoint);
+
 		Scope *mScope;
+		ErrorHandler *mErrorHandler;
 };
 
 #endif // CONSTANTEXPRESSIONEVALUATOR_H

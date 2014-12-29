@@ -1,8 +1,5 @@
 #include "token.h"
-#include <QtAlgorithms>
 #include <iostream>
-#include <QFile>
-#include <QDebug>
 
 static const char *const tokenNames[] = {
 	"EndOfTokens",
@@ -112,25 +109,18 @@ const char *getTokenName(Token::Type t) {
 	return tokenNames[t];
 }
 
-QString Token::toString() const {
-	/*QString s;
-	s.resize(reinterpret_cast<int>(mEnd - mBegin) / sizeof(QChar));
-	memcpy(s.data(), mBegin, reinterpret_cast<int>(mEnd - mBegin));
-	return s;*/
-
-	//Tokens must not be deleted. Otherwise bad things happen.
-	if (mBegin >= mEnd) return QString();
-	return QString::fromRawData(mBegin, mEnd - mBegin);
+const std::string &Token::toString() const {
+	return mText;
 }
 
-QString Token::typeToString() const {
+boost::string_ref Token::typeToString() const {
 	return getTokenName(mType);
 }
 
 
 
-QString Token::info() const {
-	QString ret(mCodePoint.toString());
+std::string Token::info() const {
+	std::string ret(mCodePoint.toString());
 	ret += " ";
 	ret += getTokenName(mType);
 	ret += "  \"";
@@ -139,9 +129,8 @@ QString Token::info() const {
 	return ret;
 }
 
-void Token::print() const
-{
-	qDebug() << info();
+void Token::print() const {
+	std::cout << info();
 }
 
 bool Token::isKeyword() const {

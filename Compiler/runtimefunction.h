@@ -6,9 +6,9 @@ class Runtime;
 class RuntimeFunction : public Function {
 	public:
 		RuntimeFunction(Runtime * r);
-		bool construct(llvm::Function *func, const QString &name);
+		bool construct(llvm::Function *func, const std::string &name);
 		bool isRuntimeFunction() const {return true;}
-		Value call(Builder *builder, const QList<Value> &params);
+		Value call(Builder *builder, const std::vector<Value> &params);
 		FunctionValueType *functionValueType() const { return mFunctionValueType; }
 	private:
 		Runtime *mRuntime;

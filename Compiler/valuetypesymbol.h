@@ -5,7 +5,7 @@ class ValueType;
 
 class ValueTypeSymbol : public Symbol {
 	public:
-		ValueTypeSymbol(const QString &name, const CodePoint &cp);
+		ValueTypeSymbol(const std::string &name, const CodePoint &cp);
 		virtual ValueType *valueType() const = 0;
 		bool isValueTypeSymbol() const { return true; }
 	protected:
@@ -16,7 +16,7 @@ class DefaultValueTypeSymbol :public ValueTypeSymbol {
 		DefaultValueTypeSymbol(ValueType *valType);
 		Type type() const { return stValueType; }
 		ValueType *valueType() const { return mValueType; }
-		QString info() const;
+		std::string info() const;
 	private:
 		ValueType *mValueType;
 };

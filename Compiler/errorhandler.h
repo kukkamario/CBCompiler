@@ -1,16 +1,14 @@
 #ifndef ERRORHANDLER_H
 #define ERRORHANDLER_H
-#include <QString>
-#include <QObject>
+#include <string>
 #include "codepoint.h"
-class QFile;
-class ErrorHandler : public QObject{
-		Q_OBJECT
+class ErrorHandler {
 	public:
 		ErrorHandler();
-	public slots:
-		void warning(int code, QString msg, CodePoint cp);
-		void error(int code, QString msg, CodePoint cp);
+		virtual ~ErrorHandler();
+		virtual void warning(int code, std::string msg, CodePoint cp);
+		virtual void error(int code, std::string msg, CodePoint cp);
+
 };
 
 #endif // ERRORHANDLER_H

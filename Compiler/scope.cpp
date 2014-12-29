@@ -3,7 +3,7 @@
 #include <QTextStream>
 #include <assert.h>
 
-Scope::Scope(const QString &name,Scope *parent):
+Scope::Scope(const std::string &name,Scope *parent):
 	mParent(parent),
 	mName(name) {
 	if (mParent) {
@@ -22,7 +22,7 @@ void Scope::addSymbol(Symbol *symbol) {
 	mSymbols[symbol->name()] = symbol;
 }
 
-bool Scope::contains(const QString &symbol) const {
+bool Scope::contains(const std::string &symbol) const {
 	SymbolMap::const_iterator i = mSymbols.find(symbol);
 	if (i != mSymbols.end()) {
 		return true;
@@ -31,30 +31,30 @@ bool Scope::contains(const QString &symbol) const {
 	return false;
 }
 
-Symbol *Scope::find(const QString &name) const{
+Symbol *Scope::find(const std::string &name) const{
 	SymbolMap::const_iterator i = mSymbols.find(name);
 	if (i != mSymbols.end()) {
-		return i.value();
+		return i->second;
 	}
 	if (mParent) return mParent->find(name);
 	return 0;
 }
 
-Symbol *Scope::findOnlyThisScope(const QString &name) const {
+Symbol *Scope::findOnlyThisScope(const std::string &name) const {
 	SymbolMap::const_iterator i = mSymbols.find(name);
 	if (i != mSymbols.end()) {
-		return i.value();
+		return i->second;
 	}
 	return 0;
 }
 
-void Scope::writeToStream(QTextStream &s) const {
+void Scope::writeToStream(std::basic_ostream<char> &s) const {
 	s << "Scope \"" << mName << "\"\n";
-	for (SymbolMap::ConstIterator i = mSymbols.begin(); i != mSymbols.end(); i++) {
-		s << "  " << i.value()->info() << '\n';
+	for (SymbolMap::const_iterator i = mSymbols.begin(); i != mSymbols.end(); i++) {
+		s << "  " << i->second->info() << '\n';
 	}
 	s << "\n\n";
-	for (QList<Scope*>::ConstIterator i = mChildScopes.begin(); i != mChildScopes.end(); i++) {
+	for (std::vector<Scope*>::const_iterator i = mChildScopes.begin(); i != mChildScopes.end(); i++) {
 		(*i)->writeToStream(s);
 		s << "\n\n";
 	}
@@ -69,11 +69,11 @@ void Scope::setParent(Scope *parent) {
 }
 
 void Scope::addChildScope(Scope *s) {
-	mChildScopes.append(s);
+	mChildScopes.push_back(s);
 }
 
 
 
 void Scope::removeChildScope(Scope *s) {
-	mChildScopes.removeOne(s);
+	mChildScopes.erase(std::remove(mChildScopes.begin(), mChildScopes.end(), s));
 }

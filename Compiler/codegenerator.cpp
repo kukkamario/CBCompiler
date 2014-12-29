@@ -1,11 +1,7 @@
 #include "codegenerator.h"
 #include "errorcodes.h"
 #include "constantsymbol.h"
-#include <QFile>
-#include <QTextStream>
-#include <QDebug>
-#include <QDir>
-#include <QCoreApplication>
+#include <iostream>
 #include "intvaluetype.h"
 #include "floatvaluetype.h"
 #include "stringvaluetype.h"
@@ -29,26 +25,21 @@
 	#define M_PI 3.14159265358979323846
 #endif
 
-CodeGenerator::CodeGenerator(QObject *parent) :
-	QObject(parent),
-	mSymbolCollector(&mRuntime, &mSettings),
+CodeGenerator::CodeGenerator(ErrorHandler *errorHandler) :
+	mRuntime(errorHandler),
+	mSymbolCollector(&mRuntime, mSettings),
 	mGlobalScope("Global"),
 	mMainScope("Main", &mGlobalScope),
-	mFuncCodeGen(&mRuntime, &mSettings),
-	mBuilder(0)
+	mFuncCodeGen(&mRuntime, mSettings),
+	mBuilder(0),
+	mErrorHandler(errorHandler)
 {
-	connect(&mRuntime, &Runtime::error, this, &CodeGenerator::error);
-	connect(&mRuntime, &Runtime::warning, this, &CodeGenerator::warning);
-	connect(&mSymbolCollector, &SymbolCollector::error, this, &CodeGenerator::error);
-	connect(&mSymbolCollector, &SymbolCollector::warning, this, &CodeGenerator::warning);
-	connect(&mFuncCodeGen, &FunctionCodeGenerator::error, this, &CodeGenerator::error);
-	connect(&mFuncCodeGen, &FunctionCodeGenerator::warning, this, &CodeGenerator::warning);
 }
 
-bool CodeGenerator::initialize(const Settings &settings) {
+bool CodeGenerator::initialize(Settings *settings) {
 	mSettings = settings;
 	if (!mRuntime.load(&mStringPool, settings)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), CodePoint());
+		emit error(ErrorCodes::ecInvalidRuntime, "Runtime loading failed", CodePoint());
 		return false;
 	}
 
@@ -58,24 +49,24 @@ bool CodeGenerator::initialize(const Settings &settings) {
 }
 
 bool CodeGenerator::generate(ast::Program *program) {
-	qDebug() << "Preparing code generation...";
-	qDebug() << "Collecting symbols...";
+	std::cout << "Preparing code generation...";
+	std::cout << "Collecting symbols...";
 	if (!mSymbolCollector.collect(program, &mGlobalScope, &mMainScope)) {
-		qDebug() << "Failed";
+		std::cout << "Failed";
 		return false;
 	}
 
-	qDebug() << "Generating types...";
+	std::cout << "Generating types...";
 	if (!generateTypesAndStructes(program)) {
-		qDebug() << "Failed";
+		std::cout << "Failed";
 		return false;
 	}
-	qDebug() << "Generating global variables...";
+	std::cout << "Generating global variables...";
 	if (!generateGlobalVariables()) {
-		qDebug() << "Failed";
+		std::cout << "Failed";
 		return false;
 	}
-	qDebug() << "Generating function definitions...";
+	std::cout << "Generating function definitions...";
 	generateFunctionDefinitions(program->functionDefinitions());
 
 
@@ -91,25 +82,25 @@ bool CodeGenerator::generate(ast::Program *program) {
 	}
 #endif
 
-	qDebug() << "Starting code generation";
-	qDebug() << "Generating main scope...";
+	std::cout << "Starting code generation";
+	std::cout << "Generating main scope...";
 	if (!generateMainScope(program->mainBlock())) {
-		qDebug() << "Failed";
+		std::cout << "Failed";
 		return false;
 	}
-	qDebug() << "Generating functions...";
+	std::cout << "Generating functions...";
 	if (!generateFunctions(program->functionDefinitions())) {
-		qDebug() << "Failed";
+		std::cout << "Failed";
 		return false;
 	}
 
-	qDebug() << "Generating initializers...";
+	std::cout << "Generating initializers...";
 	generateInitializers();
-	qDebug() << "Finished code generation \n\n";
+	std::cout << "Finished code generation \n\n";
 	return true;
 }
 
-bool CodeGenerator::createExecutable(const QString &path) {
+bool CodeGenerator::createExecutable(const std::string &path) {
 	std::string fileOpenErrorInfo;
 	llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
 	if (llvm::verifyModule(*mRuntime.module(), &out)) { //Invalid module
@@ -117,13 +108,13 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		out << "\n\n\n-----LLVM-IR-----\n\n\n";
 		mRuntime.module()->print(out, &asmAnnoWriter);
 		out.close();
-		qDebug("Invalid module. See verifier.log");
+		std::cerr << "Invalid module. See verifier.log";
 		return false;
 	}
 	out.close();
 
-	QString p = QDir::currentPath();
-	QDir::setCurrent(QCoreApplication::applicationDirPath());
+	//std::string p = QDir::currentPath();
+	//QDir::setCurrent(QCoreApplication::applicationDirPath());
 
 	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
 	if (fileOpenErrorInfo.empty()) {
@@ -131,34 +122,34 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		bitcodeFile.close();
 	}
 	else {
-		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""), CodePoint());
-		QDir::setCurrent(p);
+		error(ErrorCodes::ecCantWriteBitcodeFile, "Can't write bitcode file \"raw_bitcode.bc\"", CodePoint());
+		//QDir::setCurrent(p);
 		return false;
 	}
-	qDebug() << "Optimizing bitcode...\n";
-	if (!mSettings.callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
-		emit error(ErrorCodes::ecOptimizingFailed, tr("Failed to execute optimizing command"), CodePoint());
+	std::cout << "Optimizing bitcode...\n";
+	if (!mSettings->callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
+		error(ErrorCodes::ecOptimizingFailed, "Failed to execute optimizing command", CodePoint());
 		return false;
 	}
-	qDebug() << "Creating native assembly...\n";
-	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) {
-		emit error(ErrorCodes::ecCantCreateObjectFile, tr("Creating a object file failed"), CodePoint());
+	std::cout << "Creating native assembly...\n";
+	if (!mSettings->callLLC("optimized_bitcode.bc", "llc")) {
+		error(ErrorCodes::ecCantCreateObjectFile, "Creating a object file failed", CodePoint());
 		return false;
 	}
-	qDebug() << "Building binary...\n";
+	std::cout << "Building binary...\n";
 
-	if (!mSettings.callLinker("llc", "cbrun")) {
-		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
+	if (!mSettings->callLinker("llc", "cbrun")) {
+		error(ErrorCodes::ecNativeLinkingFailed, "Native linking failed", CodePoint());
 		return false;
 	}
-	qDebug() << "Success\n";
-	QDir::setCurrent(p);
+	std::cout << "Success\n";
+	//QDir::setCurrent(p);
 	return true;
 }
 
 bool CodeGenerator::addRuntimeFunctions() {
-	const QList<RuntimeFunction*> runtimeFunctions = mRuntime.functions();
-	for (QList<RuntimeFunction*>::ConstIterator i = runtimeFunctions.begin(); i != runtimeFunctions.end(); i ++)  {
+	const std::vector<RuntimeFunction*> runtimeFunctions = mRuntime.functions();
+	for (std::vector<RuntimeFunction*>::const_iterator i = runtimeFunctions.begin(); i != runtimeFunctions.end(); i ++)  {
 		RuntimeFunction* func = *i;
 
 		Symbol *sym;
@@ -176,9 +167,9 @@ bool CodeGenerator::addRuntimeFunctions() {
 	return true;
 }
 
-bool CodeGenerator::generateFunctionDefinitions(const QList<ast::FunctionDefinition*> &functions) {
+bool CodeGenerator::generateFunctionDefinitions(const std::vector<ast::FunctionDefinition*> &functions) {
 	bool valid = true;
-	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
+	for (std::vector<ast::FunctionDefinition*>::const_iterator i = functions.begin(); i != functions.end(); i++) {
 		CBFunction *func = mSymbolCollector.functionByDefinition(*i);
 		func->generateFunction(&mRuntime);
 	}
@@ -187,24 +178,24 @@ bool CodeGenerator::generateFunctionDefinitions(const QList<ast::FunctionDefinit
 
 
 bool CodeGenerator::generateGlobalVariables() {
-	for (Scope::Iterator i = mGlobalScope.begin(); i != mGlobalScope.end(); i++) {
-		if ((*i)->type() == Symbol::stVariable) {
-			VariableSymbol *varSym = static_cast<VariableSymbol*>(*i);
+	for (Scope::iterator i = mGlobalScope.begin(); i != mGlobalScope.end(); i++) {
+		if ((i->second)->type() == Symbol::stVariable) {
+			VariableSymbol *varSym = static_cast<VariableSymbol*>(i->second);
 			varSym->setAlloca(mBuilder->createGlobalVariable(
 						varSym->valueType()->llvmType(),
 						false,
 						llvm::GlobalValue::PrivateLinkage,
 						varSym->valueType()->defaultValue(),
-						("CB_Global_" + varSym->name()).toStdString()
+						("CB_Global_" + varSym->name())
 						));
 		}
 	}
 	return true;
 }
 
-bool CodeGenerator::generateFunctions(const QList<ast::FunctionDefinition*> &functions) {
+bool CodeGenerator::generateFunctions(const std::vector<ast::FunctionDefinition*> &functions) {
 	bool valid = true;
-	for (QList<ast::FunctionDefinition*>::ConstIterator i = functions.begin(); i != functions.end(); i++) {
+	for (std::vector<ast::FunctionDefinition*>::const_iterator i = functions.begin(); i != functions.end(); i++) {
 		CBFunction *func = mSymbolCollector.functionByDefinition(*i);
 		valid &= mFuncCodeGen.generate(mBuilder, (*i)->block(), func, &mGlobalScope);
 	}
@@ -229,7 +220,8 @@ void CodeGenerator::generateStringLiterals() {
 }
 
 void CodeGenerator::generateTypeInitializers() {
-	for (Symbol *sym : mGlobalScope) {
+	for (auto &scopeSym : mGlobalScope) {
+		Symbol *sym = scopeSym.second;
 		if (sym->type() == Symbol::stType) {
 			TypeSymbol *type = static_cast<TypeSymbol*>(sym);
 			type->initializeType(mBuilder);
@@ -269,9 +261,9 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		type->createOpaqueTypes(mBuilder);
 	}
 
-	QList<StructValueType*> notGeneratedValueTypes = mRuntime.valueTypeCollection().structValueTypes();
-	while (!notGeneratedValueTypes.isEmpty()) {
-		for (QList<StructValueType*>::Iterator i = notGeneratedValueTypes.begin(); i != notGeneratedValueTypes.end();) {
+	std::vector<StructValueType*> notGeneratedValueTypes = mRuntime.valueTypeCollection().structValueTypes();
+	while (!notGeneratedValueTypes.empty()) {
+		for (std::vector<StructValueType*>::iterator i = notGeneratedValueTypes.begin(); i != notGeneratedValueTypes.end();) {
 			StructValueType *structValueType = *i;
 			if (structValueType->generateLLVMType()) {
 				i = notGeneratedValueTypes.erase(i);
@@ -282,7 +274,7 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 	}
 
 
-	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefinitions().begin(); i != program->typeDefinitions().end(); i++) {
+	for (std::vector<ast::TypeDefinition*>::const_iterator i = program->typeDefinitions().begin(); i != program->typeDefinitions().end(); i++) {
 		ast::TypeDefinition *def = *i;
 		TypeSymbol *type = static_cast<TypeSymbol*>(mGlobalScope.find(def->identifier()->name()));
 		type->createTypePointerValueType(mBuilder);

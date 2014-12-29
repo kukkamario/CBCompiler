@@ -1,34 +1,35 @@
 #ifndef CUSTOMDATATYPEDEFINITIONS_H
 #define CUSTOMDATATYPEDEFINITIONS_H
-#include <QString>
-#include <QObject>
+#include <string>
+#include <vector>
 #include "codepoint.h"
-
-class CustomDataTypeDefinitions : public QObject {
+class ErrorHandler;
+class CustomDataTypeDefinitions {
 		Q_OBJECT
 	public:
 		struct CustomDataType {
 				/** CB type name*/
-				QString mName;
+				std::string mName;
 
 				/** LLVM type name*/
-				QString mDataType;
+				std::string mDataType;
 		};
 
-		CustomDataTypeDefinitions(QObject *parent = 0);
+		CustomDataTypeDefinitions(ErrorHandler *errorHandler);
 		~CustomDataTypeDefinitions();
 
-		bool parse(const QString &file);
-		const QList<CustomDataType> &dataTypes() const { return mDataTypes; }
-	signals:
-		void error(int code, QString msg, CodePoint cp);
-		void warning(int code, QString msg, CodePoint cp);
+		bool parse(const std::string &file);
+		const std::vector<CustomDataType> &dataTypes() const { return mDataTypes; }
+
 	private:
-		void invalidFormatError(const QString &file);
+		void invalidFormatError(const std::string &file);
 		bool parseDataType(QJsonObject obj, CustomDataType &ret);
+		void error(int code, std::string msg, CodePoint cp);
+		void warning(int code, std::string msg, CodePoint cp);
 
 
-		QList<CustomDataType> mDataTypes;
+		std::vector<CustomDataType> mDataTypes;
+		ErrorHandler *mErrorHandler;
 };
 
 #endif // CUSTOMDATATYPEDEFINITIONS_H

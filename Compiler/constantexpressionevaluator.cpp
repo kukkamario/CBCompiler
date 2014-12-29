@@ -4,8 +4,8 @@
 #include "scope.h"
 #include "constantsymbol.h"
 
-ConstantExpressionEvaluator::ConstantExpressionEvaluator(QObject *parent) :
-	QObject(parent)
+ConstantExpressionEvaluator::ConstantExpressionEvaluator(ErrorHandler *errorHandler) :
+	mErrorHandler(errorHandler)
 {
 }
 
@@ -29,7 +29,7 @@ ConstantValue ConstantExpressionEvaluator::evaluate(ast::Node *n) {
 		case ast::Node::ntVariable:
 			return evaluate(n->cast<ast::Variable>());
 		default:
-			emit error(ErrorCodes::ecNotConstant, tr("This expression isn't constant expression"), n->codePoint());
+			error(ErrorCodes::ecNotConstant, tr("This expression isn't constant expression"), n->codePoint());
 			return ConstantValue();
 	}
 }
@@ -85,13 +85,13 @@ ConstantValue ConstantExpressionEvaluator::evaluate(ast::Expression *node) {
 				return ConstantValue();
 		}
 		if (flags.testFlag(OperationFlag::IntegerDividedByZero)) {
-			emit error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by Zero"), operation->codePoint());
+			error(ErrorCodes::ecIntegerDividedByZero, tr("Integer divided by Zero"), operation->codePoint());
 		}
 		if (flags.testFlag(OperationFlag::MayLosePrecision)) {
-			emit warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), operation->codePoint());
+			warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), operation->codePoint());
 		}
 		if (flags.testFlag(OperationFlag::NoSuchOperation)) {
-			emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operator %1 between operands %2 and %3").arg(ast::ExpressionNode::opToString(operation->op()), op1.valueInfo(), op2.valueInfo()), operation->codePoint());
+			error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("No operator %1 between operands %2 and %3").arg(ast::ExpressionNode::opToString(operation->op()), op1.valueInfo(), op2.valueInfo()), operation->codePoint());
 		}
 		if (operationFlagsContainFatalFlags(flags)) {
 			return ConstantValue();
@@ -117,10 +117,10 @@ ConstantValue ConstantExpressionEvaluator::evaluate(ast::Unary *node) {
 			assert("Invalid ast::Unary::Op" && 0);
 	}
 	if (flags.testFlag(OperationFlag::MayLosePrecision)) {
-		emit warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), node->codePoint());
+		warning(WarningCodes::wcMayLosePrecision, tr("Values may lose precision during operation"), node->codePoint());
 	}
 	if (flags.testFlag(OperationFlag::NoSuchOperation)) {
-		emit error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("Invalid operation %1 for value %2").arg(ast::Unary::opToString(node->op()), result.valueInfo()), node->codePoint());
+		error(ErrorCodes::ecMathematicalOperationOperandTypeMismatch, tr("Invalid operation %1 for value %2").arg(ast::Unary::opToString(node->op()), result.valueInfo()), node->codePoint());
 	}
 	if (operationFlagsContainFatalFlags(flags)) {
 		return ConstantValue();
@@ -129,11 +129,19 @@ ConstantValue ConstantExpressionEvaluator::evaluate(ast::Unary *node) {
 	return result;
 }
 
+void ConstantExpressionEvaluator::warning(int code, std::string msg, CodePoint codePoint) {
+	mErrorHandler->warning(code, msg, codePoint);
+}
+
+void ConstantExpressionEvaluator::error(int code, std::string msg, CodePoint codePoint) {
+	mErrorHandler->error(code, msg, codePoint);
+}
+
 ConstantValue ConstantExpressionEvaluator::evaluate(ast::Identifier *node) {
 	Symbol *sym = mScope->find(node->name());
 	assert(sym);
 	if (sym->type() != Symbol::stConstant) {
-		emit error(ErrorCodes::ecNotConstant, tr("Symbol \"%1\" isn't a constant").arg(node->name()), node->codePoint());
+		error(ErrorCodes::ecNotConstant, tr("Symbol \"%1\" isn't a constant").arg(node->name()), node->codePoint());
 		return ConstantValue();
 	}
 

@@ -4,7 +4,7 @@
 class IntValueType : public ValueType {
 	public:
 		IntValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return "integer";}
+		std::string name() const {return "integer";}
 		llvm::Type *llvmType() {return mType;}
 		CastCost castingCostToOtherValueType(const ValueType *to) const;
 

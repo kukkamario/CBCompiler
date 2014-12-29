@@ -5,7 +5,7 @@
 #include "builder.h"
 #include "functionvaluetype.h"
 
-FunctionSelectorValueType::FunctionSelectorValueType(Runtime *runtime, const QList<Function *> &functions) :
+FunctionSelectorValueType::FunctionSelectorValueType(Runtime *runtime, const std::vector<Function *> &functions) :
 	ValueType(runtime),
 	mFunctions(functions)
 {
@@ -13,12 +13,12 @@ FunctionSelectorValueType::FunctionSelectorValueType(Runtime *runtime, const QLi
 }
 
 
-QString FunctionSelectorValueType::name() const {
-	if (mFunctions.isEmpty()) return QStringLiteral("Empty function selector");
+std::string FunctionSelectorValueType::name() const {
+	if (mFunctions.empty()) return std::stringLiteral("Empty function selector");
 
-	return QStringLiteral("Function ") % mFunctions.first()->name() % QStringLiteral(" overload(s): { ") % listStringJoin(mFunctions, [](Function *func) {
+	return std::stringLiteral("Function ") % mFunctions.first()->name() % std::stringLiteral(" overload(s): { ") % listStringJoin(mFunctions, [](Function *func) {
 		return func->functionValueType()->name();
-	}) % QStringLiteral(" }");
+	}) % std::stringLiteral(" }");
 }
 
 
@@ -48,7 +48,7 @@ Value FunctionSelectorValueType::cast(Builder *, const Value &v) const {
 	return v;
 }
 
-QList<Function *> FunctionSelectorValueType::overloads() const {
+std::vector<Function *> FunctionSelectorValueType::overloads() const {
 	return mFunctions;
 }
 

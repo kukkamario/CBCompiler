@@ -5,7 +5,7 @@ class Runtime;
 class FloatValueType : public ValueType {
 	public:
 		FloatValueType(Runtime *runtime, llvm::Module *mod);
-		QString name() const {return "float";}
+		std::string name() const {return "float";}
 		BasicType basicType()const { return Float; }
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */

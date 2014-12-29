@@ -1,7 +1,7 @@
 #ifndef SCOPE_H
 #define SCOPE_H
 #include "symbol.h"
-#include <QMap>
+#include <map>
 class QTextStream;
 
 /**
@@ -9,9 +9,9 @@ class QTextStream;
  */
 class Scope {
 	public:
-		typedef QMap<QString, Symbol*>::Iterator Iterator;
-		typedef QMap<QString, Symbol*>::ConstIterator ConstIterator;
-		Scope(const QString &name, Scope *parent = 0);
+		typedef std::map<std::string, Symbol*>::iterator iterator;
+		typedef std::map<std::string, Symbol*>::const_iterator const_iterator;
+		Scope(const std::string &name, Scope *parent = 0);
 		~Scope();
 		/**
 		 * @brief addSymbol Adds symbol to the scope
@@ -24,22 +24,22 @@ class Scope {
 		 * @param symbol The name of the symbol
 		 * @return True, if symbol is found and false otherwise
 		 */
-		bool contains(const QString &symbol) const;
+		bool contains(const std::string &symbol) const;
 
 		/**
 		 * @brief contains Searches for a symbol with a given name from this scope and all parent scopes.
 		 * @param symbol The name of the symbol
 		 * @return Pointer to the symbol found or a null pointer.
 		 */
-		Symbol *find(const QString &name) const;
+		Symbol *find(const std::string &name) const;
 
-		Symbol *findOnlyThisScope(const QString &name) const;
+		Symbol *findOnlyThisScope(const std::string &name) const;
 
 		/**
 		 * @brief writeToStream Writes the scope to a stream for a debugging purposes.
 		 * @param s Stream
 		 */
-		void writeToStream(QTextStream &s) const;
+		void writeToStream(std::basic_ostream<char> &s) const;
 
 		/**
 		 * @brief setParent Sets the parent scope
@@ -48,18 +48,18 @@ class Scope {
 		void setParent(Scope *parent);
 		Scope *parent() const {return mParent;}
 
-		Iterator begin() {return mSymbols.begin();}
-		ConstIterator begin() const {return mSymbols.begin();}
-		Iterator end() {return mSymbols.end();}
-		ConstIterator end() const {return mSymbols.end();}
+		iterator begin() {return mSymbols.begin();}
+		const_iterator begin() const {return mSymbols.begin();}
+		iterator end() {return mSymbols.end();}
+		const_iterator end() const {return mSymbols.end();}
 	private:
 		void addChildScope(Scope *s);
 		void removeChildScope(Scope *s);
-		typedef QMap<QString, Symbol*> SymbolMap;
-		QList<Scope*> mChildScopes;
+		typedef std::map<std::string, Symbol*> SymbolMap;
+		std::vector<Scope*> mChildScopes;
 		SymbolMap mSymbols;
 		Scope *mParent;
-		QString mName;
+		std::string mName;
 };
 
 #endif // SCOPE_H

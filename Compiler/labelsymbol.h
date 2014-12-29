@@ -7,9 +7,9 @@ namespace llvm {
 class LabelSymbol : public Symbol
 {
 	public:
-		LabelSymbol(const QString &name, const CodePoint &cp);
+		LabelSymbol(const std::string &name, const CodePoint &cp);
 		Type type()const{return stLabel;}
-		QString info()const;
+		std::string info()const;
 		void setBasicBlock(llvm::BasicBlock *bb);
 		llvm::BasicBlock *basicBlock()const{return mBasicBlock;}
 	private:

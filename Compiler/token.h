@@ -1,7 +1,9 @@
 #ifndef TOKEN_H
 #define TOKEN_H
-#include <QString>
+#include <string>
 #include "codepoint.h"
+#include "utf8.h"
+#include <boost/utility/string_ref.hpp>
 
 class Token {
 	public:
@@ -107,28 +109,24 @@ class Token {
 			TypeCount
 		};
 
-		Token(Type t, QString::ConstIterator begin, QString::ConstIterator end, const CodePoint &cp) : mType(t), mBegin(begin), mEnd(end), mCodePoint(cp) {}
+		Token(Type t, const std::string &text, const CodePoint &cp) : mType(t), mText(text), mCodePoint(cp) {}
 		~Token() { }
 		Type type() const { return mType; }
 		const CodePoint &codePoint() const { return mCodePoint; }
-		QString file() const { return mCodePoint.file(); }
+		boost::string_ref file() const { return mCodePoint.file(); }
 		int line() const { return mCodePoint.line(); }
 		int column() const { return mCodePoint.column(); }
 
-		QString toString() const;
-		QString typeToString() const;
-		QString info() const;
+		const std::string &toString() const;
+		boost::string_ref typeToString() const;
+		std::string info() const;
 		void print() const;
 		bool isOperator() const;
 		bool isKeyword() const;
 		bool isEndOfStatement() const;
-
-		QString::ConstIterator begin() const { return mBegin; }
-		QString::ConstIterator end() const { return mEnd; }
 	private:
 		Type mType;
-		QString::ConstIterator mBegin;
-		QString::ConstIterator mEnd;
+		std::string mText;
 		CodePoint mCodePoint;
 };
 

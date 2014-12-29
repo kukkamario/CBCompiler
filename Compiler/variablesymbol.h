@@ -1,6 +1,6 @@
 #ifndef VARIABLESYMBOL_H
 #define VARIABLESYMBOL_H
-#include <QString>
+#include <string>
 #include "codepoint.h"
 #include "symbol.h"
 class ValueType;
@@ -9,10 +9,10 @@ namespace llvm {
 }
 class VariableSymbol : public Symbol{
 	public:
-		VariableSymbol(const QString &name, ValueType *t, const CodePoint &cp);
+		VariableSymbol(const std::string &name, ValueType *t, const CodePoint &cp);
 		virtual ~VariableSymbol();
 		Type type()const {return stVariable;}
-		QString info() const;
+		std::string info() const;
 		void setAlloca(llvm::Value *alloc);
 		llvm::Value *alloca_()const {return mAlloca;}
 		ValueType *valueType()const{return mValueType;}

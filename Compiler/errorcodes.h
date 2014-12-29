@@ -4,7 +4,8 @@
 namespace ErrorCodes {
 enum ErrorCode {
 	//Settings
-	ecSettingsLoadingFailed = 11,
+	ecNoInputFiles = 11,
+	ecSettingsLoadingFailed,
 	ecCantParseCustomDataTypeDefinitionFile,
 	ecInvalidCustomDataTypeDefinitionFileFormat,
 

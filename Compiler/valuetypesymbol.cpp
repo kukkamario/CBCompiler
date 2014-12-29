@@ -1,7 +1,7 @@
 #include "valuetypesymbol.h"
 #include "valuetype.h"
 
-ValueTypeSymbol::ValueTypeSymbol(const QString &name, const CodePoint &cp) :
+ValueTypeSymbol::ValueTypeSymbol(const std::string &name, const CodePoint &cp) :
 	Symbol(name, cp){
 }
 
@@ -11,6 +11,6 @@ DefaultValueTypeSymbol::DefaultValueTypeSymbol(ValueType *valType) :
 	mValueType(valType) {
 }
 
-QString DefaultValueTypeSymbol::info() const {
-	return QString("ValueType symbol: ") + name();
+std::string DefaultValueTypeSymbol::info() const {
+	return std::string("ValueType symbol: ") + name();
 }

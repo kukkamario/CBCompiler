@@ -1,40 +1,37 @@
 #ifndef CODEPOINT_H
 #define CODEPOINT_H
-#include <QtGlobal>
-#include <QString>
-#include <QObject>
-#include <QStringBuilder>
+#include <string>
+#include <boost/utility/string_ref.hpp>
+#include <boost/lexical_cast.hpp>
 
 class CodePoint {
 	public:
 		CodePoint() : mLine(0), mColumn(0) { }
-		CodePoint(const QString & file) : mLine(0), mColumn(0), mFile(file) {}
-		CodePoint(int line, int column, QString file) : mLine(line), mColumn(column), mFile(file) {}
-		bool isNull() const { return mFile.isNull() && mLine == 0 && mColumn == 0; }
+		CodePoint(boost::string_ref file) : mLine(0), mColumn(0), mFile(file) {}
+		CodePoint(int line, int column, boost::string_ref file) : mLine(line), mColumn(column), mFile(file) {}
+		bool isNull() const { return mFile.empty() && mLine == 0 && mColumn == 0; }
 		int line() const { return mLine; }
 		int column() const { return mColumn; }
-		QString file() const { return mFile; }
+		boost::string_ref file() const { return mFile; }
 
-		QString toString() const;
+		std::string toString() const;
 	private:
 		int mLine;
 		int mColumn;
-		QString mFile;
+		boost::string_ref mFile;
 };
 
-Q_DECLARE_METATYPE(CodePoint)
 
-
-inline QString CodePoint::toString() const {
-	if (!mFile.isEmpty()) {
+inline std::string CodePoint::toString() const {
+	if (!mFile.empty()) {
 		if (mLine && mColumn) {
-			return QStringLiteral("\"") % mFile % "\" [" % QString::number(mLine) % ", " % QString::number(mColumn) % "]";
+			return std::string("\"") + mFile.to_string() + "\" [" + boost::lexical_cast<std::string>(mLine) + ", " + boost::lexical_cast<std::string>(mColumn) + "]";
 		}
 		else {
-			return QStringLiteral("\"") % mFile % "\"";
+			return std::string("\"") + mFile.to_string() + "\"";
 		}
 	}
-	return QString();
+	return std::string();
 }
 
 #endif // CODEPOINT_H

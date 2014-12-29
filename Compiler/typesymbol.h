@@ -1,8 +1,8 @@
 #ifndef TYPESYMBOL_H
 #define TYPESYMBOL_H
 #include "symbol.h"
-#include <QMap>
-#include <QList>
+#include <map>
+#include <vector>
 #include "value.h"
 #include "valuetypesymbol.h"
 
@@ -19,29 +19,29 @@ class ValueType;
 class Runtime;
 class TypeField {
 	public:
-		TypeField(const QString &name, ValueType *valueType, const CodePoint &cp);
-		QString name()const{return mName;}
+		TypeField(const std::string &name, ValueType *valueType, const CodePoint &cp);
+		std::string name()const{return mName;}
 		ValueType *valueType()const{return mValueType;}
-		QString info() const;
+		std::string info() const;
 		int line() const { return mCodePoint.line(); }
-		QString file() const { return mCodePoint.file(); }
+		boost::string_ref file() const { return mCodePoint.file(); }
 		int column() const { return mCodePoint.column(); }
 		const CodePoint &codePoint() const { return mCodePoint; }
 	private:
-		QString mName;
+		std::string mName;
 		ValueType *mValueType;
 		CodePoint mCodePoint;
 };
 
 class TypeSymbol : public ValueTypeSymbol {
 	public:
-		TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp);
+		TypeSymbol(const std::string &name, Runtime *r, const CodePoint &cp);
 		Type type()const{return stType;}
-		QString info() const;
+		std::string info() const;
 		bool addField(const TypeField &field);
-		bool hasField(const QString &name);
-		const TypeField &field(const QString &name) const;
-		int fieldIndex(const QString &name) const;
+		bool hasField(const std::string &name);
+		const TypeField &field(const std::string &name) const;
+		int fieldIndex(const std::string &name) const;
 		llvm::StructType *llvmMemberType() const {return mMemberType;}
 		ValueType *valueType() const;
 
@@ -54,8 +54,8 @@ class TypeSymbol : public ValueTypeSymbol {
 		Value typeValue();
 	private:
 		void createLLVMMemberType();
-		QList<TypeField> mFields;
-		QMap<QString, int> mFieldSearch;
+		std::vector<TypeField> mFields;
+		std::map<std::string, int> mFieldSearch;
 		Runtime *mRuntime;
 		llvm::StructType *mMemberType;
 		llvm::GlobalVariable *mGlobalTypeVariable;

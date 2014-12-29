@@ -1,7 +1,7 @@
 #ifndef VALUE_H
 #define VALUE_H
 #include "llvm.h"
-#include <QString>
+#include <string>
 #include "constantvalue.h"
 
 class Builder;

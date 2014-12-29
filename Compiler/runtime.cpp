@@ -1,5 +1,4 @@
 #include "runtime.h"
-#include <QDebug>
 #include "intvaluetype.h"
 #include "stringvaluetype.h"
 #include "shortvaluetype.h"
@@ -15,13 +14,17 @@
 #include "customvaluetype.h"
 #include "genericstructvaluetype.h"
 #include "nullvaluetype.h"
-#include <QStringList>
-#include <QTextStream>
+#include <fstream>
 #include <time.h>
+#include <boost/algorithm/string.hpp>
+#include "errorhandler.h"
+#include <boost/locale.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
 
 static Runtime *runtimeInstance = 0;
 
-Runtime::Runtime():
+Runtime::Runtime(ErrorHandler *errorHandler):
 	mValid(true),
 	mModule(0),
 	mCBMain(0),
@@ -34,7 +37,8 @@ Runtime::Runtime():
 	mBooleanValueType(0),
 	mTypePointerCommonValueType(0),
 	mValueTypeCollection(this),
-	mDataLayout(0) {
+	mDataLayout(0),
+	mErrorHandler(errorHandler) {
 	assert(runtimeInstance == 0);
 	runtimeInstance = this;
 }
@@ -44,23 +48,23 @@ Runtime::~Runtime() {
 	delete mTypePointerCommonValueType;
 }
 
-bool Runtime::load(StringPool *strPool, const Settings &settings) {
+bool Runtime::load(StringPool *strPool, Settings *settings) {
 	llvm::InitializeNativeTarget();
 	llvm::SMDiagnostic diagnostic;
-	std::string path = settings.runtimeLibraryPath().toStdString();
+	std::string path = settings->runtimeLibraryPath();
 	mModule = llvm::ParseIRFile(path, diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
-		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), CodePoint());
+		error(ErrorCodes::ecCantLoadRuntime, ("Runtime loading failed: " + diagnostic.getMessage()).str(), CodePoint());
 		return false;
 	}
 
-	if (!loadFunctionMapping(settings.functionMappingFile())) return false;
+	if (!loadFunctionMapping(settings->functionMappingFile())) return false;
 
 	mDataLayout = new llvm::DataLayout(mModule);
 
 	if (!loadValueTypes(strPool)) return false;
 
-	if (!loadCustomDataTypes(settings.dataTypesFile())) return false;
+	if (!loadCustomDataTypes(settings->dataTypesFile())) return false;
 
 	if (!loadRuntimeFunctions()) return false;
 
@@ -85,31 +89,31 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	mStringValueType = new StringValueType(strPool, this);
 	llvm::StructType *str = mModule->getTypeByName("class.LString");
 	if (!str) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"class.LString\" in runtime library bitcode"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"class.LString\" in runtime library bitcode", CodePoint());
 		return false;
 	}
 
 	mTypeLLVMType = mModule->getTypeByName("struct.CB_Type");
 	if (!mTypeLLVMType) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_Type\" in runtime library bitcode"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"struct.CB_Type\" in runtime library bitcode", CodePoint());
 		return false;
 	}
 
 	mTypeMemberLLVMType = mModule->getTypeByName("struct.CB_TypeMember");
 	if (!mTypeMemberLLVMType) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_TypeMember\" in runtime library bitcode"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"struct.CB_TypeMember\" in runtime library bitcode", CodePoint());
 		return false;
 	}
 
 	mGenericArrayLLVMType = mModule->getTypeByName("struct.CB_GenericArrayDataHeader");
 	if (!mGenericArrayLLVMType) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericArrayDataHeader\" in runtime library bitcode"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"struct.CB_GenericArrayDataHeader\" in runtime library bitcode", CodePoint());
 		return false;
 	}
 
 	mGenericStructLLVMType = mModule->getTypeByName("struct.CB_GenericStruct");
 	if (!mGenericStructLLVMType) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"struct.CB_GenericStruct\" in runtime library bitcode"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"struct.CB_GenericStruct\" in runtime library bitcode", CodePoint());
 		return false;
 	}
 
@@ -158,56 +162,61 @@ bool Runtime::isFreeFuntionValid() {
 	return mFreeFunction->getReturnType() == llvm::Type::getVoidTy(mModule->getContext());
 }
 
-bool Runtime::loadFunctionMapping(const QString &functionMapping) {
-	QFile file(functionMapping);
-	if (!file.open(QFile::ReadOnly | QFile::Text)) {
-		emit error(ErrorCodes::ecCantLoadFunctionMapping, tr("Can't open a function mapping file \"%1\"").arg(functionMapping), CodePoint());
+void Runtime::warning(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->warning(code, msg, cp);
+}
+
+void Runtime::error(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->error(code, msg, cp);
+}
+
+bool Runtime::loadFunctionMapping(const std::string &functionMapping) {
+	std::ifstream file(functionMapping);
+	if (!file.is_open()) {
+		error(ErrorCodes::ecCantLoadFunctionMapping, "Can't open a function mapping file \"" + functionMapping + "\"", CodePoint());
 		return false;
 	}
-	QTextStream in(&file);
 	int lineNum = 0;
-	while (!in.atEnd()) {
-		QString line = in.readLine().trimmed();
+	std::string line;
+	while (std::getline(file, line)) {
+		boost::algorithm::trim(line);
 		lineNum++;
-		if (line.isEmpty()) continue;
-		QStringList parts = line.split('=');
+		if (line.empty()) continue;
+		std::vector<std::string> parts;
+		boost::algorithm::split(parts, line, boost::algorithm::is_from_range('=', '='), boost::algorithm::token_compress_on);
 		if (parts.size() != 2) {
-			emit error(ErrorCodes::ecInvalidFunctionMappingFile, tr("Invalid function mapping file"), CodePoint(lineNum, 1, functionMapping));
+			error(ErrorCodes::ecInvalidFunctionMappingFile, "Invalid function mapping file", CodePoint(lineNum, 1, functionMapping));
 			return false;
 		}
-		mFunctionMapping.insert(parts.first(), parts.last());
+		mFunctionMapping.insert(std::pair<std::string, std::string>(parts.front(), parts.back()));
 	}
 	file.close();
 	return true;
 }
 
-bool Runtime::loadCustomDataTypes(const QString &customDataTypes) {
-	CustomDataTypeDefinitions defs;
-	connect(&defs, &CustomDataTypeDefinitions::error, this, &Runtime::error);
-	connect(&defs, &CustomDataTypeDefinitions::error, this, &Runtime::error);
+bool Runtime::loadCustomDataTypes(const std::string &customDataTypes) {
+	CustomDataTypeDefinitions defs(mErrorHandler);
 
 	if (!defs.parse(customDataTypes)) return false;
 
 	bool valid = true;
 	for (const CustomDataTypeDefinitions::CustomDataType &dt : defs.dataTypes()) {
 		int pointerLevel = 0;
-		QString dtName = dt.mDataType;
-		while (dtName.endsWith('*')) {
-			dtName.chop(1);
+		std::string dtName = dt.mDataType;
+		while (boost::algorithm::ends_with(dtName, "*")) {
+			dtName.erase(--dtName.end(), dtName.end());
 			pointerLevel++;
 		}
-
-		std::string dtNameStd = dtName.toStdString();
-		llvm::Type *type = mModule->getTypeByName(dtNameStd);
+		llvm::Type *type = mModule->getTypeByName(dtName);
 		if (!type) {
-			emit error(ErrorCodes::ecCantFindCustomDataType, tr("Can't find a custom data type \"%1\".").arg(dtName), CodePoint(0, 0, customDataTypes));
+			error(ErrorCodes::ecCantFindCustomDataType, "Can't find a custom data type \"" + dtName + "\"", CodePoint(0, 0, customDataTypes));
 			valid = false;
 			continue;
 		}
 
 		while (pointerLevel--) { type = type->getPointerTo(); }
 
-		CustomValueType *valTy = new CustomValueType(dt.mName.toLower(), type, this);
+		CustomValueType *valTy = new CustomValueType(boost::locale::to_lower(dt.mName), type, this);
 		mValueTypeCollection.addValueType(valTy);
 	}
 	return valid;
@@ -221,20 +230,20 @@ Runtime *Runtime::instance() {
 
 bool Runtime::loadRuntimeFunctions() {
 	bool valid = true;
-	for (QMultiMap<QString, QString>::ConstIterator i = mFunctionMapping.begin(); i != mFunctionMapping.end(); i++) {
+	for (std::multimap<std::string, std::string>::const_iterator i = mFunctionMapping.begin(); i != mFunctionMapping.end(); i++) {
 		RuntimeFunction *rtFunc = new RuntimeFunction(this);
-		llvm::Function *func = mModule->getFunction(i.value().toStdString());
+		llvm::Function *func = mModule->getFunction(i->second);
 		if (!func) {
-			emit error(ErrorCodes::ecCantFindRuntimeFunction, tr("Can't find the runtime function \"%1\", the mangled name \"%2\"").arg(i.key(), i.value()), CodePoint());
+			error(ErrorCodes::ecCantFindRuntimeFunction, (boost::format("Can't find the runtime function \"%1%\", the mangled name \"%2%\"") % i->first % i->second).str(), CodePoint());
 			valid = false;
 			continue;
 		}
-		if(!rtFunc->construct(func, i.key())) {
-			emit error(ErrorCodes::ecInvalidRuntime, tr("Invalid runtime function \"%1\" \"%2\"").arg(i.key(), i.value()), CodePoint());
+		if(!rtFunc->construct(func, i->first)) {
+			error(ErrorCodes::ecInvalidRuntime, (boost::format("Invalid runtime function \"%1%\" \"%2%\"") % i->first % i->second).str(), CodePoint());
 			valid = false;
 			continue;
 		}
-		mFunctions.append(rtFunc);
+		mFunctions.push_back(rtFunc);
 	}
 	return valid;
 }
@@ -245,150 +254,150 @@ bool Runtime::loadDefaultRuntimeFunctions() {
 	mCBMain = mModule->getFunction("CB_main");
 	if (!mCBMain) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"CB_main\""), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"CB_main\"", CodePoint());
 	}
 
 	mCBInitialize = mModule->getFunction("CB_initialize");
 	if (!mCBInitialize) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Can't find \"CB_initialize\""), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Can't find \"CB_initialize\"", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z18CB_StringConstructPDi");
 	if (!func || !mStringValueType->setConstructFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringConstruct"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringConstruct", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z17CB_StringDestructP11LStringData");
 	if (!func || !mStringValueType->setDestructFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringDestruct"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringDestruct", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z15CB_StringAssignPP11LStringDataS0_");
 	if (!func || !mStringValueType->setAssignmentFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringAssign"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringAssign", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z14CB_StringToIntP11LStringData");
 	if (!func || !mStringValueType->setStringToIntFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringToInt"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringToInt", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z16CB_StringToFloatP11LStringData");
 	if (!func || !mStringValueType->setStringToFloatFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringToFloat"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringToFloat", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z14CB_IntToStringi");
 	if (!func || !mStringValueType->setIntToStringFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_IntToString"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_IntToString", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z16CB_FloatToStringf");
 	if (!func || !mStringValueType->setFloatToStringFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_FloatToString"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_FloatToString", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z17CB_StringAdditionP11LStringDataS0_");
 	if (!func || !mStringValueType->setAdditionFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringAddition"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringAddition", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z17CB_StringEqualityP11LStringDataS0_");
 	if (!func || !mStringValueType->setEqualityFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringEquality"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringEquality", CodePoint());
 	}
 
 	func = mModule->getFunction("_Z12CB_StringRefP11LStringData");
 	if (!func || !mStringValueType->setRefFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_StringRef"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_StringRef", CodePoint());
 	}
 
 	func = mModule->getFunction("CB_ArrayRef");
 	if (!func || !mGenericArrayValueType->setRefFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayRef"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_ArrayRef", CodePoint());
 	}
 
 	func = mModule->getFunction("CB_ArrayConstruct");
 	if (!func || !mGenericArrayValueType->setConstructFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayConstruct"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_ArrayConstruct", CodePoint());
 	}
 
 	func = mModule->getFunction("CB_ArrayDestruct");
 	if (!func || !mGenericArrayValueType->setDestructFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayDestruct"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_ArrayDestruct", CodePoint());
 	}
 
 	func = mModule->getFunction("CB_ArrayAssign");
 	if (!func || !mGenericArrayValueType->setAssignmentFunction(func)) {
 		mValid = false;
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ArrayAssign"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_ArrayAssign", CodePoint());
 	}
 
 	mAllocatorFunction = mModule->getFunction("CB_Allocate");
 	if (!isAllocatorFunctionValid()) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Allocate"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_Allocate", CodePoint());
 		mValid = false;
 	}
 
 	mFreeFunction = mModule->getFunction("CB_Free");
 	if (!isFreeFuntionValid()) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Free"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_Free", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_ConstructType");
 	if (!func || !mTypeValueType->setConstructTypeFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_ConstructType"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_ConstructType", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_New");
 	if (!func || !mTypeValueType->setNewFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_New"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_New", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_First");
 	if (!func || !mTypeValueType->setFirstFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_First"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_First", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_Last");
 	if (!func || !mTypeValueType->setLastFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Last"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_Last", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_Before");
 	if (!func || !mTypeValueType->setBeforeFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Before"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_Before", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_After");
 	if (!func || !mTypeValueType->setAfterFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_After"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_After", CodePoint());
 		mValid = false;
 	}
 
 	func = mModule->getFunction("CB_Delete");
 	if (!func || !mTypeValueType->setDeleteFunction(func)) {
-		emit error(ErrorCodes::ecInvalidRuntime, tr("RUNTIME: Invalid CB_Delete"), CodePoint());
+		error(ErrorCodes::ecInvalidRuntime, "RUNTIME: Invalid CB_Delete", CodePoint());
 		mValid = false;
 	}
 

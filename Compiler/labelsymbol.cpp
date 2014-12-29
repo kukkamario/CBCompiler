@@ -1,13 +1,13 @@
 #include "labelsymbol.h"
 
-LabelSymbol::LabelSymbol(const QString &name, const CodePoint &cp):
+LabelSymbol::LabelSymbol(const std::string &name, const CodePoint &cp):
 	Symbol(name, cp),
 	mBasicBlock(0)
 {
 }
 
-QString LabelSymbol::info() const {
-	return QStringLiteral("Label ") + mName;
+std::string LabelSymbol::info() const {
+	return "Label " + mName;
 }
 
 void LabelSymbol::setBasicBlock(llvm::BasicBlock *bb) {

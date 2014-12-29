@@ -5,7 +5,7 @@
 class NullValueType : public ValueType {
 	public:
 		NullValueType(Runtime *runtime);
-		virtual QString name() const { return "Null"; }
+		virtual std::string name() const { return "Null"; }
 		virtual CastCost castingCostToOtherValueType(const ValueType *to) const;
 		virtual Value cast(Builder *, const Value &) const;
 		bool isTypePointer() const { return false; }

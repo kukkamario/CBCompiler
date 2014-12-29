@@ -4,10 +4,10 @@
 
 class FunctionSelectorValueType : public ValueType {
 	public:
-		FunctionSelectorValueType(Runtime *runtime, const QList<Function*> &functions);
+		FunctionSelectorValueType(Runtime *runtime, const std::vector<Function*> &functions);
 		~FunctionSelectorValueType() {}
 
-		QString name() const;
+		std::string name() const;
 		virtual bool isNamedValueType() const { return false; }
 		llvm::Type *llvmType() const {return mType;}
 		bool isTypePointer() const { return false; }
@@ -23,10 +23,10 @@ class FunctionSelectorValueType : public ValueType {
 
 		virtual bool isCallable() const { return true; }
 
-		QList<Function*> overloads() const;
+		std::vector<Function*> overloads() const;
 
 	protected:
-		QList<Function*> mFunctions;
+		std::vector<Function*> mFunctions;
 };
 
 #endif // FUNCTIONSELECTORVALUETYPE_H

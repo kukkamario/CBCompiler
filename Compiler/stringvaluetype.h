@@ -6,7 +6,7 @@ class StringPool;
 class StringValueType : public ValueType {
 	public:
 		StringValueType(StringPool *strPool, Runtime *r);
-		QString name() const {return "string";}
+		std::string name() const {return "string";}
 		BasicType basicType() const{return String;}
 		void setStringType(llvm::Type *t);
 		bool setConstructFunction(llvm::Function *func);

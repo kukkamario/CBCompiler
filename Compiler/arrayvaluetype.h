@@ -6,14 +6,14 @@
 class ArrayValueType : public ValueType {
 	public:
 		ArrayValueType(ValueType *baseType, llvm::Type *llvmType, int dimensions);
-		QString name() const;
+		std::string name() const;
 		llvm::Type *llvmType() const {return mType;}
 		CastCost castingCostToOtherValueType(const ValueType *to) const;
 
 		/** Casts given value to this ValueType */
 		Value cast(Builder *builder, const Value &v) const;
 
-		llvm::Constant *constant(QList<ConstantValue> params) const;
+		llvm::Constant *constant(std::vector<ConstantValue> params) const;
 		llvm::Constant *defaultValue() const;
 
 		bool isTypePointer() const{return false;}
@@ -28,8 +28,8 @@ class ArrayValueType : public ValueType {
 		Value dimensionSize(Builder *builder, const Value &array, const Value &dimNum);
 
 		void assignArray(Builder *builder, llvm::Value *var, llvm::Value *array);
-		Value constructArray(Builder *builder, const QList<Value> &dims);
-		Value arraySubscript(Builder *builder, const Value &array, const QList<Value> &dims);
+		Value constructArray(Builder *builder, const std::vector<Value> &dims);
+		Value arraySubscript(Builder *builder, const Value &array, const std::vector<Value> &dims);
 		void refArray(Builder *builder, llvm::Value *array) const;
 		void destructArray(Builder *builder, llvm::Value *array);
 

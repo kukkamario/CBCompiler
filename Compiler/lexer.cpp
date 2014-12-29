@@ -1,9 +1,41 @@
 #include "lexer.h"
 #include "errorcodes.h"
-#include <QTextStream>
-#include <QDir>
-#include <QDebug>
-Lexer::Lexer()
+#include <iostream>
+#include <fstream>
+#include <clocale>
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+
+namespace fs = boost::filesystem;
+
+utf8_iterator operator+(utf8_iterator it, int i) {
+	if (i > 0) {
+		do {
+			++it;
+		} while(--i);
+	} else if (i < 0) {
+		do {
+			--it;
+		} while(++i);
+	}
+	return it;
+}
+
+utf8_iterator operator-(utf8_iterator it, int i) {
+	if (i > 0) {
+		do {
+			--it;
+		} while(--i);
+	} else if (i < 0) {
+		do {
+			++it;
+		} while(++i);
+	}
+	return it;
+}
+
+Lexer::Lexer(ErrorHandler *errorHandler) :
+	mErrorHandler(errorHandler)
 {
 	mKeywords["not"] = Token::opNot;
 	mKeywords["or"] = Token::opOr;
@@ -66,7 +98,7 @@ Lexer::Lexer()
 	mKeywords["include"] = Token::kInclude;
 }
 
-Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &settings) {
+Lexer::ReturnState Lexer::tokenizeFile(const std::string &file, Settings *settings) {
 	mSettings = settings;
 
 	Lexer::ReturnState ret = tokenize(file);
@@ -75,47 +107,53 @@ Lexer::ReturnState Lexer::tokenizeFile(const QString &file, const Settings &sett
 	combineTokens();
 
 	//Dirty trick, but works
-	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
-	mTokens.append(Token(Token::EOL, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
-	mTokens.append(Token(Token::EndOfTokens, mFiles.first().second.end(), mFiles.first().second.end(), CodePoint()));
+	mTokens.push_back(Token(Token::EOL, std::string(), CodePoint()));
+	mTokens.push_back(Token(Token::EOL, std::string(), CodePoint()));
+	mTokens.push_back(Token(Token::EndOfTokens, std::string(), CodePoint()));
 	return ret;
 }
 
-Lexer::ReturnState Lexer::tokenize(const QString &file) {
-	QFile curFile(file);
-	if (!curFile.open(QFile::ReadOnly | QFile::Text)) {
-		mFiles.append(QPair<QString, QString>(curFile.fileName(), ""));
-		emit error(ErrorCodes::ecCantOpenFile, tr("Cannot open file %1").arg(file), CodePoint());
+Lexer::ReturnState Lexer::tokenize(const std::string &file) {
+	std::ifstream curFile(file);
+	if (!curFile.is_open()) {
+		mFiles.push_back(std::pair<std::string, std::string>(file, ""));
+		error(ErrorCodes::ecCantOpenFile, "Cannot open file " + file, CodePoint());
 		return Error;
 	}
-	qDebug("File \"%s\" opened", qPrintable(file));
-	QString oldPath = QDir::currentPath();
-	QFileInfo fi(curFile);
-	bool success = QDir::setCurrent(fi.absolutePath());
-	assert(success);
+	std::cout << "File \"" << file << "\" opened\n";
+	fs::path oldPath = fs::current_path();
+	fs::path folderPath = fs::absolute(fs::path(file)).remove_filename();
+	fs::current_path(folderPath);
 
-	QString curFilePath = curFile.fileName();
+	std::string curFilePath = file;
 
-	QTextStream stream(&curFile);
-	QString code2 = stream.readAll();
+	std::string code2;
+	std::string lineStr;
+	while (std::getline(curFile, lineStr)) {
+		code2 += lineStr;
+		code2 += '\n';
+	}
+
 	curFile.close();
-	mFiles.append(QPair<QString, QString>(file, code2));
-	QString &code = mFiles.last().second;
+	mFiles.push_back(std::pair<std::string, std::string>(file, code2));
+	std::string &code = mFiles.back().second;
 
 	ReturnState state = Success;
 	int line = 1;
-	QString::iterator lineStart = code.begin();
-	for (QString::iterator i = code.begin(); i != code.end();) {
-		if (i->category() == QChar::Separator_Space || *i == char(9) /* horizontal tab */) { // Space
+	utf8_iterator codeStart(code.begin(), code.begin(), code.end());
+	utf8_iterator codeEnd(code.end(), code.begin(), code.end());
+	utf8_iterator lineStart = codeStart;
+	for (utf8_iterator i = codeStart; i != codeEnd;) {
+		if (isSpace(i)) { // Space
 			i++;
 			continue;
 		}
 		if (*i == '\'') { //Single line comment
 			i++;
-			if (i == code.end()) return state;
-			readToEOL(i, code.end());
-			if (i != code.end()) {
-				addToken(Token(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			if (i == codeEnd) return state;
+			readToEOL(i, codeEnd);
+			if (i != codeEnd) {
+				addToken(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 				++i;
 				line++;
 				lineStart = i;
@@ -124,11 +162,11 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 		}
 		if (*i == '/') {
 			i++;
-			if (i != code.end()) {
+			if (i != codeEnd) {
 				if (*i == '/') {
 					i++;
-					readToEOL(i, code.end());
-					addToken(Token(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+					readToEOL(i, codeEnd);
+					addToken(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 					i++;
 					line++;
 					lineStart = i;
@@ -136,160 +174,165 @@ Lexer::ReturnState Lexer::tokenize(const QString &file) {
 				}
 			}
 			i--;
-			addToken(Token(Token::opDivide, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opDivide, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '\n') {
-			addToken(Token(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::EOL, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			line++;
 			lineStart = i;
 			continue;
 		}
 		if (*i == ',') {
-			addToken(Token(Token::Comma, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::Comma, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == ':') {
-			addToken(Token(Token::Colon, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::Colon, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '(') {
-			addToken(Token(Token::LeftParenthese, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::LeftParenthese, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == ')') {
-			addToken(Token(Token::RightParenthese, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::RightParenthese, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '[') {
-			addToken(Token(Token::LeftSquareBracket, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::LeftSquareBracket, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == ']') {
-			addToken(Token(Token::RightSquareBracket, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::RightSquareBracket, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '"') {
-			readString(i, code.end(), lineStart, line, curFilePath);
+			readString(i, codeEnd, lineStart, line, curFilePath);
 			continue;
 		}
 		if (*i == '*') {
-			addToken(Token(Token::opMultiply, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opMultiply, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '+') {
-			addToken(Token(Token::opPlus, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opPlus, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '^') {
-			addToken(Token(Token::opPower, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opPower, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '-') {
-			addToken(Token(Token::opMinus, i, i + 1, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opMinus, i, i + 1, codePoint(i, lineStart, line, curFilePath));
 			i++;
 			continue;
 		}
 		if (*i == '<') {
-			QString::iterator start = i;
+			utf8_iterator start = i;
 			i++;
 			if (*i == '=') {
 				++i;
-				addToken(Token(Token::opLessEqual, start, i, codePoint(i, lineStart, line, curFilePath)));
+				addToken(Token::opLessEqual, start, i, codePoint(i, lineStart, line, curFilePath));
 				continue;
 			}
 			if (*i == '>') {
 				++i;
-				addToken(Token(Token::opNotEqual, start, i, codePoint(i, lineStart, line, curFilePath)));
+				addToken(Token::opNotEqual, start, i, codePoint(i, lineStart, line, curFilePath));
 				continue;
 			}
-			addToken(Token(Token::opLess, start, i, codePoint(i, lineStart, line, curFilePath)));
+			addToken(Token::opLess, start, i, codePoint(i, lineStart, line, curFilePath));
 			continue;
 		}
 		if (*i == '>') {
-			QString::iterator begin = i;
+			utf8_iterator begin = i;
 			i++;
 			if (*i == '=') {
 				++i;
-				addToken(Token(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
+				addToken(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath));
 				continue;
 			}
-			addToken(Token(Token::opGreater, begin, i, codePoint(begin, lineStart, line, curFilePath)));
+			addToken(Token::opGreater, begin, i, codePoint(begin, lineStart, line, curFilePath));
 			continue;
 		}
 		if (*i == '=') {
-			QString::iterator begin = i;
+			utf8_iterator begin = i;
 			i++;
-			if (i != code.end()) {
+			if (i != codeEnd) {
 				if (*i == '>') {
 					++i;
-					addToken(Token(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
+					addToken(Token::opGreaterEqual, begin, i, codePoint(begin, lineStart, line, curFilePath));
 					continue;
 				}
 				if (*i == '<') {
 					++i;
-					addToken(Token(Token::opLessEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
+					addToken(Token::opLessEqual, begin, i, codePoint(begin, lineStart, line, curFilePath));
 					continue;
 				}
 			}
-			addToken(Token(Token::opEqual, begin, i, codePoint(begin, lineStart, line, curFilePath)));
+			addToken(Token::opEqual, begin, i, codePoint(begin, lineStart, line, curFilePath));
 			continue;
 		}
 		if (*i == '.') {
 			i++;
-			if (i != code.end()) {
-				if (i->isNumber()) { //Float
+			if (i != codeEnd) {
+				if (isDigit(i)) { //Float
 					i--;
-					readFloatDot(i, code.end(), lineStart, line, curFilePath);
+					readFloatDot(i, codeEnd, lineStart, line, curFilePath);
 					continue;
 				}
 			}
-			addToken(Token(Token::opDot, i - 1, i, codePoint(i - 1, lineStart, line, curFilePath)));
+			addToken(Token::opDot, i - 1, i, codePoint(i - 1, lineStart, line, curFilePath));
 			continue;
 		}
 		if (*i == '$') {
 			i++;
-			readHex(i, code.end(), lineStart, line, curFilePath);
+			readHex(i, codeEnd, lineStart, line, curFilePath);
 			continue;
 		}
-		if (i->isDigit()) {
-			readNum(i, code.end(), lineStart, line, curFilePath);
+		if (isDigit(i)) {
+			readNum(i, codeEnd, lineStart, line, curFilePath);
 			continue;
 		}
-		if (i->isLetter() || *i == '_') {
-			ReturnState retState = readIdentifier(i, code.end(), lineStart, line, curFilePath);
+		if (isAlpha(i) || *i == '_') {
+			ReturnState retState = readIdentifier(i, codeEnd, lineStart, line, curFilePath);
 			if (retState == Error) return Error;
 			if (retState == ErrorButContinue) state = ErrorButContinue;
 			continue;
 		}
-
-		emit error(ErrorCodes::ecUnexpectedCharacter, tr("Unexpected character \"%1\" %2,%3").arg(QString(*i), QString::number(i->row()), QString::number(i->cell())), codePoint(i, lineStart, line, file));
+		char characterString[5] = {0, 0, 0, 0, 0};
+		utf8::append(*i, characterString);
+		error(ErrorCodes::ecUnexpectedCharacter, (boost::format("Unexpected character '%s' %x") % characterString % *i).str(), codePoint(i, lineStart, line, file));
 		state = ErrorButContinue;
 		++i;
 	}
 
-	QDir::setCurrent(oldPath);
+	fs::current_path(oldPath);
 	return state;
 }
 
 void Lexer::addToken(const Token &tok) {
 	//tok.print();
-	mTokens.append(tok);
+	mTokens.push_back(tok);
+}
+
+void Lexer::addToken(Token::Type type, utf8_iterator begin, utf8_iterator end, const CodePoint &cp) {
+	addToken(Token(type, std::string(begin.base(), end.base()), cp));
 }
 
 
-Lexer::ReturnState Lexer::readToEOL(QString::iterator &i, const QString::iterator &end) {
+Lexer::ReturnState Lexer::readToEOL(utf8_iterator &i, const utf8_iterator &end) {
 	while (i != end) {
 		if (*i == '\n') {
 			return Success;
@@ -299,11 +342,11 @@ Lexer::ReturnState Lexer::readToEOL(QString::iterator &i, const QString::iterato
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readToEndRem(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
+Lexer::ReturnState Lexer::readToEndRem(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int &line, const std::string &file) {
 	const char * const endRem = "endrem";
 	int foundIndex = 0;
 	while (i != end) {
-		if (i->toLower() == endRem[foundIndex]) {
+		if (*i < 127 && std::tolower(*i) == endRem[foundIndex]) {
 			foundIndex++;
 			if (foundIndex == 6) {
 				i++;
@@ -319,39 +362,39 @@ Lexer::ReturnState Lexer::readToEndRem(QString::iterator &i, const QString::iter
 		}
 		i++;
 	}
-	emit warning(ErrorCodes::ecExpectingRemEndBeforeEOF, tr("Expecting EndRem before end of file"), codePoint(i - 1, lineStart, line, file));
+	warning(ErrorCodes::ecExpectingRemEndBeforeEOF, "Expecting EndRem before end of file", codePoint(i - 1, lineStart, line, file));
 	return Lexer::Error;
 }
 
-Lexer::ReturnState Lexer::readFloatDot(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file) {
-	QString::iterator begin = i;
+Lexer::ReturnState Lexer::readFloatDot(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int line, const std::string &file) {
+	utf8_iterator begin = i;
 	i++;
 	while (i != end) {
-		if (!(i->isDigit())) { //Not a number
+		if (!isDigit(i)) { //Not a number
 			break;
 		}
 		i++;
 	}
-	if (i->toLower() == 'e') {
+	if (*i == 'e' || *i == 'E') {
 		i++;
 		if (*i == '-' || *i == '+') {
 			i++;
 		}
 		while (i != end) {
-			if (!(i->isDigit())) { //Not a number
+			if (!isDigit(i)) { //Not a number
 				break;
 			}
 			i++;
 		}
 	}
-	addToken(Token(Token::Float, begin, i, codePoint(begin, lineStart, line, file)));
+	addToken(Token::Float, begin, i, codePoint(begin, lineStart, line, file));
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readNum(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file) {
-	QString::iterator begin = i;
+Lexer::ReturnState Lexer::readNum(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int line, const std::string &file) {
+	utf8_iterator begin = i;
 	while (i != end) {
-		if (!(i->isDigit())) { //Not a number
+		if (!isDigit(i)) { //Not a number
 			break;
 		}
 		i++;
@@ -359,37 +402,37 @@ Lexer::ReturnState Lexer::readNum(QString::iterator &i, const QString::iterator 
 	if (*i == '.') { //Float
 		i++;
 		while (i != end) {
-			if (!(i->isDigit())) { //Not a number
+			if (!isDigit(i)) { //Not a number
 				break;
 			}
 			i++;
 		}
-		if (i->toLower() == 'e') {
+		if (*i == 'e' || *i == 'E') {
 			i++;
 			if (*i == '-' || *i == '+') {
 				i++;
 			}
 			while (i != end) {
-				if (!(i->isDigit())) { //Not a number
+				if (!isDigit(i)) { //Not a number
 					break;
 				}
 				i++;
 			}
 		}
-		addToken(Token(Token::Float, begin, i, codePoint(begin, lineStart, line, file)));
+		addToken(Token::Float, begin, i, codePoint(begin, lineStart, line, file));
 		return Success;
 	}
 
-	addToken(Token(Token::Integer, begin, i, codePoint(begin, lineStart, line, file)));
+	addToken(Token::Integer, begin, i, codePoint(begin, lineStart, line, file));
 	return Success;
 }
 
 
-Lexer::ReturnState Lexer::readHex(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int line, const QString &file) {
-	QString::iterator begin = i;
+Lexer::ReturnState Lexer::readHex(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int line, const std::string &file) {
+	utf8_iterator begin = i;
 	while (i != end) {
-		if (!(i->isDigit() || (i->toLower() >= QChar('a') && i->toLower() <= QChar('f')))) { //Not hex
-			addToken(Token(Token::IntegerHex, begin, i, codePoint(begin, lineStart, line, file)));
+		if (!(isDigit(i) || (*i >= 'a' && *i <= 'f') || (*i >= 'A' && *i <= 'F'))) { //Not hex
+			addToken(Token::IntegerHex, begin, i, codePoint(begin, lineStart, line, file));
 			return Success;
 		}
 		i++;
@@ -397,12 +440,12 @@ Lexer::ReturnState Lexer::readHex(QString::iterator &i, const QString::iterator 
 	return Success;
 }
 
-Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
-	QString::iterator begin = i;
+Lexer::ReturnState Lexer::readString(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int &line, const std::string &file) {
+	utf8_iterator begin = i;
 	++i;
 	while (i != end) {
 		if (*i == '"') {
-			addToken(Token(Token::String, begin + 1, i, codePoint(begin, lineStart, line, file)));
+			addToken(Token::String, begin + 1, i, codePoint(begin, lineStart, line, file));
 			i++;
 			return Success;
 		}
@@ -412,31 +455,30 @@ Lexer::ReturnState Lexer::readString(QString::iterator &i, const QString::iterat
 		}
 		i++;
 	}
-	error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), codePoint(i - 1, lineStart, line, file));
+	error(ErrorCodes::ecExpectingEndOfString, "Expecting '\"' before end of file", codePoint(i - 1, lineStart, line, file));
 	return ErrorButContinue;
 }
 
-Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::iterator &end, QString::iterator &lineStart, int &line, const QString &file) {
-	QString::iterator begin = i;
-	QString name;
-	*i = i->toLower();
+Lexer::ReturnState Lexer::readIdentifier(utf8_iterator &i, const utf8_iterator &end, utf8_iterator &lineStart, int &line, const std::string &file) {
+	utf8_iterator begin = i;
+	std::string name;
 	name += *i;
 	i++;
 	while (i != end) {
-		if (!i->isLetterOrNumber() && *i != '_') {
+		char32_t c = *i;
+		if (!std::isalnum(c, std::locale()) && c != '_') {
 			break;
 		}
-		*i = i->toLower(); //Lower
 		name += *i;
 		i++;
 	}
 	if (name == "rem") {
 		return readToEndRem(i, end, lineStart, line, file);
 	}
-	QMap<QString, Token::Type>::ConstIterator keyIt = mKeywords.find(name);
+	std::map<std::string, Token::Type>::const_iterator keyIt = mKeywords.find(name);
 	if (keyIt != mKeywords.end()) {
-		if (keyIt.value() == Token::kInclude) {
-			QString includeFile;
+		if (keyIt->second == Token::kInclude) {
+			std::string includeFile;
 			while (i != end) {
 				if (*i == '"') {
 					i++;
@@ -453,38 +495,38 @@ Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::it
 						includeFile += *i;
 						i++;
 					}
-					emit error(ErrorCodes::ecExpectingEndOfString, tr("Expecting '\"' before end of file"), codePoint(i - 1, lineStart, line, file));
+					error(ErrorCodes::ecExpectingEndOfString, "Expecting '\"' before end of file", codePoint(i - 1, lineStart, line, file));
 					return ErrorButContinue;
 				}
-				if (i->category() != QChar::Separator_Space) {
-					emit error(ErrorCodes::ecExpectingString, tr("Expecting \" after Include"), codePoint(i, lineStart, line, file));
+				if (isSpace(i)) {
+					error(ErrorCodes::ecExpectingString, "Expecting \" after Include", codePoint(i, lineStart, line, file));
 					return Error;
 				}
 				i++;
 			}
 		}
 		else {
-			addToken(Token(keyIt.value(),begin, i, codePoint(begin, lineStart, line, file)));
+			addToken(keyIt->second,begin, i, codePoint(begin, lineStart, line, file));
 			return Success;
 		}
 	}
 	else {
-		addToken(Token(Token::Identifier, begin, i, codePoint(begin, lineStart, line, file)));
+		addToken(Token::Identifier, begin, i, codePoint(begin, lineStart, line, file));
 	}
 
 	if (i != end) {
 		if (*i == '%') {
-			addToken(Token(Token::IntegerTypeMark, i, i + 1, codePoint(i, lineStart, line, file)));
+			addToken(Token::IntegerTypeMark, i, i + 1, codePoint(i, lineStart, line, file));
 			i++;
 			return Success;
 		}
 		if (*i == '#') {
-			addToken(Token(Token::FloatTypeMark, i, i + 1, codePoint(i, lineStart, line, file)));
+			addToken(Token::FloatTypeMark, i, i + 1, codePoint(i, lineStart, line, file));
 			i++;
 			return Success;
 		}
 		if (*i == '$') {
-			addToken(Token(Token::StringTypeMark, i, i + 1, codePoint(i, lineStart, line, file)));
+			addToken(Token::StringTypeMark, i, i + 1, codePoint(i, lineStart, line, file));
 			i++;
 			return Success;
 		}
@@ -492,61 +534,83 @@ Lexer::ReturnState Lexer::readIdentifier(QString::iterator &i, const QString::it
 	return Success;
 }
 
-CodePoint Lexer::codePoint(QString::Iterator i, QString::Iterator lineStart, int line, const QString &file) {
-	return CodePoint(line, i - lineStart + 1, file);
+CodePoint Lexer::codePoint(utf8_iterator i, utf8_iterator lineStart, int line, const std::string &file) {
+	return CodePoint(line, utf8::distance(lineStart.base(), i.base()) + 1, file);
+}
+
+bool Lexer::isDigit(utf8_iterator i) {
+	char32_t c = *i;
+	return std::isdigit(c, std::locale());
+}
+
+bool Lexer::isAlnum(utf8_iterator i) {
+	char32_t c = *i;
+	return std::isalnum(c, std::locale());
+}
+
+bool Lexer::isAlpha(utf8_iterator i) {
+	char32_t c = *i;
+	return std::isalpha(c, std::locale());
+}
+
+bool Lexer::isSpace(utf8_iterator i) {
+	return *i == ' ' || *i == char(9); /* horizontal tab */
+}
+
+void Lexer::error(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->error(code, msg, cp);
+}
+
+void Lexer::warning(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->warning(code, msg, cp);
 }
 
 
 void Lexer::combineTokens() {
-	QList<Token>::Iterator i = mTokens.begin();
-	QList<Token>::Iterator last;
+	std::vector<Token>::iterator i = mTokens.begin();
+	std::vector<Token>::iterator last;
 	while (i != mTokens.end()) {
 		if (i->type() == Token::kEnd) {
 			last = i;
 			i++;
 			if (i != mTokens.end()) {
 				if (i->type() == Token::kFunction) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = i->end();
+					std::string text =  last->toString() + ' ' + i->toString();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndFunction, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndFunction, text, last->codePoint()));
 					i++;
 					continue;
 				}
 				if (i->type() == Token::kIf) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = i->end();
+					std::string text =  last->toString() + ' ' + i->toString();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndIf, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndIf, text, last->codePoint()));
 					i++;
 					continue;
 				}
 				if (i->type() == Token::kSelect) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = i->end();
+					std::string text =  last->toString() + ' ' + i->toString();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndSelect, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndSelect, text, last->codePoint()));
 					i++;
 					continue;
 				}
 				if (i->type() == Token::kType) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = i->end();
+					std::string text =  last->toString() + ' ' + i->toString();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndType, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndType, text, last->codePoint()));
 					i++;
 					continue;
 				}
 				if (i->type() == Token::kStruct) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = i->end();
+					std::string text =  last->toString() + ' ' + i->toString();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::kEndStruct, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::kEndStruct, text, last->codePoint()));
 					i++;
 					continue;
 				}
@@ -564,11 +628,9 @@ void Lexer::combineTokens() {
 				i++;
 				if (i == mTokens.end()) return;
 				if (i->type() == Token::Colon) {
-					QString::ConstIterator begin = last->begin();
-					QString::ConstIterator end = last->end();
 					i++;
 					i = mTokens.erase(last, i);
-					i = mTokens.insert(i, Token(Token::Label, begin, end, last->codePoint()));
+					i = mTokens.insert(i, Token(Token::Label, last->toString(), last->codePoint()));
 					i++;
 					continue;
 				}
@@ -582,20 +644,19 @@ void Lexer::combineTokens() {
 
 
 void Lexer::printTokens() {
-	for (QList<Token>::const_iterator i = mTokens.begin(); i != mTokens.end(); i++) {
+	for (std::vector<Token>::const_iterator i = mTokens.begin(); i != mTokens.end(); i++) {
 		i->print();
 	}
 }
 
-void Lexer::writeTokensToFile(const QString &fileName) {
-	QFile file(fileName);
-	if (!file.open(QFile::WriteOnly | QFile::Text)) {
-		emit error(ErrorCodes::ecCantOpenFile, tr("Cannot open file %1").arg(fileName), CodePoint());
+void Lexer::writeTokensToFile(const std::string &fileName) {
+	std::ofstream out(fileName);
+	if (!out.is_open()) {
+		error(ErrorCodes::ecCantOpenFile, "Cannot open file " + fileName, CodePoint());
 		return;
 	}
-	QTextStream out(&file);
 	out << mTokens.size() << " tokens\n\n";
-	for (QList<Token>::const_iterator i = mTokens.begin(); i != mTokens.end(); i++) {
+	for (std::vector<Token>::const_iterator i = mTokens.begin(); i != mTokens.end(); i++) {
 		out << i->info() << '\n';
 	}
 }

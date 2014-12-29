@@ -6,7 +6,7 @@
 #include "builder.h"
 
 
-CustomValueType::CustomValueType(const QString &name, llvm::Type *type, Runtime *r) :
+CustomValueType::CustomValueType(const std::string &name, llvm::Type *type, Runtime *r) :
 	ValueType(r, type),
 	mName(name) {
 }

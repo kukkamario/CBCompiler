@@ -4,11 +4,12 @@
 #include "runtimefunction.h"
 #include "llvm.h"
 #include "valuetype.h"
-#include <QMap>
+#include <map>
 #include <QMultiMap>
 #include <QHash>
 #include "valuetypecollection.h"
 #include "codepoint.h"
+class ErrorHandler;
 
 class IntValueType;
 class StringValueType;
@@ -29,11 +30,10 @@ class NullValueType;
 /**
  * @brief The Runtime class Loads LLVM-IR runtime from a bitcode file and creates the basic ValueTypes.
  */
-class Runtime : public QObject {
-		Q_OBJECT
+class Runtime {
 	public:
 		static Runtime *instance();
-		Runtime();
+		Runtime(ErrorHandler *errorHandler);
 		~Runtime();
 		/**
 		 * @brief load Loads the runtime from a bitcode file.
@@ -41,9 +41,9 @@ class Runtime : public QObject {
 		 * @param settings A pointer to the settings
 		 * @return True, if loading succeeded, false otherwise
 		 */
-		bool load(StringPool *strPool, const Settings &settings);
+		bool load(StringPool *strPool, Settings *settings);
 		llvm::Module *module() {return mModule;}
-		QList<RuntimeFunction*> functions() const {return mFunctions;}
+		std::vector<RuntimeFunction*> functions() const {return mFunctions;}
 		llvm::Function *cbMain() const {return mCBMain;}
 		llvm::Function *cbInitialize() const { return mCBInitialize; }
 
@@ -75,12 +75,16 @@ class Runtime : public QObject {
 		bool loadValueTypes(StringPool *strPool);
 		bool isAllocatorFunctionValid();
 		bool isFreeFuntionValid();
-		bool loadFunctionMapping(const QString &functionMapping);
-		bool loadCustomDataTypes(const QString &customDataTypes);
+		bool loadFunctionMapping(const std::string &functionMapping);
+		bool loadCustomDataTypes(const std::string &customDataTypes);
+
+		void error(int code, std::string msg, CodePoint cp);
+		void warning(int code, std::string msg, CodePoint cp);
+
 
 		bool mValid;
 		llvm::Module *mModule;
-		QList<RuntimeFunction*> mFunctions;
+		std::vector<RuntimeFunction*> mFunctions;
 		llvm::Function *mCBMain;
 		llvm::Function *mCBInitialize;
 
@@ -109,10 +113,9 @@ class Runtime : public QObject {
 		llvm::Type *mGenericArrayLLVMType;
 		llvm::Type *mGenericStructLLVMType;
 
-		QMultiMap<QString, QString> mFunctionMapping;
-	signals:
-		void error(int code, QString msg, CodePoint cp);
-		void warning(int code, QString msg, CodePoint cp);
+		ErrorHandler *mErrorHandler;
+
+		std::multimap<std::string, std::string> mFunctionMapping;
 };
 
 #endif // RUNTIME_H

@@ -3,8 +3,8 @@
 #include "value.h"
 #include "llvm.h"
 #include "function.h"
-#include <QList>
-#include <QStack>
+#include <vector>
+#include <stack>
 
 #include "runtime.h"
 class VariableSymbol;
@@ -37,7 +37,7 @@ class Builder {
 		llvm::Value *llvmValue(float i);
 		llvm::Value *llvmValue(uint16_t i);
 		llvm::Value *llvmValue(uint8_t i);
-		llvm::Value *llvmValue(const QString &s);
+		llvm::Value *llvmValue(const std::string &s);
 		llvm::Value *llvmValue(bool t);
 		llvm::Value *llvmValue(const ConstantValue &v);
 
@@ -45,8 +45,8 @@ class Builder {
 
 		llvm::Value *bitcast(llvm::Type *type, llvm::Value *val);
 
-		Value call(Function *func, QList<Value> &params);
-		Value call(const Value &funcValue, QList<Value> &params);
+		Value call(Function *func, std::vector<Value> &params);
+		Value call(const Value &funcValue, std::vector<Value> &params);
 		void branch(llvm::BasicBlock *dest);
 		void branch(const Value &cond, llvm::BasicBlock *ifTrue, llvm::BasicBlock *ifFalse);
 		void returnValue(ValueType *retType, const Value &v);
@@ -61,12 +61,12 @@ class Builder {
 		void store(VariableSymbol *var, const Value &v);
 		void store(VariableSymbol *var, llvm::Value *val);
 		/*void store(const Value &ref, const Value &index, const Value &val);
-		void store(const Value &ref, const QList<Value> &dims, const Value &val);*/
-		void store(VariableSymbol *typePtrVar, const QString &fieldName, const Value &v);
+		void store(const Value &ref, const std::vector<Value> &dims, const Value &val);*/
+		void store(VariableSymbol *typePtrVar, const std::string &fieldName, const Value &v);
 		Value load(const VariableSymbol *var);
 		Value load(const Value &var);
 		/*Value load(const Value &ref, const Value &index);
-		Value load(const Value &ref, const QList<Value> &dims);*/
+		Value load(const Value &ref, const std::vector<Value> &dims);*/
 		void destruct(VariableSymbol *var);
 		void destruct(const Value &a);
 
@@ -74,15 +74,15 @@ class Builder {
 		Value nullTypePointer();
 
 		/*
-		void initilizeArray(VariableSymbol *array, const QList<Value> &dimSizes);
-		llvm::Value *calculateArrayElementCount(const QList<Value> &dimSizes);
-		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const QList<Value> &dimSizes);
-		llvm::Value *arrayElementPointer(ArraySymbol *array, const QList<Value> &index);
+		void initilizeArray(VariableSymbol *array, const std::vector<Value> &dimSizes);
+		llvm::Value *calculateArrayElementCount(const std::vector<Value> &dimSizes);
+		llvm::Value *calculateArrayMemorySize(ArraySymbol *array, const std::vector<Value> &dimSizes);
+		llvm::Value *arrayElementPointer(ArraySymbol *array, const std::vector<Value> &index);
 		llvm::Value *arrayElementPointer(ArraySymbol *array, const Value &index);
 		llvm::Value *arrayIndexMultiplier(ArraySymbol *array, int index);
-		void fillArrayIndexMultiplierArray(ArraySymbol *array, const QList<Value> &dimSizes);*/
+		void fillArrayIndexMultiplierArray(ArraySymbol *array, const std::vector<Value> &dimSizes);*/
 
-		Value typePointerFieldReference(Value typePtrVar, const QString &fieldName);
+		Value typePointerFieldReference(Value typePtrVar, const std::string &fieldName);
 		Value newTypeMember(TypeSymbol *type);
 		Value firstTypeMember(TypeSymbol *type);
 		Value lastTypeMember(TypeSymbol *type);
@@ -168,7 +168,7 @@ class Builder {
 	private:
 
 		llvm::IRBuilder<> mIRBuilder;
-		QStack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
+		std::stack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
 

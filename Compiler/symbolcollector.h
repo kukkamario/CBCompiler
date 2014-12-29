@@ -49,8 +49,8 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 
 
 
-		QList<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
-		QList<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope, bool &success);
+		std::vector<VariableSymbol*> variableDefinitionList(ast::Node *node, Scope *scope);
+		std::vector<CBFunction::Parameter> functionParameterList(ast::Node *node, Scope *scope, bool &success);
 
 		ValueType *resolveValueType(ast::Node *valueType);
 
@@ -72,13 +72,13 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		bool mValid;
 		ConstantExpressionEvaluator mConstEval;
 
-		QMap<ast::FunctionDefinition*, CBFunction*> mFunctions;
+		std::map<ast::FunctionDefinition*, CBFunction*> mFunctions;
 
 	private slots:
-		void errorOccured(int, QString, CodePoint);
+		void errorOccured(int, std::string, CodePoint);
 	signals:
-		void warning(int code, QString msg, CodePoint codePoint);
-		void error(int code, QString msg, CodePoint codePoint);
+		void warning(int code, std::string msg, CodePoint codePoint);
+		void error(int code, std::string msg, CodePoint codePoint);
 };
 
 #endif // SYMBOLCOLLECTOR_H

@@ -13,8 +13,8 @@ class TypeResolver : public QObject{
 		TypeResolver(Runtime *runtime);
 		ValueType *resolve(ast::Node *type);
 	signals:
-		void error(int code, QString msg, CodePoint cp);
-		void warning(int code, QString msg, CodePoint cp);
+		void error(int code, std::string msg, CodePoint cp);
+		void warning(int code, std::string msg, CodePoint cp);
 
 	private:
 		Runtime *mRuntime;

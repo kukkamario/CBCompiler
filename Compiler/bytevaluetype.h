@@ -4,13 +4,13 @@
 class ByteValueType : public ValueType {
 	public:
 		ByteValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return "byte";}
+		std::string name() const {return "byte";}
 		BasicType basicType() const { return Byte; }
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		llvm::Constant *constant(quint8 i) const;
+		llvm::Constant *constant(uint8_t i) const;
 		llvm::Constant *defaultValue() const;
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;

@@ -6,7 +6,7 @@
 class BooleanValueType : public ValueType {
 	public:
 		BooleanValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return "boolean";}
+		std::string name() const {return "boolean";}
 		BasicType basicType() const { return Boolean; }
 
 		CastCost castingCostToOtherValueType(const ValueType *to) const;

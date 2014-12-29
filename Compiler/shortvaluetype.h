@@ -5,13 +5,13 @@ class ShortValueType : public ValueType
 {
 	public:
 		ShortValueType(Runtime *r, llvm::Module *mod);
-		QString name() const {return "short";}
+		std::string name() const {return "short";}
 		BasicType basicType() const{return Short;}
 		/** Calculates cost for casting given ValueType to this ValueType.
 		  * If returned cost is over maxCastCost, cast cannot be done. */
 		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
-		llvm::Constant *constant(quint16 i) const;
+		llvm::Constant *constant(uint16_t i) const;
 		llvm::Constant *defaultValue() const;
 
 		Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;

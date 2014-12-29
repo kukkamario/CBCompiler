@@ -1,6 +1,7 @@
 #include "constantvalue.h"
 #include "valuetype.h"
 #include <math.h>
+#include <boost/lexical_cast.hpp>
 
 int cbPow(int a, int b) {
 	double ret = pow(double(a), double(b));
@@ -40,17 +41,17 @@ ConstantValue::ConstantValue(float f) :
 	mData.mFloat = f;
 }
 
-ConstantValue::ConstantValue(quint8 b) :
+ConstantValue::ConstantValue(uint8_t b) :
 	mType(Byte){
 	mData.mByte = b;
 }
 
-ConstantValue::ConstantValue(quint16 s) :
+ConstantValue::ConstantValue(uint16_t s) :
 	mType(Short){
 	mData.mShort = s;
 }
 
-ConstantValue::ConstantValue(const QString s) :
+ConstantValue::ConstantValue(const std::string s) :
 	mType(String){
 	mData.mString = s;
 }
@@ -74,7 +75,7 @@ ConstantValue::ConstantValue(ConstantValue::Type type) :
 		case Boolean:
 			mData.mBool = 0; break;
 		case String:
-			mData.mString = QString(); break;
+			mData.mString = std::string(); break;
 		default:
 			mData.mInt = 0; break;
 	}
@@ -187,7 +188,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mInt == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) == b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) == b.mData.mString;
 				default:
 					break;
 			}
@@ -203,7 +204,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mFloat == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) == b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) == b.mData.mString;
 				default:
 					break;
 			}
@@ -219,7 +220,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mShort == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) == b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) == b.mData.mString;
 				default:
 					break;
 			}
@@ -235,7 +236,7 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 				case Byte:
 					return a.mData.mByte == b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) == b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) == b.mData.mString;
 				default:
 					break;
 			}
@@ -243,13 +244,13 @@ ConstantValue ConstantValue::equal(const ConstantValue &a, const ConstantValue &
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString == QString::number(b.mData.mInt);
+					return a.mData.mString == boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString == QString::number(b.mData.mFloat);
+					return a.mData.mString == boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString == QString::number(b.mData.mShort);
+					return a.mData.mString == boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString == QString::number(b.mData.mByte);
+					return a.mData.mString == boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString == b.mData.mString;
 				default:
@@ -282,7 +283,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mInt != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) != b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) != b.mData.mString;
 				default:
 					break;
 			}
@@ -298,7 +299,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mFloat != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) != b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) != b.mData.mString;
 				default:
 					break;
 			}
@@ -314,7 +315,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mShort != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) != b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) != b.mData.mString;
 				default:
 					break;
 			}
@@ -330,7 +331,7 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 				case Byte:
 					return a.mData.mByte != b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) != b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) != b.mData.mString;
 				default:
 					break;
 			}
@@ -338,13 +339,13 @@ ConstantValue ConstantValue::notEqual(const ConstantValue &a, const ConstantValu
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString != QString::number(b.mData.mInt);
+					return a.mData.mString != boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString != QString::number(b.mData.mFloat);
+					return a.mData.mString != boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString != QString::number(b.mData.mShort);
+					return a.mData.mString != boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString != QString::number(b.mData.mByte);
+					return a.mData.mString != boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString != b.mData.mString;
 				default:
@@ -378,7 +379,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mInt > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) > b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) > b.mData.mString;
 				default:
 					break;
 			}
@@ -394,7 +395,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mFloat > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) > b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) > b.mData.mString;
 				default:
 					break;
 			}
@@ -410,7 +411,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mShort > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) > b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) > b.mData.mString;
 				default:
 					break;
 			}
@@ -426,7 +427,7 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 				case Byte:
 					return a.mData.mByte > b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) > b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) > b.mData.mString;
 				default:
 					break;
 			}
@@ -434,13 +435,13 @@ ConstantValue ConstantValue::greater(const ConstantValue &a, const ConstantValue
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString > QString::number(b.mData.mInt);
+					return a.mData.mString > boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString > QString::number(b.mData.mFloat);
+					return a.mData.mString > boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString > QString::number(b.mData.mShort);
+					return a.mData.mString > boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString > QString::number(b.mData.mByte);
+					return a.mData.mString > boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString > b.mData.mString;
 				default:
@@ -470,7 +471,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mInt >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) >= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) >= b.mData.mString;
 				default:
 					break;
 			}
@@ -486,7 +487,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mFloat >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) >= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) >= b.mData.mString;
 				default:
 					break;
 			}
@@ -502,7 +503,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mShort >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) >= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) >= b.mData.mString;
 				default:
 					break;
 			}
@@ -518,7 +519,7 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 				case Byte:
 					return a.mData.mByte >= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) >= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) >= b.mData.mString;
 				default:
 					break;
 			}
@@ -526,13 +527,13 @@ ConstantValue ConstantValue::greaterEqual(const ConstantValue &a, const Constant
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString >= QString::number(b.mData.mInt);
+					return a.mData.mString >= boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString >= QString::number(b.mData.mFloat);
+					return a.mData.mString >= boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString >= QString::number(b.mData.mShort);
+					return a.mData.mString >= boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString >= QString::number(b.mData.mByte);
+					return a.mData.mString >= boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString >= b.mData.mString;
 				default:
@@ -562,7 +563,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mInt < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) < b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) < b.mData.mString;
 				default:
 					break;
 			}
@@ -578,7 +579,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mFloat < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) < b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) < b.mData.mString;
 				default:
 					break;
 			}
@@ -594,7 +595,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mShort < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) < b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) < b.mData.mString;
 				default:
 					break;
 			}
@@ -610,7 +611,7 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 				case Byte:
 					return a.mData.mByte < b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) < b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) < b.mData.mString;
 				default:
 					break;
 			}
@@ -618,13 +619,13 @@ ConstantValue ConstantValue::less(const ConstantValue &a, const ConstantValue &b
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString < QString::number(b.mData.mInt);
+					return a.mData.mString < boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString < QString::number(b.mData.mFloat);
+					return a.mData.mString < boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString < QString::number(b.mData.mShort);
+					return a.mData.mString < boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString < QString::number(b.mData.mByte);
+					return a.mData.mString < boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString < b.mData.mString;
 				default:
@@ -654,7 +655,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mInt <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) <= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) <= b.mData.mString;
 				default:
 					break;
 			}
@@ -670,7 +671,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mFloat <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) <= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) <= b.mData.mString;
 				default:
 					break;
 			}
@@ -686,7 +687,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mShort <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) <= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) <= b.mData.mString;
 				default:
 					break;
 			}
@@ -702,7 +703,7 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 				case Byte:
 					return a.mData.mByte <= b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) <= b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) <= b.mData.mString;
 				default:
 					break;
 			}
@@ -710,13 +711,13 @@ ConstantValue ConstantValue::lessEqual(const ConstantValue &a, const ConstantVal
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString <= QString::number(b.mData.mInt);
+					return a.mData.mString <= boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString <= QString::number(b.mData.mFloat);
+					return a.mData.mString <= boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString <= QString::number(b.mData.mShort);
+					return a.mData.mString <= boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString <= QString::number(b.mData.mByte);
+					return a.mData.mString <= boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString <= b.mData.mString;
 				default:
@@ -746,7 +747,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b,
 				case Byte:
 					return a.mData.mInt + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mInt) + b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mInt) + b.mData.mString;
 				default:
 					break;
 			}
@@ -762,7 +763,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b,
 				case Byte:
 					return a.mData.mFloat + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mFloat) + b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mFloat) + b.mData.mString;
 				default:
 					break;
 			}
@@ -778,7 +779,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b,
 				case Byte:
 					return a.mData.mShort + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mShort) + b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mShort) + b.mData.mString;
 				default:
 					break;
 			}
@@ -793,7 +794,7 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b,
 				case Byte:
 					return a.mData.mByte + b.mData.mByte;
 				case String:
-					return QString::number(a.mData.mByte) + b.mData.mString;
+					return boost::lexical_cast<std::string>(a.mData.mByte) + b.mData.mString;
 				default:
 					break;
 			}
@@ -801,13 +802,13 @@ ConstantValue ConstantValue::add(const ConstantValue &a, const ConstantValue &b,
 		case String:
 			switch (b.mType) {
 				case Integer:
-					return a.mData.mString + QString::number(b.mData.mInt);
+					return a.mData.mString + boost::lexical_cast<std::string>(b.mData.mInt);
 				case Float:
-					return a.mData.mString + QString::number(b.mData.mFloat);
+					return a.mData.mString + boost::lexical_cast<std::string>(b.mData.mFloat);
 				case Short:
-					return a.mData.mString + QString::number(b.mData.mShort);
+					return a.mData.mString + boost::lexical_cast<std::string>(b.mData.mShort);
 				case Byte:
-					return a.mData.mString + QString::number(b.mData.mByte);
+					return a.mData.mString + boost::lexical_cast<std::string>(b.mData.mByte);
 				case String:
 					return a.mData.mString + b.mData.mString;
 				default:
@@ -1340,26 +1341,26 @@ ConstantValue ConstantValue::to(ConstantValue::Type type) {
 	}
 }
 
-QString ConstantValue::toString() const{
+std::string ConstantValue::toString() const{
 	switch(this->mType) {
 		case Boolean:
 			return mData.mBool ? "1" : "0";
 		case Byte:
-			return QString::number(mData.mByte);
+			return boost::lexical_cast<std::string>(mData.mByte);
 		case Short:
-			return QString::number(mData.mShort);
+			return boost::lexical_cast<std::string>(mData.mShort);
 		case Integer:
-			return QString::number(mData.mInt);
+			return boost::lexical_cast<std::string>(mData.mInt);
 		case Float:
-			return QString::number(mData.mFloat);
+			return boost::lexical_cast<std::string>(mData.mFloat);
 		case String:
 			return mData.mString;
 		default:
-			return QString();
+			return std::string();
 	}
 }
 
-quint16 ConstantValue::toShort() const{
+uint16_t ConstantValue::toShort() const{
 	switch(this->mType) {
 		case Boolean:
 			return mData.mBool;
@@ -1372,13 +1373,13 @@ quint16 ConstantValue::toShort() const{
 		case Float:
 			return mData.mFloat + 0.5;
 		case String:
-			return mData.mString.toUShort();
+			return boost::lexical_cast<uint16_t>(mData.mString);
 		default:
 			return 0;
 	}
 }
 
-quint8 ConstantValue::toByte() const {
+uint8_t ConstantValue::toByte() const {
 	switch(this->mType) {
 		case Boolean:
 			return mData.mBool;
@@ -1391,7 +1392,7 @@ quint8 ConstantValue::toByte() const {
 		case Float:
 			return mData.mFloat + 0.5;
 		case String:
-			return (quint8)mData.mString.toUShort();
+			return boost::lexical_cast<uint8_t>(mData.mString);
 		default:
 			return 0;
 	}
@@ -1410,7 +1411,7 @@ float ConstantValue::toFloat() const{
 		case Float:
 			return mData.mFloat;
 		case String:
-			return mData.mString.toFloat();
+			return boost::lexical_cast<float>(mData.mString);
 		default:
 			return 0;
 	}
@@ -1429,7 +1430,7 @@ int ConstantValue::toInt() const{
 		case Float:
 			return mData.mFloat + 0.5;
 		case String:
-			return mData.mString.toInt();
+			return boost::lexical_cast<int>(mData.mString);
 		default:
 			return 0;
 	}
@@ -1448,13 +1449,13 @@ bool ConstantValue::toBool() const{
 		case Float:
 			return bool(mData.mFloat);
 		case String:
-			return !mData.mString.isEmpty();
+			return !mData.mString.empty();
 		default:
 			return false;
 	}
 }
 
-QString ConstantValue::typeName() const {
+std::string ConstantValue::typeName() const {
 	switch(mType) {
 		case Integer:
 			return "Integer";
@@ -1475,23 +1476,23 @@ QString ConstantValue::typeName() const {
 	}
 }
 
-QString ConstantValue::valueInfo() const {
+std::string ConstantValue::valueInfo() const {
 	switch(this->mType) {
 		case Boolean:
 			return mData.mBool ? "true" : "false";
 		case Byte:
-			return QString::number(mData.mByte);
+			return boost::lexical_cast<std::string>(mData.mByte);
 		case Short:
-			return QString::number(mData.mShort);
+			return boost::lexical_cast<std::string>(mData.mShort);
 		case Integer:
-			return QString::number(mData.mInt);
+			return boost::lexical_cast<std::string>(mData.mInt);
 		case Float:
-			return QString::number(mData.mFloat);
+			return boost::lexical_cast<std::string>(mData.mFloat);
 		case String:
 			return "\"" + mData.mString  + "\"";
 		case  Null:
 			return "NULL";
 		default:
-			return QString("Invalid constant value");
+			return std::string("Invalid constant value");
 	}
 }

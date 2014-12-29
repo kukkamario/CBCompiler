@@ -1,6 +1,6 @@
 #ifndef VALUETYPECOLLECTION_H
 #define VALUETYPECOLLECTION_H
-#include <QMap>
+#include <map>
 #include "constantvalue.h"
 #include "valuetype.h"
 
@@ -18,32 +18,32 @@ class ValueTypeCollection {
 		void addTypePointerValueType(TypePointerValueType *typePointer);
 		void addStructValueType(StructValueType *structValueType);
 		ValueType *valueTypeForLLVMType(llvm::Type *type);
-		ValueType *findNamedType(const QString &name);
+		ValueType *findNamedType(const std::string &name);
 
 		ArrayValueType *arrayValueType(ValueType *baseValueType, int dimensions);
-		FunctionValueType *functionValueType(ValueType *returnType, const QList<ValueType*> &paramTypes);
+		FunctionValueType *functionValueType(ValueType *returnType, const std::vector<ValueType*> &paramTypes);
 
 		ValueType *constantValueType(ConstantValue::Type type) const;
-		QList<ValueType*> namedTypes() const;
+		std::vector<ValueType*> namedTypes() const;
 
-		const QList<StructValueType*> structValueTypes() const { return mStructs; }
-		const QList<TypePointerValueType*> typePointerValueTypes() const { return mTypes; }
+		const std::vector<StructValueType*> structValueTypes() const { return mStructs; }
+		const std::vector<TypePointerValueType*> typePointerValueTypes() const { return mTypes; }
 	private:
 		struct FunctionType {
 				ValueType *mReturnType;
-				QList<ValueType*> mParamTypes;
+				std::vector<ValueType*> mParamTypes;
 				bool operator < (const FunctionType &ft) const;
 		};
 
 		ValueType *generateArrayValueType(llvm::StructType *arrayDataType);
 		ValueType *generateFunctionValueType(llvm::FunctionType *funcTy);
 
-		QMap<QPair<ValueType*, int> , ArrayValueType *> mArrayMapping;
-		QMap<FunctionType, FunctionValueType *> mFunctionTypeMapping;
-		QMap<llvm::Type*, ValueType*> mLLVMTypeMapping;
-		QMap<QString, ValueType *> mNamedType;
-		QList<StructValueType*> mStructs;
-		QList<TypePointerValueType*> mTypes;
+		std::map<std::pair<ValueType*, int> , ArrayValueType *> mArrayMapping;
+		std::map<FunctionType, FunctionValueType *> mFunctionTypeMapping;
+		std::map<llvm::Type*, ValueType*> mLLVMTypeMapping;
+		std::map<std::string, ValueType *> mNamedType;
+		std::vector<StructValueType*> mStructs;
+		std::vector<TypePointerValueType*> mTypes;
 		Runtime *mRuntime;
 };
 

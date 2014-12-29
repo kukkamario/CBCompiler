@@ -53,8 +53,8 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Value generate(ast::ArraySubscript *n);
 		Value generate(ast::Node *n);
 
-		Function *findBestOverload(const QList<Function*> &functions, const QList<ValueType *> &parameters, bool command, const CodePoint &cp);
-		QList<Value> generateParameterList(ast::Node *n);
+		Function *findBestOverload(const std::vector<Function*> &functions, const std::vector<ValueType *> &parameters, bool command, const CodePoint &cp);
+		std::vector<Value> generateParameterList(ast::Node *n);
 		void resolveGotos();
 
 		bool generateAllocas();
@@ -63,10 +63,10 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		llvm::BasicBlock *createBasicBlock(const llvm::Twine &name = llvm::Twine(), llvm::BasicBlock *insertBefore = 0);
 
 		bool checkUnreachable(CodePoint cp);
-		void generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters);
+		void generateFunctionParameterAssignments(const std::vector<CBFunction::Parameter> &parameters);
 
 		VariableSymbol *searchVariableSymbol(ast::Node *n);
-		bool checkFunctionCallValidity(FunctionValueType *funcValType, const QList<Value> &parameters, const CodePoint &cp);
+		bool checkFunctionCallValidity(FunctionValueType *funcValType, const std::vector<Value> &parameters, const CodePoint &cp);
 
 		Settings *mSettings;
 		Scope *mLocalScope;
@@ -80,15 +80,15 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		bool mMainFunction;
 		bool mUnreachableBasicBlock;
 
-		QList<QPair<LabelSymbol*, llvm::BasicBlock*> > mUnresolvedGotos;
-		QStack<llvm::BasicBlock*> mExitStack;
+		std::vector<std::pair<LabelSymbol*, llvm::BasicBlock*> > mUnresolvedGotos;
+		std::stack<llvm::BasicBlock*> mExitStack;
 
 		bool mValid;
 	signals:
-		void warning(int code, QString msg, CodePoint codePoint);
-		void error(int code, QString msg, CodePoint codePoint);
+		void warning(int code, std::string msg, CodePoint codePoint);
+		void error(int code, std::string msg, CodePoint codePoint);
 	private slots:
-		void errorOccured(int, QString, CodePoint);
+		void errorOccured(int, std::string, CodePoint);
 };
 
 #endif // FUNCTIONCODEGENERATOR_H

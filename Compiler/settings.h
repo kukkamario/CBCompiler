@@ -1,34 +1,42 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
-#include <QString>
+#include <string>
+#include <boost/program_options.hpp>
 class Settings {
 	public:
 		Settings();
-		bool loadDefaults();
-		bool callOpt(const QString &inputFile, const QString &outputFile) const;
-		bool callLLC(const QString &inputFile, const QString &outputFile) const;
-		bool callLinker(const QString &inputFile, const QString &outputFile) const;
+		bool parseCommandLine(int argc, char *argv[]);
+		bool callOpt(const std::string &inputFile, const std::string &outputFile) const;
+		bool callLLC(const std::string &inputFile, const std::string &outputFile) const;
+		bool callLinker(const std::string &inputFile, const std::string &outputFile) const;
 		bool forceVariableDeclaration() const { return mFVD; }
-		QString defaultOutputFile() const { return mDefaultOutput; }
-		QString loadPath() const { return mLoadPath; }
-		QString runtimeLibraryPath() const { return mRuntimeLibrary; }
-		QString dataTypesFile() const { return mDataTypes; }
-		QString functionMappingFile() const { return mFunctionMapping; }
+		std::string loadPath() const { return mLoadPath; }
+		std::string runtimeLibraryPath() const { return mRuntimeLibrary; }
+		std::string dataTypesFile() const { return mDataTypes; }
+		std::string functionMappingFile() const { return mFunctionMapping; }
+		const std::vector<std::string> &inputFiles() const { return mInputFiles; }
+		std::string outputFile() const { return mOutputFile; }
 	private:
-		QString mLoadPath;
+		std::string mLoadPath;
 
-		QString mOpt;
-		QString mOptFlags;
-		QString mLLC;
-		QString mLLCFlags;
-		QString mLinker;
-		QString mLinkerFlags;
+		std::string mOpt;
+		std::vector<std::string> mOptFlags;
+		std::string mLLC;
+		std::string mLLCFlags;
+		std::string mLinker;
+		std::string mLinkerFlags;
+
+		std::vector<std::string> mInputFiles;
+		std::string mOutputFile;
 
 		bool mFVD;
-		QString mDefaultOutput;
-		QString mRuntimeLibrary;
-		QString mFunctionMapping;
-		QString mDataTypes;
+		std::string mRuntimeLibrary;
+		std::string mFunctionMapping;
+		std::string mDataTypes;
+
+		boost::program_options::options_description mConfigOptions;
+		boost::program_options::options_description mCmdOptions;
+		boost::program_options::options_description mConfigurationOptions;
 };
 
 #endif // SETTINGS_H

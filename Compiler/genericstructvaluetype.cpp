@@ -5,8 +5,8 @@ GenericStructValueType::GenericStructValueType(llvm::Type *genericStructValueTyp
 	ValueType(runtime, genericStructValueType){
 }
 
-QString GenericStructValueType::name() const {
-	return QStringLiteral("GenericStructValueType");
+std::string GenericStructValueType::name() const {
+	return std::stringLiteral("GenericStructValueType");
 }
 
 ValueType::CastCost GenericStructValueType::castingCostToOtherValueType(const ValueType *to) const {

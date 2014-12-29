@@ -6,7 +6,7 @@
 #include "genericstructvaluetype.h"
 #include "nullvaluetype.h"
 
-StructValueType::StructValueType(const QString &name, const CodePoint &cp, Runtime *runtime) :
+StructValueType::StructValueType(const std::string &name, const CodePoint &cp, Runtime *runtime) :
 	ValueType(runtime),
 	mName(name),
 	mCodePoint(cp),
@@ -14,7 +14,7 @@ StructValueType::StructValueType(const QString &name, const CodePoint &cp, Runti
 
 }
 
-StructValueType::StructValueType(const QString &name, const CodePoint &cp, const QList<StructField> &fields, Runtime *runtime) :
+StructValueType::StructValueType(const std::string &name, const CodePoint &cp, const std::vector<StructField> &fields, Runtime *runtime) :
 	ValueType(runtime),
 	mName(name),
 	mCodePoint(cp),
@@ -42,7 +42,7 @@ bool StructValueType::containsItself() const {
 }
 
 
-QString StructValueType::name() const {
+std::string StructValueType::name() const {
 	return mName;
 }
 
@@ -63,15 +63,15 @@ llvm::Constant *StructValueType::defaultValue() const {
 
 int StructValueType::size() const {
 	int s = 0;
-	for (QList<StructField>::ConstIterator i = mFields.begin(); i != mFields.end(); ++i) {
+	for (std::vector<StructField>::const_iterator i = mFields.begin(); i != mFields.end(); ++i) {
 		s += i->valueType()->size();
 	}
 	return s;
 }
 
-void StructValueType::setFields(const QList<StructField> &fields) {
+void StructValueType::setFields(const std::vector<StructField> &fields) {
 	mFields = fields;
-	for (QList<StructField>::Iterator i = mFields.begin(); i != mFields.end(); ++i) {
+	for (std::vector<StructField>::Iterator i = mFields.begin(); i != mFields.end(); ++i) {
 		mFieldSearch[i->name()] = i;
 	}
 }
@@ -184,9 +184,9 @@ Value StructValueType::generateLoad(Builder *builder, const Value &var) const {
 	return Value(var.valueType(), ret, false);
 }
 
-Value StructValueType::member(Builder *builder, const Value &a, const QString &memberName) const {
+Value StructValueType::member(Builder *builder, const Value &a, const std::string &memberName) const {
 	assert(a.valueType() == this);
-	QList<StructField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
+	std::vector<StructField>::const_iterator fieldI = mFieldSearch.value(memberName, mFields.end());
 	if (fieldI == mFields.end()) {
 		return Value();
 	}
@@ -194,8 +194,8 @@ Value StructValueType::member(Builder *builder, const Value &a, const QString &m
 	return field(builder, a, fieldIndex);
 }
 
-ValueType *StructValueType::memberType(const QString &memberName) const {
-	QList<StructField>::ConstIterator fieldI = mFieldSearch.value(memberName, mFields.end());
+ValueType *StructValueType::memberType(const std::string &memberName) const {
+	std::vector<StructField>::const_iterator fieldI = mFieldSearch.value(memberName, mFields.end());
 	if (fieldI != mFields.end()) {
 		return fieldI->valueType();
 	}
@@ -219,7 +219,7 @@ Value StructValueType::field(Builder *builder, const Value &a, int fieldIndex) c
 }
 
 
-StructField::StructField(const QString &name, ValueType *valueType, const CodePoint &cp) :
+StructField::StructField(const std::string &name, ValueType *valueType, const CodePoint &cp) :
 	mName(name),
 	mValueType(valueType),
 	mCodePoint(cp) {

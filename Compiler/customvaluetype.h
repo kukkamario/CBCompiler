@@ -4,8 +4,8 @@
 
 class CustomValueType : public ValueType {
 	public:
-		CustomValueType(const QString &name, llvm::Type *type, Runtime *r);
-		QString name() const { return mName; }
+		CustomValueType(const std::string &name, llvm::Type *type, Runtime *r);
+		std::string name() const { return mName; }
 		CastCost castingCostToOtherValueType(const ValueType *to) const;
 		Value cast(Builder *builder, const Value &v) const;
 		llvm::Constant *defaultValue() const;
@@ -15,7 +15,7 @@ class CustomValueType : public ValueType {
 		int size() const;
 		virtual Value generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const;
 	protected:
-		QString mName;
+		std::string mName;
 };
 
 

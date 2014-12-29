@@ -161,7 +161,7 @@ void FunctionCodeGenerator::visit(ast::ArrayInitialization *n) {
 
 	if (arr.isNormalValue() && arr.valueType()->isArray()) {
 		ArrayValueType *valType = static_cast<ArrayValueType*>(arr.valueType());
-		QList<Value> params = generateParameterList(n->dimensions());
+		std::vector<Value> params = generateParameterList(n->dimensions());
 		if (params.size() != valType->dimensions()) {
 			emit error(ErrorCodes::ecArrayDimensionCountDoesntMatch, tr("Invalid number of dimensions %1. The array has %n dimensions.", 0, valType->dimensions()).arg(params.size()), n->codePoint());
 			throw CodeGeneratorError(ErrorCodes::ecArrayDimensionCountDoesntMatch);
@@ -441,7 +441,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 	llvm::BasicBlock *endBlock = createBasicBlock("selectEndBB");
 
 	bool switchPossible = value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType();
-	QList<QPair<Value, llvm::BasicBlock*> > values;
+	std::vector<std::pair<Value, llvm::BasicBlock*> > values;
 	for (ast::SelectCase *c : n->cases()) {
 		Value value = generate(c->value());
 		switchPossible &= value.isConstant() && (value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType());
@@ -452,7 +452,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 			mBuilder->branch(endBlock);
 		}
 		mUnreachableBasicBlock = false;
-		values.append(QPair<Value, llvm::BasicBlock*>(value, basicBlock));
+		values.push_back(std::pair<Value, llvm::BasicBlock*>(value, basicBlock));
 	}
 	llvm::BasicBlock *defaultBlock = endBlock;
 	if (n->defaultCase()) {
@@ -471,7 +471,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 					mBuilder->llvmValue(mBuilder->toInt(value)),
 					defaultBlock,
 					values.size());
-		for (const QPair<Value, llvm::BasicBlock*> &pairs : values) {
+		for (const std::pair<Value, llvm::BasicBlock*> &pairs : values) {
 			llvm::ConstantInt *caseVal = llvm::cast<llvm::ConstantInt>(mBuilder->llvmValue(mBuilder->toInt(pairs.first)));
 			switchInst->addCase(caseVal, pairs.second);
 		}
@@ -481,7 +481,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 		int index = 0;
 		Value caseTrue;
 		llvm::BasicBlock *trueBlock = 0;
-		for (QList<QPair<Value, llvm::BasicBlock*> >::ConstIterator i = values.begin(); i != values.end(); i++) {
+		for (std::vector<std::pair<Value, llvm::BasicBlock*> >::const_iterator i = values.begin(); i != values.end(); i++) {
 			if (trueBlock) {
 				llvm::BasicBlock *caseCondBB = createBasicBlock("caseCondBB");
 				mBuilder->branch(caseTrue, trueBlock, caseCondBB);
@@ -578,7 +578,7 @@ void FunctionCodeGenerator::visit(ast::Goto *n) {
 		mBuilder->branch(label->basicBlock());
 	}
 	else {
-		mUnresolvedGotos.append(QPair<LabelSymbol*, llvm::BasicBlock*>(label, mBuilder->currentBasicBlock()));
+		mUnresolvedGotos.push_back(std::pair<LabelSymbol*, llvm::BasicBlock*>(label, mBuilder->currentBasicBlock()));
 	}
 	mUnreachableBasicBlock = true;
 }
@@ -684,11 +684,11 @@ Value FunctionCodeGenerator::generate(ast::Identifier *n) {
 Value FunctionCodeGenerator::generate(ast::Expression *n) {
 	if (n->associativity() == ast::Expression::LeftToRight) {
 		Value op1 = generate(n->firstOperand());
-		for (QList<ast::ExpressionNode*>::ConstIterator i = n->operations().begin(); i != n->operations().end(); ++i) {
+		for (std::vector<ast::ExpressionNode*>::const_iterator i = n->operations().begin(); i != n->operations().end(); ++i) {
 			ast::ExpressionNode *exprNode = *i;
 			if (exprNode->op() == ast::ExpressionNode::opMember) {
 				ValueType *valueType = op1.valueType();
-				QString memberName;
+				std::string memberName;
 				ast::Node *memberId = exprNode->operand();
 				switch (memberId->type()) {
 					case ast::Node::ntIdentifier:
@@ -772,7 +772,7 @@ Value FunctionCodeGenerator::generate(ast::Expression *n) {
 		return op1;
 	}
 	else {
-		QList<ast::ExpressionNode*>::ConstIterator i = --n->operations().end();
+		std::vector<ast::ExpressionNode*>::const_iterator i = --n->operations().end();
 		Value op2 = generate((*i)->operand());
 		ast::ExpressionNode::Op op = (*i)->op();
 		CodePoint cp = (*i)->codePoint();
@@ -885,16 +885,16 @@ Value FunctionCodeGenerator::generate(ast::Unary *n) {
 Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 	Value functionValue = generate(n->function());
 	ValueType *valueType = functionValue.valueType();
-	QList<Value> paramValues = generateParameterList(n->parameters());
+	std::vector<Value> paramValues = generateParameterList(n->parameters());
 
 	if (functionValue.isFunctionSelectorValueType()) {
 		FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(valueType);
-		QList<Function*> functions = funcSelector->overloads();
+		std::vector<Function*> functions = funcSelector->overloads();
 
 		bool isSelector = false;
 
-		QList<ValueType*> paramTypes;
-		if (!paramValues.isEmpty() && paramValues.first().isValueType()) {
+		std::vector<ValueType*> paramTypes;
+		if (!paramValues.empty() && paramValues.first().isValueType()) {
 			isSelector = true;
 		}
 		for (const Value &val : paramValues) {
@@ -902,7 +902,7 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 				emit error(ErrorCodes::ecFunctionSelectorParametersShouldBeValueTypes, tr("All parameters of the function selector should be value types"), n->codePoint());
 				throw CodeGeneratorError(ErrorCodes::ecFunctionSelectorParametersShouldBeValueTypes);
 			}
-			paramTypes.append(val.valueType());
+			paramTypes.push_back(val.valueType());
 		}
 
 		Function *func = findBestOverload(functions, paramTypes, n->isCommand(), n->codePoint());
@@ -947,7 +947,7 @@ Value FunctionCodeGenerator::generate(ast::FunctionCall *n) {
 }
 
 Value FunctionCodeGenerator::generate(ast::KeywordFunctionCall *n) {
-	QList<Value> paramValues = generateParameterList(n->parameters());
+	std::vector<Value> paramValues = generateParameterList(n->parameters());
 	if (n->keyword() == ast::KeywordFunctionCall::ArraySize) {
 		if (paramValues.size() == 0 || paramValues.size() > 2) {
 			emit error(ErrorCodes::ecWrongNumberOfParameters, tr("ArraySize takes 1 or 2 parameters"), n->codePoint());
@@ -1061,7 +1061,7 @@ Value FunctionCodeGenerator::generate(ast::ArraySubscript *n) {
 
 	if (arr.isNormalValue() && arr.valueType()->isArray()) {
 		ArrayValueType *valType = static_cast<ArrayValueType*>(arr.valueType());
-		QList<Value> params = generateParameterList(n->subscript());
+		std::vector<Value> params = generateParameterList(n->subscript());
 		if (params.size() != valType->dimensions()) {
 			emit error(ErrorCodes::ecArrayDimensionCountDoesntMatch, tr("Invalid number of dimensions %1. The array has %n dimensions.", 0, valType->dimensions()).arg(params.size()), n->codePoint());
 			throw CodeGeneratorError(ErrorCodes::ecArrayDimensionCountDoesntMatch);
@@ -1134,7 +1134,7 @@ Value FunctionCodeGenerator::generate(ast::Node *n) {
 	return result;
 }
 
-Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &functions, const QList<ValueType *> &parameters, bool command, const CodePoint &cp) {
+Function *FunctionCodeGenerator::findBestOverload(const std::vector<Function *> &functions, const std::vector<ValueType *> &parameters, bool command, const CodePoint &cp) {
 	//No overloads
 	if (functions.size() == 1) {
 		Function *f = functions.first();
@@ -1158,9 +1158,9 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 			throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
 		}
 
-		Function::ParamList::ConstIterator p1i = f->paramTypes().begin();
+		Function::ParamList::const_iterator p1i = f->paramTypes().begin();
 		CastCostCalculator totalCost;
-		for (QList<ValueType*>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
+		for (std::vector<ValueType*>::const_iterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
 			totalCost += (*p2i)->castingCostToOtherValueType(*p1i);
 			p1i++;
 		}
@@ -1188,12 +1188,12 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 	Function *bestFunc = 0;
 	CastCostCalculator bestCost = CastCostCalculator::maxCastCost();
 
-	for (QList<Function*>::ConstIterator fi = functions.begin(); fi != functions.end(); fi++) {
+	for (std::vector<Function*>::const_iterator fi = functions.begin(); fi != functions.end(); fi++) {
 		Function *f = *fi;
 		if (f->paramTypes().size() >= parameters.size() && f->requiredParams() <= parameters.size() && (f->isCommand() == command || (command == false && parameters.size() == 1))) {
-			QList<ValueType*>::ConstIterator p1i = f->paramTypes().begin();
+			std::vector<ValueType*>::const_iterator p1i = f->paramTypes().begin();
 			CastCostCalculator totalCost;
-			for (QList<ValueType*>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
+			for (std::vector<ValueType*>::const_iterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
 				totalCost += (*p2i)->castingCostToOtherValueType(*p1i);
 				p1i++;
 			}
@@ -1227,7 +1227,7 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 
 	}
 	if (multiples) {
-		QString msg = command ? tr("Found multiple possible command overloads with parameters (%1) and can't choose between them.") : tr("Found multiple possible function overloads with parameters (%1) and can't choose between them.");
+		std::string msg = command ? tr("Found multiple possible command overloads with parameters (%1) and can't choose between them.") : tr("Found multiple possible function overloads with parameters (%1) and can't choose between them.");
 		emit error(ErrorCodes::ecMultiplePossibleOverloads,  msg.arg(
 					   listStringJoin(parameters, [](ValueType *val) {
 			return val->name();
@@ -1237,21 +1237,21 @@ Function *FunctionCodeGenerator::findBestOverload(const QList<Function *> &funct
 	return bestFunc;
 }
 
-QList<Value> FunctionCodeGenerator::generateParameterList(ast::Node *n) {
-	QList<Value> result;
+std::vector<Value> FunctionCodeGenerator::generateParameterList(ast::Node *n) {
+	std::vector<Value> result;
 	if (n->type() == ast::Node::ntList) {
 		for (ast::ChildNodeIterator i = n->childNodesBegin(); i != n->childNodesEnd(); i++) {
-			result.append(generate(*i));
+			result.push_back(generate(*i));
 		}
 	}
 	else {
-		result.append(generate(n));
+		result.push_back(generate(n));
 	}
 	return result;
 }
 
 void FunctionCodeGenerator::resolveGotos() {
-	for (const QPair<LabelSymbol*, llvm::BasicBlock*> &g : mUnresolvedGotos) {
+	for (const std::pair<LabelSymbol*, llvm::BasicBlock*> &g : mUnresolvedGotos) {
 		assert(g.first->basicBlock());
 		mBuilder->setInsertPoint(g.second);
 		mBuilder->branch(g.first->basicBlock());
@@ -1291,8 +1291,8 @@ bool FunctionCodeGenerator::checkUnreachable(CodePoint cp) {
 	return false;
 }
 
-void FunctionCodeGenerator::generateFunctionParameterAssignments(const QList<CBFunction::Parameter> &parameters) {
-	QList<CBFunction::Parameter>::ConstIterator pi = parameters.begin();
+void FunctionCodeGenerator::generateFunctionParameterAssignments(const std::vector<CBFunction::Parameter> &parameters) {
+	std::vector<CBFunction::Parameter>::const_iterator pi = parameters.begin();
 	for (llvm::Function::arg_iterator i = mFunction->arg_begin(); i != mFunction->arg_end(); ++i) {
 		mBuilder->store(pi->mVariableSymbol, i);
 		pi++;
@@ -1315,7 +1315,7 @@ VariableSymbol *FunctionCodeGenerator::searchVariableSymbol(ast::Node *n) {
 	return static_cast<VariableSymbol*>(symbol);
 }
 
-bool FunctionCodeGenerator::checkFunctionCallValidity(FunctionValueType *funcValType, const QList<Value> &parameters, const CodePoint &cp){
+bool FunctionCodeGenerator::checkFunctionCallValidity(FunctionValueType *funcValType, const std::vector<Value> &parameters, const CodePoint &cp){
 
 	if (funcValType->paramTypes().size() != parameters.size()) {
 		emit error(ErrorCodes::ecCantFindFunction, tr("Function doesn't match given parameters. \"%1\" was tried to call with parameters of types (%2)").arg(
@@ -1326,9 +1326,9 @@ bool FunctionCodeGenerator::checkFunctionCallValidity(FunctionValueType *funcVal
 		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
 	}
 
-	Function::ParamList::ConstIterator p1i = funcValType->paramTypes().begin();
+	Function::ParamList::const_iterator p1i = funcValType->paramTypes().begin();
 	CastCostCalculator totalCost;
-	for (QList<Value>::ConstIterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
+	for (std::vector<Value>::const_iterator p2i = parameters.begin(); p2i != parameters.end(); p2i++) {
 		totalCost += p2i->valueType()->castingCostToOtherValueType(*p1i);
 		p1i++;
 	}
@@ -1344,6 +1344,6 @@ bool FunctionCodeGenerator::checkFunctionCallValidity(FunctionValueType *funcVal
 }
 
 
-void FunctionCodeGenerator::errorOccured(int, QString, CodePoint) {
+void FunctionCodeGenerator::errorOccured(int, std::string, CodePoint) {
 	mValid = false;
 }

@@ -35,9 +35,9 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 	mCurrentScope = mMainScope = mainScope;
 	mFunctions.clear();
 
-	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
-	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
-	const QList<ast::StructDefinition*> &classDefs = program->structDefinitions();
+	const std::vector<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
+	const std::vector<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
+	const std::vector<ast::StructDefinition*> &classDefs = program->structDefinitions();
 
 	mValid = true;
 	for (ast::TypeDefinition *def : typeDefs) {
@@ -48,7 +48,7 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 		mValid &= createStructDefinition(def->identifier());
 	}
 
-	QList<ValueType*> valueTypes = mRuntime->valueTypeCollection().namedTypes();
+	std::vector<ValueType*> valueTypes = mRuntime->valueTypeCollection().namedTypes();
 	for (ValueType* valueType : valueTypes) {
 		if (!valueType->isTypePointer())
 			mGlobalScope->addSymbol(new DefaultValueTypeSymbol(valueType));
@@ -74,7 +74,7 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 
 	if (!mValid) return false;
 
-	for (QMap<ast::FunctionDefinition*, CBFunction*>::Iterator i = mFunctions.begin(); i != mFunctions.end(); ++i) {
+	for (std::map<ast::FunctionDefinition*, CBFunction*>::Iterator i = mFunctions.begin(); i != mFunctions.end(); ++i) {
 		mCurrentScope = i.value()->scope();
 		i.key()->block()->accept(this);
 	}
@@ -192,7 +192,7 @@ void SymbolCollector::visit(ast::Goto *c) {
 void SymbolCollector::visit(ast::Identifier *n) {
 	Symbol *symbol = mCurrentScope->find(n->name());
 	if (!symbol) {
-		QString info = mSettings->forceVariableDeclaration() ? tr("You should declare variables with Dim-statement before using") : tr("First usage of a variable should be a assignment.");
+		std::string info = mSettings->forceVariableDeclaration() ? tr("You should declare variables with Dim-statement before using") : tr("First usage of a variable should be a assignment.");
 		emit error(ErrorCodes::ecCantFindSymbol, tr("Can't find symbol \"%1\". (%2)").arg(n->name(), info), n->codePoint());
 	}
 }
@@ -270,7 +270,7 @@ bool SymbolCollector::createTypeFields(ast::TypeDefinition *def) {
 		switch(node->type()) {
 			case ast::Node::ntVariable: {
 				ast::Variable *varDef = node->cast<ast::Variable>();
-				QString name = varDef->identifier()->name();
+				std::string name = varDef->identifier()->name();
 				ValueType *valType = resolveValueType(varDef->valueType());
 				if (!valType) return false;
 				if (!typeSymbol->addField(TypeField(name, valType, node->codePoint()))) {
@@ -292,15 +292,15 @@ bool SymbolCollector::createStructFields(ast::StructDefinition *def) {
 
 	StructValueType *structValueType = static_cast<StructValueType*>(valueType);
 
-	QList<StructField> fields;
+	std::vector<StructField> fields;
 	for (ast::Node *node : def->fields()) {
 		switch(node->type()) {
 			case ast::Node::ntVariable: {
 				ast::Variable *varDef = node->cast<ast::Variable>();
-				QString name = varDef->identifier()->name();
+				std::string name = varDef->identifier()->name();
 				ValueType *valType = resolveValueType(varDef->valueType());
 				if (!valType) return false;
-				fields.append(StructField(name, valType, node->codePoint()));
+				fields.push_back(StructField(name, valType, node->codePoint()));
 				break;
 			}
 			default:
@@ -335,11 +335,11 @@ bool SymbolCollector::createFunctionDefinition(ast::FunctionDefinition *funcDef)
 
 	Scope *scope = new Scope(funcDef->identifier()->name(), mGlobalScope);
 	bool success;
-	QList<CBFunction::Parameter> params = functionParameterList(parameterList, scope, success);
+	std::vector<CBFunction::Parameter> params = functionParameterList(parameterList, scope, success);
 	if (!success) return false;
-	QList<ValueType*> paramValueTypes;
+	std::vector<ValueType*> paramValueTypes;
 	for (const CBFunction::Parameter p : params) {
-		paramValueTypes.append(p.mVariableSymbol->valueType());
+		paramValueTypes.push_back(p.mVariableSymbol->valueType());
 	}
 
 	ValueType *retType = 0;
@@ -377,36 +377,36 @@ void SymbolCollector::functionAlreadyDefinedError(const CodePoint &cp, Function 
 
 
 
-QList<VariableSymbol *> SymbolCollector::variableDefinitionList(ast::Node *node, Scope *scope) {
-	QList<VariableSymbol*> result;
+std::vector<VariableSymbol *> SymbolCollector::variableDefinitionList(ast::Node *node, Scope *scope) {
+	std::vector<VariableSymbol*> result;
 	if (node->type() == ast::Node::ntList || node->type() == ast::Node::ntGlobal || node->type() == ast::Node::ntDim) {
 		for (ast::ChildNodeIterator i = node->childNodesBegin(); i != node->childNodesEnd(); i++) {
-			result.append(variableDefinition(*i, scope));
+			result.push_back(variableDefinition(*i, scope));
 		}
 	}
 	else {
-		result.append(variableDefinition(node, scope));
+		result.push_back(variableDefinition(node, scope));
 	}
 	return result;
 }
 
-QList<CBFunction::Parameter> SymbolCollector::functionParameterList(ast::Node *node, Scope *scope, bool &success) {
+std::vector<CBFunction::Parameter> SymbolCollector::functionParameterList(ast::Node *node, Scope *scope, bool &success) {
 	success = true;
 	ast::List *list = node->cast<ast::List>();
-	QList<CBFunction::Parameter> ret;
+	std::vector<CBFunction::Parameter> ret;
 	for (ast::Node *def : list->items()) {
 		ast::VariableDefinition *varDef = def->cast<ast::VariableDefinition>();
 		VariableSymbol *varSymbol = variableDefinition(varDef, scope);
 		if (!varSymbol) {
 			success = false;
-			return QList<CBFunction::Parameter>();
+			return std::vector<CBFunction::Parameter>();
 		}
 		CBFunction::Parameter param;
 		param.mVariableSymbol = varSymbol;
 		if (varDef->value()->type() != ast::Node::ntDefaultValue) {
 			param.mDefaultValue = mConstEval.evaluate(varDef->value());
 		}
-		ret.append(param);
+		ret.push_back(param);
 	}
 	return ret;
 }
@@ -499,7 +499,7 @@ int SymbolCollector::astListSize(ast::Node *node) {
 	return 1;
 }
 
-void SymbolCollector::errorOccured(int , QString , CodePoint ) {
+void SymbolCollector::errorOccured(int , std::string , CodePoint ) {
 	mValid = false;
 }
 

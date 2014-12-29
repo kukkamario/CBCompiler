@@ -13,8 +13,8 @@ ArrayValueType::ArrayValueType(ValueType *baseType, llvm::Type *llvmType, int di
 	assert(dimensions > 0);
 }
 
-QString ArrayValueType::name() const {
-	return mBaseValueType->name() + "[" + QString(",").repeated(mDimensions - 1) + "]";
+std::string ArrayValueType::name() const {
+	return mBaseValueType->name() + "[" + std::string(",").repeated(mDimensions - 1) + "]";
 }
 
 ValueType::CastCost ArrayValueType::castingCostToOtherValueType(const ValueType *to) const {
@@ -86,7 +86,7 @@ void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType(), array));
 }
 
-Value ArrayValueType::constructArray(Builder *builder, const QList<Value> &dims) {
+Value ArrayValueType::constructArray(Builder *builder, const std::vector<Value> &dims) {
 	assert(dims.size() == mDimensions);
 	if (!mConstructFunction) {
 		llvm::Type *intT = builder->irBuilder().getIntPtrTy(&mRuntime->dataLayout());
@@ -125,7 +125,7 @@ Value ArrayValueType::constructArray(Builder *builder, const QList<Value> &dims)
 	return Value(this, builder->irBuilder().CreateCall(mConstructFunction, params));
 }
 
-Value ArrayValueType::arraySubscript(Builder *builder, const Value &array, const QList<Value> &dims) {
+Value ArrayValueType::arraySubscript(Builder *builder, const Value &array, const std::vector<Value> &dims) {
 	assert(array.valueType() == this);
 	assert(mDimensions == dims.size());
 	llvm::Value *arr = builder->llvmValue(array);

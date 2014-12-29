@@ -1,7 +1,7 @@
 #ifndef FUNCTION_H
 #define FUNCTION_H
-#include <QList>
-#include <QString>
+#include <vector>
+#include <string>
 #include "codepoint.h"
 class ValueType;
 class Builder;
@@ -11,16 +11,13 @@ class FunctionValueType;
 namespace llvm {
 	class Function;
 }
-/**
- * @brief The Function is superclass of all functions callable in code.
- * @author Lassi Hämäläinen
- */
+
 class Function {
 	public:
-		typedef QList<ValueType*> ParamList;
-		Function(const QString &name, const CodePoint &cp);
+		typedef std::vector<ValueType*> ParamList;
+		Function(const std::string &name, const CodePoint &cp);
 		virtual ~Function() { }
-		QString name() const{return mName;}
+		std::string name() const{return mName;}
 
 		/**
 		 * @brief Function return ValueType getter. Will return 0 if Function returns void (command).
@@ -36,12 +33,12 @@ class Function {
 
 		/**
 		 * @brief A list of the parameters
-		 * @return QList<ValueType*> list of the parameters' ValueTypes.
+		 * @return std::vector<ValueType*> list of the parameters' ValueTypes.
 		 */
 		const ParamList &paramTypes() const {return mParamTypes;}
 		llvm::Function *function()const{return mFunction;}
 
-		QString file() const { return mCodePoint.file(); }
+		boost::string_ref file() const { return mCodePoint.file(); }
 		/**
 		 * @return Line number where Function is defined or 0.
 		 */
@@ -67,11 +64,11 @@ class Function {
 		 * @param params parameters
 		 * @return Return value with ValueType of returnValue(). If the function is a command, isValid() == false.
 		 */
-		virtual Value call(Builder *builder, const QList<Value> &params) = 0;
+		virtual Value call(Builder *builder, const std::vector<Value> &params) = 0;
 
 		virtual FunctionValueType *functionValueType() const = 0;
 	protected:
-		QString mName;
+		std::string mName;
 		ValueType *mReturnValue;
 		ParamList mParamTypes;
 		llvm::Function *mFunction;

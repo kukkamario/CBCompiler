@@ -2,24 +2,24 @@
 #define FUNCTIONSYMBOL_H
 #include "symbol.h"
 #include "function.h"
-#include <QList>
+#include <vector>
 
 class FunctionSelectorValueType;
 
 class FunctionSymbol:public Symbol {
 	public:
-		FunctionSymbol(const QString &name);
+		FunctionSymbol(const std::string &name);
 		Type type() const{ return stFunctionOrCommand; }
 		void addFunction(Function *func);
 		Function *exactMatch(const Function::ParamList &params) const;
 
-		QList<Function*> functions() const { return mFunctions;}
+		std::vector<Function*> functions() const { return mFunctions;}
 
-		QString info() const;
+		std::string info() const;
 
 		FunctionSelectorValueType *functionSelector() const;
 	private:
-		QList<Function*> mFunctions;
+		std::vector<Function*> mFunctions;
 		mutable FunctionSelectorValueType *mSelector;
 
 };

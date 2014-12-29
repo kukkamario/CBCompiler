@@ -3,12 +3,14 @@
 #include "builder.h"
 #include "stringvaluetype.h"
 #include <vector>
+#include "utf8.h"
+#include <cstdint>
 StringPool::StringPool() {
 }
 
 void StringPool::generateStringLiterals(Builder *builder) {
-	for (QMap<QString, StringData>::ConstIterator i = mStrings.begin(); i != mStrings.end(); ++i) {
-		StringData sd = i.value();
+	for (std::map<std::string, StringData>::const_iterator i = mStrings.begin(); i != mStrings.end(); ++i) {
+		StringData sd = i->second;
 		std::vector<llvm::Value*> indices;
 		indices.push_back(builder->llvmValue(0));
 		indices.push_back(builder->llvmValue(0));
@@ -19,11 +21,11 @@ void StringPool::generateStringLiterals(Builder *builder) {
 	}
 }
 
-Value StringPool::globalString(Builder *builder, const QString &s) {
-	assert(!s.isEmpty());
-	QMap<QString, StringData>::Iterator i = mStrings.find(s);
+Value StringPool::globalString(Builder *builder, const std::string &s) {
+	assert(!s.empty());
+	std::map<std::string, StringData>::iterator i = mStrings.find(s);
 	if (i != mStrings.end()) {
-		llvm::Value *str = builder->irBuilder().CreateLoad(i.value().mCBString, false);
+		llvm::Value *str = builder->irBuilder().CreateLoad(i->second.mCBString, false);
 		builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter
 		return Value(builder->runtime()->stringValueType(), str, false);
 	}
@@ -33,13 +35,15 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 				false,
 				llvm::GlobalValue::CommonLinkage,
 				builder->runtime()->stringValueType()->defaultValue(),
-				("StringLiteral |" + s + "|").toStdString());
+				("StringLiteral |" + s + "|"));
 
 	std::vector<llvm::Constant*> stringChars;
-	QVector<uint> chars = s.toUcs4();
+	std::vector<char32_t> chars(s.size(), '\0');
+	std::vector<char32_t>::iterator charsEnd = utf8::utf8to32(s.begin(), s.end(), chars.begin());
+	chars.resize(charsEnd - chars.begin());
 	stringChars.reserve(chars.size() + 1);
-	for (QVector<uint>::ConstIterator i = chars.begin(); i != chars.end(); ++i) {
-		stringChars.push_back( llvm::ConstantInt::getIntegerValue( llvm::Type::getInt32Ty( builder->context() ), llvm::APInt( 32, *i ) ) );
+	for (char32_t c : chars) {
+		stringChars.push_back( llvm::ConstantInt::getIntegerValue( llvm::Type::getInt32Ty( builder->context() ), llvm::APInt( 32, c ) ) );
 	}
 	stringChars.push_back( llvm::ConstantInt::getIntegerValue( llvm::Type::getInt32Ty( builder->context() ), llvm::APInt( 32, 0 ) ) );
 
@@ -47,8 +51,8 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 				llvm::ArrayType::get(llvm::Type::getInt32Ty(builder->context()), s.length() + 1),
 				true, //Constant
 				llvm::GlobalValue::PrivateLinkage,
-				llvm::ConstantArray::get(llvm::ArrayType::get(llvm::Type::getInt32Ty(builder->context()), s.length() + 1), stringChars), ("StringLiteralData |" + s + "|").toStdString());
-	mStrings.insert(s, sd);
+				llvm::ConstantArray::get(llvm::ArrayType::get(llvm::Type::getInt32Ty(builder->context()), s.length() + 1), stringChars), ("StringLiteralData |" + s + "|"));
+	mStrings.insert(std::pair<std::string, StringData>(s, sd));
 
 	llvm::Value *str = builder->irBuilder().CreateLoad(sd.mCBString, false);
 	builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter

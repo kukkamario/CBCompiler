@@ -1,17 +1,21 @@
 #ifndef ABSTRACTSYNTAXTREE_H
 #define ABSTRACTSYNTAXTREE_H
-#include <QList>
-#include <QString>
-#include <QObject>
-#include <QPair>
-#include <QTextStream>
+#include <vector>
+#include <string>
+#include <utility>
 #include "codepoint.h"
 #include <cassert>
 
-class QFile;
+template <typename Container>
+void containerDeleteAll(const Container &c) {
+	for (auto &v : c) {
+		delete v;
+	}
+}
+
 class Function;
 namespace ast {
-void printTabs(QTextStream &s, int tabs);
+void printTabs(std::basic_ostream<char> &s, int tabs);
 
 class Visitor;
 
@@ -172,7 +176,7 @@ class Node {
 
 		virtual void accept(Visitor *visitor) = 0;
 
-		virtual void write(QTextStream &s, int tab = 0);
+		virtual void write(std::basic_ostream<char> &s, int tab = 0);
 
 		ChildNodeIterator childNodesBegin() { return ChildNodeIterator(this, 0); }
 		ChildNodeIterator childNodesEnd() { return ChildNodeIterator(this, childNodeCount()); }
@@ -243,7 +247,7 @@ class Literal : public LeafNode {
 		Type type() const { return staticType(); }
 		void setValue(T val) { mValue = val; }
 		T value() const { return mValue; }
-		void write(QTextStream &s, int tab = 0) {
+		void write(std::basic_ostream<char> &s, int tab = 0) {
 			printTabs(s, tab);
 			s << "Node:" << typeAsString() << " \"" << this->value() << "\"\n";
 		}
@@ -253,7 +257,7 @@ class Literal : public LeafNode {
 
 typedef Literal<int, Node::ntInteger> Integer;
 typedef Literal<float, Node::ntFloat>  Float;
-typedef Literal<QString, Node::ntString> String;
+typedef Literal<std::string, Node::ntString> String;
 
 NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(Integer)
 NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(Float)
@@ -268,18 +272,18 @@ template <Node::Type NT>
 class IdentifierT : public LeafNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
-		IdentifierT(const QString &name, const CodePoint &cp) : LeafNode(cp), mName(name) { }
+		IdentifierT(const std::string &name, const CodePoint &cp) : LeafNode(cp), mName(name) { }
 		virtual ~IdentifierT() { }
 		static Type staticType() { return NT; }
 		Type type() const { return staticType(); }
-		void setName(const QString &name) { mName = name; }
-		QString name() const { return mName; }
-		void write(QTextStream &s, int tab = 0) {
+		void setName(const std::string &name) { mName = name; }
+		std::string name() const { return mName; }
+		void write(std::basic_ostream<char> &s, int tab = 0) {
 			printTabs(s, tab);
 			s << "Node:" << typeAsString() << " \"" << this->name() << "\"\n";
 		}
 	protected:
-		QString mName;
+		std::string mName;
 };
 
 NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(IdentifierT<Node::ntIdentifier>)
@@ -319,17 +323,17 @@ class List : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		List(const CodePoint &cp) : Node(cp) { }
-		~List() { qDeleteAll(mItems); }
+		~List() { containerDeleteAll(mItems); }
 		static Type staticType() { return ntList; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return mItems.size(); }
 		Node *childNode(int n) const { return mItems.at(n); }
-		void appendItem(Node *n) { mItems.append(n); }
-		const QList<Node*> &items() const { return mItems; }
-		void setItems(const QList<Node*> &items) { mItems = items; }
+		void appendItem(Node *n) { mItems.push_back(n); }
+		const std::vector<Node*> &items() const { return mItems; }
+		void setItems(const std::vector<Node*> &items) { mItems = items; }
 		void takeAll() { mItems.clear(); }
 	protected:
-		QList<Node*> mItems;
+		std::vector<Node*> mItems;
 };
 
 //ValueTypes:
@@ -465,7 +469,7 @@ class ExpressionNode : public Node {
 			opInvalid
 		};
 
-		static QString opToString(Op op);
+		static std::string opToString(Op op);
 
 		ExpressionNode(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
 		~ExpressionNode() { delete mOperand; }
@@ -478,7 +482,7 @@ class ExpressionNode : public Node {
 		void setOp(Op op) { mOp = op; }
 		Node *operand() const { return mOperand; }
 		void setOperand(Node *operand) { mOperand = operand; }
-		void write(QTextStream &s, int tabs = 0);
+		void write(std::basic_ostream<char> &s, int tabs = 0);
 	protected:
 		Op mOp;
 		Node *mOperand;
@@ -494,7 +498,7 @@ class Expression : public Node {
 		};
 
 		Expression(Associativity as, const CodePoint &cp) : Node(cp), mFirstOperand(0), mAssociativity(as) { }
-		~Expression() { delete mFirstOperand; qDeleteAll(mOperations); }
+		~Expression() { delete mFirstOperand; containerDeleteAll(mOperations); }
 		static Type staticType() { return ntExpression; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mOperations.size(); }
@@ -502,12 +506,12 @@ class Expression : public Node {
 
 		Node *firstOperand() const { return mFirstOperand; }
 		void setFirstOperand(Node *n) { mFirstOperand = n; }
-		void appendOperation(ExpressionNode *n) { mOperations.append(n); }
-		const QList<ExpressionNode*> &operations() const { return mOperations; }
+		void appendOperation(ExpressionNode *n) { mOperations.push_back(n); }
+		const std::vector<ExpressionNode*> &operations() const { return mOperations; }
 		Associativity associativity() const { return mAssociativity; }
 	protected:
 		Node *mFirstOperand;
-		QList<ExpressionNode*> mOperations;
+		std::vector<ExpressionNode*> mOperations;
 		Associativity mAssociativity;
 };
 
@@ -604,7 +608,7 @@ class Unary : public Node {
 			opNegative,
 			opInvalid
 		};
-		static QString opToString(Op op);
+		static std::string opToString(Op op);
 
 		Unary(Op op, const CodePoint &cp) : Node(cp), mOp(op), mOperand(0) { }
 		~Unary() { delete mOperand; }
@@ -670,17 +674,17 @@ class VariableDefinitionStatement : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		VariableDefinitionStatement(const CodePoint &cp) : Node(cp) { }
-		virtual ~VariableDefinitionStatement() { qDeleteAll(mDefinitions); }
+		virtual ~VariableDefinitionStatement() { containerDeleteAll(mDefinitions); }
 		static Type staticType() { return static_cast<Type>(NT); }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return mDefinitions.size(); }
 		Node *childNode(int n) const { return mDefinitions.at(n); }
 
-		void appendDefinitions(Node *def) { mDefinitions.append(def); }
-		const QList<Node*> &definitions() const { return mDefinitions; }
-		void setDefinitions(const QList<Node*> &defs) { mDefinitions = defs; }
+		void appendDefinitions(Node *def) { mDefinitions.push_back(def); }
+		const std::vector<Node*> &definitions() const { return mDefinitions; }
+		void setDefinitions(const std::vector<Node*> &defs) { mDefinitions = defs; }
 	protected:
-		QList<Node*> mDefinitions;
+		std::vector<Node*> mDefinitions;
 };
 
 NODE_ACCEPT_VISITOR_PRE_DEF_TEMPLATE(VariableDefinitionStatement<Node::ntDim>)
@@ -694,17 +698,17 @@ class Redim : public Node {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Redim(const CodePoint &cp) : Node(cp) { }
-		~Redim() { qDeleteAll(mArrayInitializations); }
+		~Redim() { containerDeleteAll(mArrayInitializations); }
 		static Type staticType() { return ntRedim; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return mArrayInitializations.size(); }
 		Node *childNode(int i) const { return mArrayInitializations.at(i); }
 
-		QList<ArrayInitialization*> arrayInitialization() const { return mArrayInitializations; }
-		void setArrayInializations(const QList<ArrayInitialization*> &inits) { mArrayInitializations = inits; }
+		std::vector<ArrayInitialization*> arrayInitialization() const { return mArrayInitializations; }
+		void setArrayInializations(const std::vector<ArrayInitialization*> &inits) { mArrayInitializations = inits; }
 
 	private:
-		QList<ArrayInitialization*> mArrayInitializations;
+		std::vector<ArrayInitialization*> mArrayInitializations;
 };
 
 
@@ -712,7 +716,7 @@ class TypeDefinition : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		TypeDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
-		~TypeDefinition() { delete mIdentifier; qDeleteAll(mFields); }
+		~TypeDefinition() { delete mIdentifier; containerDeleteAll(mFields); }
 		static Type staticType() { return ntTypeDefinition; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mFields.size(); }
@@ -720,12 +724,12 @@ class TypeDefinition : public BlockNode {
 
 		Identifier *identifier() const { return mIdentifier; }
 		void setIdentifier(Identifier *n) { mIdentifier = n; }
-		const QList<Node*> &fields() const { return mFields; }
-		void setFields(const QList<Node*> &fields) { mFields = fields; }
-		void appendField(Node *n) { mFields.append(n); }
+		const std::vector<Node*> &fields() const { return mFields; }
+		void setFields(const std::vector<Node*> &fields) { mFields = fields; }
+		void appendField(Node *n) { mFields.push_back(n); }
 	protected:
 		Identifier *mIdentifier;
-		QList<Node*> mFields;
+		std::vector<Node*> mFields;
 };
 
 
@@ -733,7 +737,7 @@ class StructDefinition : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		StructDefinition(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
-		~StructDefinition() { delete mIdentifier; qDeleteAll(mFields); }
+		~StructDefinition() { delete mIdentifier; containerDeleteAll(mFields); }
 		static Type staticType() { return ntStructDefinition; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return 1 + mFields.size(); }
@@ -741,12 +745,12 @@ class StructDefinition : public BlockNode {
 
 		Identifier *identifier() const { return mIdentifier; }
 		void setIdentifier(Identifier *n) { mIdentifier = n; }
-		const QList<Node*> &fields() const { return mFields; }
-		void setFields(const QList<Node*> &fields) { mFields = fields; }
-		void appendField(Node *n) { mFields.append(n); }
+		const std::vector<Node*> &fields() const { return mFields; }
+		void setFields(const std::vector<Node*> &fields) { mFields = fields; }
+		void appendField(Node *n) { mFields.push_back(n); }
 	protected:
 		Identifier *mIdentifier;
-		QList<Node*> mFields;
+		std::vector<Node*> mFields;
 };
 
 //Blocks
@@ -755,17 +759,17 @@ class Block : public BlockNode {
 		NODE_ACCEPT_VISITOR_PRE_DEF
 	public:
 		Block(const CodePoint &start, const CodePoint &end) : BlockNode(start, end) { }
-		~Block() { qDeleteAll(mNodes); }
+		~Block() { containerDeleteAll(mNodes); }
 		static Type staticType() { return ntBlock; }
 		Type type() const { return staticType(); }
 		int childNodeCount() const { return mNodes.size(); }
 		Node *childNode(int n) const { return mNodes.at(n); }
 
-		void appendNode(Node *n) { mNodes.append(n); }
-		const QList<Node *> &childNodes() const { return mNodes; }
-		void setChildNodes(const QList<Node*> &nodes) { mNodes = nodes; }
+		void appendNode(Node *n) { mNodes.push_back(n); }
+		const std::vector<Node *> &childNodes() const { return mNodes; }
+		void setChildNodes(const std::vector<Node*> &nodes) { mNodes = nodes; }
 	protected:
-		QList<Node *> mNodes;
+		std::vector<Node *> mNodes;
 };
 
 class IfStatement : public BlockNode {
@@ -914,14 +918,14 @@ class SelectStatement : public BlockNode {
 
 		Node *variable() const { return mVariable; }
 		void setVariable(Node *var) { mVariable = var; }
-		const QList<SelectCase*> &cases() const { return mCases; }
-		void setCases(const QList<SelectCase*> &cases) { mCases = cases; }
-		void appendCase(SelectCase *n) { mCases.append(n); }
+		const std::vector<SelectCase*> &cases() const { return mCases; }
+		void setCases(const std::vector<SelectCase*> &cases) { mCases = cases; }
+		void appendCase(SelectCase *n) { mCases.push_back(n); }
 		Node *defaultCase() const { return mDefault; }
 		void setDefaultCase(Node *n) { mDefault = n; }
 	protected:
 		Node *mVariable;
-		QList<SelectCase*> mCases;
+		std::vector<SelectCase*> mCases;
 		Node *mDefault;
 };
 
@@ -1008,16 +1012,16 @@ class Program : public Node {
 
 		Block *mainBlock() const { return mMainBlock; }
 		void setMainBlock(Block *n) { mMainBlock = n; }
-		const QList<FunctionDefinition*> &functionDefinitions() const { return mFunctionDefinitions; }
-		void setFunctionDefinitions(const QList<FunctionDefinition*> &funcDefs) { mFunctionDefinitions = funcDefs; }
-		const QList<TypeDefinition*> &typeDefinitions() const { return mTypeDefinitions; }
-		void setTypeDefinitions(const QList<TypeDefinition*> &typeDefs) { mTypeDefinitions = typeDefs; }
-		const QList<StructDefinition*> &structDefinitions() const { return mStructDefinitions; }
-		void setStructDefinitions(const QList<StructDefinition*> &classDefs) { mStructDefinitions = classDefs; }
+		const std::vector<FunctionDefinition*> &functionDefinitions() const { return mFunctionDefinitions; }
+		void setFunctionDefinitions(const std::vector<FunctionDefinition*> &funcDefs) { mFunctionDefinitions = funcDefs; }
+		const std::vector<TypeDefinition*> &typeDefinitions() const { return mTypeDefinitions; }
+		void setTypeDefinitions(const std::vector<TypeDefinition*> &typeDefs) { mTypeDefinitions = typeDefs; }
+		const std::vector<StructDefinition*> &structDefinitions() const { return mStructDefinitions; }
+		void setStructDefinitions(const std::vector<StructDefinition*> &classDefs) { mStructDefinitions = classDefs; }
 	private:
-		QList<TypeDefinition*> mTypeDefinitions;
-		QList<StructDefinition*> mStructDefinitions;
-		QList<FunctionDefinition*> mFunctionDefinitions;
+		std::vector<TypeDefinition*> mTypeDefinitions;
+		std::vector<StructDefinition*> mStructDefinitions;
+		std::vector<FunctionDefinition*> mFunctionDefinitions;
 		Block *mMainBlock;
 };
 

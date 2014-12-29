@@ -1,8 +1,8 @@
 #ifndef STRINGPOOL_H
 #define STRINGPOOL_H
-#include <QString>
+#include <string>
 #include <QLinkedList>
-#include <QMap>
+#include <map>
 #include "llvm.h"
 #include "value.h"
 
@@ -11,14 +11,14 @@ class StringPool {
 	public:
 		StringPool();
 		void generateStringLiterals(Builder *builder);
-		Value globalString(Builder *builder, const QString &s);
+		Value globalString(Builder *builder, const std::string &s);
 	private:
 		struct StringData {
 				llvm::GlobalVariable *mConstData;
 				llvm::GlobalVariable *mCBString;
 		};
 
-		QMap<QString, StringData> mStrings;
+		std::map<std::string, StringData> mStrings;
 };
 
 #endif // STRINGPOOL_H

@@ -3,14 +3,17 @@
 #include <QFile>
 #include <QDebug>
 
-ErrorHandler::ErrorHandler()
-{
+ErrorHandler::ErrorHandler() {
 }
 
-void ErrorHandler::warning(int code, QString msg, CodePoint cp) {
-	qCritical("%s Warning %i: %s", qPrintable(cp.toString()), code, qPrintable(msg));
+ErrorHandler::~ErrorHandler() {
+
 }
 
-void ErrorHandler::error(int code, QString msg, CodePoint cp) {
-	qCritical("%s Error %i: %s", qPrintable(cp.toString()), code, qPrintable(msg));
+void ErrorHandler::warning(int code, std::string msg, CodePoint cp) {
+	std::cerr << cp.toString() << " Warning " << code << ": " << msg;
+}
+
+void ErrorHandler::error(int code, std::string msg, CodePoint cp) {
+	std::cerr << cp.toString() << " Error " << code << ": " << msg;
 }

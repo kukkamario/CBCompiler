@@ -1,76 +1,54 @@
-#include <QCoreApplication>
-#include <QStringList>
+
 #include "lexer.h"
 #include <QDebug>
-#include <QTime>
+#include <chrono>
 #include "errorhandler.h"
 #include "errorcodes.h"
 #include "parser.h"
 #include <iostream>
+#include <boost/format.hpp>
 #include "codegenerator.h"
-#include <QSettings>
+
+using timer = std::chrono::steady_clock;
 
 int main(int argc, char *argv[]) {
-	QCoreApplication a(argc, argv);
 
-	/*QSettings test("test.ini", QSettings::IniFormat);
-	test.beginGroup("compiler");
-	test.setValue("test-value", "asd");
-	test.setValue("other-value", "val");
-	test.endGroup();
-	test.beginGroup("opt");
-	test.setValue("test-value2", "asd2");
-	test.setValue("other-value2", "val2");
-	test.endGroup();
-	test.sync();
-	return 0;*/
 
-	QTime bigTimer;
-	bigTimer.start();
-
-	QStringList params = a.arguments();
-	if (params.size() != 2) {
-		qCritical() << "Expecting file to compile";
-		return 0;
-	}
-
+	timer::time_point startTime = timer::now();
 
 	ErrorHandler errHandler;
 
 	Settings settings;
-	bool success = false;
-	success = settings.loadDefaults();
-	if (!success) {
-		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), CodePoint());
-		return ErrorCodes::ecSettingsLoadingFailed;
+	if (!settings.parseCommandLine(argc, argv)) {
+		return 0;
+	}
+
+	if (settings.inputFiles().size() != 1) {
+		errHandler.error(ErrorCodes::ecNoInputFiles, "Expecting one input file", CodePoint());
+		return 0;
 	}
 
 
-	Lexer lexer;
-	QObject::connect(&lexer, &Lexer::error, &errHandler, &ErrorHandler::error);
-	QObject::connect(&lexer, &Lexer::warning, &errHandler, &ErrorHandler::warning);
-	QTime timer;
-	timer.start();
-	if (lexer.tokenizeFile(params[1], settings) == Lexer::Success) {
-		qDebug() << "Lexical analysing took " << timer.elapsed() << "ms";
+	Lexer lexer(&errHandler);
+	timer::time_point lexerStart = timer::now();
+	if (lexer.tokenizeFile(settings.inputFiles().front(), &settings) == Lexer::Success) {
+		std::cout << "Lexical analysing took " << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - lexerStart).count() << "ms";
 #ifdef DEBUG_OUTPUT
 		lexer.writeTokensToFile("tokens.txt");
 #endif
 	}
 	else {
-		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), CodePoint(lexer.files().first().first));
+		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, "Lexical analysing failed", CodePoint(lexer.files().front().first));
 		return ErrorCodes::ecLexicalAnalysingFailed;
 	}
 
-	Parser parser;
-	QObject::connect(&parser, &Parser::error, &errHandler, &ErrorHandler::error);
-	QObject::connect(&parser, &Parser::warning, &errHandler, &ErrorHandler::warning);
+	Parser parser(&errHandler);
 
-	timer.start();
-	ast::Program *program = parser.parse(lexer.tokens(), settings);
-	qDebug() << "Parsing took " << timer.elapsed() << "ms";
+	timer::time_point parserStart = timer::now();
+	ast::Program *program = parser.parse(lexer.tokens(), &settings);
+	std::cout << "Parsing took " << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - parserStart).count() << "ms";
 	if (!parser.success()) {
-		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), CodePoint());
+		errHandler.error(ErrorCodes::ecParsingFailed, "Parsing failed", CodePoint());
 		return ErrorCodes::ecParsingFailed;
 	}
 
@@ -87,31 +65,26 @@ int main(int argc, char *argv[]) {
 
 
 
-	CodeGenerator codeGenerator;
-	//QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
-	//QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
-	QObject::connect(&codeGenerator, &CodeGenerator::error, &errHandler, &ErrorHandler::error);
-	QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
-
-	timer.start();
-	if (!codeGenerator.initialize(settings)) {
+	CodeGenerator codeGenerator(&errHandler);
+	timer::time_point generatorStart = timer::now();
+	if (!codeGenerator.initialize(&settings)) {
 		return ErrorCodes::ecCodeGeneratorInitializationFailed;
 	}
 
 
-	qDebug() << "Code generator initialization took " << timer.elapsed() << "ms";
-	timer.start();
+	std::cout << "Code generator initialization took " << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - generatorStart).count() << "ms";
+	generatorStart = timer::now();
 	if (!codeGenerator.generate(program)) {
-		errHandler.error(ErrorCodes::ecCodeGenerationFailed, errHandler.tr("Code generation failed"), CodePoint());
+		errHandler.error(ErrorCodes::ecCodeGenerationFailed, "Code generation failed", CodePoint());
 		return ErrorCodes::ecCodeGenerationFailed;
 	}
 
-	qDebug() << "Code generation took" << timer.elapsed() << "ms";
-	qDebug() << "LLVM-IR generated";
+	std::cout << "Code generation took" << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - generatorStart).count() << "ms";
+	std::cout << "LLVM-IR generated";
 
-	timer.start();
-	codeGenerator.createExecutable(settings.defaultOutputFile());
-	qDebug() << "Executable generation took " << timer.elapsed() << "ms";
-	qDebug() << "The whole compilation took " << bigTimer.elapsed() << "ms";
+	generatorStart = timer::now();
+	codeGenerator.createExecutable(settings.outputFile());
+	std::cout << "Executable generation took " << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - generatorStart).count() << "ms";
+	std::cout << "The whole compilation took " << std::chrono::duration_cast<std::chrono::milliseconds>(timer::now() - startTime).count() << "ms";
 	return 0;
 }

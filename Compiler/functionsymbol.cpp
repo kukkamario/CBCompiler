@@ -3,18 +3,18 @@
 #include "functionselectorvaluetype.h"
 #include "functionvaluetype.h"
 
-FunctionSymbol::FunctionSymbol(const QString &name):
+FunctionSymbol::FunctionSymbol(const std::string &name):
 	Symbol(name, CodePoint()),
 	mSelector(0)
 {
 }
 
 void FunctionSymbol::addFunction(Function *func) {
-	mFunctions.append(func);
+	mFunctions.push_back(func);
 }
 
 Function *FunctionSymbol::exactMatch(const Function::ParamList &params) const{
-	for (QList<Function*>::ConstIterator i = mFunctions.begin(); i != mFunctions.end(); i++) {
+	for (std::vector<Function*>::const_iterator i = mFunctions.begin(); i != mFunctions.end(); i++) {
 		Function *func = *i;
 		if (func->paramTypes() == params) return func;
 	}
@@ -22,16 +22,16 @@ Function *FunctionSymbol::exactMatch(const Function::ParamList &params) const{
 }
 
 
-QString FunctionSymbol::info() const {
-	QString str("Function " + mName);
-	if (mFunctions.count() > 1) str += ", " + QString::number(mFunctions.count()) + " overloads";
+std::string FunctionSymbol::info() const {
+	std::string str("Function " + mName);
+	if (mFunctions.size() > 1) str += ", " + boost::lexical_cast<std::string>(mFunctions.size()) + " overloads";
 	return str;
 }
 
 FunctionSelectorValueType *FunctionSymbol::functionSelector() const {
 	if (!mSelector) {
 		assert(!mFunctions.empty());
-		mSelector = new FunctionSelectorValueType(mFunctions.first()->functionValueType()->runtime(), mFunctions);
+		mSelector = new FunctionSelectorValueType(mFunctions.front()->functionValueType()->runtime(), mFunctions);
 	}
 
 	return mSelector;

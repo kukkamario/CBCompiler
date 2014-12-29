@@ -4,9 +4,10 @@
 #include "runtime.h"
 #include "builder.h"
 #include "typevaluetype.h"
+#include <boost/locale.hpp>
 
 
-TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp):
+TypeSymbol::TypeSymbol(const std::string &name, Runtime *r, const CodePoint &cp):
 	ValueTypeSymbol(name, cp),
 	mGlobalTypeVariable(0),
 	mTypePointerValueType(new TypePointerValueType(r, this)),
@@ -15,27 +16,27 @@ TypeSymbol::TypeSymbol(const QString &name, Runtime *r, const CodePoint &cp):
 }
 
 bool TypeSymbol::addField(const TypeField &field) {
-	if (mFieldSearch.contains(field.name())) {
+	if (mFieldSearch.find(field.name()) != mFieldSearch.end()) {
 		return false;
 	}
-	mFields.append(field);
-	mFieldSearch.insert(field.name(), mFields.size() - 1);
+	mFields.push_back(field);
+	mFieldSearch.insert(std::pair<std::string, int>(field.name(), mFields.size() - 1));
 	return true;
 }
 
-bool TypeSymbol::hasField(const QString &name) {
-	return mFieldSearch.contains(name);
+bool TypeSymbol::hasField(const std::string &name) {
+	return mFieldSearch.find(name) != mFieldSearch.end();
 }
 
-const TypeField &TypeSymbol::field(const QString &name) const{
-	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name.toLower());
+const TypeField &TypeSymbol::field(const std::string &name) const{
+	std::map<std::string, int>::const_iterator i = mFieldSearch.find(name);
 	assert(i != mFieldSearch.end());
-	return mFields.at(i.value());
+	return mFields.at(i->second);
 }
 
-int TypeSymbol::fieldIndex(const QString &name) const {
-	QMap<QString, int>::ConstIterator i = mFieldSearch.find(name);
-	int fieldI = i.value();
+int TypeSymbol::fieldIndex(const std::string &name) const {
+	std::map<std::string, int>::const_iterator i = mFieldSearch.find(name);
+	int fieldI = i->second;
 	return mFirstFieldIndex + fieldI;
 }
 
@@ -53,14 +54,14 @@ void TypeSymbol::createOpaqueTypes(Builder *b) {
 }
 
 
-TypeField::TypeField(const QString &name, ValueType *valueType, const CodePoint &cp) :
+TypeField::TypeField(const std::string &name, ValueType *valueType, const CodePoint &cp) :
 	mName(name),
 	mValueType(valueType),
 	mCodePoint(cp) {
 }
 
-QString TypeField::info() const {
-	return QString("Field %1 %2").arg(mValueType->name(), mName);
+std::string TypeField::info() const {
+	return "Field " + mValueType->name() + " " + mName;
 }
 
 
@@ -95,10 +96,9 @@ void TypeSymbol::createLLVMMemberType() {
 }
 
 
-QString TypeSymbol::info() const {
-	QString str("Type %1   |   Size: %2 bytes\n");
-	str = str.arg(mName, QString::number(mMemberSize));
-	for (QList<TypeField>::ConstIterator i = mFields.begin(); i != mFields.end(); i++) {
+std::string TypeSymbol::info() const {
+	std::string str = "Type " + mName + "   |   Size: "+ boost::lexical_cast<std::string>(mMemberSize) + "bytes\n";
+	for (std::vector<TypeField>::const_iterator i = mFields.begin(); i != mFields.end(); i++) {
 		str += "    " + i->info() + '\n';
 	}
 	return str;

@@ -6,20 +6,20 @@
 #include <QFile>
 #include "errorcodes.h"
 
-CustomDataTypeDefinitions::CustomDataTypeDefinitions(QObject *parent) :
-	QObject(parent) {
+CustomDataTypeDefinitions::CustomDataTypeDefinitions(ErrorHandler *errorHandler) :
+	mErrorHandler(errorHandler) {
 }
 
 CustomDataTypeDefinitions::~CustomDataTypeDefinitions()
 {
 }
 
-bool CustomDataTypeDefinitions::parse(const QString &file) {
+bool CustomDataTypeDefinitions::parse(const std::string &file) {
 
 	QByteArray jsonText;
 	QFile jsonFile(file);
 	if (!jsonFile.open(QIODevice::ReadOnly)) {
-		emit error(ErrorCodes::ecCantOpenFile, tr("Can't open a custom data type definition file \"%1\"").arg(file), CodePoint(0, 0, file));
+		error(ErrorCodes::ecCantOpenFile, tr("Can't open a custom data type definition file \"%1\"").arg(file), CodePoint(0, 0, file));
 		return false;
 	}
 	jsonText = jsonFile.readAll();
@@ -29,7 +29,7 @@ bool CustomDataTypeDefinitions::parse(const QString &file) {
 	QJsonDocument doc = QJsonDocument::fromJson(jsonText, &parseError);
 
 	if (doc.isNull()) {
-		emit error(ErrorCodes::ecCantParseCustomDataTypeDefinitionFile, tr("Can't parse a custom data type definition file:    %1").arg(parseError.errorString()), CodePoint(0, 0, file));
+		error(ErrorCodes::ecCantParseCustomDataTypeDefinitionFile, tr("Can't parse a custom data type definition file:    %1").arg(parseError.errorString()), CodePoint(0, 0, file));
 		return false;
 	}
 
@@ -50,14 +50,14 @@ bool CustomDataTypeDefinitions::parse(const QString &file) {
 			invalidFormatError(file);
 			return false;
 		}
-		mDataTypes.append(dataType);
+		mDataTypes.push_back(dataType);
 	}
 	return true;
 }
 
 
-void CustomDataTypeDefinitions::invalidFormatError(const QString &file) {
-	emit error(ErrorCodes::ecInvalidCustomDataTypeDefinitionFileFormat, tr("Invalid custom data type file format"), CodePoint(0, 0, file));
+void CustomDataTypeDefinitions::invalidFormatError(const std::string &file) {
+	error(ErrorCodes::ecInvalidCustomDataTypeDefinitionFileFormat, tr("Invalid custom data type file format"), CodePoint(0, 0, file));
 }
 
 bool CustomDataTypeDefinitions::parseDataType(QJsonObject obj, CustomDataTypeDefinitions::CustomDataType &ret) {
@@ -75,4 +75,12 @@ bool CustomDataTypeDefinitions::parseDataType(QJsonObject obj, CustomDataTypeDef
 	ret.mDataType = dataType.toString();
 
 	return true;
+}
+
+void CustomDataTypeDefinitions::error(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->error(code, msg, cp);
+}
+
+void CustomDataTypeDefinitions::warning(int code, std::string msg, CodePoint cp) {
+	mErrorHandler->warning(code, msg, cp);
 }

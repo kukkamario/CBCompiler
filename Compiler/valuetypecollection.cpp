@@ -28,12 +28,12 @@ void ValueTypeCollection::addValueType(ValueType *valType) {
 }
 
 void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePointer) {
-	mTypes.append(typePointer);
+	mTypes.push_back(typePointer);
 	addValueType(typePointer);
 }
 
 void ValueTypeCollection::addStructValueType(StructValueType *structValueType) {
-	mStructs.append(structValueType);
+	mStructs.push_back(structValueType);
 	addValueType(structValueType);
 }
 
@@ -59,12 +59,12 @@ ValueType *ValueTypeCollection::valueTypeForLLVMType(llvm::Type *type) {
 	return 0;
 }
 
-ValueType *ValueTypeCollection::findNamedType(const QString &name) {
+ValueType *ValueTypeCollection::findNamedType(const std::string &name) {
 	return mNamedType.value(name.toLower(), 0);
 }
 
 ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, int dimensions) {
-	QMap<QPair<ValueType*, int> , ArrayValueType *>::Iterator i = mArrayMapping.find(QPair<ValueType*, int>(baseValueType, dimensions));
+	std::map<std::pair<ValueType*, int> , ArrayValueType *>::Iterator i = mArrayMapping.find(std::pair<ValueType*, int>(baseValueType, dimensions));
 	if (i != mArrayMapping.end()) {
 		return i.value();
 	}
@@ -76,16 +76,16 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 
 	llvm::StructType *arrayType = llvm::StructType::get(arrayDataHeaderType, baseValueType->llvmType(), 0);
 	ArrayValueType *valTy = new ArrayValueType(baseValueType, arrayType->getPointerTo(), dimensions);
-	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
+	mArrayMapping[std::pair<ValueType*, int>(baseValueType, dimensions)] = valTy;
 	mLLVMTypeMapping[valTy->llvmType()] = valTy;
 	return valTy;
 }
 
-FunctionValueType *ValueTypeCollection::functionValueType(ValueType *returnType, const QList<ValueType *> &paramTypes) {
+FunctionValueType *ValueTypeCollection::functionValueType(ValueType *returnType, const std::vector<ValueType *> &paramTypes) {
 	FunctionType ft;
 	ft.mReturnType = returnType;
 	ft.mParamTypes = paramTypes;
-	QMap<FunctionType, FunctionValueType*>::ConstIterator i = mFunctionTypeMapping.find(ft);
+	std::map<FunctionType, FunctionValueType*>::const_iterator i = mFunctionTypeMapping.find(ft);
 
 	if (i != mFunctionTypeMapping.end()) {
 		return i.value();
@@ -119,7 +119,7 @@ ValueType *ValueTypeCollection::constantValueType(ConstantValue::Type type) cons
 	}
 }
 
-QList<ValueType *> ValueTypeCollection::namedTypes() const {
+std::vector<ValueType *> ValueTypeCollection::namedTypes() const {
 	return mNamedType.values();
 }
 
@@ -144,7 +144,7 @@ ValueType *ValueTypeCollection::generateArrayValueType(llvm::StructType *arrayDa
 
 	ArrayValueType *arrayValueType = new ArrayValueType(baseType, arrayDataType->getPointerTo(), dims);
 	mLLVMTypeMapping[arrayDataType->getPointerTo()] = arrayValueType;
-	mArrayMapping[QPair<ValueType*, int>(baseType, dims)] = arrayValueType;
+	mArrayMapping[std::pair<ValueType*, int>(baseType, dims)] = arrayValueType;
 	return arrayValueType;
 }
 
@@ -154,11 +154,11 @@ ValueType *ValueTypeCollection::generateFunctionValueType(llvm::FunctionType *fu
 		retType = valueTypeForLLVMType(funcTy->getReturnType());
 		if (!retType) return 0;
 	}
-	QList<ValueType*> paramTypes;
+	std::vector<ValueType*> paramTypes;
 	for (llvm::FunctionType::param_iterator i = funcTy->param_begin(); i != funcTy->param_end(); i++) {
 		ValueType *vt = valueTypeForLLVMType(*i);
 		if (!vt) return 0;
-		paramTypes.append(vt);
+		paramTypes.push_back(vt);
 	}
 	return functionValueType(retType, paramTypes);
 }
@@ -169,7 +169,7 @@ bool ValueTypeCollection::FunctionType::operator <(const ValueTypeCollection::Fu
 	if (this->mReturnType > ft.mReturnType) return false;
 	if (this->mParamTypes.size() < ft.mParamTypes.size()) return true;
 	if (this->mParamTypes.size() > ft.mParamTypes.size()) return false;
-	QList<ValueType*>::ConstIterator i = ft.mParamTypes.begin();
+	std::vector<ValueType*>::const_iterator i = ft.mParamTypes.begin();
 	for (ValueType *p : this->mParamTypes) {
 		if (p < *i) {
 			return true;

@@ -2,7 +2,7 @@
 #define SYMBOL_H
 #include "global.h"
 #include "codepoint.h"
-#include <QString>
+#include <string>
 
 class Symbol {
 	public:
@@ -20,11 +20,11 @@ class Symbol {
 			stValueType
 		};
 
-		Symbol(const QString &name,const CodePoint &cp);
+		Symbol(const std::string &name,const CodePoint &cp);
 		virtual Type type() const = 0;
-		virtual QString info() const = 0; //Compiler debugging information
-		QString name() const { return mName; }
-		QString file() const { return mCodePoint.file(); }
+		virtual std::string info() const = 0; //Compiler debugging information
+		std::string name() const { return mName; }
+		boost::string_ref file() const { return mCodePoint.file(); }
 		int line() const { return mCodePoint.line(); }
 		int column() const { return mCodePoint.column(); }
 		const CodePoint &codePoint() const { return mCodePoint; }
@@ -32,7 +32,7 @@ class Symbol {
 
 		virtual bool isValueTypeSymbol() const { return false; }
 	protected:
-		QString mName;
+		std::string mName;
 		CodePoint mCodePoint;
 };
 

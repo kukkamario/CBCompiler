@@ -11,15 +11,16 @@
 #include "typevaluetype.h"
 #include "value.h"
 #include "builder.h"
+#include <boost/locale.hpp>
 
 RuntimeFunction::RuntimeFunction(Runtime *r) :
-	Function(QString(), CodePoint()),
+	Function(std::string(), CodePoint()),
 	mRuntime(r),
 	mFunctionValueType(0) {
 
 }
 
-bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
+bool RuntimeFunction::construct(llvm::Function *func, const std::string &name) {
 	mFunction = func;
 	llvm::FunctionType *funcTy = func->getFunctionType();
 	llvm::Type *retTy = funcTy->getReturnType();
@@ -30,7 +31,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		mReturnValue = mRuntime->valueTypeCollection().valueTypeForLLVMType(retTy);
 		if (!mReturnValue) return false;
 	}
-	mName = name.toLower();
+	mName = boost::locale::to_lower(name);
 	for (llvm::Function::arg_iterator i = func->arg_begin(); i != func->arg_end(); i++) {
 		if (i->getArgNo() == 0 && i->hasStructRetAttr()) {
 			retTy = llvm::dyn_cast<llvm::PointerType>(i->getType())->getElementType();
@@ -47,7 +48,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 		}
 
 		if (paramType) {
-			mParamTypes.append(paramType);
+			mParamTypes.push_back(paramType);
 		}
 		else {
 			qDebug("Dumping an invalid runtime function: ");
@@ -61,7 +62,7 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 	return true;
 }
 
-Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
+Value RuntimeFunction::call(Builder *builder, const std::vector<Value> &params) {
 	std::vector<llvm::Value*> p;
 	bool returnInParameters = false;
 	llvm::Value *returnValueAlloca = 0;

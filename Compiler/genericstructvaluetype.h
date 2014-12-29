@@ -5,7 +5,7 @@
 class GenericStructValueType : public ValueType {
 	public:
 		GenericStructValueType(llvm::Type *genericStructValueType, Runtime *runtime);
-		virtual QString name() const;
+		virtual std::string name() const;
 		virtual CastCost castingCostToOtherValueType(const ValueType *to) const;
 		virtual Value cast(Builder *builder, const Value &v) const;
 		bool isTypePointer() const{return false;}

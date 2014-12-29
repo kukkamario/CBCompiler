@@ -8,23 +8,24 @@
 #include "symbolcollector.h"
 #include "functioncodegenerator.h"
 #include "settings.h"
+#include "errorhandler.h"
+
 class CBFunction;
 class TypeSymbol;
-class CodeGenerator : public QObject{
-		Q_OBJECT
+class CodeGenerator {
 	public:
-		CodeGenerator(QObject *parent = 0);
-		bool initialize(const Settings &settings);
+		CodeGenerator(ErrorHandler *errorHandler);
+		bool initialize(Settings *settings);
 		bool generate(ast::Program *program);
-		bool createExecutable(const QString &path);
+		bool createExecutable(const std::string &path);
 	private:
 		bool addRuntimeFunctions();
-		bool generateFunctions(const QList<ast::FunctionDefinition*> &functions);
+		bool generateFunctions(const std::vector<ast::FunctionDefinition*> &functions);
 		bool checkMainScope(ast::Program *program);
 		bool checkFunctions();
 		bool calculateConstants(ast::Program *program);
 		bool generateGlobalVariables();
-		bool generateFunctionDefinitions(const QList<ast::FunctionDefinition*> &functions);
+		bool generateFunctionDefinitions(const std::vector<ast::FunctionDefinition*> &functions);
 		bool generateMainScope(ast::Block *block);
 		void generateInitializers();
 		void generateStringLiterals();
@@ -36,20 +37,21 @@ class CodeGenerator : public QObject{
 		bool generateTypesAndStructes(ast::Program *program);
 
 
-		Settings mSettings;
+		Settings *mSettings;
 		Runtime mRuntime;
 		StringPool mStringPool;
 		SymbolCollector mSymbolCollector;
 		Scope mGlobalScope;
 		Scope mMainScope;
 		FunctionCodeGenerator mFuncCodeGen;
-		QMap<ast::FunctionDefinition *, CBFunction *> mCBFunctions;
+		std::map<ast::FunctionDefinition *, CBFunction *> mCBFunctions;
 		Builder *mBuilder;
+		ErrorHandler *mErrorHandler;
 
 		llvm::BasicBlock *mInitializationBlock;
 	signals:
-		void error(int code, QString msg, CodePoint cp);
-		void warning(int code, QString msg, CodePoint cp);
+		void error(int code, std::string msg, CodePoint cp);
+		void warning(int code, std::string msg, CodePoint cp);
 };
 
 #endif // CODEGENERATOR_H
