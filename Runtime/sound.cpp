@@ -37,7 +37,7 @@ void Sound::createSound(Memblock* mem, int samples, int frequency, int depth, in
 }
 
 bool Sound::saveSound(const LString& str) {
-	al_save_sample(str.toUtf8().c_str(), mSample);
+	return al_save_sample(str.toUtf8().c_str(), mSample);
 }
 
 float Sound::getSoundLength() const {

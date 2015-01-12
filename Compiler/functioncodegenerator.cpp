@@ -54,9 +54,13 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 	mReturnType = func->returnValue();
 	mUnresolvedGotos.clear();
 
+	llvm::BasicBlock *allocaBasicBlock = llvm::BasicBlock::Create(builder->context(), "allocaBB", mFunction);
+	mBuilder->setInsertPoint(allocaBasicBlock);
+	if (!generateAllocas()) return false;
+	mBuilder->setTemporaryVariableBasicBlock(allocaBasicBlock);
+
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", mFunction);
 	mBuilder->setInsertPoint(firstBasicBlock);
-	generateAllocas();
 	generateFunctionParameterAssignments(func->parameters());
 
 	try {
@@ -74,7 +78,10 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 		}
 		else
 			mBuilder->returnVoid();
-		}
+	}
+
+	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->branch(firstBasicBlock);
 
 	resolveGotos();
 
@@ -92,10 +99,13 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	mReturnType = 0;
 	mUnresolvedGotos.clear();
 
+	llvm::BasicBlock *allocaBasicBlock = llvm::BasicBlock::Create(builder->context(), "allocaBB", func);
+	mBuilder->setInsertPoint(allocaBasicBlock);
+	if (!generateAllocas()) return false;
+	mBuilder->setTemporaryVariableBasicBlock(allocaBasicBlock);
+
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", func);
 	mBuilder->setInsertPoint(firstBasicBlock);
-	if (!generateAllocas()) return false;
-
 	try {
 		block->accept(this);
 	}
@@ -104,6 +114,9 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	}
 	generateDestructors();
 	mBuilder->returnVoid();
+
+	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->branch(firstBasicBlock);
 
 	resolveGotos();
 

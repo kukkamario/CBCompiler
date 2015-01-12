@@ -64,11 +64,13 @@ bool RuntimeFunction::construct(llvm::Function *func, const QString &name) {
 Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	std::vector<llvm::Value*> p;
 	bool returnInParameters = false;
-	llvm::Value *returnValueAlloca = 0;
+	llvm::AllocaInst *returnValueAlloca = 0;
+	std::vector<llvm::AllocaInst*> tempVars;
 	if (!mFunction->arg_empty()) {
 		llvm::Function::const_arg_iterator i = mFunction->arg_begin();
 		if (i->hasStructRetAttr()) {
-			returnValueAlloca = builder->irBuilder().CreateAlloca(mReturnValue->llvmType());
+			returnValueAlloca = builder->temporaryVariable(mReturnValue->llvmType());
+			tempVars.push_back(returnValueAlloca);
 			p.insert(p.begin(), returnValueAlloca);
 			i++;
 			returnInParameters = true;
@@ -79,7 +81,8 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 					p.push_back(val.value());
 				}
 				else {
-					llvm::AllocaInst *allocaInst = builder->irBuilder().CreateAlloca(val.valueType()->llvmType());
+					llvm::AllocaInst *allocaInst = builder->temporaryVariable(val.valueType()->llvmType());
+					tempVars.push_back(allocaInst);
 					builder->irBuilder().CreateStore(val.value(), allocaInst);
 					p.push_back(allocaInst);
 				}
@@ -94,13 +97,19 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 	}
 
 	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
+	Value returnValue;
 	if (returnInParameters) {
-		return Value(mReturnValue, builder->irBuilder().CreateLoad(returnValueAlloca));
+		returnValue = Value(mReturnValue, builder->irBuilder().CreateLoad(returnValueAlloca));
 	}
 	else if (isCommand()) {
-		return Value();
+		returnValue = Value();
 	} else {
-		return Value(mReturnValue, ret, false);
+		returnValue = Value(mReturnValue, ret, false);
 	}
+
+	for (llvm::AllocaInst *alloc : tempVars) {
+		builder->removeTemporaryVariable(alloc);
+	}
+	return returnValue;
 }
 

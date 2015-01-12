@@ -19,7 +19,8 @@
 Builder::Builder(llvm::LLVMContext &context) :
 	mIRBuilder(context),
 	mRuntime(0),
-	mStringPool(0) {
+	mStringPool(0),
+	mTempVarBB(0) {
 }
 
 void Builder::setRuntime(Runtime *r) {
@@ -344,13 +345,15 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 		}
 
 		bool returnInParameters = false;
-		llvm::Value *returnValueAlloca = 0;
+		llvm::AllocaInst *returnValueAlloca = 0;
 		ValueType *returnType = funcType->returnType();
 		llvm::Function *function = llvm::cast<llvm::Function>(funcValue.value());
+		std::vector<llvm::AllocaInst*> allocas;
 		if (!function->arg_empty()) {
 			llvm::Function::const_arg_iterator i = function->arg_begin();
 			if (i->hasStructRetAttr()) {
-				returnValueAlloca = irBuilder().CreateAlloca(returnType->llvmType());
+				returnValueAlloca = temporaryVariable(returnType->llvmType());
+				allocas.push_back(returnValueAlloca);
 				p.insert(p.begin(), returnValueAlloca);
 				i++;
 				returnInParameters = true;
@@ -361,7 +364,8 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 						p.push_back(val.value());
 					}
 					else {
-						llvm::AllocaInst *allocaInst = irBuilder().CreateAlloca(val.valueType()->llvmType());
+						llvm::AllocaInst *allocaInst = temporaryVariable(val.valueType()->llvmType());
+						allocas.push_back(allocaInst);
 						irBuilder().CreateStore(val.value(), allocaInst);
 						p.push_back(allocaInst);
 					}
@@ -378,6 +382,10 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 		Value ret = Value(returnType, mIRBuilder.CreateCall(function, p), false);
 		for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
 			destruct(*i);
+		}
+
+		for (llvm::AllocaInst *alloc : allocas) {
+			removeTemporaryVariable(alloc);
 		}
 		return ret;
 
@@ -1794,6 +1802,50 @@ llvm::Value *Builder::pointerToBytePointer(llvm::Value *ptr) {
 
 llvm::BasicBlock *Builder::currentBasicBlock() const {
 	return mIRBuilder.GetInsertBlock();
+}
+
+void Builder::setTemporaryVariableBasicBlock(llvm::BasicBlock *bb) {
+	if (mTempVarBB != bb) {
+		mTempVars.clear();
+	}
+	mTempVarBB = bb;
+}
+
+llvm::BasicBlock *Builder::temporaryVariableBasicBlock() const {
+	return mTempVarBB;
+}
+
+llvm::AllocaInst *Builder::temporaryVariable(llvm::Type *type) {
+	auto range = mTempVars.equal_range(type);
+	for (std::multimap<llvm::Type*, TempAlloca>::iterator i = range.first; i != range.second; ++i) {
+		TempAlloca &temp = i->second;
+		if (!temp.mUsed) {
+			temp.mUsed = true;
+			return temp.mAlloca;
+		}
+	}
+
+	llvm::IRBuilder<> builder(mTempVarBB);
+	llvm::AllocaInst *alloc = builder.CreateAlloca(type, nullptr, "Temporary variable");
+	TempAlloca temp;
+	temp.mAlloca = alloc;
+	temp.mUsed = true;
+	mTempVars.insert(std::pair<llvm::Type*, TempAlloca>(type, temp));
+	return alloc;
+}
+
+void Builder::removeTemporaryVariable(llvm::AllocaInst *alloc) {
+	llvm::Type *elementType = alloc->getType()->getElementType();
+	auto range = mTempVars.equal_range(elementType);
+	for (std::multimap<llvm::Type*, TempAlloca>::iterator i = range.first; i != range.second; ++i) {
+		TempAlloca &temp = i->second;
+		if (temp.mAlloca == alloc) {
+			assert(temp.mUsed);
+			temp.mUsed = false;
+			return;
+		}
+	}
+	assert("Can't find temprorary" && 0);
 }
 
 
