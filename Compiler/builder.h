@@ -5,6 +5,7 @@
 #include "function.h"
 #include <QList>
 #include <QStack>
+#include <map>
 
 #include "runtime.h"
 class VariableSymbol;
@@ -162,6 +163,11 @@ class Builder {
 		llvm::BasicBlock *currentBasicBlock() const;
 
 
+		void setTemporaryVariableBasicBlock(llvm::BasicBlock *bb);
+		llvm::BasicBlock *temporaryVariableBasicBlock() const;
+		llvm::AllocaInst *temporaryVariable(llvm::Type *type);
+		void removeTemporaryVariable(llvm::AllocaInst *alloc);
+
 		//Dont work. Dont use
 		void pushInsertPoint();
 		void popInsertPoint();
@@ -174,6 +180,13 @@ class Builder {
 
 		llvm::Function *mPowFF;
 		llvm::Function *mPowFI;
+		llvm::BasicBlock *mTempVarBB;
+		struct TempAlloca {
+				llvm::AllocaInst *mAlloca;
+				bool mUsed;
+		};
+
+		std::multimap<llvm::Type*, TempAlloca> mTempVars;
 };
 
 #endif // BUILDER_H

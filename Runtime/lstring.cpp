@@ -83,7 +83,7 @@ LStringData *LStringData::copy(LStringData *o) {
 }
 
 void LStringData::destruct(LStringData *d) {
-	if (d->mUtf8String) delete d->mUtf8String;
+	delete d->mUtf8String;
 	delete [] reinterpret_cast<char*>(d);
 }
 
