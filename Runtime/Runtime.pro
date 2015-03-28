@@ -120,8 +120,7 @@ QMAKE_EXTENSION_STATICLIB = bc
 win32 {
 	INCLUDEPATH += $$(BOOST_INCLUDE)
 	INCLUDEPATH += $$(ALLEGRO_INCLUDE)
-	INCLUDEPATH += "C:/MinGW/include"
-
+	INCLUDEPATH += $$(MINGW_INCLUDE)
 	#overrides default link
 	#and creates warning... :/
 	#TODO: better solution?

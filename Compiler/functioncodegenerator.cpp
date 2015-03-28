@@ -527,6 +527,7 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 		assert("Implement gosub" && 0);
 	}
 	else {
+
 		if (n->value()) {
 			if (!mReturnType) {
 				emit error(ErrorCodes::ecReturnParameterInCommand,
@@ -536,6 +537,12 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 			}
 
 			Value v = generate(n->value());
+
+			if(!v.isNormalValue())
+				emit error(ErrorCodes::ec,
+						   tr("Wrong type of return value!"),
+						   n->value()->codePoint());
+
 			if (v.isReference()) {
 				v = mBuilder->load(v);
 			}
