@@ -550,11 +550,12 @@ void FunctionCodeGenerator::visit(ast::Return *n) {
 			}
 
 			Value v = generate(n->value());
-
-			if(!v.isNormalValue())
-				emit error(ErrorCodes::ec,
-						   tr("Wrong type of return value!"),
-						   n->value()->codePoint());
+			if(!v.isNormalValue()) {
+				emit error(ErrorCodes::ecWTF,
+					   tr("Wrong type of return value!"),
+					   n->value()->codePoint());
+				return;
+			}
 
 			if (v.isReference()) {
 				v = mBuilder->load(v);

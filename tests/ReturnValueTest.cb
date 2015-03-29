@@ -1,0 +1,9 @@
+
+
+Print ReturnValueTest()
+
+
+
+Function ReturnValueTest() As Integer
+	Return 0
+EndFunction
