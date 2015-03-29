@@ -44,6 +44,7 @@ const char *Node::typeAsString() const {
 		"ntDefaultType",
 		"ntBasicType",
 		"ntNamedType",
+		"ntFunctionPointerType",
 		"ntArrayType",
 
 		"ntExpression",
@@ -80,7 +81,7 @@ const char *Node::typeAsString() const {
 
 
 		//Last
-		"ntInvalid" };
+		"ntInvalid"};
 	Type ty = type();
 	if (ty < 0 || ty >= ntInvalid) return types[ntInvalid];
 	return types[ty];
