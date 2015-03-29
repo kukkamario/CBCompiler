@@ -29,6 +29,7 @@ bool audio::initAudio() {
 		return false;
 
 	resetToDefaultMixer();
+
 	return true;
 }
 
