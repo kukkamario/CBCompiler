@@ -77,7 +77,7 @@ void Value::dump() const {
 }
 
 bool Value::isNormalValue() const {
-	return mType == tNormalValue || mType == tReference;
+	return mType == tNormalValue || mType == tReference || mType == tConstant;
 }
 
 bool Value::isValueType() const {
