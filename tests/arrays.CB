@@ -1,5 +1,4 @@
 Dim array[10,2] As String
-Dim array2[2]
 
 For x = 0 To 9
 	For y = 0 to 1
@@ -14,9 +13,17 @@ For x = 0 to 9
 	Next y
 Next x
 
+Dim array2 As Integer[] = funcReturningArray()
+
 Print array2[1]
 
 Print "For-Each:"
 For a As String = Each array
 	Print a
 Next
+
+Function funcReturningArray() As Integer[]
+	Dim array[2]
+	array[1] = 10
+	Return array
+EndFunction
