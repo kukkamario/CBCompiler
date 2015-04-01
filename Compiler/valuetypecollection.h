@@ -14,6 +14,7 @@ class ValueTypeCollection {
 	public:
 		ValueTypeCollection(Runtime *r);
 		~ValueTypeCollection();
+		void addValueType(const QString &name, ValueType *valType);
 		void addValueType(ValueType *valType);
 		void addTypePointerValueType(TypePointerValueType *typePointer);
 		void addStructValueType(StructValueType *structValueType);
@@ -25,6 +26,7 @@ class ValueTypeCollection {
 
 		ValueType *constantValueType(ConstantValue::Type type) const;
 		QList<ValueType*> namedTypes() const;
+		const QMap<QString, ValueType *> &namedTypesMap() const;
 
 		const QList<StructValueType*> structValueTypes() const { return mStructs; }
 		const QList<TypePointerValueType*> typePointerValueTypes() const { return mTypes; }

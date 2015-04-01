@@ -13,7 +13,7 @@ class ValueTypeSymbol : public Symbol {
 
 class DefaultValueTypeSymbol :public ValueTypeSymbol {
 	public:
-		DefaultValueTypeSymbol(ValueType *valType);
+		DefaultValueTypeSymbol(const QString &name, ValueType *valType);
 		Type type() const { return stValueType; }
 		ValueType *valueType() const { return mValueType; }
 		QString info() const;

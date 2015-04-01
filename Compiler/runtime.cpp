@@ -80,7 +80,7 @@ bool Runtime::loadValueTypes(StringPool *strPool) {
 	//Int
 	mIntValueType = new IntValueType(this, mModule);
 	mValueTypeCollection.addValueType(mIntValueType);
-
+	mValueTypeCollection.addValueType("int", mIntValueType);
 	//String
 	mStringValueType = new StringValueType(strPool, this);
 	llvm::StructType *str = mModule->getTypeByName("class.LString");

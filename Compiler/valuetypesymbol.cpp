@@ -6,8 +6,8 @@ ValueTypeSymbol::ValueTypeSymbol(const QString &name, const CodePoint &cp) :
 }
 
 
-DefaultValueTypeSymbol::DefaultValueTypeSymbol(ValueType *valType) :
-	ValueTypeSymbol(valType->name(), CodePoint()),
+DefaultValueTypeSymbol::DefaultValueTypeSymbol(const QString &name, ValueType *valType) :
+	ValueTypeSymbol(name, CodePoint()),
 	mValueType(valType) {
 }
 

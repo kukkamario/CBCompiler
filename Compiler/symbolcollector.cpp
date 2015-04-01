@@ -48,10 +48,10 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 		mValid &= createStructDefinition(def->identifier());
 	}
 
-	QList<ValueType*> valueTypes = mRuntime->valueTypeCollection().namedTypes();
-	for (ValueType* valueType : valueTypes) {
-		if (!valueType->isTypePointer())
-			mGlobalScope->addSymbol(new DefaultValueTypeSymbol(valueType));
+	QMap<QString, ValueType*> valueTypes = mRuntime->valueTypeCollection().namedTypesMap();
+	for (auto valueTypeIt = valueTypes.begin(); valueTypeIt != valueTypes.end(); ++valueTypeIt) {
+		if (!valueTypeIt.value()->isTypePointer())
+			mGlobalScope->addSymbol(new DefaultValueTypeSymbol(valueTypeIt.key(), valueTypeIt.value()));
 	}
 
 	for (ast::StructDefinition *def : classDefs) {

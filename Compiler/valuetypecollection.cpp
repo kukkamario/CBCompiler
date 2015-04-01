@@ -27,6 +27,12 @@ void ValueTypeCollection::addValueType(ValueType *valType) {
 		mNamedType[valType->name().toLower()] = valType;
 }
 
+void ValueTypeCollection::addValueType(const QString &name, ValueType *valType) {
+	mLLVMTypeMapping[valType->llvmType()] = valType;
+	mNamedType[name.toLower()] = valType;
+}
+
+
 void ValueTypeCollection::addTypePointerValueType(TypePointerValueType *typePointer) {
 	mTypes.append(typePointer);
 	addValueType(typePointer);
@@ -121,6 +127,10 @@ ValueType *ValueTypeCollection::constantValueType(ConstantValue::Type type) cons
 
 QList<ValueType *> ValueTypeCollection::namedTypes() const {
 	return mNamedType.values();
+}
+
+const QMap<QString, ValueType *> &ValueTypeCollection::namedTypesMap() const {
+	return mNamedType;
 }
 
 ValueType *ValueTypeCollection::generateArrayValueType(llvm::StructType *arrayDataType) {

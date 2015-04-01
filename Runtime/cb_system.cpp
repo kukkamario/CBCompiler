@@ -18,14 +18,6 @@ CBEXPORT void CB_Free(char *mem) {
 	delete [] mem;
 }
 
-int CBF_int(float f) {
-	return int(f + 0.5f);
-}
-
-int CBF_int(LString s) {
-	return s.toInt();
-}
-
 
 void CBF_print(int i) {
 	printf("%i\n", i);
