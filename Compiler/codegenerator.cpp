@@ -247,6 +247,8 @@ void CodeGenerator::createBuilder() {
 void CodeGenerator::addPredefinedConstantSymbols() {
 	ConstantSymbol *sym = new ConstantSymbol("pi", mRuntime.floatValueType(), ConstantValue(M_PI), CodePoint());
 	mGlobalScope.addSymbol(sym);
+	sym = new ConstantSymbol("maxfloat", mRuntime.floatValueType(), ConstantValue(std::numeric_limits<float>::max()), CodePoint());
+	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("on", mRuntime.booleanValueType(), ConstantValue(true), CodePoint());
 	mGlobalScope.addSymbol(sym);
 	sym = new ConstantSymbol("off", mRuntime.booleanValueType(), ConstantValue(false), CodePoint());
