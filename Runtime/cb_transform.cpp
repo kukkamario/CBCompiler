@@ -29,9 +29,10 @@ void CBF_PopTransform() {
 	transforms::pop();
 }
 
-void CBF_SetTransformMode(int mode) {
-	transforms::setTransformMode(mode);
+void InvertTransform() {
+	transforms::invert();
 }
+
 
 float CBF_TransformedX(float x, float y) {
 	transforms::convertCoordinate(x, y);
