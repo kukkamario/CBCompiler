@@ -8,7 +8,7 @@ static std::vector<ALLEGRO_TRANSFORM> sTransforms;
 void transforms::setIdentity() {
 	ALLEGRO_TRANSFORM transf;
 	al_identity_transform(&transf);
-	al_copy_transform(&sTransforms.back(), &transf);
+	sTransforms.back() = transf;
 	al_use_transform(&sTransforms.back());
 }
 
@@ -32,19 +32,31 @@ void transforms::buildTransform(float x, float y, float sx, float sy, float deg)
 
 
 void transforms::translate(float x, float y) {
-	al_translate_transform(&sTransforms.back(), x, y);
+	ALLEGRO_TRANSFORM trnsf;
+	al_identity_transform(&trnsf);
+	al_translate_transform(&trnsf, x, y);
+	al_compose_transform(&trnsf, &sTransforms.back());
+	sTransforms.back() = trnsf;
 	al_use_transform(&sTransforms.back());
 }
 
 
 void transforms::scale(float x, float y) {
-	al_scale_transform(&sTransforms.back(), x, y);
+	ALLEGRO_TRANSFORM trnsf;
+	al_identity_transform(&trnsf);
+	al_scale_transform(&trnsf, x, y);
+	al_compose_transform(&trnsf, &sTransforms.back());
+	sTransforms.back() = trnsf;
 	al_use_transform(&sTransforms.back());
 }
 
 void transforms::rotate(float deg) {
 	math::wrapAngle(deg);
-	al_rotate_transform(&sTransforms.back(), math::toRad(deg));
+	ALLEGRO_TRANSFORM trnsf;
+	al_identity_transform(&trnsf);
+	al_rotate_transform(&trnsf, math::toRad(deg));
+	al_compose_transform(&trnsf, &sTransforms.back());
+	sTransforms.back() = trnsf;
 	al_use_transform(&sTransforms.back());
 }
 
@@ -56,8 +68,10 @@ void transforms::push() {
 
 
 void transforms::pop() {
-	sTransforms.pop_back();
-	al_use_transform(&sTransforms.back());
+	if(sTransforms.size() > 1)  {
+		sTransforms.pop_back();
+		al_use_transform(&sTransforms.back());
+	}
 }
 
 

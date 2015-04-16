@@ -63,6 +63,7 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 	mBackgroundColor = al_map_rgb(0,0,0);
 
 	mBitmap = al_get_backbuffer(mDisplay);
+	setSize(al_get_display_width(mDisplay), al_get_display_height(mDisplay));
 	activate();
 
 	return true;
