@@ -29,13 +29,10 @@ SymbolCollector::~SymbolCollector() {
 
 }
 
-
-bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *mainScope) {
+bool SymbolCollector::declareValueTypes(ast::Program *program, Scope *globalScope, Scope *mainScope) {
 	mGlobalScope = globalScope;
-	mCurrentScope = mMainScope = mainScope;
-	mFunctions.clear();
+	mMainScope = mainScope;
 
-	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
 	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
 	const QList<ast::StructDefinition*> &classDefs = program->structDefinitions();
 
@@ -48,11 +45,19 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 		mValid &= createStructDefinition(def->identifier());
 	}
 
+
+
 	QMap<QString, ValueType*> valueTypes = mRuntime->valueTypeCollection().namedTypesMap();
 	for (auto valueTypeIt = valueTypes.begin(); valueTypeIt != valueTypes.end(); ++valueTypeIt) {
 		if (!valueTypeIt.value()->isTypePointer())
 			mGlobalScope->addSymbol(new DefaultValueTypeSymbol(valueTypeIt.key(), valueTypeIt.value()));
 	}
+	return mValid;
+}
+
+bool SymbolCollector::createStructAndTypeFields(ast::Program *program) {
+	const QList<ast::TypeDefinition*> &typeDefs = program->typeDefinitions();
+	const QList<ast::StructDefinition*> &classDefs = program->structDefinitions();
 
 	for (ast::StructDefinition *def : classDefs) {
 		mValid &= createStructFields(def);
@@ -61,9 +66,16 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 	for (ast::TypeDefinition *def : typeDefs) {
 		mValid &= createTypeFields(def);
 	}
+	return mValid;
+}
 
 
+bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *mainScope) {
+	mGlobalScope = globalScope;
+	mCurrentScope = mMainScope = mainScope;
+	mFunctions.clear();
 
+	const QList<ast::FunctionDefinition*> &funcDefs = program->functionDefinitions();
 
 	for (ast::FunctionDefinition *def : funcDefs) {
 		mValid &= createFunctionDefinition(def);
@@ -81,6 +93,7 @@ bool SymbolCollector::collect(ast::Program *program, Scope *globalScope, Scope *
 
 	return mValid;
 }
+
 
 CBFunction *SymbolCollector::functionByDefinition(ast::FunctionDefinition *def) const {
 	return mFunctions.value(def);

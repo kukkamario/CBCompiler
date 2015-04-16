@@ -59,17 +59,24 @@ bool CodeGenerator::initialize(const Settings &settings) {
 
 bool CodeGenerator::generate(ast::Program *program) {
 	qDebug() << "Preparing code generation...";
+	qDebug() << "Declaring types...";
+	if (!mSymbolCollector.declareValueTypes(program, &mGlobalScope, &mMainScope)) {
+		qDebug() << "Failed";
+		return false;
+	}
+
+	qDebug() << "Generating types...";
+	if (!generateTypesAndStructs(program)) {
+		qDebug() << "Failed";
+		return false;
+	}
 	qDebug() << "Collecting symbols...";
 	if (!mSymbolCollector.collect(program, &mGlobalScope, &mMainScope)) {
 		qDebug() << "Failed";
 		return false;
 	}
 
-	qDebug() << "Generating types...";
-	if (!generateTypesAndStructes(program)) {
-		qDebug() << "Failed";
-		return false;
-	}
+
 	qDebug() << "Generating global variables...";
 	if (!generateGlobalVariables()) {
 		qDebug() << "Failed";
@@ -261,7 +268,7 @@ void CodeGenerator::addPredefinedConstantSymbols() {
 	mGlobalScope.addSymbol(sym);
 }
 
-bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
+bool CodeGenerator::generateTypesAndStructs(ast::Program *program) {
 	for (ast::TypeDefinition* def : program->typeDefinitions()) {
 		Symbol *sym = mGlobalScope.find(def->identifier()->name());
 		assert(sym && sym->type() == Symbol::stType);
@@ -270,6 +277,8 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
 	}
+
+	if (!mSymbolCollector.createStructAndTypeFields(program)) return false;
 
 	QList<StructValueType*> notGeneratedValueTypes = mRuntime.valueTypeCollection().structValueTypes();
 	while (!notGeneratedValueTypes.isEmpty()) {
@@ -282,6 +291,8 @@ bool CodeGenerator::generateTypesAndStructes(ast::Program *program) {
 			}
 		}
 	}
+
+
 
 
 	for (QList<ast::TypeDefinition*>::ConstIterator i = program->typeDefinitions().begin(); i != program->typeDefinitions().end(); i++) {

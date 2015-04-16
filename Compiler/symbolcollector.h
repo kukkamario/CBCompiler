@@ -20,6 +20,9 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		SymbolCollector(Runtime *runtime, Settings *settings);
 		~SymbolCollector();
 
+
+		bool declareValueTypes(ast::Program *program, Scope *globalScope, Scope *mainScope);
+		bool createStructAndTypeFields(ast::Program *program);
 		bool collect(ast::Program *program, Scope *globalScope, Scope *mainScope);
 
 
@@ -43,6 +46,8 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 		bool createTypeFields(ast::TypeDefinition *def);
 		bool createStructFields(ast::StructDefinition *def);
 		bool createFunctionDefinition(ast::FunctionDefinition *funcDef);
+
+		bool generateTypesAndStructs(ast::Program *program);
 
 		void symbolAlreadyDefinedError(const CodePoint &cp, Symbol *existingSymbol);
 		void functionAlreadyDefinedError(const CodePoint &cp, Function *oldFunctionDef);

@@ -1,6 +1,7 @@
 Type TestType
 	Field field1
 	Field field2 As String
+	Field field3 As TestType
 EndType
 
 

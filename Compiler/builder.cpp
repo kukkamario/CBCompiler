@@ -324,10 +324,13 @@ Value Builder::call(const Value &funcValue, QList<Value> &params) {
 			//string destruction hack
 			i->toLLVMValue(this);
 			pi++;
-			p.push_back(i->value());
+
+			p.push_back(llvmValue(*i));
 		}
 
-		llvm::Value *func = mIRBuilder.CreateLoad(funcValue.value());
+
+		llvm::Value *func = mIRBuilder.CreateLoad(funcValue.value(), false);
+
 		Value ret = Value(funcType->returnType(), mIRBuilder.CreateCall(func, p), false);
 		for (QList<Value>::ConstIterator i = params.begin(); i != params.end(); ++i) {
 			destruct(*i);
@@ -599,7 +602,9 @@ Value Builder::typePointerFieldReference(Value typePtrVar, const QString &fieldN
 	TypeSymbol *type = typePointerValueType->typeSymbol();
 	const TypeField &field = type->field(fieldName);
 	int fieldIndex = type->fieldIndex(fieldName);
-	llvm::Value *fieldPtr = mIRBuilder.CreateStructGEP(llvmValue(typePtrVar), fieldIndex);
+
+	llvm::Value *val = llvmValue(typePtrVar);
+	llvm::Value *fieldPtr = mIRBuilder.CreateStructGEP(val, fieldIndex);
 	return Value(field.valueType(), fieldPtr, true);
 }
 
