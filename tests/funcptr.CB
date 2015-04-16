@@ -1,0 +1,34 @@
+
+Type T
+	Field funcPtrField As Function(T) As Int
+	Field i As Int
+EndType
+
+
+
+
+Dim funcPtr As Function(Integer, String) As Float
+
+funcPtr = func(Integer, String)
+
+Print funcPtr(2, "Hello")
+
+Dim var As T = New (T)
+var.i = 132
+var.funcPtrField = func(T)
+Print var.funcPtrField(var)
+
+
+
+Function func(v As T) As Int
+	Return v.i
+EndFunction
+
+Function func(i, s As String) As Float
+	Print "Cmd: " + i + " " + s
+EndFunction
+
+Function func(i, f#) As Float
+	Print "Func: " + i + " " + f#
+	Return i + f#
+EndFunction
