@@ -204,7 +204,11 @@ Value Builder::toBoolean(const Value &v) {
 
 			return Value(mRuntime->booleanValueType(), val, false);
 		}
-		default: break;
+		default: {
+			if (v.valueType()->isTypePointer()) {
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(v)), false);
+			}
+		}
 	}
 	assert("Invalid value" && 0);
 	return Value();

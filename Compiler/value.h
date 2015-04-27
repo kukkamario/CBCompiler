@@ -32,6 +32,8 @@ class Value {
 		bool isValueType() const;
 		bool isFunctionSelectorValueType() const;
 
+
+		QString prettyName() const;
 	private:
 		ValueType *mValueType;
 		llvm::Value *mValue;

@@ -68,6 +68,9 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		VariableSymbol *searchVariableSymbol(ast::Node *n);
 		bool checkFunctionCallValidity(FunctionValueType *funcValType, const QList<Value> &parameters, const CodePoint &cp);
 
+		bool canValueBeCasted(ValueType *target, const Value &source);
+		bool canConditionValueBeCastedToBoolean(const Value &value, const CodePoint &cp);
+
 		Settings *mSettings;
 		Scope *mLocalScope;
 		Scope *mGlobalScope;
