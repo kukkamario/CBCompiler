@@ -40,7 +40,9 @@ class StructValueType : public ValueType {
 		int size() const;
 		void setFields(const QList<StructField> &fields);
 		const CodePoint &codePoint() const { return mCodePoint; }
-		bool generateLLVMType();
+
+		void createOpaqueType();
+		void generateLLVMType();
 		bool isGenerated() const;
 
 		bool isNamedValueType() const { return true; }

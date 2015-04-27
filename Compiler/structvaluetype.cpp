@@ -76,21 +76,21 @@ void StructValueType::setFields(const QList<StructField> &fields) {
 	}
 }
 
+void StructValueType::createOpaqueType() {
+	mStructType = llvm::StructType::create(mRuntime->module()->getContext(), mName.toStdString());
+	mType = mStructType;
+}
 
-bool StructValueType::generateLLVMType() {
+
+void StructValueType::generateLLVMType() {
 	std::vector<llvm::Type*> body;
 	body.reserve(mFields.size());
 
 	for (const StructField &f : mFields) {
-		if (f.valueType()->isStruct()) {
-			if (!static_cast<StructValueType*>(f.valueType())->isGenerated()) return false;
-		}
 		body.push_back(f.valueType()->llvmType());
 	}
 
-	mStructType = llvm::StructType::create(body, mName.toStdString());
-	mType = mStructType;
-	return true;
+	mStructType->setBody(body);
 }
 
 bool StructValueType::isGenerated() const {

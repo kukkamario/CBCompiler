@@ -277,19 +277,15 @@ bool CodeGenerator::generateTypesAndStructs(ast::Program *program) {
 		//Create an opaque member type so type pointers can be used in fields.
 		type->createOpaqueTypes(mBuilder);
 	}
+	QList<StructValueType*> structValueTypes = mRuntime.valueTypeCollection().structValueTypes();
+	for (StructValueType *structVT : structValueTypes) {
+		structVT->createOpaqueType();
+	}
 
 	if (!mSymbolCollector.createStructAndTypeFields(program)) return false;
 
-	QList<StructValueType*> notGeneratedValueTypes = mRuntime.valueTypeCollection().structValueTypes();
-	while (!notGeneratedValueTypes.isEmpty()) {
-		for (QList<StructValueType*>::Iterator i = notGeneratedValueTypes.begin(); i != notGeneratedValueTypes.end();) {
-			StructValueType *structValueType = *i;
-			if (structValueType->generateLLVMType()) {
-				i = notGeneratedValueTypes.erase(i);
-			} else {
-				++i;
-			}
-		}
+	for (StructValueType *structVT : structValueTypes) {
+		structVT->generateLLVMType();
 	}
 
 
