@@ -25,11 +25,8 @@ int CALLBACK WinMain(
 #else
 int main(int, char **) {
 #endif
-	std::cout << "asd\n";
 	sys::init();
-	std::cout << "asd\n";
 	info(U"Initializing types and strings");
-	std::cout << "asd\n";
 	CB_initialize();
 
 	info(U"Initializing allegro");

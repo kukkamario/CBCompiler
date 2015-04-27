@@ -63,7 +63,7 @@ bool Window::create(int width, int height, Window::WindowMode windowMode) {
 	mBackgroundColor = al_map_rgb(0,0,0);
 
 	mBitmap = al_get_backbuffer(mDisplay);
-	setSize(al_get_display_width(mDisplay), al_get_display_height(mDisplay));
+	setSize(width, height);
 	activate();
 
 	return true;
@@ -109,7 +109,8 @@ void Window::resize(int width, int height, Window::WindowMode windowMode) {
 	}
 
 	al_register_event_source(mEventQueue, al_get_display_event_source(mDisplay));
-
+	setSize(width, height);
+	info(LString(U"Size: ")+LString::number(width)+LString(U", ")+LString::number(height));
 	activate();
 }
 

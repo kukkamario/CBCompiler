@@ -8,7 +8,7 @@ void text::initText() {
 	al_init_font_addon();
 	al_init_ttf_addon();
 #ifdef WIN32
-	mDefaultFont = al_load_font((getenv("WINDIR") + std::string("\\Fonts\\cour.ttf")).c_str(), 12, ALLEGRO_TTF_MONOCHROME);
+	mDefaultFont = al_load_font((getenv("WINDIR") + std::string("\\Fonts\\lucon.ttf")).c_str(), 12, ALLEGRO_TTF_MONOCHROME);
 #elif __MACH__
 	mDefaultFont = al_load_font("/Library/Fonts/Courier New.ttf", 12, ALLEGRO_TTF_MONOCHROME);
 #else

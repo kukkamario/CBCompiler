@@ -29,7 +29,7 @@ void CBF_PopTransform() {
 	transforms::pop();
 }
 
-void InvertTransform() {
+void CBF_InvertTransform() {
 	transforms::invert();
 }
 

@@ -30,11 +30,11 @@ void CBF_screen(int w, int h, int mode) {
 }
 
 int CBF_screenWidth() {
-	return Window::instance()->width();
+	return al_get_bitmap_width(Window::instance()->getBitmap());
 }
 
 int CBF_screenHeight() {
-	return Window::instance()->height();
+	return al_get_bitmap_height(Window::instance()->getBitmap());
 }
 
 void CBF_screen(int w, int h) {

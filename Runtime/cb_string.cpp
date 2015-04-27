@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 
+
 LString CBF_str(int i) {
 	return LString::number(i);
 }
@@ -22,6 +23,10 @@ LString CBF_chr(int c) {
 	cc[0] = c;
 	cc[1] = 0;
 	return LString(cc);
+}
+
+LString CBF_ChrAt(LString str, int pos) {
+	return LString(&str[pos]);
 }
 
 uint8_t CBF_Asc(LString c) {
@@ -95,6 +100,7 @@ LString CBF_upper(LString cbstr) {
 	LString str(cbstr);
 	return str.toUpper();
 }
+
 
 int CBF_len(LString cbstr) {
 	return LString(cbstr).size();

@@ -118,3 +118,18 @@ float CBF_log(float v) {
 float CBF_log10(float v) {
 	return log10f(v);
 }
+
+int CBF_boxOverLap(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2) {
+	if(x1 + w1 < x2 || y1 + h1 < y2 || x1 > x2 + w2 || y1 > y2 + h2)
+		return false;
+	return true;
+}
+
+int CBF_circleOverlap(float x1, float y1, float r1, float x2, float y2, float r2) {
+	float dx = x2 - x1;
+	float dy = y2 - y1;
+	if(sqrtf(dx*dx + dy*dy) < (r1+r2))
+		return true;
+	return false;
+}
+
