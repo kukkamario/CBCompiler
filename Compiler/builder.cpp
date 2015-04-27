@@ -204,7 +204,11 @@ Value Builder::toBoolean(const Value &v) {
 
 			return Value(mRuntime->booleanValueType(), val, false);
 		}
-		default: break;
+		default: {
+			if (v.valueType()->isTypePointer()) {
+				return Value(mRuntime->booleanValueType(), mIRBuilder.CreateIsNotNull(llvmValue(v)), false);
+			}
+		}
 	}
 	assert("Invalid value" && 0);
 	return Value();
@@ -244,7 +248,7 @@ llvm::Value *Builder::llvmValue(float i) {
 
 llvm::Value *Builder::llvmValue(const QString &s) {
 	if (s.isEmpty()) {
-		return llvm::ConstantPointerNull::get((llvm::PointerType*)mRuntime->stringValueType()->llvmType());
+		return mRuntime->stringValueType()->defaultValue();
 	}
 	return mStringPool->globalString(this, s).value();
 }

@@ -205,8 +205,12 @@ void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 	CHECK_UNREACHABLE(n->codePoint());
 	llvm::BasicBlock *condBB = mBuilder->currentBasicBlock();
 	Value cond = generate(n->condition());
+	if (!canConditionValueBeCastedToBoolean(cond, n->condition()->codePoint())) return;
+
 	llvm::BasicBlock *trueBlock = createBasicBlock("trueBB");
 	llvm::BasicBlock *endBlock = createBasicBlock("endIfBB");
+
+
 
 	mBuilder->setInsertPoint(trueBlock);
 	n->block()->accept(this);
@@ -246,6 +250,8 @@ void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
 	mBuilder->setInsertPoint(condBB);
 
 	Value cond = generate(n->condition());
+	if (!canConditionValueBeCastedToBoolean(cond, n->condition()->codePoint())) return;
+
 	mBuilder->branch(cond, blockBB, wendBB);
 
 	mExitStack.push(wendBB);
@@ -291,6 +297,7 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 	n->block()->accept(this);
 	mExitStack.pop();
 	Value cond = generate(n->condition());
+	if (!canConditionValueBeCastedToBoolean(cond, n->condition()->codePoint())) return;
 	if (!mUnreachableBasicBlock) {
 		mBuilder->branch(cond, endBlock, block);
 	}
@@ -1360,6 +1367,20 @@ bool FunctionCodeGenerator::checkFunctionCallValidity(FunctionValueType *funcVal
 			return val.valueType()->name();
 		})), cp);
 		throw CodeGeneratorError(ErrorCodes::ecCantFindFunction);
+	}
+	return true;
+}
+
+bool FunctionCodeGenerator::canValueBeCasted(ValueType *target, const Value &source) {
+	if (!source.isNormalValue()) return false;
+	ValueType *srcValueType = source.valueType();
+	return srcValueType->castingCostToOtherValueType(target) != ValueType::ccNoCast;
+}
+
+bool FunctionCodeGenerator::canConditionValueBeCastedToBoolean(const Value &value, const CodePoint &cp) {
+	if (!canValueBeCasted(mRuntime->booleanValueType(), value)) {
+		emit error(ErrorCodes::ecCantCastValue, tr("Cannot cast %1 to a boolean value").arg(value.prettyName()), cp);
+		return false;
 	}
 	return true;
 }

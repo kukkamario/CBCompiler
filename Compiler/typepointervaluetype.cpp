@@ -21,12 +21,14 @@ QString TypePointerValueType::name() const {
 ValueType::CastCost TypePointerValueType::castingCostToOtherValueType(const ValueType *to) const {
 	if (to == this) return ccNoCost;
 	if (to == mRuntime->typePointerCommonValueType()) return ccCastToBigger;
+	if (to == mRuntime->booleanValueType()) return ccCastToBoolean;
 	return ccNoCast;
 }
 
 Value TypePointerValueType::cast(Builder *b, const Value &v) const {
 	if (v.valueType() == this) return v;
 	if (v.valueType() == mRuntime->nullValueType()) return b->defaultValue(this);
+	if (v.valueType() == mRuntime->booleanValueType()) return b->toBoolean(v);
 	assert("Invalid cast" && 0);
 	return Value();
 }

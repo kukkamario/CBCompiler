@@ -1,9 +1,15 @@
+Struct InnerStruct
+	Field asd
+EndStruct
+
 Struct TestStruct
 	Field x
 	Field y
 	Field z#
 	Field name$
+	Field in As InnerStruct
 EndStruct
+
 
 
 Dim a As TestStruct

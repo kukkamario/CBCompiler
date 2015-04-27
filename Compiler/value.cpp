@@ -87,3 +87,20 @@ bool Value::isValueType() const {
 bool Value::isFunctionSelectorValueType() const {
 	return mType == tFunctionSelectorValueType;
 }
+
+QString Value::prettyName() const {
+	switch (mType) {
+		case tConstant:
+			return "Constant " + mConstant.valueInfo()  + " <" + mValueType->name() + '>';
+		case tNormalValue:
+			if (!mValue) return "Invalid value";
+		case tReference:
+			return ((mType == tReference) ? "Reference" : "Value") + QStringLiteral(" <") + mValueType->name() + '>';
+		case tValueType:
+			return "Value type <" + mValueType->name() + '>';
+		case tFunctionSelectorValueType: {
+			FunctionSelectorValueType *funcSelector = static_cast<FunctionSelectorValueType*>(mValueType);
+			return "Function selector value <" + funcSelector->name() + '>';
+		}
+	}
+}

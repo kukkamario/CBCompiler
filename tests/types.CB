@@ -28,8 +28,16 @@ If After(ptr) = NULL Then Print "No third type member"
 
 Last(TestType).field1 = 2
 
+func(ptr)
+
 For ptr As TestType = Each TestType
 	Print ptr.field1
 	Print ptr.field2
 Next ptr
 
+
+
+Function func(t As TestType)
+	If t.field3 Then Delete t.field3
+	Delete t
+EndFunction
