@@ -1630,7 +1630,7 @@ Value Builder::ptrEqual(llvm::Value *a, llvm::Value *b) {
 Value Builder::notEqual(const Value &a, const Value &b) {
 	if (a.isConstant() && b.isConstant()) {
 		OperationFlags flags;
-		return Value(ConstantValue::equal(a.constant(), b.constant(), flags), mRuntime);
+		return Value(ConstantValue::notEqual(a.constant(), b.constant(), flags), mRuntime);
 	}
 	switch (a.valueType()->basicType()) {
 		case ValueType::Integer:
@@ -1728,7 +1728,6 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 					Value as = toString(a);
 					llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(as), llvmValue(b));
 					destruct(as);
-					destruct(b);
 					return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
 				}
 				default: break;
@@ -1742,7 +1741,6 @@ Value Builder::notEqual(const Value &a, const Value &b) {
 			Value bs = toString(b);
 			llvm::Value *ret = mRuntime->stringValueType()->stringEquality(&mIRBuilder, llvmValue(a), llvmValue(bs));
 			destruct(bs);
-			destruct(a);
 			return Value(mRuntime->booleanValueType(), mIRBuilder.CreateNot(ret));
 		}
 		default:
