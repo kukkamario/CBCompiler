@@ -225,7 +225,7 @@ llvm::Value *StringValueType::stringAddition(llvm::IRBuilder<> *builder, llvm::V
 }
 
 llvm::Value *StringValueType::stringEquality(llvm::IRBuilder<> *builder, llvm::Value *a, llvm::Value *b) {
-	return builder->CreateCall2(mEqualityFunction, stringDataPointerToString(builder, a), stringDataPointerToString(builder, b));
+	return builder->CreateCall2(mEqualityFunction, stringToStringDataPointer(builder, a), stringToStringDataPointer(builder, b));
 }
 
 void StringValueType::refString(llvm::IRBuilder<> *builder, llvm::Value *str) const {

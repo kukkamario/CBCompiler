@@ -3,7 +3,7 @@ Print ""
 s$ = "Hello world"
 
 d$ = "dasdsad"
-
+If s$ = d$ Then Print "Samat"
 
 t$ = s$ + d$
 Print t$
