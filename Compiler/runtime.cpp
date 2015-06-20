@@ -44,23 +44,23 @@ Runtime::~Runtime() {
 	delete mTypePointerCommonValueType;
 }
 
-bool Runtime::load(StringPool *strPool, const Settings &settings) {
+bool Runtime::load(StringPool *strPool) {
 	llvm::InitializeNativeTarget();
 	llvm::SMDiagnostic diagnostic;
-	std::string path = settings.runtimeLibraryPath().toStdString();
+	std::string path = Settings::runtimeLibraryPath().toStdString();
 	mModule = llvm::ParseIRFile(path, diagnostic, llvm::getGlobalContext());
 	if (!mModule) {
 		emit error(ErrorCodes::ecCantLoadRuntime, "Runtime loading failed: " + QString::fromStdString(diagnostic.getMessage()), CodePoint());
 		return false;
 	}
 
-	if (!loadFunctionMapping(settings.functionMappingFile())) return false;
+	if (!loadFunctionMapping(Settings::functionMappingFile())) return false;
 
 	mDataLayout = new llvm::DataLayout(mModule);
 
 	if (!loadValueTypes(strPool)) return false;
 
-	if (!loadCustomDataTypes(settings.dataTypesFile())) return false;
+	if (!loadCustomDataTypes(Settings::dataTypesFile())) return false;
 
 	if (!loadRuntimeFunctions()) return false;
 

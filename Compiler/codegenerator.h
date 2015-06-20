@@ -14,7 +14,7 @@ class CodeGenerator : public QObject{
 		Q_OBJECT
 	public:
 		CodeGenerator(QObject *parent = 0);
-		bool initialize(const Settings &settings);
+		bool initialize();
 		bool generate(ast::Program *program);
 		bool createExecutable(const QString &path);
 	private:
@@ -35,7 +35,6 @@ class CodeGenerator : public QObject{
 
 		bool generateTypesAndStructs(ast::Program *program);
 
-		Settings mSettings;
 		Runtime mRuntime;
 		StringPool mStringPool;
 		SymbolCollector mSymbolCollector;

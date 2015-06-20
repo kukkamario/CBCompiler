@@ -13,8 +13,7 @@
 #include "runtime.h"
 #include "typepointervaluetype.h"
 
-SymbolCollector::SymbolCollector(Runtime *runtime, Settings *settings) :
-	mSettings(settings),
+SymbolCollector::SymbolCollector(Runtime *runtime) :
 	mRuntime(runtime),
 	mTypeResolver(runtime) {
 	connect(&mTypeResolver, &TypeResolver::error, this, &SymbolCollector::error);
@@ -135,7 +134,7 @@ void SymbolCollector::visit(ast::Variable *c) {
 	ValueType *valType = resolveValueType(c->valueType());
 	if (!valType) return;
 	if (!existingSymbol) {
-		if (mSettings->forceVariableDeclaration()) {
+		if (Settings::forceVariableDeclaration()) {
 			emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(c->identifier()->name()), c->codePoint());
 			return;
 		}
@@ -205,7 +204,7 @@ void SymbolCollector::visit(ast::Goto *c) {
 void SymbolCollector::visit(ast::Identifier *n) {
 	Symbol *symbol = mCurrentScope->find(n->name());
 	if (!symbol) {
-		QString info = mSettings->forceVariableDeclaration() ? tr("You should declare variables with Dim-statement before using") : tr("First usage of a variable should be a assignment.");
+		QString info = Settings::forceVariableDeclaration() ? tr("You should declare variables with Dim-statement before using") : tr("First usage of a variable should be a assignment.");
 		emit error(ErrorCodes::ecCantFindSymbol, tr("Can't find symbol \"%1\". (%2)").arg(n->name(), info), n->codePoint());
 	}
 }
@@ -223,7 +222,7 @@ void SymbolCollector::visit(ast::Expression *c) {
 					Symbol *existingSymbol = mCurrentScope->find(id->name());
 					ValueType *valType = mRuntime->intValueType();
 					if (!existingSymbol) {
-						if (mSettings->forceVariableDeclaration()) {
+						if (Settings::forceVariableDeclaration()) {
 							emit error(ErrorCodes::ecVariableNotDefined, tr("Variable \"%1\" hasn't been declared").arg(id->name()), id->codePoint());
 							return;
 						}

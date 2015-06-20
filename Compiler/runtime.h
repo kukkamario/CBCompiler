@@ -21,7 +21,6 @@ class TypePointerCommonValueType;
 class GenericArrayValueType;
 class TypeValueType;
 class Scope;
-class Settings;
 class CustomValueType;
 class GenericStructValueType;
 class NullValueType;
@@ -38,10 +37,9 @@ class Runtime : public QObject {
 		/**
 		 * @brief load Loads the runtime from a bitcode file.
 		 * @param strPool A pointer to the global string pool.
-		 * @param settings A pointer to the settings
 		 * @return True, if loading succeeded, false otherwise
 		 */
-		bool load(StringPool *strPool, const Settings &settings);
+		bool load(StringPool *strPool);
 		llvm::Module *module() {return mModule;}
 		QList<RuntimeFunction*> functions() const {return mFunctions;}
 		llvm::Function *cbMain() const {return mCBMain;}

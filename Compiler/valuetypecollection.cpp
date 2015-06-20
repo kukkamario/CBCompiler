@@ -78,9 +78,9 @@ ArrayValueType *ValueTypeCollection::arrayValueType(ValueType *baseValueType, in
 	llvm::Type *intT = llvm::IntegerType::get(mRuntime->module()->getContext(), mRuntime->dataLayout().getPointerSizeInBits());
 	llvm::Type *dimType = llvm::ArrayType::get(intT, dimensions);
 
-	llvm::StructType *arrayDataHeaderType = llvm::StructType::get(genericArrayHeaderType, dimType, dimType, 0);
+	llvm::StructType *arrayDataHeaderType = llvm::StructType::get(genericArrayHeaderType, dimType, dimType, NULL);
 
-	llvm::StructType *arrayType = llvm::StructType::get(arrayDataHeaderType, baseValueType->llvmType(), 0);
+	llvm::StructType *arrayType = llvm::StructType::get(arrayDataHeaderType, baseValueType->llvmType(), NULL);
 	ArrayValueType *valTy = new ArrayValueType(baseValueType, arrayType->getPointerTo(), dimensions);
 	mArrayMapping[QPair<ValueType*, int>(baseValueType, dimensions)] = valTy;
 	mLLVMTypeMapping[valTy->llvmType()] = valTy;

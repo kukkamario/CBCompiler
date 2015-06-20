@@ -31,10 +31,10 @@
 
 CodeGenerator::CodeGenerator(QObject *parent) :
 	QObject(parent),
-	mSymbolCollector(&mRuntime, &mSettings),
+	mSymbolCollector(&mRuntime),
 	mGlobalScope("Global"),
 	mMainScope("Main", &mGlobalScope),
-	mFuncCodeGen(&mRuntime, &mSettings),
+	mFuncCodeGen(&mRuntime),
 	mBuilder(0)
 {
 	connect(&mRuntime, &Runtime::error, this, &CodeGenerator::error);
@@ -45,9 +45,8 @@ CodeGenerator::CodeGenerator(QObject *parent) :
 	connect(&mFuncCodeGen, &FunctionCodeGenerator::warning, this, &CodeGenerator::warning);
 }
 
-bool CodeGenerator::initialize(const Settings &settings) {
-	mSettings = settings;
-	if (!mRuntime.load(&mStringPool, settings)) {
+bool CodeGenerator::initialize() {
+	if (!mRuntime.load(&mStringPool)) {
 		emit error(ErrorCodes::ecInvalidRuntime, tr("Runtime loading failed"), CodePoint());
 		return false;
 	}
@@ -116,7 +115,7 @@ bool CodeGenerator::generate(ast::Program *program) {
 	return true;
 }
 
-bool CodeGenerator::createExecutable(const QString &path) {
+bool CodeGenerator::createExecutable(const QString &outputFile) {
 	std::string fileOpenErrorInfo;
 	llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
 	if (llvm::verifyModule(*mRuntime.module(), &out)) { //Invalid module
@@ -143,18 +142,18 @@ bool CodeGenerator::createExecutable(const QString &path) {
 		return false;
 	}
 	qDebug() << "Optimizing bitcode...\n";
-	if (!mSettings.callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
+	if (!Settings::callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
 		emit error(ErrorCodes::ecOptimizingFailed, tr("Failed to execute optimizing command"), CodePoint());
 		return false;
 	}
 	qDebug() << "Creating native assembly...\n";
-	if (!mSettings.callLLC("optimized_bitcode.bc", "llc")) {
+	if (!Settings::callLLC("optimized_bitcode.bc", "llc")) {
 		emit error(ErrorCodes::ecCantCreateObjectFile, tr("Creating a object file failed"), CodePoint());
 		return false;
 	}
 	qDebug() << "Building binary...\n";
 
-	if (!mSettings.callLinker("llc", "cbrun")) {
+	if (!Settings::callLinker("llc", outputFile)) {
 		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
 		return false;
 	}

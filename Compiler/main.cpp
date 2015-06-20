@@ -13,37 +13,20 @@
 int main(int argc, char *argv[]) {
 	QCoreApplication a(argc, argv);
 
-	/*QSettings test("test.ini", QSettings::IniFormat);
-	test.beginGroup("compiler");
-	test.setValue("test-value", "asd");
-	test.setValue("other-value", "val");
-	test.endGroup();
-	test.beginGroup("opt");
-	test.setValue("test-value2", "asd2");
-	test.setValue("other-value2", "val2");
-	test.endGroup();
-	test.sync();
-	return 0;*/
-
 	QTime bigTimer;
 	bigTimer.start();
 
-	QStringList params = a.arguments();
-	if (params.size() != 2) {
-		qCritical() << "Expecting file to compile";
-		return 0;
-	}
-
-
 	ErrorHandler errHandler;
 
-	Settings settings;
+
 	bool success = false;
-	success = settings.loadDefaults();
+	success = Settings::loadDefaults();
 	if (!success) {
-		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(settings.loadPath()), CodePoint());
+		errHandler.error(ErrorCodes::ecSettingsLoadingFailed, errHandler.tr("Loading the default settings \"%1\" failed").arg(Settings::loadPath()), CodePoint());
 		return ErrorCodes::ecSettingsLoadingFailed;
 	}
+
+	Settings::parseCommandLine(argc, argv);
 
 
 	Lexer lexer;
@@ -51,7 +34,7 @@ int main(int argc, char *argv[]) {
 	QObject::connect(&lexer, &Lexer::warning, &errHandler, &ErrorHandler::warning);
 	QTime timer;
 	timer.start();
-	if (lexer.tokenizeFile(params[1], settings) == Lexer::Success) {
+	if (lexer.tokenizeFile(Settings::inputFile()) == Lexer::Success) {
 		qDebug() << "Lexical analysing took " << timer.elapsed() << "ms";
 #ifdef DEBUG_OUTPUT
 		lexer.writeTokensToFile("tokens.txt");
@@ -67,10 +50,10 @@ int main(int argc, char *argv[]) {
 	QObject::connect(&parser, &Parser::warning, &errHandler, &ErrorHandler::warning);
 
 	timer.start();
-	ast::Program *program = parser.parse(lexer.tokens(), settings);
+	ast::Program *program = parser.parse(lexer.tokens());
 	qDebug() << "Parsing took " << timer.elapsed() << "ms";
 	if (!parser.success()) {
-		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(params[1]), CodePoint());
+		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(Settings::inputFile()), CodePoint());
 		return ErrorCodes::ecParsingFailed;
 	}
 
@@ -94,7 +77,7 @@ int main(int argc, char *argv[]) {
 	QObject::connect(&codeGenerator, &CodeGenerator::warning, &errHandler, &ErrorHandler::warning);
 
 	timer.start();
-	if (!codeGenerator.initialize(settings)) {
+	if (!codeGenerator.initialize()) {
 		return ErrorCodes::ecCodeGeneratorInitializationFailed;
 	}
 
@@ -110,7 +93,7 @@ int main(int argc, char *argv[]) {
 	qDebug() << "LLVM-IR generated";
 
 	timer.start();
-	codeGenerator.createExecutable(settings.defaultOutputFile());
+	codeGenerator.createExecutable(Settings::outputFile());
 	qDebug() << "Executable generation took " << timer.elapsed() << "ms";
 	qDebug() << "The whole compilation took " << bigTimer.elapsed() << "ms";
 	return 0;

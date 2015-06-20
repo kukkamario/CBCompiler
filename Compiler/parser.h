@@ -19,7 +19,7 @@ class Parser : public QObject {
 		 * @param tokens Token list
 		 * @return The abstract syntax tree generated
 		 */
-		ast::Program *parse(const QList<Token> &tokens, const Settings &settings);
+		ast::Program *parse(const QList<Token> &tokens);
 
 		/**
 		 * @brief success
@@ -107,7 +107,6 @@ class Parser : public QObject {
 		};
 
 		Status mStatus;
-		Settings mSettings;
 	signals:
 		void error(int code, QString msg, CodePoint cp);
 		void warning(int code, QString msg, CodePoint cp);

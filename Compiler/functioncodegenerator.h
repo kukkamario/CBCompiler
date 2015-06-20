@@ -16,7 +16,7 @@ class LabelSymbol;
 class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		Q_OBJECT
 	public:
-		FunctionCodeGenerator(Runtime *runtime, Settings *settings, QObject *parent = 0);
+		FunctionCodeGenerator(Runtime *runtime, QObject *parent = 0);
 		bool generate(Builder *builder, ast::Node *block, CBFunction *func, Scope *globalScope);
 		bool generateMainBlock(Builder *builder, ast::Node *block, llvm::Function *func, Scope *localScope, Scope *globalScope);
 
@@ -71,7 +71,6 @@ class FunctionCodeGenerator : public QObject, protected ast::Visitor {
 		bool canValueBeCasted(ValueType *target, const Value &source);
 		bool canConditionValueBeCastedToBoolean(const Value &value, const CodePoint &cp);
 
-		Settings *mSettings;
 		Scope *mLocalScope;
 		Scope *mGlobalScope;
 		Runtime *mRuntime;

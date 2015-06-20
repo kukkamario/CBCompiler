@@ -17,7 +17,7 @@ class ConstantSymbol;
 class SymbolCollector : public QObject, protected ast::Visitor {
 	Q_OBJECT
 	public:
-		SymbolCollector(Runtime *runtime, Settings *settings);
+		SymbolCollector(Runtime *runtime);
 		~SymbolCollector();
 
 
@@ -68,7 +68,6 @@ class SymbolCollector : public QObject, protected ast::Visitor {
 
 		int astListSize(ast::Node *node);
 
-		Settings *mSettings;
 		Scope *mGlobalScope;
 		Scope *mMainScope;
 		Scope *mCurrentScope;

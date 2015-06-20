@@ -30,9 +30,8 @@ struct CodeGeneratorError {
 		ErrorCodes::ErrorCode mErrorCodes;
 };
 
-FunctionCodeGenerator::FunctionCodeGenerator(Runtime *runtime, Settings *settings, QObject *parent) :
+FunctionCodeGenerator::FunctionCodeGenerator(Runtime *runtime, QObject *parent) :
 	QObject(parent),
-	mSettings(settings),
 	mRuntime(runtime),
 	mTypeResolver(runtime)
 {

@@ -144,8 +144,7 @@ ast::Node *Parser::tryDelete(Parser::TokIterator &i) {
 	return 0;
 }
 
-ast::Program *Parser::parse(const QList<Token> &tokens, const Settings &settings) {
-	mSettings = settings;
+ast::Program *Parser::parse(const QList<Token> &tokens) {
 
 	QList<ast::TypeDefinition*> typeDefs;
 	QList<ast::FunctionDefinition*> funcDefs;
