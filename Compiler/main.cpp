@@ -10,11 +10,15 @@
 #include "codegenerator.h"
 #include <QSettings>
 
+#include "llc.h"
+
 int main(int argc, char *argv[]) {
 	QCoreApplication a(argc, argv);
 
 	QTime bigTimer;
 	bigTimer.start();
+
+	LLC llc(argc, argv);
 
 	ErrorHandler errHandler;
 
@@ -26,7 +30,7 @@ int main(int argc, char *argv[]) {
 		return ErrorCodes::ecSettingsLoadingFailed;
 	}
 
-	Settings::parseCommandLine(argc, argv);
+	if (!Settings::parseCommandLine(argc, argv)) return 1;
 
 
 	Lexer lexer;
@@ -36,9 +40,8 @@ int main(int argc, char *argv[]) {
 	timer.start();
 	if (lexer.tokenizeFile(Settings::inputFile()) == Lexer::Success) {
 		qDebug() << "Lexical analysing took " << timer.elapsed() << "ms";
-#ifdef DEBUG_OUTPUT
-		lexer.writeTokensToFile("tokens.txt");
-#endif
+		if (!Settings::saveTokensFile().isEmpty())
+		lexer.writeTokensToFile(Settings::saveTokensFile());
 	}
 	else {
 		errHandler.error(ErrorCodes::ecLexicalAnalysingFailed, errHandler.tr("Lexical analysing failed"), CodePoint(lexer.files().first().first));
@@ -56,17 +59,14 @@ int main(int argc, char *argv[]) {
 		errHandler.error(ErrorCodes::ecParsingFailed, errHandler.tr("Parsing failed \"%1\"").arg(Settings::inputFile()), CodePoint());
 		return ErrorCodes::ecParsingFailed;
 	}
-
-#ifdef DEBUG_OUTPUT
-	if (program) {
-		QFile file("ast.txt");
+	if (program && !Settings::saveAstFile().isEmpty()) {
+		QFile file(Settings::saveAstFile());
 		if (file.open(QFile::WriteOnly)) {
 			QTextStream stream(&file);
 			program->write(stream);
 			file.close();
 		}
 	}
-#endif
 
 
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 	qDebug() << "LLVM-IR generated";
 
 	timer.start();
-	codeGenerator.createExecutable(Settings::outputFile());
+	codeGenerator.createExecutable(llc, Settings::outputFile());
 	qDebug() << "Executable generation took " << timer.elapsed() << "ms";
 	qDebug() << "The whole compilation took " << bigTimer.elapsed() << "ms";
 	return 0;

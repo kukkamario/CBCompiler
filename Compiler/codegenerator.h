@@ -10,13 +10,14 @@
 #include "settings.h"
 class CBFunction;
 class TypeSymbol;
+class LLC;
 class CodeGenerator : public QObject{
 		Q_OBJECT
 	public:
 		CodeGenerator(QObject *parent = 0);
 		bool initialize();
 		bool generate(ast::Program *program);
-		bool createExecutable(const QString &path);
+		bool createExecutable(LLC &llc, const QString &path);
 	private:
 		bool addRuntimeFunctions();
 		bool generateFunctions(const QList<ast::FunctionDefinition*> &functions);
@@ -30,6 +31,8 @@ class CodeGenerator : public QObject{
 		void generateStringLiterals();
 		void generateTypeInitializers();
 		void createBuilder();
+
+		void optimizeModule();
 
 		void addPredefinedConstantSymbols();
 

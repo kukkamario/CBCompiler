@@ -23,7 +23,9 @@
 #include "valuetypesymbol.h"
 #include "customvaluetype.h"
 #include "structvaluetype.h"
-
+#include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#include <iostream>
+#include "llc.h"
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
@@ -57,65 +59,68 @@ bool CodeGenerator::initialize() {
 }
 
 bool CodeGenerator::generate(ast::Program *program) {
-	qDebug() << "Preparing code generation...";
-	qDebug() << "Declaring types...";
+	if (!Settings::quiet()) std::cout << "Preparing code generation..." << std::endl;
+	if (Settings::verbose()) std::cout << "Declaring types..." << std::endl;
 	if (!mSymbolCollector.declareValueTypes(program, &mGlobalScope, &mMainScope)) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
 
-	qDebug() << "Generating types...";
+	if (Settings::verbose()) std::cout << "Generating types..." << std::endl;
 	if (!generateTypesAndStructs(program)) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
-	qDebug() << "Collecting symbols...";
+	if (Settings::verbose()) std::cout << "Collecting symbols..." << std::endl;
 	if (!mSymbolCollector.collect(program, &mGlobalScope, &mMainScope)) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
 
 
-	qDebug() << "Generating global variables...";
+
+	if (Settings::verbose()) std::cout << "Generating global variables..." << std::endl;
 	if (!generateGlobalVariables()) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
-	qDebug() << "Generating function definitions...";
+	if (Settings::verbose()) std::cout << "Generating function definitions..." << std::endl;
 	generateFunctionDefinitions(program->functionDefinitions());
 
 
-#ifdef DEBUG_OUTPUT
-	QFile file("scopes.txt");
-	if (file.open(QFile::WriteOnly)) {
-		QTextStream s(&file);
-		mGlobalScope.writeToStream(s);
-		file.close();
+	if (!Settings::saveScopesFile().isEmpty()) {
+		QFile file(Settings::saveScopesFile());
+		if (file.open(QFile::WriteOnly)) {
+			QTextStream s(&file);
+			mGlobalScope.writeToStream(s);
+			file.close();
+		}
+		else {
+			qCritical() << "Can't open " << Settings::saveScopesFile();
+		}
 	}
-	else {
-		qCritical() << "Can't open scopes.txt";
-	}
-#endif
 
-	qDebug() << "Starting code generation";
-	qDebug() << "Generating main scope...";
+
+	if (!Settings::quiet()) std::cout << "Generating code..." << std::endl;
+	if (Settings::verbose()) std::cout << "Generating main scope..." << std::endl;
 	if (!generateMainScope(program->mainBlock())) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
-	qDebug() << "Generating functions...";
+	if (Settings::verbose()) std::cout << "Generating functions..." << std::endl;
 	if (!generateFunctions(program->functionDefinitions())) {
-		qDebug() << "Failed";
+		if (Settings::verbose()) std::cerr << "Failed" << std::endl;
 		return false;
 	}
 
-	qDebug() << "Generating initializers...";
+	if (Settings::verbose()) std::cout << "Generating initializers..." << std::endl;
 	generateInitializers();
-	qDebug() << "Finished code generation \n\n";
+	if (Settings::verbose()) std::cout << "Finished code generation \n" << std::endl;
 	return true;
 }
 
-bool CodeGenerator::createExecutable(const QString &outputFile) {
+bool CodeGenerator::createExecutable(LLC &llc, const QString &outputFile) {
+	if (Settings::verbose()) std::cout << "Running bitcode verifier" << std::endl;
 	std::string fileOpenErrorInfo;
 	llvm::raw_fd_ostream out("verifier.log", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
 	if (llvm::verifyModule(*mRuntime.module(), &out)) { //Invalid module
@@ -123,41 +128,57 @@ bool CodeGenerator::createExecutable(const QString &outputFile) {
 		out << "\n\n\n-----LLVM-IR-----\n\n\n";
 		mRuntime.module()->print(out, &asmAnnoWriter);
 		out.close();
-		qDebug("Invalid module. See verifier.log");
+		std::cerr << "Invalid module. See verifier.log" << std::endl;
 		return false;
 	}
 	out.close();
 
+	if (!Settings::saveUnoptimizedBitcodeFile().isEmpty()) {
+		if (Settings::verbose()) {
+			std::cout << "Writing unoptimized bitcode to file \""
+					  << Settings::saveUnoptimizedBitcodeFile().toStdString() << "\"" << std::endl;
+		}
+		llvm::raw_fd_ostream out(Settings::saveUnoptimizedBitcodeFile().toStdString().c_str(), fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
+		llvm::AssemblyAnnotationWriter asmAnnoWriter;
+		mRuntime.module()->print(out, &asmAnnoWriter);
+		out.close();
+	}
+
+	optimizeModule();
+
+	if (Settings::emitLLVMIR()) {
+		llvm::raw_fd_ostream bitcodeFile(outputFile.toStdString().c_str(), fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
+		if (fileOpenErrorInfo.empty()) {
+			llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
+			bitcodeFile.close();
+			return true;
+		}
+		else {
+			emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"%1\"").arg(outputFile), CodePoint());
+			return false;
+		}
+	}
+
+
 	QString p = QDir::currentPath();
 	QDir::setCurrent(QCoreApplication::applicationDirPath());
+	std::string outputFileName;
 
-	llvm::raw_fd_ostream bitcodeFile("raw_bitcode.bc", fileOpenErrorInfo, llvm::sys::fs::OpenFlags::F_None);
-	if (fileOpenErrorInfo.empty()) {
-		llvm::WriteBitcodeToFile(mRuntime.module(), bitcodeFile);
-		bitcodeFile.close();
-	}
-	else {
-		emit error(ErrorCodes::ecCantWriteBitcodeFile, tr("Can't write bitcode file \"raw_bitcode.bc\""), CodePoint());
-		QDir::setCurrent(p);
+	if (!Settings::quiet()) std::cout << "Generating machine code..." << std::endl;
+	if (!llc.compileModule(mRuntime.module(), outputFileName)) {
 		return false;
 	}
-	qDebug() << "Optimizing bitcode...\n";
-	if (!Settings::callOpt("raw_bitcode.bc", "optimized_bitcode.bc")) {
-		emit error(ErrorCodes::ecOptimizingFailed, tr("Failed to execute optimizing command"), CodePoint());
-		return false;
-	}
-	qDebug() << "Creating native assembly...\n";
-	if (!Settings::callLLC("optimized_bitcode.bc", "llc")) {
-		emit error(ErrorCodes::ecCantCreateObjectFile, tr("Creating a object file failed"), CodePoint());
-		return false;
-	}
-	qDebug() << "Building binary...\n";
 
-	if (!Settings::callLinker("llc", outputFile)) {
-		emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
-		return false;
+	if (!Settings::compileOnly()) {
+		if (!Settings::quiet()) std::cout << "Linking..." << std::endl;
+		if (!Settings::callLinker(QString::fromStdString(outputFileName), outputFile)) {
+			emit error(ErrorCodes::ecNativeLinkingFailed, tr("Native linking failed"), CodePoint());
+			QDir::setCurrent(p);
+			return false;
+		}
+		qDebug() << "Success\n";
+
 	}
-	qDebug() << "Success\n";
 	QDir::setCurrent(p);
 	return true;
 }
@@ -247,6 +268,46 @@ void CodeGenerator::createBuilder() {
 	mBuilder = new Builder(mRuntime.module()->getContext());
 	mBuilder->setRuntime(&mRuntime);
 	mBuilder->setStringPool(&mStringPool);
+}
+
+void CodeGenerator::optimizeModule() {
+
+	llvm::PassManagerBuilder passManagerBuilder;
+	passManagerBuilder.SizeLevel = 0;
+	switch (Settings::optLevel()) {
+		case Settings::O0:
+			passManagerBuilder.OptLevel = 0;
+			return;
+		case Settings::O1:
+			passManagerBuilder.OptLevel = 1; break;
+		case Settings::O2:
+			passManagerBuilder.OptLevel = 2; break;
+		case Settings::O3:
+			passManagerBuilder.OptLevel = 3; break;
+	}
+
+	if (!Settings::quiet()) std::cout << "Optimizing..." << std::endl;
+
+	llvm::Module *module = mRuntime.module();
+
+	passManagerBuilder.DisableTailCalls = false;
+	passManagerBuilder.LoadCombine = true;
+
+	llvm::PassManager modulePassManager;
+	passManagerBuilder.populateModulePassManager(modulePassManager);
+
+	llvm::FunctionPassManager functionPassManager(module);
+	passManagerBuilder.populateFunctionPassManager(functionPassManager);
+
+	if (Settings::verbose()) std::cout << "Optimizing the functions..." << std::endl;
+
+
+	for (auto funcIt = module->begin(); funcIt != module->end(); ++funcIt) {
+		functionPassManager.run(*funcIt);
+	}
+
+	if (Settings::verbose()) std::cout << "Optimizing the module..." << std::endl;
+	modulePassManager.run(*module);
 }
 
 
