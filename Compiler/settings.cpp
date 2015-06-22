@@ -29,12 +29,12 @@ sFileType("filetype", cl::init(Settings::Executable),
 						"Emit an assembly ('.s') file"),
 			 clEnumValN(Settings::ObjectFile, "obj",
 						"Emit a native object ('.o') file"),
-			 clEnumValN(Settings::Null, "null",
-						"Emit nothing, for performance testing"),
 			 clEnumValN(Settings::Executable, "exe",
-						"Emit an executable file"),
+						"Emit an executable file (default)"),
 			 //clEnumValN(Settings::Library, "lib", "Emit a library file),
 			 clEnumValN(Settings::LLVM_IR, "bc", "Emit a llvm bitcode (.bc) file"),
+			 clEnumValN(Settings::Null, "null",
+						 "Emit nothing, for performance testing"),
 			 clEnumValEnd));
 
 extern cl::opt<char> OptLevel;
