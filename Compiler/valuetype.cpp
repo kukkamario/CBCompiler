@@ -38,7 +38,7 @@ void ValueType::generateDestructor(Builder *, const Value &) {
 
 Value ValueType::generateLoad(Builder *builder, const Value &var) const {
 	assert(var.isReference());
-	return Value(var.valueType(), builder->irBuilder().CreateLoad(var.value()), false);
+	return Value(var.valueType(), builder->CreateLoad(var.value()), false);
 }
 
 llvm::LLVMContext &ValueType::context() {

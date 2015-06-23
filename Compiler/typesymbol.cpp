@@ -44,7 +44,7 @@ ValueType *TypeSymbol::valueType() const {
 }
 
 void TypeSymbol::initializeType(Builder *b) {
-	b->irBuilder().CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
+	b->CreateCall2(mRuntime->typeValueType()->constructTypeFunction(), mGlobalTypeVariable, b->llvmValue(mMemberSize));
 }
 
 void TypeSymbol::createOpaqueTypes(Builder *b) {

@@ -59,28 +59,27 @@ void ArrayValueType::generateDestructor(Builder *builder, const Value &value) {
 
 Value ArrayValueType::generateLoad(Builder *builder, const Value &var) const {
 	assert(var.isReference());
-	llvm::Value *v = builder->irBuilder().CreateLoad(var.value());
+	llvm::Value *v = builder->CreateLoad(var.value());
 	refArray(builder, v);
 	return Value(var.valueType(), v, false);
 }
 
 Value ArrayValueType::dimensionSize(Builder *builder, const Value &array, const Value &dimNum) {
-	llvm::IRBuilder<> &irBuilder = builder->irBuilder();
 	llvm::Value * arr = builder->llvmValue(array);
-	llvm::Value *arrayDataHeader = irBuilder.CreateStructGEP(arr, 0);
-	llvm::Value *sizes = irBuilder.CreateStructGEP(arrayDataHeader, 1);
+	llvm::Value *arrayDataHeader = builder->CreateStructGEP(arr, 0);
+	llvm::Value *sizes = builder->CreateStructGEP(arrayDataHeader, 1);
 	llvm::Value *gepParams[2];
-	gepParams[0] = irBuilder.getInt32(0);
+	gepParams[0] = builder->getInt32(0);
 	gepParams[1] = builder->llvmValue(builder->toInt(dimNum));
-	llvm::Value *size = irBuilder.CreateLoad(irBuilder.CreateGEP(sizes, gepParams));
-	if (size->getType() != irBuilder.getInt32Ty()) {
-		size = irBuilder.CreateTrunc(size, irBuilder.getInt32Ty());
+	llvm::Value *size = builder->CreateLoad(builder->CreateGEP(sizes, gepParams));
+	if (size->getType() != builder->getInt32Ty()) {
+		size = builder->CreateTrunc(size, builder->getInt32Ty());
 	}
 	return Value(mRuntime->intValueType(), size, false);
 }
 
 void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value *array) {
-	builder->irBuilder().CreateCall2(
+	builder->CreateCall2(
 				mRuntime->genericArrayValueType()->assignmentFunction(),
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType()->getPointerTo(), var),
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType(), array));
@@ -89,7 +88,7 @@ void ArrayValueType::assignArray(Builder *builder, llvm::Value *var, llvm::Value
 Value ArrayValueType::constructArray(Builder *builder, const QList<Value> &dims) {
 	assert(dims.size() == mDimensions);
 	if (!mConstructFunction) {
-		llvm::Type *intT = builder->irBuilder().getIntPtrTy(&mRuntime->dataLayout());
+		llvm::Type *intT = builder->getIntPtrTy(&mRuntime->dataLayout());
 		std::vector<llvm::Type*> paramTypes;
 		for (int i = 0; i != mDimensions; i++) {
 			paramTypes.push_back(intT);
@@ -100,21 +99,21 @@ Value ArrayValueType::constructArray(Builder *builder, const QList<Value> &dims)
 		mConstructFunction = llvm::Function::Create(ft, llvm::Function::InternalLinkage, ("constructor_" + name()).toStdString(), mRuntime->module());
 		llvm::BasicBlock *bb = llvm::BasicBlock::Create(builder->context(), "bb", mConstructFunction);
 		llvm::IRBuilder<> irBuilder(bb);
-		llvm::AllocaInst *pArr = irBuilder.CreateAlloca(intT, irBuilder.getInt32(mDimensions));
+		llvm::AllocaInst *pArr = builder->CreateAlloca(intT, builder->getInt32(mDimensions));
 
 		llvm::Function::arg_iterator arg_i = mConstructFunction->arg_begin();
 		for (int i = 0; i != mDimensions; i++) {
-			llvm::Value *dPtr = irBuilder.CreateGEP(pArr, irBuilder.getInt32(i));
-			irBuilder.CreateStore(arg_i, dPtr);
+			llvm::Value *dPtr = builder->CreateGEP(pArr, builder->getInt32(i));
+			builder->CreateStore(arg_i, dPtr);
 			arg_i++;
 		}
 
-		llvm::Value *genericArray = irBuilder.CreateCall3(
+		llvm::Value *genericArray = builder->CreateCall3(
 					mRuntime->genericArrayValueType()->constructFunction(),
 					llvm::ConstantInt::get(intT, mDimensions),
 					pArr,
 					llvm::ConstantInt::get(intT, mBaseValueType->size()));
-		irBuilder.CreateRet(irBuilder.CreateBitCast(genericArray, llvmType()));
+		builder->CreateRet(builder->CreateBitCast(genericArray, llvmType()));
 	}
 
 	std::vector<llvm::Value*> params;
@@ -122,74 +121,71 @@ Value ArrayValueType::constructArray(Builder *builder, const QList<Value> &dims)
 		params.push_back(builder->intPtrTypeValue(v));
 	}
 
-	return Value(this, builder->irBuilder().CreateCall(mConstructFunction, params));
+	return Value(this, builder->CreateCall(mConstructFunction, params));
 }
 
 Value ArrayValueType::arraySubscript(Builder *builder, const Value &array, const QList<Value> &dims) {
 	assert(array.valueType() == this);
 	assert(mDimensions == dims.size());
 	llvm::Value *arr = builder->llvmValue(array);
-	llvm::IRBuilder<> &irBuilder = builder->irBuilder();
-	llvm::Value *arrayDataHeader = irBuilder.CreateStructGEP(arr, 0);
-	llvm::Value *genericHeader = irBuilder.CreateStructGEP(arrayDataHeader, 0);
-	llvm::Value *offset = irBuilder.CreateStructGEP(genericHeader, 4);
-	llvm::Value *mults = irBuilder.CreateStructGEP(arrayDataHeader, 2);
+	llvm::Value *arrayDataHeader = builder->CreateStructGEP(arr, 0);
+	llvm::Value *genericHeader = builder->CreateStructGEP(arrayDataHeader, 0);
+	llvm::Value *offset = builder->CreateStructGEP(genericHeader, 4);
+	llvm::Value *mults = builder->CreateStructGEP(arrayDataHeader, 2);
 
 
 	int i = 0;
 	llvm::Value *sum = 0;
 	llvm::Value *gepParams[2];
-	gepParams[0] = irBuilder.getInt32(0);
+	gepParams[0] = builder->getInt32(0);
 	for (const Value &val : dims) {
 		llvm::Value *v = builder->intPtrTypeValue(val);
-		gepParams[1] = irBuilder.getInt32(i);
-		llvm::Value *mult = irBuilder.CreateLoad(irBuilder.CreateGEP(mults, gepParams));
-		llvm::Value *r = irBuilder.CreateMul(v, mult);
+		gepParams[1] = builder->getInt32(i);
+		llvm::Value *mult = builder->CreateLoad(builder->CreateGEP(mults, gepParams));
+		llvm::Value *r = builder->CreateMul(v, mult);
 		if (sum) {
-			sum = irBuilder.CreateAdd(sum, r);
+			sum = builder->CreateAdd(sum, r);
 		} else {
 			sum = r;
 		}
 		i++;
 	}
 
-	llvm::Value *arrData = irBuilder.CreateBitCast(arr, irBuilder.getInt8PtrTy());
-	arrData = irBuilder.CreateGEP(arrData, irBuilder.CreateLoad(offset));
+	llvm::Value *arrData = builder->CreateBitCast(arr, builder->getInt8PtrTy());
+	arrData = builder->CreateGEP(arrData, builder->CreateLoad(offset));
 
-	arrData = irBuilder.CreateBitCast(arrData, mBaseValueType->llvmType()->getPointerTo());
-	arrData = irBuilder.CreateGEP(arrData, sum);
+	arrData = builder->CreateBitCast(arrData, mBaseValueType->llvmType()->getPointerTo());
+	arrData = builder->CreateGEP(arrData, sum);
 	return Value(mBaseValueType, arrData, true);
 
 }
 
 void ArrayValueType::refArray(Builder *builder, llvm::Value *array) const {
-	builder->irBuilder().CreateCall(
+	builder->CreateCall(
 				mRuntime->genericArrayValueType()->refFunction(),
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType(), array));
 }
 
 void ArrayValueType::destructArray(Builder *builder, llvm::Value *array) {
-	builder->irBuilder().CreateCall(
+	builder->CreateCall(
 				mRuntime->genericArrayValueType()->destructFunction(),
 				builder->bitcast(mRuntime->genericArrayValueType()->llvmType(), array));
 }
 
 llvm::Value *ArrayValueType::dataArray(Builder *builder, const Value &array) {
 	llvm::Value *arr = builder->llvmValue(array);
-	llvm::IRBuilder<> &irBuilder = builder->irBuilder();
-	llvm::Value *arrayDataHeader = irBuilder.CreateStructGEP(arr, 0);
-	llvm::Value *genericHeader = irBuilder.CreateStructGEP(arrayDataHeader, 0);
-	llvm::Value *offset = irBuilder.CreateLoad(irBuilder.CreateStructGEP(genericHeader, 4));
-	llvm::Value *arrData = irBuilder.CreateBitCast(arr, irBuilder.getInt8PtrTy());
-	arrData = irBuilder.CreateGEP(arrData, offset);
-	return irBuilder.CreateBitCast(arrData, mBaseValueType->llvmType()->getPointerTo());
+	llvm::Value *arrayDataHeader = builder->CreateStructGEP(arr, 0);
+	llvm::Value *genericHeader = builder->CreateStructGEP(arrayDataHeader, 0);
+	llvm::Value *offset = builder->CreateLoad(builder->CreateStructGEP(genericHeader, 4));
+	llvm::Value *arrData = builder->CreateBitCast(arr, builder->getInt8PtrTy());
+	arrData = builder->CreateGEP(arrData, offset);
+	return builder->CreateBitCast(arrData, mBaseValueType->llvmType()->getPointerTo());
 }
 
 llvm::Value *ArrayValueType::totalSize(Builder *builder, const Value &array) {
 	llvm::Value *arr = builder->llvmValue(array);
-	llvm::IRBuilder<> &irBuilder = builder->irBuilder();
-	llvm::Value *arrayDataHeader = irBuilder.CreateStructGEP(arr, 0);
-	llvm::Value *genericHeader = irBuilder.CreateStructGEP(arrayDataHeader, 0);
-	llvm::Value *fullSize = irBuilder.CreateLoad(irBuilder.CreateStructGEP(genericHeader, 0));
+	llvm::Value *arrayDataHeader = builder->CreateStructGEP(arr, 0);
+	llvm::Value *genericHeader = builder->CreateStructGEP(arrayDataHeader, 0);
+	llvm::Value *fullSize = builder->CreateLoad(builder->CreateStructGEP(genericHeader, 0));
 	return fullSize;
 }

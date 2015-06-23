@@ -16,14 +16,12 @@ class TypeSymbol;
  * @brief The Builder class. Helper class for llvm-IR generation.
  */
 
-class Builder {
+class Builder : public llvm::IRBuilder<> {
 	public:
 		Builder(llvm::LLVMContext &context);
 		void setRuntime(Runtime *r);
 		void setStringPool(StringPool *s);
 		StringPool *stringPool() const { return mStringPool; }
-		void setInsertPoint(llvm::BasicBlock *basicBlock);
-		llvm::IRBuilder<> & irBuilder() { return mIRBuilder; }
 
 		Value toInt(const Value &v);
 		Value toFloat(const Value &v);
@@ -160,7 +158,6 @@ class Builder {
 		 */
 		llvm::Value *pointerToBytePointer(llvm::Value *ptr);
 
-		llvm::BasicBlock *currentBasicBlock() const;
 
 
 		void setTemporaryVariableBasicBlock(llvm::BasicBlock *bb);
@@ -168,13 +165,7 @@ class Builder {
 		llvm::AllocaInst *temporaryVariable(llvm::Type *type);
 		void removeTemporaryVariable(llvm::AllocaInst *alloc);
 
-		//Dont work. Dont use
-		void pushInsertPoint();
-		void popInsertPoint();
 	private:
-
-		llvm::IRBuilder<> mIRBuilder;
-		QStack<llvm::IRBuilder<>::InsertPoint> mInsertPointStack;
 		Runtime *mRuntime;
 		StringPool *mStringPool;
 

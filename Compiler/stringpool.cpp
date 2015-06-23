@@ -13,9 +13,9 @@ void StringPool::generateStringLiterals(Builder *builder) {
 		indices.push_back(builder->llvmValue(0));
 		indices.push_back(builder->llvmValue(0));
 
-		llvm::Value *ptr = builder->irBuilder().CreateInBoundsGEP(sd.mConstData, indices);
-		llvm::Value *str = builder->runtime()->stringValueType()->constructString(&builder->irBuilder(), ptr);
-		builder->irBuilder().CreateStore(str, sd.mCBString);
+		llvm::Value *ptr = builder->CreateInBoundsGEP(sd.mConstData, indices);
+		llvm::Value *str = builder->runtime()->stringValueType()->constructString(builder, ptr);
+		builder->CreateStore(str, sd.mCBString);
 	}
 }
 
@@ -23,8 +23,8 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 	assert(!s.isEmpty());
 	QMap<QString, StringData>::Iterator i = mStrings.find(s);
 	if (i != mStrings.end()) {
-		llvm::Value *str = builder->irBuilder().CreateLoad(i.value().mCBString, false);
-		builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter
+		llvm::Value *str = builder->CreateLoad(i.value().mCBString, false);
+		builder->runtime()->stringValueType()->refString(builder, str); //Increase reference counter
 		return Value(builder->runtime()->stringValueType(), str, false);
 	}
 	StringData sd;
@@ -50,7 +50,7 @@ Value StringPool::globalString(Builder *builder, const QString &s) {
 				llvm::ConstantArray::get(llvm::ArrayType::get(llvm::Type::getInt32Ty(builder->context()), s.length() + 1), stringChars), ("StringLiteralData |" + s + "|").toStdString());
 	mStrings.insert(s, sd);
 
-	llvm::Value *str = builder->irBuilder().CreateLoad(sd.mCBString, false);
-	builder->runtime()->stringValueType()->refString(&builder->irBuilder(), str); //Increase reference counter
+	llvm::Value *str = builder->CreateLoad(sd.mCBString, false);
+	builder->runtime()->stringValueType()->refString(builder, str); //Increase reference counter
 	return Value(builder->runtime()->stringValueType(), str, false);
 }

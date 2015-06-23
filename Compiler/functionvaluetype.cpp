@@ -71,7 +71,7 @@ Value FunctionValueType::cast(Builder *, const Value &v) const {
 Value FunctionValueType::generateLoad(Builder *builder, const Value &var) const {
 	assert(var.valueType() == this);
 	assert(var.isReference());
-	return Value(const_cast<FunctionValueType*>(this), builder->irBuilder().CreateLoad(var.value()), false);
+	return Value(const_cast<FunctionValueType*>(this), builder->CreateLoad(var.value()), false);
 }
 
 Value FunctionValueType::generateOperation(Builder *builder, int opType, const Value &operand1, const Value &operand2, OperationFlags &operationFlags) const {
@@ -101,12 +101,12 @@ Value FunctionValueType::generateOperation(Builder *builder, int opType, const V
 				operationFlags |= OperationFlag::ReferenceRequired;
 				return Value();
 			}
-			builder->irBuilder().CreateStore(builder->llvmValue(op2), operand1.value());
+			builder->CreateStore(builder->llvmValue(op2), operand1.value());
 			return operand1;
 		case ast::ExpressionNode::opEqual:
-			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
+			return Value(mRuntime->booleanValueType(), builder->CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
 		case ast::ExpressionNode::opNotEqual:
-			return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
+			return Value(mRuntime->booleanValueType(), builder->CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(op2)), false);
 	}
 	operationFlags |= OperationFlag::NoSuchOperation;
 	return Value();

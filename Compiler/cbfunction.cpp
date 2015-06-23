@@ -43,7 +43,7 @@ Value CBFunction::call(Builder *builder, const QList<Value> &params) {
 		paramI++;
 	}
 
-	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
+	llvm::Value *ret = builder->CreateCall(mFunction, p);
 	if (isCommand()) {
 		return Value();
 	}

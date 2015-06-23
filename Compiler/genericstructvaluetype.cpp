@@ -23,7 +23,7 @@ Value GenericStructValueType::cast(Builder *builder, const Value &v) const {
 		if (v.isReference()) {
 			return Value(const_cast<GenericStructValueType*>(this), builder->bitcast(mType, v.value()));
 		}
-		llvm::Value *alloca = builder->irBuilder().CreateAlloca(v.valueType()->llvmType());
+		llvm::Value *alloca = builder->CreateAlloca(v.valueType()->llvmType());
 		builder->store(alloca, v.value());
 		return Value(const_cast<GenericStructValueType*>(this), builder->bitcast(mType, alloca));
 	}

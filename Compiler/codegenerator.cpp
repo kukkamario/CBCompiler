@@ -246,12 +246,12 @@ void CodeGenerator::generateInitializers() {
 	mInitializationBlock = llvm::BasicBlock::Create(mBuilder->context(), "Initialize", mRuntime.cbInitialize());
 	generateStringLiterals();
 	generateTypeInitializers();
-	mBuilder->setInsertPoint(mInitializationBlock);
-	mBuilder->irBuilder().CreateRetVoid();
+	mBuilder->SetInsertPoint(mInitializationBlock);
+	mBuilder->CreateRetVoid();
 }
 
 void CodeGenerator::generateStringLiterals() {
-	mBuilder->setInsertPoint(mInitializationBlock);
+	mBuilder->SetInsertPoint(mInitializationBlock);
 	mBuilder->stringPool()->generateStringLiterals(mBuilder);
 }
 

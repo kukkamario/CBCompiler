@@ -83,7 +83,7 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 				else {
 					llvm::AllocaInst *allocaInst = builder->temporaryVariable(val.valueType()->llvmType());
 					tempVars.push_back(allocaInst);
-					builder->irBuilder().CreateStore(val.value(), allocaInst);
+					builder->CreateStore(val.value(), allocaInst);
 					p.push_back(allocaInst);
 				}
 			}
@@ -96,10 +96,10 @@ Value RuntimeFunction::call(Builder *builder, const QList<Value> &params) {
 		}
 	}
 
-	llvm::Value *ret = builder->irBuilder().CreateCall(mFunction, p);
+	llvm::Value *ret = builder->CreateCall(mFunction, p);
 	Value returnValue;
 	if (returnInParameters) {
-		returnValue = Value(mReturnValue, builder->irBuilder().CreateLoad(returnValueAlloca));
+		returnValue = Value(mReturnValue, builder->CreateLoad(returnValueAlloca));
 	}
 	else if (isCommand()) {
 		returnValue = Value();

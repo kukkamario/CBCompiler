@@ -165,7 +165,7 @@ void StructValueType::generateDestructor(Builder *builder, const Value &v) {
 	for (int fieldIndex = 0; fieldIndex < mFields.size(); ++fieldIndex) {
 		Value f = this->field(builder, v, fieldIndex);
 		if (f.isReference()) {
-			f = Value(f.valueType(), builder->irBuilder().CreateLoad(f.value()), false);
+			f = Value(f.valueType(), builder->CreateLoad(f.value()), false);
 		}
 		builder->destruct(f);
 	}
@@ -179,7 +179,7 @@ Value StructValueType::generateLoad(Builder *builder, const Value &var) const {
 		Value fLoaded = f.valueType()->generateLoad(builder, f);
 		unsigned idx[1];
 		idx[0] = fieldIndex;
-		ret = builder->irBuilder().CreateInsertValue(ret, fLoaded.value(), idx);
+		ret = builder->CreateInsertValue(ret, fLoaded.value(), idx);
 	}
 	return Value(var.valueType(), ret, false);
 }
@@ -206,13 +206,13 @@ Value StructValueType::field(Builder *builder, const Value &a, int fieldIndex) c
 	assert(a.valueType() == this);
 	if (a.isReference()) {
 		return Value(mFields.at(fieldIndex).valueType(),
-					 builder->irBuilder().CreateStructGEP(a.value(), fieldIndex),
+					 builder->CreateStructGEP(a.value(), fieldIndex),
 					 true);
 	}
 	else {
 		unsigned ids[1] = {fieldIndex};
 		return Value(mFields.at(fieldIndex).valueType(),
-					 builder->irBuilder().CreateExtractValue(a.value(), ids),
+					 builder->CreateExtractValue(a.value(), ids),
 					 false);
 	}
 

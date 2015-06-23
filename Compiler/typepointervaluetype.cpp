@@ -58,30 +58,30 @@ Value TypePointerValueType::generateOperation(Builder *builder, int opType, cons
 		}
 		case ast::ExpressionNode::opEqual: {
 			if (operand1.valueType() == operand2.valueType()) {
-				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+				return Value(mRuntime->booleanValueType(), builder->CreateICmpEQ(builder->llvmValue(operand1), builder->llvmValue(operand2)));
 			} else if (operand2.valueType() == mRuntime->typePointerCommonValueType()) {
 				return Value(mRuntime->booleanValueType(),
-							 builder->irBuilder().CreateICmpEQ(
+							 builder->CreateICmpEQ(
 								 builder->bitcast(mRuntime->typePointerCommonValueType()->llvmType(), builder->llvmValue(operand1)),
 								 builder->llvmValue(operand2)), false);
 			} else if (operand2.valueType() == mRuntime->nullValueType()) {
 				return Value(mRuntime->booleanValueType(),
-							 builder->irBuilder().CreateIsNull(builder->llvmValue(operand1)),
+							 builder->CreateIsNull(builder->llvmValue(operand1)),
 							 false);
 			}
 			break;
 		}
 		case ast::ExpressionNode::opNotEqual: {
 			if (operand1.valueType() == operand2.valueType()) {
-				return Value(mRuntime->booleanValueType(), builder->irBuilder().CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(operand2)));
+				return Value(mRuntime->booleanValueType(), builder->CreateICmpNE(builder->llvmValue(operand1), builder->llvmValue(operand2)));
 			} else if (operand2.valueType() == mRuntime->typePointerCommonValueType()) {
 				return Value(mRuntime->booleanValueType(),
-							 builder->irBuilder().CreateICmpNE(
+							 builder->CreateICmpNE(
 								 builder->bitcast(mRuntime->typePointerCommonValueType()->llvmType(), builder->llvmValue(operand1)),
 								 builder->llvmValue(operand2)), false);
 			} else if (operand2.valueType() == mRuntime->nullValueType()) {
 				return Value(mRuntime->booleanValueType(),
-							 builder->irBuilder().CreateIsNotNull(builder->llvmValue(operand1)),
+							 builder->CreateIsNotNull(builder->llvmValue(operand1)),
 							 false);
 			}
 			break;

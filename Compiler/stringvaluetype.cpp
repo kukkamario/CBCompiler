@@ -247,13 +247,13 @@ Value StringValueType::generateOperation(Builder *builder, int opType, const Val
 
 void StringValueType::generateDestructor(Builder *builder, const Value &value) {
 	if (value.isConstant() || value.isReference()) return;
-	destructString(&builder->irBuilder(), value.value());
+	destructString(builder, value.value());
 }
 
 Value StringValueType::generateLoad(Builder *builder, const Value &var) const {
 	assert(var.isReference());
-	llvm::Value *v = builder->irBuilder().CreateLoad(var.value());
-	refString(&builder->irBuilder(), v);
+	llvm::Value *v = builder->CreateLoad(var.value());
+	refString(builder, v);
 	return Value(var.valueType(), v, false);
 }
 

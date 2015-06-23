@@ -54,12 +54,12 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 	mUnresolvedGotos.clear();
 
 	llvm::BasicBlock *allocaBasicBlock = llvm::BasicBlock::Create(builder->context(), "allocaBB", mFunction);
-	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->SetInsertPoint(allocaBasicBlock);
 	if (!generateAllocas()) return false;
 	mBuilder->setTemporaryVariableBasicBlock(allocaBasicBlock);
 
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", mFunction);
-	mBuilder->setInsertPoint(firstBasicBlock);
+	mBuilder->SetInsertPoint(firstBasicBlock);
 	generateFunctionParameterAssignments(func->parameters());
 
 	try {
@@ -69,7 +69,7 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 		return false;
 	}
 
-	if (!mBuilder->currentBasicBlock()->getTerminator()) {
+	if (!mBuilder->GetInsertBlock()->getTerminator()) {
 		generateDestructors();
 		if (func->returnValue()) {
 			mBuilder->returnValue(func->returnValue(), Value(func->returnValue(), func->returnValue()->defaultValue()));
@@ -79,7 +79,7 @@ bool FunctionCodeGenerator::generate(Builder *builder, ast::Node *block, CBFunct
 			mBuilder->returnVoid();
 	}
 
-	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->SetInsertPoint(allocaBasicBlock);
 	mBuilder->branch(firstBasicBlock);
 
 	resolveGotos();
@@ -99,12 +99,12 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	mUnresolvedGotos.clear();
 
 	llvm::BasicBlock *allocaBasicBlock = llvm::BasicBlock::Create(builder->context(), "allocaBB", func);
-	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->SetInsertPoint(allocaBasicBlock);
 	if (!generateAllocas()) return false;
 	mBuilder->setTemporaryVariableBasicBlock(allocaBasicBlock);
 
 	llvm::BasicBlock *firstBasicBlock = llvm::BasicBlock::Create(builder->context(), "firstBB", func);
-	mBuilder->setInsertPoint(firstBasicBlock);
+	mBuilder->SetInsertPoint(firstBasicBlock);
 	try {
 		block->accept(this);
 	}
@@ -114,7 +114,7 @@ bool FunctionCodeGenerator::generateMainBlock(Builder *builder, ast::Node *block
 	generateDestructors();
 	mBuilder->returnVoid();
 
-	mBuilder->setInsertPoint(allocaBasicBlock);
+	mBuilder->SetInsertPoint(allocaBasicBlock);
 	mBuilder->branch(firstBasicBlock);
 
 	resolveGotos();
@@ -202,7 +202,7 @@ void FunctionCodeGenerator::visit(ast::FunctionCall *n) {
 
 void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 	CHECK_UNREACHABLE(n->codePoint());
-	llvm::BasicBlock *condBB = mBuilder->currentBasicBlock();
+	llvm::BasicBlock *condBB = mBuilder->GetInsertBlock();
 	Value cond = generate(n->condition());
 	if (!canConditionValueBeCastedToBoolean(cond, n->condition()->codePoint())) return;
 
@@ -211,7 +211,7 @@ void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 
 
 
-	mBuilder->setInsertPoint(trueBlock);
+	mBuilder->SetInsertPoint(trueBlock);
 	n->block()->accept(this);
 	if (!mUnreachableBasicBlock)
 		mBuilder->branch(endBlock);
@@ -220,7 +220,7 @@ void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 	llvm::BasicBlock *elseBlock = 0;
 	if (n->elseBlock()) {
 		elseBlock = createBasicBlock("elseBB");
-		mBuilder->setInsertPoint(elseBlock);
+		mBuilder->SetInsertPoint(elseBlock);
 		n->elseBlock()->accept(this);
 		if (!mUnreachableBasicBlock)
 			mBuilder->branch(endBlock);
@@ -228,7 +228,7 @@ void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 	}
 
 
-	mBuilder->setInsertPoint(condBB);
+	mBuilder->SetInsertPoint(condBB);
 	if (n->elseBlock()) {
 		mBuilder->branch(cond, trueBlock, elseBlock);
 	}
@@ -236,7 +236,7 @@ void FunctionCodeGenerator::visit(ast::IfStatement *n) {
 		mBuilder->branch(cond, trueBlock, endBlock);
 	}
 
-	mBuilder->setInsertPoint(endBlock);
+	mBuilder->SetInsertPoint(endBlock);
 }
 
 void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
@@ -246,7 +246,7 @@ void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
 	llvm::BasicBlock *wendBB = createBasicBlock("wendBB");
 
 	mBuilder->branch(condBB);
-	mBuilder->setInsertPoint(condBB);
+	mBuilder->SetInsertPoint(condBB);
 
 	Value cond = generate(n->condition());
 	if (!canConditionValueBeCastedToBoolean(cond, n->condition()->codePoint())) return;
@@ -254,14 +254,14 @@ void FunctionCodeGenerator::visit(ast::WhileStatement *n) {
 	mBuilder->branch(cond, blockBB, wendBB);
 
 	mExitStack.push(wendBB);
-	mBuilder->setInsertPoint(blockBB);
+	mBuilder->SetInsertPoint(blockBB);
 	n->block()->accept(this);
 	if (!mUnreachableBasicBlock)
 		mBuilder->branch(condBB);
 	mUnreachableBasicBlock = false;
 	mExitStack.pop();
 
-	mBuilder->setInsertPoint(wendBB);
+	mBuilder->SetInsertPoint(wendBB);
 }
 
 void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
@@ -271,7 +271,7 @@ void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
 	llvm::BasicBlock *endBlock = createBasicBlock("repeatForeverEndBB");
 
 	mBuilder->branch(block);
-	mBuilder->setInsertPoint(block);
+	mBuilder->SetInsertPoint(block);
 	mExitStack.push(endBlock);
 	n->block()->accept(this);
 	mExitStack.pop();
@@ -279,7 +279,7 @@ void FunctionCodeGenerator::visit(ast::RepeatForeverStatement *n) {
 		mBuilder->branch(block);
 	mUnreachableBasicBlock = false;
 
-	mBuilder->setInsertPoint(endBlock);
+	mBuilder->SetInsertPoint(endBlock);
 
 
 }
@@ -291,7 +291,7 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 	llvm::BasicBlock *endBlock = createBasicBlock("repeatUntilEndBB");
 
 	mBuilder->branch(block);
-	mBuilder->setInsertPoint(block);
+	mBuilder->SetInsertPoint(block);
 	mExitStack.push(endBlock);
 	n->block()->accept(this);
 	mExitStack.pop();
@@ -302,7 +302,7 @@ void FunctionCodeGenerator::visit(ast::RepeatUntilStatement *n) {
 	}
 	mUnreachableBasicBlock = false;
 
-	mBuilder->setInsertPoint(endBlock);
+	mBuilder->SetInsertPoint(endBlock);
 
 }
 
@@ -331,7 +331,7 @@ void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 	bool positiveStep = ConstantValue::greaterEqual(step, ConstantValue(0), flags).toBool();
 
 	mBuilder->branch(condBB);
-	mBuilder->setInsertPoint(condBB);
+	mBuilder->SetInsertPoint(condBB);
 
 	Value to = generate(n->to());
 	Value cond;
@@ -344,7 +344,7 @@ void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 	mBuilder->branch(cond, blockBB, endBB);
 
 	mExitStack.push(endBB);
-	mBuilder->setInsertPoint(blockBB);
+	mBuilder->SetInsertPoint(blockBB);
 	n->block()->accept(this);
 
 	if (!mUnreachableBasicBlock) {
@@ -353,7 +353,7 @@ void FunctionCodeGenerator::visit(ast::ForToStatement *n) {
 	}
 	mUnreachableBasicBlock = false;
 	mExitStack.pop();
-	mBuilder->setInsertPoint(endBB);
+	mBuilder->SetInsertPoint(endBB);
 }
 
 void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
@@ -378,11 +378,11 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 		mBuilder->store(var, mBuilder->firstTypeMember(typeSymbol));
 		mBuilder->branch(condBB);
 
-		mBuilder->setInsertPoint(condBB);
+		mBuilder->SetInsertPoint(condBB);
 		Value cond = mBuilder->typePointerNotNull(var);
 		mBuilder->branch(cond, blockBB, endBB);
 
-		mBuilder->setInsertPoint(blockBB);
+		mBuilder->SetInsertPoint(blockBB);
 		n->block()->accept(this);
 		if (!mUnreachableBasicBlock) {
 			mBuilder->store(var, mBuilder->afterTypeMember(var));
@@ -390,7 +390,7 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 		}
 		mUnreachableBasicBlock = false;
 
-		mBuilder->setInsertPoint(endBB);
+		mBuilder->SetInsertPoint(endBB);
 	}
 	else if (container.isNormalValue() && valueType->isArray()) {
 		VariableSymbol *varSym = searchVariableSymbol(n->variable());
@@ -405,32 +405,32 @@ void FunctionCodeGenerator::visit(ast::ForEachStatement *n) {
 
 
 		llvm::Value *arrayData = array->dataArray(mBuilder, container);
-		llvm::Value *arrayDataPtr = mBuilder->irBuilder().CreateAlloca(arrayData->getType());
+		llvm::Value *arrayDataPtr = mBuilder->CreateAlloca(arrayData->getType());
 		llvm::Value *totalSize = array->totalSize(mBuilder, container);
-		llvm::Value *arrayEndPtr = mBuilder->irBuilder().CreateGEP(arrayData, totalSize);
-		mBuilder->irBuilder().CreateStore(arrayData, arrayDataPtr);
+		llvm::Value *arrayEndPtr = mBuilder->CreateGEP(arrayData, totalSize);
+		mBuilder->CreateStore(arrayData, arrayDataPtr);
 		mBuilder->branch(condBB);
 
-		mBuilder->setInsertPoint(condBB);
-		arrayData = mBuilder->irBuilder().CreateLoad(arrayDataPtr);
-		llvm::Value *cond = mBuilder->irBuilder().CreateICmpNE(arrayData, arrayEndPtr);
-		mBuilder->irBuilder().CreateCondBr(cond, blockBB, endBB);
+		mBuilder->SetInsertPoint(condBB);
+		arrayData = mBuilder->CreateLoad(arrayDataPtr);
+		llvm::Value *cond = mBuilder->CreateICmpNE(arrayData, arrayEndPtr);
+		mBuilder->CreateCondBr(cond, blockBB, endBB);
 
-		mBuilder->setInsertPoint(blockBB);
-		arrayData = mBuilder->irBuilder().CreateLoad(arrayDataPtr);
+		mBuilder->SetInsertPoint(blockBB);
+		arrayData = mBuilder->CreateLoad(arrayDataPtr);
 		varSym->setAlloca(arrayData);
 		mExitStack.push(endBB);
 
 		n->block()->accept(this);
 		if (!mUnreachableBasicBlock) {
-			arrayData = mBuilder->irBuilder().CreateGEP(arrayData, mBuilder->irBuilder().getInt32(1));
-			mBuilder->irBuilder().CreateStore(arrayData, arrayDataPtr);
+			arrayData = mBuilder->CreateGEP(arrayData, mBuilder->getInt32(1));
+			mBuilder->CreateStore(arrayData, arrayDataPtr);
 			mBuilder->branch(condBB);
 		}
 		mUnreachableBasicBlock = false;
 		mExitStack.pop();
 
-		mBuilder->setInsertPoint(endBB);
+		mBuilder->SetInsertPoint(endBB);
 		varSym->setAlloca(alloc);
 	}
 	else {
@@ -456,7 +456,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 
 
 	value.toLLVMValue(mBuilder);
-	llvm::BasicBlock *beginBlock = mBuilder->currentBasicBlock();
+	llvm::BasicBlock *beginBlock = mBuilder->GetInsertBlock();
 	llvm::BasicBlock *endBlock = createBasicBlock("selectEndBB");
 
 	bool switchPossible = value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType();
@@ -465,7 +465,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 		Value value = generate(c->value());
 		switchPossible &= value.isConstant() && (value.valueType() == mRuntime->intValueType() || value.valueType() == mRuntime->shortValueType() || value.valueType() == mRuntime->byteValueType());
 		llvm::BasicBlock *basicBlock = createBasicBlock("caseBB");
-		mBuilder->setInsertPoint(basicBlock);
+		mBuilder->SetInsertPoint(basicBlock);
 		c->block()->accept(this);
 		if (!mUnreachableBasicBlock) {
 			mBuilder->branch(endBlock);
@@ -476,7 +476,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 	llvm::BasicBlock *defaultBlock = endBlock;
 	if (n->defaultCase()) {
 		defaultBlock = createBasicBlock("defaultBB");
-		mBuilder->setInsertPoint(defaultBlock);
+		mBuilder->SetInsertPoint(defaultBlock);
 		n->defaultCase()->accept(this);
 		if (!mUnreachableBasicBlock) {
 			mBuilder->branch(endBlock);
@@ -484,9 +484,9 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 		mUnreachableBasicBlock = false;
 	}
 
-	mBuilder->setInsertPoint(beginBlock);
+	mBuilder->SetInsertPoint(beginBlock);
 	if (switchPossible) {
-		llvm::SwitchInst *switchInst = mBuilder->irBuilder().CreateSwitch(
+		llvm::SwitchInst *switchInst = mBuilder->CreateSwitch(
 					mBuilder->llvmValue(mBuilder->toInt(value)),
 					defaultBlock,
 					values.size());
@@ -504,7 +504,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 			if (trueBlock) {
 				llvm::BasicBlock *caseCondBB = createBasicBlock("caseCondBB");
 				mBuilder->branch(caseTrue, trueBlock, caseCondBB);
-				mBuilder->setInsertPoint(caseCondBB);
+				mBuilder->SetInsertPoint(caseCondBB);
 			}
 			OperationFlags opFlags;
 			ast::ExpressionNode::Op op = ast::ExpressionNode::opEqual;
@@ -536,7 +536,7 @@ void FunctionCodeGenerator::visit(ast::SelectStatement *n) {
 		}
 		mBuilder->branch(caseTrue, trueBlock, endBlock);
 	}
-	mBuilder->setInsertPoint(endBlock);
+	mBuilder->SetInsertPoint(endBlock);
 	mBuilder->destruct(value);
 }
 
@@ -605,7 +605,7 @@ void FunctionCodeGenerator::visit(ast::Goto *n) {
 		mBuilder->branch(label->basicBlock());
 	}
 	else {
-		mUnresolvedGotos.append(QPair<LabelSymbol*, llvm::BasicBlock*>(label, mBuilder->currentBasicBlock()));
+		mUnresolvedGotos.append(QPair<LabelSymbol*, llvm::BasicBlock*>(label, mBuilder->GetInsertBlock()));
 	}
 	mUnreachableBasicBlock = true;
 }
@@ -619,7 +619,7 @@ void FunctionCodeGenerator::visit(ast::Label *n) {
 	if (!mUnreachableBasicBlock) {
 		mBuilder->branch(bb);
 	}
-	mBuilder->setInsertPoint(bb);
+	mBuilder->SetInsertPoint(bb);
 	mUnreachableBasicBlock = false;
 
 	Symbol *sym = mLocalScope->find(n->name());
@@ -1280,7 +1280,7 @@ QList<Value> FunctionCodeGenerator::generateParameterList(ast::Node *n) {
 void FunctionCodeGenerator::resolveGotos() {
 	for (const QPair<LabelSymbol*, llvm::BasicBlock*> &g : mUnresolvedGotos) {
 		assert(g.first->basicBlock());
-		mBuilder->setInsertPoint(g.second);
+		mBuilder->SetInsertPoint(g.second);
 		mBuilder->branch(g.first->basicBlock());
 	}
 }
